@@ -26,6 +26,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <mongodb.version>4.11.1</mongodb.version>
         <junit.version>5.10.1</junit.version>
+        <javafx.version>17.0.8</javafx.version>
     </properties>
 
     <dependencyManagement>
@@ -40,6 +41,23 @@
                 <groupId>com.overleaf</groupId>
                 <artifactId>database</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <!-- JavaFX Dependencies -->
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-controls</artifactId>
+                <version>${javafx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-fxml</artifactId>
+                <version>${javafx.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-graphics</artifactId>
+                <version>${javafx.version}</version>
             </dependency>
 
             <!-- MongoDB Java Driver -->
