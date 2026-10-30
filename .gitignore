@@ -38,3 +38,5 @@ Desktop.ini
 *.toc
 *.fls
 *.fdb_latexmk
+
+src/main/resources/config.properties

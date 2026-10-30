@@ -27,6 +27,7 @@
         <mongodb.version>4.11.1</mongodb.version>
         <junit.version>5.10.1</junit.version>
         <javafx.version>17.0.8</javafx.version>
+        <slf4j.version>2.0.13</slf4j.version>
     </properties>
 
     <dependencyManagement>
@@ -41,6 +42,11 @@
                 <groupId>com.overleaf</groupId>
                 <artifactId>database</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
             </dependency>
 
             <!-- JavaFX Dependencies -->

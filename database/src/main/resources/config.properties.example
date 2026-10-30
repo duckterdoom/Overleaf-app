@@ -1,0 +1,5 @@
+# MongoDB Connection Configuration
+# Sao chép file này thành config.properties và điền thông tin thực tế của bạn
+
+mongo.uri=mongodb+srv://<username>:<password>@<cluster-url>/?authSource=admin&retryWrites=true&w=majority
+mongo.dbname=overleaf_desktop_db
