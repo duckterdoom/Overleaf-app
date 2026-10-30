@@ -1,10 +1,21 @@
 package com.overleaf.client;
 
+import com.overleaf.client.gui.OverleafDesktopApp;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
+
 /**
- * Module: overleaf-client (M1 & M2: GUI Client, Editor, Local I/O & PDF Rendering)
+ * M1: Điểm khởi chạy chính của ứng dụng Overleaf Desktop Client.
  */
 public class ClientApp {
     public static void main(String[] args) {
-        System.out.println("Khởi chạy Overleaf Client Module (M1 & M2)...");
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+
+        SwingUtilities.invokeLater(() -> {
+            OverleafDesktopApp app = new OverleafDesktopApp();
+            app.setVisible(true);
+        });
     }
 }
