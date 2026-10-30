@@ -1,90 +1,65 @@
-# OVERLEAF DESKTOP (PURE JAVA EDITION) - KIẾN TRÚC & HƯỚNG DẪN DỰ ÁN
+# OVERLEAF DESKTOP - HƯỚNG DẪN DÀNH CHO VỊ TRÍ M1 (GUI & CLIENT)
 
-Dự án được phân chia thành **5 Mô-đun (M1 - M5)** tương ứng chính xác với bảng phân công trách nhiệm 5 thành viên trong tệp báo cáo `overleaf_desktop_pure_java_project_report.md`.
+Nhánh hiện tại: **`feat/m1-gui-client`**  
+Mã nguồn GUI của bạn đã được đưa vào đúng vị trí mô-đun **`overleaf-client`** theo chuẩn Maven Multi-Module (mục 7.1 của `overleaf_desktop_ver2.md`).
 
 ---
 
-## 1. Cấu trúc thư mục mã nguồn 5 Modules
+## 1. Cấu trúc thư mục dự án
 
 ```text
-src/
-└── com/
-    └── overleaf/
-        ├── client/                       <-- [M1: GUI & Client]
-        │   ├── ClientApp.java            - Điểm khởi chạy ứng dụng Client (Main)
-        │   ├── NetworkClient.java        - Luồng kết nối TCP Socket tới Server
-        │   └── gui/
-        │       ├── MainFrame.java        - Cửa sổ chính kết hợp Menu, Toolbar, SplitPane
-        │       ├── CodeEditorPanel.java  - Khung soạn thảo mã LaTeX & Console Log
-        │       ├── PdfPreviewPanel.java  - Khung hiển thị tài liệu PDF mô phỏng A4
-        │       └── FileTreePanel.java    - Cây thư mục dự án & Danh sách cộng tác viên
-        ├── compiler/                     <-- [M2: Core Compiler Engine]
-        │   ├── CompilerService.java      - Gọi ProcessBuilder (latexmk/pdflatex) & Mô phỏng ngầm
-        │   ├── CompileResult.java        - Đóng gói kết quả biên dịch, log & file đầu ra
-        │   └── FileWatcherService.java   - Giám sát tệp bằng Java NIO WatchService
-        ├── server/                       <-- [M3: Networking Backend]
-        │   ├── ServerApp.java            - Điểm khởi chạy máy chủ TCP Socket (Main)
-        │   ├── OverleafServer.java       - Quản lý ServerSocket, Thread Pool Executor
-        │   └── ClientHandler.java        - Xử lý từng kết nối Client bất đồng bộ
-        ├── collab/                       <-- [M4: Collaboration Logic]
-        │   ├── RoomManager.java          - Quản lý các phòng soạn thảo (ConcurrentHashMap)
-        │   ├── Room.java                 - Đại diện một phòng biên soạn & trạng thái văn bản
-        │   ├── SyncMessage.java          - Gói tin tuần tự hóa (Serializable POJO)
-        │   └── MessageType.java          - Enum các loại thông điệp (JOIN, TEXT_UPDATE, v.v.)
-        └── database/                     <-- [M5: Database & Testing]
-            ├── DatabaseConfig.java       - Cấu hình kết nối MongoDB & Repositories
-            ├── UserRepository.java       - Repository Pattern cho User (CRUD)
-            ├── ProjectRepository.java    - Repository Pattern cho Project (CRUD)
-            ├── User.java                 - Entity người dùng
-            └── Project.java              - Entity dự án LaTeX
+overleaf-desktop-project/
+├── .gitignore                   # Loại trừ file IDE, tệp tạm biên dịch
+├── pom.xml                      # Root Parent POM quản lý 4 sub-modules
+├── HD_CHAY_UNG_DUNG.md          # Tài liệu hướng dẫn
+├── run-client.bat               # Script nhấp đúp để chạy nhanh ứng dụng GUI
+│
+├── overleaf-client/             # [PHẦN CỦA BẠN - M1: GUI & CLIENT]
+│   ├── pom.xml
+│   └── src/main/java/com/overleaf/client/
+│       ├── ClientApp.java               - Điểm khởi chạy chính
+│       └── gui/
+│           └── OverleafDesktopApp.java  - Toàn bộ giao diện Java Swing của bạn
+│
+├── overleaf-common/             # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M4]
+│   ├── pom.xml
+│   └── src/main/java/.gitkeep
+│
+├── overleaf-server/             # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M2 & M3]
+│   ├── pom.xml
+│   └── src/main/java/.gitkeep
+│
+└── database/                    # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M5]
+    ├── pom.xml
+    ├── src/main/java/.gitkeep
+    └── src/test/java/.gitkeep
 ```
 
 ---
 
-## 2. Bản đồ đối chiếu 5 Thành viên với Mã nguồn
+## 2. Cách chạy ứng dụng GUI của bạn
 
-| Thành viên | Trách nhiệm theo Báo cáo | Gói mã nguồn tương ứng | Điểm nổi bật kỹ thuật |
-| :--- | :--- | :--- | :--- |
-| **M1** | **GUI & Client** | `com.overleaf.client.gui` | Giao diện Swing 3 cột, soạn thảo LaTeX, xem trước PDF A4, Zoom In/Out. |
-| **M2** | **Core Compiler Engine** | `com.overleaf.compiler` | `ProcessBuilder` gọi `pdflatex`/`latexmk`, `SwingWorker` chạy ngầm, Java NIO `WatchService`. |
-| **M3** | **Networking Backend** | `com.overleaf.server` | `ServerSocket` cổng 8080, `ExecutorService` quản lý luồng, truyền nhị phân qua TCP Socket. |
-| **M4** | **Collaboration Logic** | `com.overleaf.collab` | Quản lý đa phòng bằng `ConcurrentHashMap`, đồng bộ văn bản và danh sách người dùng thời gian thực. |
-| **M5** | **Database & Persistence** | `com.overleaf.database` | Repository Pattern cho `User` & `Project`, trừu tượng hóa tầng MongoDB Driver. |
+### Cách 1: Dùng script có sẵn
+Nhấp đúp chuột vào file `run-client.bat` ở thư mục gốc.
 
----
-
-## 3. Cách biên dịch và chạy
-
-### Cách 1: Sử dụng các tệp batch tạo sẵn (Rất tiện lợi)
-- **Biên dịch**: Nhấp đúp vào `build.bat`
-- **Chạy Server**: Nhấp đúp vào `run-server.bat` (Mở port 8080 lắng nghe)
-- **Chạy Client**: Nhấp đúp vào `run-client.bat` (Mở giao diện soạn thảo)
-
-### Cách 2: Chạy trực tiếp từ dòng lệnh (Terminal)
-
+### Cách 2: Chạy bằng dòng lệnh Terminal
 ```bash
-# 1. Biên dịch toàn bộ mã nguồn vào thư mục bin/
-javac -encoding UTF-8 -d bin src/com/overleaf/collab/*.java src/com/overleaf/database/*.java src/com/overleaf/compiler/*.java src/com/overleaf/server/*.java src/com/overleaf/client/gui/*.java src/com/overleaf/client/*.java
+# Biên dịch mã nguồn GUI
+javac -encoding UTF-8 -d bin overleaf-client/src/main/java/com/overleaf/client/gui/*.java overleaf-client/src/main/java/com/overleaf/client/*.java
 
-# 2. Khởi chạy Server (ở một cửa sổ terminal riêng)
-java -cp bin com.overleaf.server.ServerApp 8080
-
-# 3. Khởi chạy Client (ở một cửa sổ terminal khác)
+# Khởi chạy giao diện
 java -cp bin com.overleaf.client.ClientApp
 ```
 
 ---
 
-## 4. Kết nối và Đẩy mã nguồn lên Git (GitHub)
+## 3. Cách đẩy nhánh GUI lên GitHub
 
-Dự án đã được kết nối sẵn với remote:
+Repository remote:
 `https://github.com/duckterdoom/Overleaf-app.git`
 
-Để đẩy toàn bộ mã nguồn lên GitHub:
+Chạy lệnh sau trên Terminal để đẩy nhánh của bạn lên:
 ```bash
-# Đổi tên nhánh sang main (nếu cần)
-git branch -M main
-
-# Đẩy code lên GitHub
-git push -u origin main
+git push -u origin feat/m1-gui-client
 ```
+*(Nếu muốn tạo Pull Request vào `main`, sau khi push xong bạn chỉ cần lên trang GitHub của repo và bấm nút **Compare & pull request**).*
