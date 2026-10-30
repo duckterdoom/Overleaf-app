@@ -3,7 +3,7 @@ package com.overleaf.common.collab;
 import java.io.Serializable;
 
 /**
- * Shared Module: Gói tin đồng bộ hóa mạng (Serializable) qua luồng Object stream.
+ * Shared message model. TCP transport uses MessageCodec, not Java object deserialization.
  */
 public class SyncMessage implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -78,6 +78,10 @@ public class SyncMessage implements Serializable {
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
     }
 
     @Override
