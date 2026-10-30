@@ -1,3 +1,5 @@
+package com.overleaf.client.gui;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -13,58 +15,61 @@ import java.util.List;
 /**
  * OVERLEAF DESKTOP (PURE JAVA EDITION) - GIAO DIỆN JAVA SWING
  * 
- * Mã nguồn được thiết kế đơn giản, phân chia khối rõ ràng, có chú thích chi tiết
+ * Mã nguồn được thiết kế đơn giản, phân chia khối rõ ràng, có chú thích chi
+ * tiết
  * bằng tiếng Việt để người mới bắt đầu học Java Swing có thể dễ dàng hiểu,
- * chỉnh sửa và phát triển thêm theo báo cáo dự án (overleaf_desktop_pure_java_project_report.md).
+ * chỉnh sửa và phát triển thêm theo báo cáo dự án
+ * (overleaf_desktop_pure_java_project_report.md).
  * 
  * Các tính năng chính mô phỏng theo báo cáo:
- * - M1: Giao diện soạn thảo mã LaTeX (Code Editor), Cây thư mục dự án (File Tree), Xem trước PDF (PDF Preview).
+ * - M1: Giao diện soạn thảo mã LaTeX (Code Editor), Cây thư mục dự án (File
+ * Tree), Xem trước PDF (PDF Preview).
  * - M2: Biên dịch nền (ProcessBuilder / SwingWorker) không làm đơ giao diện.
- * - M3: Quản lý kết nối phòng cộng tác (Room & Collaborators list, TCP Socket status).
+ * - M3: Quản lý kết nối phòng cộng tác (Room & Collaborators list, TCP Socket
+ * status).
  * - M4: Nhật ký đồng bộ thời gian thực (Real-time Sync logs).
  * - M5: Trạng thái cơ sở dữ liệu MongoDB và lưu trữ file.
  */
 public class OverleafDesktopApp extends JFrame {
 
     // --- CÁC THÀNH PHẦN GIAO DIỆN CHÍNH ---
-    private JTextArea codeEditor;          // Khung soạn thảo mã LaTeX
-    private JTextArea logArea;             // Khung hiển thị log biên dịch (latexmk)
-    private JTree fileTree;                // Cây thư mục dự án
+    private JTextArea codeEditor; // Khung soạn thảo mã LaTeX
+    private JTextArea logArea; // Khung hiển thị log biên dịch (latexmk)
+    private JTree fileTree; // Cây thư mục dự án
     private DefaultListModel<String> collaboratorsModel; // Danh sách người cùng soạn thảo
     private PdfPreviewPanel pdfPreviewPanel; // Khung xem trước tài liệu PDF
-    private JLabel statusLabel;            // Thanh trạng thái dưới đáy
-    private JLabel connectionLabel;        // Trạng thái kết nối Server/Phòng
+    private JLabel statusLabel; // Thanh trạng thái dưới đáy
+    private JLabel connectionLabel; // Trạng thái kết nối Server/Phòng
     private JProgressBar compileProgressBar; // Thanh tiến trình khi đang biên dịch
-    private JButton btnRecompile;          // Nút bấm "Recompile"
+    private JButton btnRecompile; // Nút bấm "Recompile"
     private JComboBox<String> compilerCombo; // Chọn trình biên dịch (pdfLaTeX, XeLaTeX)
 
     // Dữ liệu mẫu ban đầu cho tài liệu LaTeX
-    private static final String DEFAULT_LATEX_CODE = 
-        "\\documentclass{article}\n" +
-        "\\usepackage[utf8]{vietnam}\n" +
-        "\\usepackage{amsmath}\n" +
-        "\\usepackage{graphicx}\n\n" +
-        "\\title{\\textbf{Overleaf Desktop (Pure Java Edition)}}\n" +
-        "\\author{Nhóm XX - Lớp Java Software Development}\n" +
-        "\\date{\\today}\n\n" +
-        "\\begin{document}\n\n" +
-        "\\maketitle\n\n" +
-        "\\begin{abstract}\n" +
-        "Báo cáo xây dựng trình soạn thảo LaTeX cộng tác thời gian thực\n" +
-        "hoàn toàn bằng Java Swing, TCP Socket, ProcessBuilder và MongoDB.\n" +
-        "\\end{abstract}\n\n" +
-        "\\section{Giới thiệu}\n" +
-        "Dự án cho phép người dùng biên dịch tài liệu LaTeX trực tiếp trên\n" +
-        "máy tính cá nhân (offline-capable) thông qua ProcessBuilder,\n" +
-        "đồng thời kết nối phòng làm việc nhóm qua Java TCP Sockets.\n\n" +
-        "\\section{Công thức toán học}\n" +
-        "Ví dụ công thức phương trình Einstein:\n" +
-        "\\begin{equation}\n" +
-        "    E = mc^2\n" +
-        "\\end{equation}\n\n" +
-        "\\section{Kết luận}\n" +
-        "Ứng dụng chạy mượt mà trên môi trường máy bàn không phụ thuộc cloud.\n\n" +
-        "\\end{document}\n";
+    private static final String DEFAULT_LATEX_CODE = "\\documentclass{article}\n" +
+            "\\usepackage[utf8]{vietnam}\n" +
+            "\\usepackage{amsmath}\n" +
+            "\\usepackage{graphicx}\n\n" +
+            "\\title{\\textbf{Overleaf Desktop (Pure Java Edition)}}\n" +
+            "\\author{Nhóm XX - Lớp Java Software Development}\n" +
+            "\\date{\\today}\n\n" +
+            "\\begin{document}\n\n" +
+            "\\maketitle\n\n" +
+            "\\begin{abstract}\n" +
+            "Báo cáo xây dựng trình soạn thảo LaTeX cộng tác thời gian thực\n" +
+            "hoàn toàn bằng Java Swing, TCP Socket, ProcessBuilder và MongoDB.\n" +
+            "\\end{abstract}\n\n" +
+            "\\section{Giới thiệu}\n" +
+            "Dự án cho phép người dùng biên dịch tài liệu LaTeX trực tiếp trên\n" +
+            "máy tính cá nhân (offline-capable) thông qua ProcessBuilder,\n" +
+            "đồng thời kết nối phòng làm việc nhóm qua Java TCP Sockets.\n\n" +
+            "\\section{Công thức toán học}\n" +
+            "Ví dụ công thức phương trình Einstein:\n" +
+            "\\begin{equation}\n" +
+            "    E = mc^2\n" +
+            "\\end{equation}\n\n" +
+            "\\section{Kết luận}\n" +
+            "Ứng dụng chạy mượt mà trên môi trường máy bàn không phụ thuộc cloud.\n\n" +
+            "\\end{document}\n";
 
     public OverleafDesktopApp() {
         // Thiết lập tiêu đề cửa sổ, kích thước và hành vi đóng
@@ -80,7 +85,8 @@ public class OverleafDesktopApp extends JFrame {
         // 2. Tạo thanh công cụ (Toolbar) chứa các nút Recompile, Chọn Compiler, Kết nối
         add(createToolBar(), BorderLayout.NORTH);
 
-        // 3. Tạo khu vực làm việc chính (3 cột: Cây thư mục | Soạn thảo mã | Xem trước PDF)
+        // 3. Tạo khu vực làm việc chính (3 cột: Cây thư mục | Soạn thảo mã | Xem trước
+        // PDF)
         add(createMainWorkspace(), BorderLayout.CENTER);
 
         // 4. Tạo thanh trạng thái phía dưới (Status bar)
@@ -133,9 +139,9 @@ public class OverleafDesktopApp extends JFrame {
         JMenuItem itemAbout = new JMenuItem("Thông tin dự án");
         itemAbout.addActionListener(e -> JOptionPane.showMessageDialog(this,
                 "Overleaf Desktop (Pure Java Edition)\n" +
-                "Môn học: Java Software Development\n" +
-                "Công nghệ: Java Swing, ProcessBuilder, TCP Sockets, MongoDB\n" +
-                "Phiên bản: 1.0 (Student Edition)",
+                        "Môn học: Java Software Development\n" +
+                        "Công nghệ: Java Swing, ProcessBuilder, TCP Sockets, MongoDB\n" +
+                        "Phiên bản: 1.0 (Student Edition)",
                 "Giới thiệu", JOptionPane.INFORMATION_MESSAGE));
         helpMenu.add(itemAbout);
 
@@ -170,7 +176,7 @@ public class OverleafDesktopApp extends JFrame {
 
         // Hộp chọn trình biên dịch
         toolBar.add(new JLabel("Compiler: "));
-        compilerCombo = new JComboBox<>(new String[]{"pdfLaTeX (Local)", "XeLaTeX (Unicode)", "LuaLaTeX"});
+        compilerCombo = new JComboBox<>(new String[] { "pdfLaTeX (Local)", "XeLaTeX (Unicode)", "LuaLaTeX" });
         compilerCombo.setMaximumSize(new Dimension(160, 28));
         toolBar.add(compilerCombo);
 
@@ -305,7 +311,8 @@ public class OverleafDesktopApp extends JFrame {
 
         collabPanel.add(collabScroll, BorderLayout.CENTER);
 
-        JLabel collabTip = new JLabel("<html><small>Đồng bộ văn bản thời gian thực qua Java TCP Sockets.</small></html>");
+        JLabel collabTip = new JLabel(
+                "<html><small>Đồng bộ văn bản thời gian thực qua Java TCP Sockets.</small></html>");
         collabTip.setForeground(Color.GRAY);
         collabPanel.add(collabTip, BorderLayout.SOUTH);
 
@@ -333,8 +340,10 @@ public class OverleafDesktopApp extends JFrame {
                 int caretPos = codeEditor.getCaretPosition();
                 int line = codeEditor.getLineOfOffset(caretPos) + 1;
                 int col = caretPos - codeEditor.getLineStartOffset(line - 1) + 1;
-                statusLabel.setText(String.format(" Vị trí: Dòng %d, Cột %d | Tổng ký tự: %d", line, col, codeEditor.getText().length()));
-            } catch (Exception ignored) {}
+                statusLabel.setText(String.format(" Vị trí: Dòng %d, Cột %d | Tổng ký tự: %d", line, col,
+                        codeEditor.getText().length()));
+            } catch (Exception ignored) {
+            }
         });
 
         JScrollPane editorScroll = new JScrollPane(codeEditor);
@@ -346,7 +355,8 @@ public class OverleafDesktopApp extends JFrame {
         logArea.setFont(new Font("Consolas", Font.PLAIN, 12));
         logArea.setBackground(new Color(30, 30, 30)); // Nền đen giống terminal
         logArea.setForeground(new Color(220, 220, 220)); // Chữ trắng sáng
-        logArea.setText("--- Overleaf Desktop Kernel Ready ---\n[INIT] Bộ máy biên dịch: ProcessBuilder (latexmk/pdflatex ready)\n[INIT] Database kết nối: MongoDB (Local Repository ready)\n");
+        logArea.setText(
+                "--- Overleaf Desktop Kernel Ready ---\n[INIT] Bộ máy biên dịch: ProcessBuilder (latexmk/pdflatex ready)\n[INIT] Database kết nối: MongoDB (Local Repository ready)\n");
 
         JScrollPane logScroll = new JScrollPane(logArea);
         logScroll.setBorder(BorderFactory.createTitledBorder("Nhật ký biên dịch (Compiler Console Output)"));
@@ -368,8 +378,7 @@ public class OverleafDesktopApp extends JFrame {
         JPanel statusBar = new JPanel(new BorderLayout(5, 0));
         statusBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY),
-                new EmptyBorder(4, 10, 4, 10)
-        ));
+                new EmptyBorder(4, 10, 4, 10)));
 
         statusLabel = new JLabel(" Sẵn sàng. Nhấn 'Recompile' để biên dịch sang PDF.");
         statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
@@ -402,8 +411,9 @@ public class OverleafDesktopApp extends JFrame {
         btnRecompile.setEnabled(false);
         compileProgressBar.setVisible(true);
         compileProgressBar.setIndeterminate(true); // Hiệu ứng chạy qua lại
-        statusLabel.setText(" Đang biên dịch tài liệu LaTeX (ProcessBuilder: " + compilerCombo.getSelectedItem() + ")...");
-        
+        statusLabel
+                .setText(" Đang biên dịch tài liệu LaTeX (ProcessBuilder: " + compilerCombo.getSelectedItem() + ")...");
+
         appendLog("\n==================================================");
         appendLog("[BUILD] Bắt đầu quá trình biên dịch: " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
         appendLog("[BUILD] Lệnh: latexmk -pdf -interaction=nonstopmode main.tex");
@@ -443,7 +453,7 @@ public class OverleafDesktopApp extends JFrame {
                 btnRecompile.setEnabled(true);
                 compileProgressBar.setVisible(false);
                 statusLabel.setText(" Biên dịch thành công! Đã cập nhật bản xem trước PDF.");
-                
+
                 // Cập nhật lại nội dung trên khung vẽ PDF
                 pdfPreviewPanel.updatePreviewContent(codeEditor.getText());
             }
@@ -472,7 +482,7 @@ public class OverleafDesktopApp extends JFrame {
         form.add(new JLabel("Tên hiển thị:"));
         form.add(userField);
 
-        int result = JOptionPane.showConfirmDialog(this, form, 
+        int result = JOptionPane.showConfirmDialog(this, form,
                 "Kết nối Server Cộng tác (TCP Socket)", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
@@ -483,8 +493,10 @@ public class OverleafDesktopApp extends JFrame {
 
             connectionLabel.setText("● Đã kết nối: " + room + " (" + host + ":" + port + ")");
             connectionLabel.setForeground(new Color(40, 167, 69)); // Màu xanh lá
-            appendLog(String.format("[NETWORK] Đã kết nối tới Server %s:%s | Phòng: %s | Người dùng: %s", host, port, room, user));
-            JOptionPane.showMessageDialog(this, "Kết nối phòng thành công! Sẵn sàng soạn thảo cộng tác.", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            appendLog(String.format("[NETWORK] Đã kết nối tới Server %s:%s | Phòng: %s | Người dùng: %s", host, port,
+                    room, user));
+            JOptionPane.showMessageDialog(this, "Kết nối phòng thành công! Sẵn sàng soạn thảo cộng tác.", "Thông báo",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -516,7 +528,8 @@ public class OverleafDesktopApp extends JFrame {
 
     // =========================================================================
     // LỚP KHUNG XEM TRƯỚC PDF (PDF PREVIEW PANEL)
-    // Mô phỏng việc hiển thị trang giấy A4 tài liệu LaTeX được render bằng Java Graphics2D
+    // Mô phỏng việc hiển thị trang giấy A4 tài liệu LaTeX được render bằng Java
+    // Graphics2D
     // =========================================================================
     public static class PdfPreviewPanel extends JPanel {
         private String previewText = "";
@@ -599,7 +612,7 @@ public class OverleafDesktopApp extends JFrame {
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
                 Graphics2D g2 = (Graphics2D) g.create();
-                
+
                 // Khử răng cưa chữ và hình để trang PDF hiển thị sắc nét
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -629,29 +642,30 @@ public class OverleafDesktopApp extends JFrame {
                 // Tiêu đề bài viết
                 g2.setColor(Color.BLACK);
                 g2.setFont(new Font("Serif", Font.BOLD, (int) (16 * scale)));
-                g2.drawString("Overleaf Desktop (Pure Java Edition)", marginX + (int)(15 * scale), currentY);
+                g2.drawString("Overleaf Desktop (Pure Java Edition)", marginX + (int) (15 * scale), currentY);
 
                 // Tác giả
                 currentY += (int) (22 * scale);
                 g2.setFont(new Font("Serif", Font.PLAIN, (int) (11 * scale)));
                 g2.setColor(new Color(60, 60, 60));
-                g2.drawString("Nhóm XX - Lớp Java Software Development", marginX + (int)(60 * scale), currentY);
+                g2.drawString("Nhóm XX - Lớp Java Software Development", marginX + (int) (60 * scale), currentY);
 
                 // Ngày tháng
                 currentY += (int) (16 * scale);
                 g2.setFont(new Font("Serif", Font.ITALIC, (int) (10 * scale)));
-                g2.drawString(new SimpleDateFormat("dd MMMM yyyy").format(new Date()), marginX + (int)(110 * scale), currentY);
+                g2.drawString(new SimpleDateFormat("dd MMMM yyyy").format(new Date()), marginX + (int) (110 * scale),
+                        currentY);
 
                 // Đường kẻ ngang mỏng
                 currentY += (int) (18 * scale);
                 g2.setColor(Color.LIGHT_GRAY);
-                g2.drawLine(marginX, currentY, marginX + paperWidth - (int)(80 * scale), currentY);
+                g2.drawLine(marginX, currentY, marginX + paperWidth - (int) (80 * scale), currentY);
 
                 // Phần Tóm tắt (Abstract)
                 currentY += (int) (25 * scale);
                 g2.setColor(Color.BLACK);
                 g2.setFont(new Font("Serif", Font.BOLD, (int) (11 * scale)));
-                g2.drawString("Abstract", marginX + (int)(140 * scale), currentY);
+                g2.drawString("Abstract", marginX + (int) (140 * scale), currentY);
 
                 currentY += (int) (18 * scale);
                 g2.setFont(new Font("Serif", Font.ITALIC, (int) (10 * scale)));
@@ -668,7 +682,8 @@ public class OverleafDesktopApp extends JFrame {
                 g2.setFont(new Font("Serif", Font.PLAIN, (int) (10.5 * scale)));
                 g2.drawString("A collaborative LaTeX editor combines core Java topics (OOP, GUI,", marginX, currentY);
                 currentY += (int) (15 * scale);
-                g2.drawString("Networking, Concurrency, I/O, Database) in one cohesive desktop system.", marginX, currentY);
+                g2.drawString("Networking, Concurrency, I/O, Database) in one cohesive desktop system.", marginX,
+                        currentY);
 
                 // Mục 2: Công thức toán học
                 currentY += (int) (30 * scale);
@@ -678,14 +693,14 @@ public class OverleafDesktopApp extends JFrame {
                 currentY += (int) (28 * scale);
                 // Vẽ công thức E = mc^2 nổi bật ở giữa
                 g2.setFont(new Font("Serif", Font.ITALIC | Font.BOLD, (int) (14 * scale)));
-                g2.drawString("E = m c²", marginX + (int)(130 * scale), currentY);
+                g2.drawString("E = m c²", marginX + (int) (130 * scale), currentY);
                 g2.setFont(new Font("Serif", Font.PLAIN, (int) (10 * scale)));
-                g2.drawString("(1)", marginX + paperWidth - (int)(100 * scale), currentY);
+                g2.drawString("(1)", marginX + paperWidth - (int) (100 * scale), currentY);
 
                 // Số trang dưới chân giấy
                 g2.setColor(Color.GRAY);
                 g2.setFont(new Font("Serif", Font.PLAIN, (int) (10 * scale)));
-                g2.drawString("- 1 -", x + paperWidth / 2 - 10, y + paperHeight - (int)(20 * scale));
+                g2.drawString("- 1 -", x + paperWidth / 2 - 10, y + paperHeight - (int) (20 * scale));
 
                 g2.dispose();
             }
@@ -699,7 +714,8 @@ public class OverleafDesktopApp extends JFrame {
         // Thiết lập giao diện theo chuẩn hệ điều hành (Windows Look and Feel)
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
 
         // Chạy ứng dụng trên Event Dispatch Thread (EDT) theo chuẩn Java Swing
         SwingUtilities.invokeLater(() -> {
