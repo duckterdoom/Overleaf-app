@@ -9,9 +9,11 @@
 
 ## Phase 3: Kiểm tra
 - [x] Biên dịch toàn bộ bằng `javac --release 17`
-- [x] `M4Smoke` chạy đạt (9 kiểm tra)
+- [x] Test JUnit 5: `M4CollaborationTest` (6 test), `OfflineResyncTest` (5 test), `M4TestSupport` (lớp hỗ trợ)
 - [ ] Chạy `mvn clean compile` trên máy của bạn (sandbox không tải được plugin Maven)
-- [ ] Chuyển `M4Smoke` và `OfflineResyncSmoke` thành test JUnit 5 để `mvn clean test` chạy được
+- [x] Thêm `junit-jupiter` và Surefire 3.2.5 vào `overleaf-server/pom.xml`
+- [ ] Chạy `mvn clean test` trên máy của bạn (sandbox không tải được JUnit, chỉ kiểm tra logic bằng bộ giả lập)
+- [ ] Xóa 2 file cũ `M4Smoke.java` và `OfflineResyncSmoke.java` (đã được thay bằng test JUnit)
 
 ## Phase 4: Chế độ offline và đồng bộ lại (mục A)
 - [x] Thêm 2 loại thông điệp `RESYNC`, `CHECKPOINT`
@@ -20,7 +22,7 @@
 - [x] `OperationHistory`: thêm `contains`, `getOperationsAfter`, `getLastOperationId`, `wasTrimmed`
 - [x] `DocumentSyncManager`: thêm `handleResync`, chống áp dụng trùng, gửi CHECKPOINT khi vào phòng
 - [x] `SyncBroadcaster`: sửa lỗi thứ tự gửi (mỗi client một hộp thư đi)
-- [x] `OfflineResyncSmoke.java`: 5 tình huống, 26 kiểm tra, tất cả đạt
+- [x] `OfflineResyncTest.java`: 5 tình huống, tất cả đạt
 - [ ] Commit và mở Pull Request cho Phase 4
 
 ## Phase 5: Benchmark (mục C)
