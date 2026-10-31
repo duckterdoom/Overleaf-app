@@ -16,12 +16,12 @@ Cập nhật: 31/10/2026. Người phụ trách: M4.
 | 6 lớp dữ liệu dùng chung (Common) | Xong, đã merge | |
 | CRDT Engine, Operation History, Collaboration Thread Pool | Xong, đã merge | |
 | Sync Broadcaster, Document Sync Manager | Xong, đã merge | Pull Request #2 |
-| Kiểm tra M4 Smoke (9 kiểm tra) | Đạt | Chưa phải JUnit |
+| Test JUnit 5 `M4CollaborationTest` (6 test) | Đạt (qua bộ giả lập) | Chưa chạy bằng JUnit thật |
 | Chế độ offline và đồng bộ lại (mục A) | Xong, chưa commit | Mục 3 bên dưới |
 | Sửa thứ tự gửi thông điệp trong Sync Broadcaster | Xong, chưa commit | Mục 3.4 |
-| Kiểm tra Offline Resync Smoke (26 kiểm tra) | Đạt | |
+| Test JUnit 5 `OfflineResyncTest` (5 test) | Đạt (qua bộ giả lập) | Chưa chạy bằng JUnit thật |
 | Chạy `mvn clean compile` trên máy thật | Chưa | Sandbox không tải được Maven |
-| Chuyển test sang JUnit 5 | Chưa | Cần thêm `junit-jupiter` vào `overleaf-server/pom.xml` |
+| Chuyển test sang JUnit 5 | Xong, chưa chạy bằng Maven thật | Đã sửa `overleaf-server/pom.xml`, xem mục 5 |
 | Nối với M3 (mạng) | Chưa, M3 chưa có code | |
 | Nối với client (M1/M2) | Chưa | |
 | Mục C: benchmark (`BenchmarkM4`) | Xong, chưa commit | Mục 3b bên dưới |
@@ -55,7 +55,10 @@ Ví dụ đã kiểm tra: văn bản "Hello World". Bob mất mạng, gõ "!" �
 | `OperationHistory.java` | Thêm `contains`, `getOperationsAfter`, `getLastOperationId`, `wasTrimmed` |
 | `DocumentSyncManager.java` | Thêm `handleResync`, chống áp dụng trùng ở TEXT_EDIT, gửi CHECKPOINT khi vào phòng, tách hàm `applyAndPublish` |
 | `SyncBroadcaster.java` | Mỗi client có hộp thư đi riêng để thông điệp đến đúng thứ tự |
-| `OfflineResyncSmoke.java` (test, mới) | 5 tình huống, 26 kiểm tra |
+| `OfflineResyncTest.java` (test JUnit 5, mới) | 5 tình huống |
+| `M4CollaborationTest.java` (test JUnit 5, mới) | 6 test cơ bản |
+| `M4TestSupport.java` (test, mới) | Lớp hỗ trợ dùng chung cho test |
+| `overleaf-server/pom.xml` | Thêm `junit-jupiter` và Surefire 3.2.5 |
 | `BenchmarkM4.java` (test, mới) | Benchmark, xem mục 3b |
 
 ### 3.4 Lỗi tìm thấy và đã sửa
@@ -117,16 +120,30 @@ Mạng (M3): cài `ClientSession` trên mỗi socket, gọi `DocumentSyncManager
 
 Quy ước đồng hồ Lamport: client tăng đồng hồ trước khi tạo thao tác và cập nhật `max(local, op.ts)` khi nhận thao tác từ server.
 
-## 5. Cách chạy kiểm tra trong IntelliJ
+## 5. Cách chạy kiểm tra
+
+### Bằng Maven (theo quy ước của nhóm)
+```
+cd Overleaf-app
+mvn test -pl overleaf-server -am -Dtest="M4CollaborationTest,OfflineResyncTest" -Dsurefire.failIfNoSpecifiedTests=false
+```
+Cuối log phải có `Tests run: 11, Failures: 0, Errors: 0` và `BUILD SUCCESS`. Lệnh `mvn clean test` không có `-Dtest` sẽ chạy cả test của M5 trong module `database`. Các test đó cần kết nối MongoDB nên có thể lỗi nếu máy chưa có cấu hình, và đó không phải lỗi của M4.
+
+### Bằng IntelliJ
 1. Mở `overleaf-server/src/test/java/.../collaboration/`.
-2. Bấm mũi tên xanh cạnh hàm `main` của `M4Smoke` hoặc `OfflineResyncSmoke`, chọn Run.
-3. Cuối log phải có dòng `ALL PASSED`. Nếu chữ tiếng Việt hiện dấu `?`, vào Run, Edit Configurations, ở VM options nhập `-Dfile.encoding=UTF-8`.
-4. Benchmark: chạy `BenchmarkM4.main()` tương tự (mất khoảng 2 phút, nên đóng bớt chương trình khác khi đo). Kết quả in ra màn hình và ghi vào file `benchmark-results.md` ở thư mục đang chạy.
+2. Bấm mũi tên xanh cạnh tên lớp `M4CollaborationTest` hoặc `OfflineResyncTest`, chọn Run. Các test đạt sẽ có dấu tick xanh.
+3. Nếu IntelliJ báo không tìm thấy JUnit, mở tab Maven bên phải và bấm Reload All Maven Projects.
+
+### Benchmark
+Chạy `BenchmarkM4.main()` (bấm mũi tên xanh cạnh hàm `main`). Mất khoảng 2 phút, nên đóng bớt chương trình khác khi đo. Kết quả in ra màn hình và ghi vào file `benchmark-results.md` ở thư mục đang chạy.
+
+### Lưu ý về những gì đã kiểm tra
+Trong môi trường của tôi không tải được thư viện JUnit 5, nên 11 test chỉ được chạy thử qua một bộ giả lập API JUnit nhỏ (cả 3 lần chạy đều đạt). Biên dịch và chạy bằng JUnit thật chưa được kiểm tra, bạn cần chạy lệnh Maven ở trên để xác nhận.
 
 ## 6. Việc cần làm tiếp (theo thứ tự ưu tiên)
 1. Chạy `mvn clean compile -pl overleaf-common,overleaf-server -am` trên máy, rồi commit và mở Pull Request cho mục A (nhánh gợi ý `feat/m4-offline-resync`).
 2. Báo M3 và M1 nội dung mục 4. Đây là phần đang chặn việc chạy thử cả dự án.
-3. Chuyển hai chương trình kiểm tra sang JUnit 5 để `mvn clean test` chạy được theo quy ước của nhóm.
+3. Xóa 2 file cũ `M4Smoke.java` và `OfflineResyncSmoke.java` (nếu đã chép vào repo), rồi chạy lệnh Maven ở mục 5 để xác nhận 11 test đạt.
 4. Đưa phần M4 vào báo cáo (xem bản nháp tiếng Việt), thêm mục offline vào các phần Novelty, Limitations và Future Work.
 5. Chạy `BenchmarkM4` trên máy của nhóm và thay số liệu trong báo cáo bằng số đo được.
 6. Nếu còn thời gian: mục B (tua lại lịch sử).
