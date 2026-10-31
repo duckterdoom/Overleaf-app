@@ -43,4 +43,5 @@ Desktop.ini
 *.fls
 *.fdb_latexmk
 
-src/main/resources/config.properties
+# Local secrets (copy config.properties.example)
+**/src/main/resources/config.properties

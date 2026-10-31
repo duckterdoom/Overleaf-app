@@ -1,6 +1,6 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
-> **Trạng thái mới nhất — đồng bộ M3/M4 ngày 01/11/2026:** đã sửa bốn điểm trong review; xem mục 13 và [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md). 42/42 test pass. Phần mô tả v1, giới hạn RESYNC 1000 và kết quả 35 test ở các mục cũ là lịch sử trước lần sửa này, không còn là hợp đồng hiện tại.
+> **Trạng thái mới nhất — đồng bộ M3/M4 ngày 01/11/2026:** đã sửa bốn điểm trong review; xem mục 13 và [README.md §5](README.md#5-giao-thức-wire-v2). 42/42 test pass. Phần mô tả v1, giới hạn RESYNC 1000 và kết quả 35 test ở các mục cũ là lịch sử trước lần sửa này, không còn là hợp đồng hiện tại.
 
 Cập nhật: **01/11/2026**. Nền mã nguồn được kiểm tra: `main`, commit **`df06601`**. Tài liệu này ghi trạng thái code thực tế sau khi tích hợp M3; thay thế handoff ngày 30/10 vốn mô tả nhánh `protocol_networking`.
 
@@ -8,17 +8,14 @@ Cập nhật: **01/11/2026**. Nền mã nguồn được kiểm tra: `main`, com
 
 Đã đọc lại báo cáo Pure Java, phần M3 trong `overleaf_desktop_ver2.md`, đối chiếu blueprint và kiểm tra code M1/M2/M4/M5 trên `main`. Kiến trúc được áp dụng là Java TCP theo báo cáo, không chuyển sang WebSocket/Yjs của blueprint.
 
-**M3 hiện có backend chạy được bằng JAR, adapter kết nối M4 và client tương thích.** Có thể triển khai listener trên VPS theo [DEPLOY_SERVER.md](DEPLOY_SERVER.md). Chưa đăng nhập VPS, chưa chạy service trên Linux và chưa publish/push code trong phiên này.
+**M3 hiện có backend chạy được bằng JAR, adapter kết nối M4 và client tương thích.** Có thể triển khai listener trên VPS theo [README.md §6](README.md#6-triển-khai-lên-vps). Chưa đăng nhập VPS, chưa chạy service trên Linux và chưa publish/push code trong phiên này.
 
 Nội dung/lịch sử phòng vẫn ở RAM; chưa nối persistence MongoDB hoặc đăng nhập từng tài khoản. Do đó triển khai được dịch vụ networking cho nhóm, nhưng chưa phải nơi lưu trữ tài liệu bền vững.
 
 Tài liệu liên quan:
 
-- [README.md](README.md): bản đồ từng thư mục/file, chức năng, member phụ trách và cách chạy.
-
-- [NETWORKING_M3.md](NETWORKING_M3.md): build, API, wire protocol, cấu hình và giới hạn.
-- [DEPLOY_SERVER.md](DEPLOY_SERVER.md): chuyển JAR lên VPS, SSH tunnel, TLS public, systemd.
-- `target/AI_Handoff.before-20261101.md`: bản sao handoff cũ trên máy này, bị Git ignore.
+- [README.md](README.md): cấu trúc, cách chạy, cấu hình server, giao thức wire v2 và triển khai VPS.
+- Mục 14 dưới đây: các ghi chú quan trọng gộp từ `SYNC_PROTOCOL.md`, `DEPLOY_SERVER.md`, `HD_CHAY_UNG_DUNG.md`, `task-m4.md`, `walkthrough-m4.md` (đã xóa khi dọn dự án).
 
 ## 2. Các thành viên khác đã code gì trên main?
 
@@ -166,7 +163,7 @@ Hai terminal riêng, đặt JAVA_HOME tương tự và chạy Alice/Bob:
 .\run-network-demo.bat 127.0.0.1 8080 bob demo
 ```
 
-Nhập `/insert 0 Hello` ở Alice. Để đưa lên VPS, làm theo [DEPLOY_SERVER.md](DEPLOY_SERVER.md): loopback + SSH tunnel hoặc public TLS + token + PKCS12; có mẫu systemd kèm theo.
+Nhập `/insert 0 Hello` ở Alice. Để đưa lên VPS, làm theo [README.md §6](README.md#6-triển-khai-lên-vps): loopback + SSH tunnel hoặc public TLS + token + PKCS12; có mẫu systemd kèm theo.
 
 ## 9. Việc tiếp theo và giới hạn còn thật sự tồn tại
 
@@ -188,7 +185,7 @@ Các thay đổi lần này đang ở working tree nhánh `main`, chưa commit/p
 
 Hai file `HD_CHAY_UNG_DUNG.md` và `overleaf_desktop_ver2.md` đã modified trước lần làm việc này vì người dùng yêu cầu giữ bản local khi cập nhật main. Không đưa chúng vào commit M3 một cách vô tình. Các file báo cáo/blueprint/copy Markdown untracked cũng có sẵn trước đó; không xóa hoặc ghi đè.
 
-Khi tiếp tục, đọc `AI_Handoff.md`, `NETWORKING_M3.md`, `DEPLOY_SERVER.md` và kiểm tra source thực tế. Không dựng lại stack `common.collab` của nhánh cũ, không đổi wire một phía sang Object Stream, không ghi credential vào JAR/Git và không đánh đồng backend đã chạy với persistence/database đã tích hợp.
+Khi tiếp tục, đọc `AI_Handoff.md` (nhất là mục 14), `README.md` và kiểm tra source thực tế. Không dựng lại stack `common.collab` của nhánh cũ, không đổi wire một phía sang Object Stream, không ghi credential vào JAR/Git và không đánh đồng backend đã chạy với persistence/database đã tích hợp.
 
 ## 11. Dọn file không còn dùng
 
@@ -208,8 +205,8 @@ Phân công dưới đây dựa trên báo cáo và chức năng code đã đố
 
 | Folder/phần việc | Member chính | Đã code gì | Vai trò của member khác / việc bàn giao |
 | --- | --- | --- | --- |
-| `overleaf-client/.../client/ClientApp.java` | **M1** | Main chọn JavaFX/Swing | M3 dùng luồng JavaFX hiện tại để nối transport; không đổi main |
-| `overleaf-client/.../client/gui/` | **M1** | JavaFX editor, file tree, menu, compile controls, log, Canvas preview; Swing dự phòng; xử lý sự kiện M2/M4 | **M3** thay Object Stream bằng NetworkClient, thêm token/TLS, nối presence thật và khóa/mở editor khi đồng bộ. M1 kiểm tra UX, remote edit và các tình huống đổi phòng |
+| `overleaf-client/.../client/ClientApp.java` | **M1** | Main mở JavaFX (đã bỏ Swing, xem mục 14) | M3 dùng luồng JavaFX hiện tại để nối transport; không đổi main |
+| `overleaf-client/.../client/gui/` | **M1** | JavaFX editor, file tree, menu, compile controls, log, Canvas preview; xử lý sự kiện M2/M4 | **M3** thay Object Stream bằng NetworkClient, thêm token/TLS, nối presence thật và khóa/mở editor khi đồng bộ. M1 kiểm tra UX, remote edit và các tình huống đổi phòng |
 | `overleaf-client/src/main/resources/styles/` | **M1** | Theme JavaFX `overleaf-theme.css` | Không dùng Tailwind; M3 không thay theme |
 | `overleaf-client/.../client/compiler/` | **M2** | `LatexCompilerService`: ProcessBuilder, engine, timeout, log và callback | M1 gọi từ GUI; compile local, không chạy trong TCP server |
 | `overleaf-client/.../client/io/` | **M2** | `ProjectFileManager`, `WorkspaceWatcher` | M1 nối file tree/editor; cần thống nhất workspace khi compile/watch |
@@ -224,7 +221,6 @@ Phân công dưới đây dựa trên báo cáo và chức năng code đã đố
 | `database/.../db/service/` | **M5** | `DatabaseService`: authenticate, load content, save content và getter repository | **M3 + M4** chưa gọi service trong đường đi TCP. Cần xác định thời điểm load/save, quyền dự án và nghĩa của ACK khi có persistence |
 | `database/src/main/resources/` | **M5** | Mẫu/runtime config MongoDB và logging | Mẫu có thể bàn giao; credential local không được đưa vào README/handoff |
 | `deploy/`, `build-network.*`, `run-server.bat`, `run-network-demo.bat` | **M3** | Build JAR, chạy local, mẫu env và systemd | Người quản trị cấu hình VPS/DNS/TLS; chưa chạy service Linux thực tế trong phiên code |
-| `tools/`, `test-network.ps1` | **M3** | Launcher JUnit thật và script chạy test từ cache | Đây là công cụ kiểm chứng, không phải code runtime server |
 | POM root và từng module | **Cả nhóm theo phần phụ thuộc** | Cấu trúc Maven chung; M1 JavaFX, M5 MongoDB/logger, M3 Surefire/common test/client integration test dependency | Đổi dependency phải kiểm tra reactor; dependency Server trong Client hiện chỉ là test scope |
 | Markdown gốc và `main.tex` | **Tài liệu nhóm / dữ liệu người dùng** | Báo cáo, blueprint, tiến độ M4, README, handoff và tài liệu local | Không coi là file build rác; giữ theo yêu cầu người dùng |
 
@@ -276,10 +272,122 @@ Maven compile toàn reactor và chạy chọn lọc **42/42 test pass**: Message
 
 Test hồi quy bao gồm chèn đúng đầu tài liệu sau JOIN, kiểm tra callback trễ, upload 1.200 operation trên 1 MiB qua NetworkClient/ServerSession thật, replay không nhân đôi, batch ACK, chunk Unicode không cắt surrogate pair, upload thiếu/sai/vượt giới hạn, đọc frame v1 và mã lỗi chính xác. Test scope không truy cập MongoDB. Chưa kiểm thử GUI bằng thao tác tay hoặc triển khai VPS.
 
-`task-m4.md` và `walkthrough-m4.md` đã thêm trạng thái tích hợp mới, vẫn giữ phần lịch sử. Không khôi phục các file Markdown đang bị người dùng xóa trong working tree, bao gồm `NETWORKING_M3.md` và các bản report/blueprint. Hợp đồng hiện tại nằm trong `SYNC_PROTOCOL.md`.
+`task-m4.md` và `walkthrough-m4.md` đã thêm trạng thái tích hợp mới, vẫn giữ phần lịch sử. Không khôi phục các file Markdown đang bị người dùng xóa trong working tree, bao gồm `NETWORKING_M3.md` và các bản report/blueprint. Hợp đồng hiện tại nằm trong README §5 (`SYNC_PROTOCOL.md` đã gộp vào đó, xem mục 14).
 
 Các giới hạn còn lại: dữ liệu và offline queue ở RAM, chưa nối MongoDB; routing server còn khóa chung; client chậm có thể bị ngắt bởi backpressure. Upload vượt 4 MiB/30.000 operation cần người dùng giữ bản local và xử lý phù hợp, không có cam kết đồng bộ vô hạn.
 
 ### 13.3 Artifact khi server cũ đang chạy
 
 Không thể ghi đè `dist/overleaf-server.jar` vì Windows báo file đang được tiến trình sử dụng. Không tự dừng tiến trình của người dùng. Đã bổ sung `-OutputDirectory` cho `build-network.ps1` để xuất bản v2 vào `dist/v2/`. Dừng server cũ rồi chạy JAR v2, đồng thời khởi động lại GUI từ output Maven mới hoặc dùng demo v2. Các `.bat` hiện tại vẫn trỏ tới JAR ở root `dist/`, do đó dùng đường dẫn v2 trực tiếp trong lần cập nhật này. Restart server làm mất dữ liệu RAM như giới hạn đã ghi ở trên; lưu file local trước khi chuyển phiên.
+
+## 14. Dọn dự án và ghi chú gộp từ tài liệu đã xóa (01/11/2026, nhánh `Network`)
+
+### 14.1 Những gì đã dọn
+
+- **Tài liệu:** chỉ còn `README.md` (hướng dẫn sử dụng/kỹ thuật) và file handoff này. Đã xóa `SYNC_PROTOCOL.md`, `DEPLOY_SERVER.md` (nội dung chuyển vào README §5–§6), `HD_CHAY_UNG_DUNG.md` (hướng dẫn M1 cũ, phần còn đúng như phím tắt đã vào README), `task-m4.md`, `walkthrough-m4.md` (phần còn giá trị ở 14.2–14.5).
+- **Code chết:** xóa `gui/OverleafDesktopApp.java` (bản Swing cũ, không nối networking/M4) và cờ `--swing` trong `ClientApp`; xóa các import không dùng trong `DatabaseService`, `ProjectRepositoryTest`, `CRDTEngine`.
+- **Script:** xóa `run-client-swing.bat`, `test-network.ps1` và `tools/NetworkingTestLauncher.java` (trùng với `mvn test`, chỉ chạy Windows và phụ thuộc cache JUnit 5.10.2). Viết lại `run-client.bat` dùng Maven (bản cũ không compile package `net`) và thêm `run-client.sh`.
+- **POM:** bỏ cấu hình compiler plugin và version JUnit/Surefire lặp lại ở module client/server (đã khai báo ở parent). Giữ dependency `server → database` và `database → common` dù chưa gọi, vì đó là điểm tích hợp persistence đã lên kế hoạch.
+- **Định dạng:** thêm `.editorconfig` và `.gitattributes` (LF trong repo, CRLF cho `.bat/.ps1`) để tránh lỗi "modified" do khác kiểu xuống dòng; xóa khoảng trắng cuối dòng và thêm newline cuối file. Không chạy formatter toàn bộ để tránh conflict với nhánh đang mở của các member.
+- **Bảo mật:** `database/src/main/resources/config.properties` (nay là `persistence/...`) chứa mật khẩu MongoDB Atlas thật đã bị commit. Đã bỏ khỏi Git (`git rm --cached`, file local vẫn giữ) và sửa `.gitignore` thành `**/src/main/resources/config.properties` (pattern cũ chỉ khớp ở thư mục gốc). **Mật khẩu vẫn còn trong lịch sử Git → M5 phải đổi mật khẩu trên Atlas.** Sau khi pull, member khác cần tự tạo lại file từ `config.properties.example`.
+- Kiểm chứng sau khi dọn: 42/42 test chọn lọc pass như trước.
+
+### 14.1b Tổ chức lại module/package
+
+Các mục 1–13 dùng đường dẫn cũ. Bảng đối chiếu (chỉ đổi vị trí/tên, không đổi logic; dùng `git mv` nên giữ lịch sử file):
+
+| Cũ | Mới |
+| --- | --- |
+| module `overleaf-common`, `overleaf-server`, `overleaf-client`, `database` | `common`, `server`, `client`, `persistence` (artifactId trùng tên thư mục) |
+| `common.sync`: MessageType, SyncMessage, MessageCodec, ResyncTransfer | `common.protocol` |
+| `common.sync`: CRDTOperation, DocumentState, CollaboratorInfo, CursorPosition | `common.model` |
+| `common.sync`: OperationCodec, OfflineOperationQueue | `common.sync` (giữ nguyên) |
+| `common.sync.TlsContexts` | `common.security.TlsContexts` |
+| `server`: OverleafServer, ServerSession, ServerConfig | `server.net` (ServerApp vẫn ở `server`) |
+| `server.collaboration` | `server.collab` |
+| `client.gui`, `client.io` | `client.ui`, `client.workspace` |
+| `com.overleaf.db.*` | `com.overleaf.persistence.*` |
+| script ở thư mục gốc | `scripts/` (tự `cd` về thư mục gốc) |
+
+Tên JAR triển khai (`dist/overleaf-server.jar`, `dist/overleaf-network-demo.jar`), main class `com.overleaf.server.ServerApp`/`com.overleaf.client.net.NetworkDemo` và wire protocol không đổi. Member đang có nhánh mở cần rebase/merge sau khi thay đổi này vào `main`; Git nhận diện được phần lớn file đổi tên.
+
+Việc tiếp theo đề xuất: tách `client/.../ui/OverleafFxApp.java` (~1.650 dòng) thành MainWindow, EditorPane, FileTreePane, PreviewPane, ConnectDialog và một controller cho collaboration.
+
+### 14.2 Cơ chế offline/RESYNC của M4 (từ walkthrough-m4)
+
+1. Client giữ mọi thao tác chưa ACK, nên cả thao tác gõ lúc offline lẫn thao tác đã gửi nhưng mất ACK đều không mất.
+2. Client nhớ "điểm đã thấy" (operation ID cuối từ server), cập nhật qua CHECKPOINT khi JOIN và sau RESYNC.
+3. Server `handleResync`: thao tác đã có trong lịch sử thì chỉ ACK lại (không áp dụng lần hai); các thao tác offline được transform qua phần người khác sửa sau điểm đã thấy rồi áp dụng và broadcast; nếu điểm đã thấy đã bị trim khỏi lịch sử thì dự phòng bằng Lamport. Cuối cùng gửi FULL_SYNC + CHECKPOINT.
+4. Ví dụ đã test: "Hello World", Bob offline gõ "!" cuối và ">" đầu, Alice thêm "Big " và "<<" → mọi máy ra `<<>Hello Big World!`.
+5. `SyncBroadcaster` dùng outbox riêng cho mỗi client; trước đây pool co giãn làm đảo thứ tự ACK/edit (có test 300 message).
+
+### 14.3 Giới hạn đã biết (cần nói thật trong báo cáo)
+
+- Sau RESYNC, văn bản client bị thay bằng bản server nên con trỏ có thể nhảy; GUI khóa editor khi `isResyncing()`.
+- Dự phòng Lamport (lịch sử đã trim) không mất chữ nhưng có thể đặt sai vị trí so với ý người gõ.
+- Hai người chèn cùng vị trí: thứ tự theo thứ tự server nhận. Xóa đoạn chồng nhau chưa test kỹ. ACK mất cùng lúc người khác sửa có thể làm lệch nhẹ vị trí thao tác kế tiếp.
+- `OperationHistory.getOperationsSince` duyệt toàn bộ lịch sử phòng (≤ 10.000 op) mỗi lần sửa; chi phí tăng theo độ dài lịch sử, chưa đo riêng.
+- Số liệu "< 50 ms trên LAN" trong báo cáo cũ **chưa từng được đo**; không dùng.
+
+### 14.4 Benchmark M4 (`BenchmarkM4`)
+
+Đo engine trong một tiến trình Java, không qua mạng; "độ trễ" là gửi → nhận ACK trong RAM. 4 phép đo: B1 một phòng 1–16 người; B2 1–8 phòng × 4 người; B3 một người gõ, 1–50 người nhận; B4 thời gian RESYNC theo số op offline/bỏ lỡ. Mỗi phép đo 1 lần khởi động + 3 lần chính thức, lấy trung vị, có kiểm tra không mất thao tác.
+
+Số mẫu (VM 2 nhân, Java 21; chỉ có ý nghĩa trên máy đó): B1 ~2.100 → ~4.500 op/s, trung vị < 3 ms; B2 ~6.100 → ~12.000 op/s tổng, trung vị 0,3 → 2,5 ms; B3 50 người nhận ~0,3 ms; B4 1000 op offline + 1000 op bỏ lỡ ~65 ms. Cần chạy lại trên máy nhóm trước khi đưa vào báo cáo.
+
+### 14.5 Việc còn mở (bổ sung cho mục 9)
+
+- **M5:** đổi mật khẩu MongoDB Atlas (xem 14.1).
+- **M4:** mục B "tua lại lịch sử" chưa bắt đầu; đưa phần M4 (offline, benchmark, giới hạn 14.3) vào báo cáo; chạy lại benchmark trên máy nhóm.
+- **Có thể dọn tiếp nếu nhóm đồng ý** (chưa xóa vì là API của member khác): các method public chưa có nơi gọi — `CollaboratorInfo` (`changeRole`, `createViewer`, `isHost`, `markActive`, `markIdle`, `getJoinedAt`, `getLastActiveAt`), getter của `CursorPosition`, `DocumentState.getDocumentId/getLastModified`, `MessageType.fromString`, `CRDTEngine` (`applyOperations`, `generateInsert/Delete`, `getDocumentState/Version`), `CollaborationThreadPool.getSyncPoolSize/scheduleWithDelay`, `DocumentSyncManager.startMaintenance` (cố ý không bật vì xóa phòng trống), `OperationHistory` (`getHistorySize`, `getOperationsByUser`, `getRecentOperations`, `hasHistory`), `LatexCompilerService` (`isLatexmkAvailable`, `parseErrors`, `setTimeoutSeconds`).
+
+## 15. Nối giao diện mới với backend (01/11/2026, nhánh `Network`)
+
+Giao diện mới (LoginView, HomeView, ActivityHeatmap, UiSupport, theme) do DeepSeek dựng chỉ chạy với `DemoBackend` dữ liệu giả; editor luôn đọc/ghi `./main.tex` bất kể mở dự án nào. Đã nối thật:
+
+| Phần | Trước | Sau |
+| --- | --- | --- |
+| Đăng nhập | Email bất kỳ + mật khẩu ≥ 6 ký tự đều vào; điền sẵn tài khoản demo | `LocalBackend`: tài khoản lưu trên máy, PBKDF2-SHA256 có salt, báo sai mật khẩu/email chưa có/email trùng; "Keep me signed in" tự đăng nhập lần sau; form điền sẵn email gần nhất |
+| Dự án | 4 dự án giả ở `~/Overleaf/...` không tồn tại | Mỗi dự án là một thư mục trong `~/OverleafDesktop/projects/` (đổi bằng `OVERLEAF_HOME`); tạo/đổi tên/xóa (vào `.trash/`); thời gian sửa và số file đọc từ ổ đĩa |
+| Hoạt động | Số ngẫu nhiên | Đếm số lần lưu thay đổi theo ngày, số lần compile thành công theo năm |
+| Editor | Luôn dùng thư mục chạy app | `ProjectFileManager`, `WorkspaceWatcher`, cây file và compile trỏ vào thư mục dự án; bấm file trong cây để mở; tự lưu khi chuyển file/dự án/về Home/thoát; file sửa bên ngoài được nạp lại nếu chưa có thay đổi chưa lưu |
+| Compile | Bỏ qua lựa chọn engine; luôn compile `.` | Dùng engine đã chọn (pdfLaTeX/XeLaTeX/LuaLaTeX), báo rõ khi thiếu TeX/timeout/lỗi LaTeX (dòng đầu tiên); "Open compiled PDF", "Clean temporary files" thật sự xóa file tạm trong `build/` |
+| Phòng | Queue offline tạo ngay khi đăng nhập nên mọi thao tác gõ bị xếp hàng; JOIN phòng trống xóa trắng editor rồi autosave ghi đè `main.tex` | Queue chỉ tạo khi vào phòng; phòng trống được khởi tạo bằng `main.tex` local; phòng có nội dung khác → giữ bản local thành `main.before-<room>.tex`; đổi dự án thì rời phòng; trong phòng chỉ sửa được `main.tex` |
+| Ảnh đại diện | Chỉ có chữ viết tắt | Bấm avatar (Home hoặc sidebar editor) → modal "Profile picture": chọn PNG/JPG/GIF ≤ 5 MB, cắt vuông giữa, hiển thị tròn; xóa ảnh. Lưu theo tài khoản ở `.app/avatars/` qua `ProfileGateway` |
+| Hộp thoại | `Dialog`/`Alert` mặc định của JavaFX, lệch theme | `UiModal`: cùng kiểu modal "New project" (scrim, card trắng, ô icon, field, nút xanh/đỏ) cho Connect room, New file, đổi tên/xóa file và dự án, thông báo |
+
+File: `ui/backend/LocalBackend.java` (mới, thay `DemoBackend` đã xóa), `UiModal.java` (mới), sửa `OverleafFxApp`, `LoginView`, `HomeView`, `UiSupport` (thêm icon, bỏ `styleDialog` không còn dùng), gateway interfaces, CSS (`btn-danger`, `modal-body`, `menu-danger`, `modal-icon-tile-danger`).
+
+Kiểm chứng: **52/52 test** (42 cũ + 10 `LocalBackendTest`). `UiSmoke` (main class trong test, cần màn hình — lệnh ở README §3) điều khiển app thật: đăng ký, tạo dự án qua modal, gõ/lưu (kiểm tra ổ đĩa), compile (máy này không có TeX → báo "No LaTeX toolchain found", không treo), watcher, mở/tạo/đổi tên/xóa file, kết nối server thật qua modal Connect với client thứ hai (Bob) nhận/gửi edit và presence, rejoin có backup, đổi tên/xóa dự án, đăng xuất, sai mật khẩu, đăng nhập lại — tất cả PASS. `scripts/run-client.sh` khởi động không lỗi.
+
+Chưa làm / cần nhóm quyết định:
+
+- **M5 (MongoDB) chưa nối vào đăng nhập.** Cố ý: client nối thẳng Atlas thì mọi máy phải giữ credential DB. Đường đúng là client gửi AUTH tài khoản lên server M3, server gọi `DatabaseService`; khi có, viết một `AuthGateway`/`ProjectGateway` mới thay `LocalBackend`, view không phải sửa.
+- Chưa compile LaTeX thật trên máy kiểm thử (không có TeX). Preview vẫn là Canvas tự vẽ, không phải PDF thật; PDF thật mở bằng "Open compiled PDF".
+- Phòng mới chỉ đồng bộ `main.tex`; nhiều file trong phòng cần mở rộng giao thức (M3/M4).
+- `OverleafFxApp` vẫn lớn (~2.600 dòng); đề xuất tách như mục 14.1b.
+
+### 15.1 Gõ tiếng Việt và Windows
+
+- **Lỗi:** gõ tiếng Việt (Telex) trên macOS bị thừa chữ trong mọi ô nhập. Nguyên nhân là JavaFX 17: khi bộ gõ đang ghép chữ (marked text), glass macOS vẫn sinh thêm KeyEvent nên ký tự gốc bị chèn kèm ký tự đã ghép. Đã sửa ở JavaFX 23 ([JDK-8301900](https://bugs.openjdk.org/browse/JDK-8301900)); không backport về 17/21.
+- **Sửa:** `javafx.version` 17.0.8 → **23.0.2**. JavaFX 23 cần Java 21, nên chỉ module `client` biên dịch `release 21` (POM cha chuyển sang `<release>${maven.compiler.release}</release>`, mặc định 17). `common`/`server` vẫn Java 17, JAR server và triển khai VPS không đổi. Client có `maven-enforcer-plugin` báo rõ khi build bằng JDK < 21.
+- **Đã kiểm:** 52/52 test, `UiSmoke` toàn bộ PASS trên JavaFX 23 (thêm bước tạo dự án tên tiếng Việt, gõ đủ các chữ có dấu, lưu đúng UTF-8, outline hiển thị đúng). Tên tài khoản tiếng Việt lưu/đọc đúng. Template dự án mới hỗ trợ tiếng Việt cho pdfLaTeX/XeLaTeX/LuaLaTeX (chưa compile thử vì máy không có TeX).
+- **Windows:** tên thư mục dự án tránh tên thiết bị (`CON`, `NUL`…) và dấu chấm/khoảng trắng cuối; font logic (System/Serif/Monospaced) map sang Segoe UI/Times New Roman/Courier New đều có dấu tiếng Việt; `run-client.bat` đặt `chcp 65001`. **Chưa chạy thử trên máy Windows** — cần một member kiểm tra gõ Telex (Unikey/EVKey hoặc bàn phím Vietnamese của Windows) trên JDK 21+.
+
+
+### 15.2 Lệnh và chi tiết đã rút khỏi README
+
+README §3 chỉ giữ cách chạy. Chi tiết kỹ thuật ở đây:
+
+- Dữ liệu (`~/OverleafDesktop`, đổi bằng `OVERLEAF_HOME` hoặc `-Doverleaf.home=`): `projects/<tên>/main.tex` (PDF ở `build/main.pdf`), `.app/accounts.properties` (PBKDF2-SHA256 + salt), `.app/settings.properties`, `.app/activity.properties`, `.app/avatars/`, `.trash/`.
+- Phòng: người đầu tiên vào phòng trống đưa `main.tex` của mình lên; phòng đã có nội dung khác → bản local giữ thành `main.before-<room>.tex`; trong phòng không mở được file khác. Token/TLS xem README §4–§6.
+- Demo console: `java -jar dist/overleaf-network-demo.jar 127.0.0.1 8080 alice demo` (lệnh `/insert 0 Hello`, `/delete 0 Hello`, `/cursor 2 7`, `/quit`).
+- Smoke test GUI (cần màn hình, dữ liệu ở thư mục tạm, lưu ảnh từng màn hình):
+
+  ```bash
+  mvn -q -DskipTests install
+  mvn -q -pl client dependency:build-classpath -Dmdep.outputFile=target/cp.txt -Dmdep.includeScope=test
+  java -cp client/target/classes:client/target/test-classes:$(cat client/target/cp.txt) com.overleaf.client.ui.UiSmoke /tmp/overleaf-shots
+  ```
+
+- `mvn test` không chọn lọc chạy cả test `persistence`: cần MongoDB và `persistence/src/main/resources/config.properties` (tạo từ `.example`, không commit). `BenchmarkM4.main()` đo engine M4, ghi `benchmark-results.md`.
