@@ -23,8 +23,14 @@
 - [x] `OfflineResyncSmoke.java`: 5 tình huống, 26 kiểm tra, tất cả đạt
 - [ ] Commit và mở Pull Request cho Phase 4
 
-## Phase 5: Việc chưa làm / phụ thuộc người khác
+## Phase 5: Benchmark (mục C)
+- [x] `BenchmarkM4.java`: 4 phép đo (một phòng, nhiều phòng, phát cho nhiều người nhận, đồng bộ lại sau offline)
+- [x] Chạy thử, cả 4 phép đo đều đúng dữ liệu (số liệu mẫu trong `benchmark-results.md`)
+- [ ] Chạy lại trên máy của nhóm và thay số liệu trong báo cáo
+- [ ] Commit `BenchmarkM4.java` cùng Pull Request của Phase 4
+
+## Phase 6: Việc chưa làm / phụ thuộc người khác
 - [ ] M3 cài `ClientSession` trên socket và gọi `handleMessage`, `handleDisconnect`
 - [ ] M1/M2 dùng `OfflineOperationQueue` trong client (xem hướng dẫn trong `walkthrough.md`)
-- [ ] Mục B (tua lại lịch sử) và mục C (benchmark): chưa bắt đầu
+- [ ] Mục B (tua lại lịch sử): chưa bắt đầu
 - [ ] Đưa phần M4 vào báo cáo (đã có bản nháp tiếng Việt)

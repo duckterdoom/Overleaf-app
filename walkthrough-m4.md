@@ -6,7 +6,8 @@ Cập nhật: 31/10/2026. Người phụ trách: M4.
 - Phần M4 theo kế hoạch ban đầu: **xong**, đã merge vào nhánh `main` (Pull Request #2).
 - Phần bổ sung "sửa offline rồi tự đồng bộ lại" (mục A): **xong code và test**, chờ commit và mở Pull Request.
 - Chưa chạy được toàn bộ dự án từ đầu đến cuối vì **M3 (mạng TCP) chưa có code**. Đây là phần chặn lớn nhất, không phải lỗi của M4.
-- Mục B (tua lại lịch sử) và C (benchmark) chưa làm.
+- Mục C (benchmark): **xong**, đã chạy thử và có số liệu mẫu.
+- Mục B (tua lại lịch sử): chưa làm.
 
 ## 2. Bảng tiến độ
 
@@ -23,9 +24,9 @@ Cập nhật: 31/10/2026. Người phụ trách: M4.
 | Chuyển test sang JUnit 5 | Chưa | Cần thêm `junit-jupiter` vào `overleaf-server/pom.xml` |
 | Nối với M3 (mạng) | Chưa, M3 chưa có code | |
 | Nối với client (M1/M2) | Chưa | |
+| Mục C: benchmark (`BenchmarkM4`) | Xong, chưa commit | Mục 3b bên dưới |
 | Mục B: tua lại lịch sử | Chưa bắt đầu | |
-| Mục C: benchmark | Chưa bắt đầu | |
-| Báo cáo phần M4 | Có bản nháp tiếng Việt | Cần tự sửa lại bằng lời của mình, rồi đưa vào file báo cáo |
+| Báo cáo phần M4 | Có bản nháp tiếng Việt, đã cập nhật phần offline và benchmark | Cần tự sửa lại bằng lời của mình, thay số liệu bằng số đo trên máy của nhóm, rồi đưa vào file báo cáo |
 
 ## 3. Chi tiết phần mới: offline và đồng bộ lại (mục A)
 
@@ -55,6 +56,7 @@ Ví dụ đã kiểm tra: văn bản "Hello World". Bob mất mạng, gõ "!" �
 | `DocumentSyncManager.java` | Thêm `handleResync`, chống áp dụng trùng ở TEXT_EDIT, gửi CHECKPOINT khi vào phòng, tách hàm `applyAndPublish` |
 | `SyncBroadcaster.java` | Mỗi client có hộp thư đi riêng để thông điệp đến đúng thứ tự |
 | `OfflineResyncSmoke.java` (test, mới) | 5 tình huống, 26 kiểm tra |
+| `BenchmarkM4.java` (test, mới) | Benchmark, xem mục 3b |
 
 ### 3.4 Lỗi tìm thấy và đã sửa
 Trước đây Sync Broadcaster gửi qua một nhóm luồng co giãn nên hai thông điệp liên tiếp tới cùng một client có thể đến **đảo thứ tự** (ví dụ ACK đến sau thao tác kế tiếp). Điều này làm sai "điểm đã thấy". Đã sửa bằng hộp thư đi riêng cho mỗi client, và có test gửi 300 thông điệp để kiểm tra thứ tự.
@@ -76,6 +78,32 @@ Trước đây Sync Broadcaster gửi qua một nhóm luồng co giãn nên hai 
 - Nội dung phòng chỉ nằm trong bộ nhớ server. Server tắt thì mất, đây là lý do có lỗi `ROOM_UNKNOWN`.
 - Đã chạy bằng `javac` trong một tiến trình, chưa chạy qua mạng thật.
 
+## 3b. Benchmark (mục C)
+
+### Đo cái gì và không đo cái gì
+`BenchmarkM4` đo tốc độ xử lý của bộ máy M4 **trong một tiến trình Java**, không qua mạng. "Độ trễ" là thời gian từ lúc client gửi thao tác đến lúc nhận ACK trong bộ nhớ. **Không phải** độ trễ mạng thật giữa hai máy, vì M3 chưa có code. Khi viết báo cáo phải ghi đúng như vậy, và không dùng con số "<50ms" cũ vì nó chưa từng được đo.
+
+### Bốn phép đo
+| Phép đo | Nội dung |
+|---|---|
+| B1 | Một phòng, 1 đến 16 người cùng gõ (vòng lặp: gửi, chờ ACK, gửi tiếp) |
+| B2 | 1 đến 8 phòng chạy song song, mỗi phòng 4 người |
+| B3 | Một người gõ, 1 đến 50 người nhận (chờ đến khi tất cả đã nhận) |
+| B4 | Thời gian đồng bộ lại sau offline với số thao tác offline và số thao tác bỏ lỡ khác nhau |
+
+Mỗi phép đo chạy 1 lần khởi động rồi 3 lần chính thức, lấy lần ở giữa. Sau mỗi lần chạy, chương trình kiểm tra văn bản cuối có đúng số ký tự (không mất thao tác). Tất cả đều đúng.
+
+### Số liệu mẫu (máy ảo 2 nhân CPU, Java 21, đã ghi trong `benchmark-results.md`)
+- B1: từ khoảng 2 100 thao tác/giây (1 người) lên khoảng 4 500 thao tác/giây (8 đến 16 người). Độ trễ trung vị dưới 3 ms. Thông lượng không tăng thêm khi từ 8 lên 16 người vì máy chỉ có 2 nhân CPU.
+- B2: tổng thông lượng tăng từ khoảng 6 100 lên khoảng 12 000 thao tác/giây khi tăng từ 1 lên 8 phòng (gấp đôi, không gấp tám). Độ trễ trung vị tăng từ 0,3 lên 2,5 ms vì 32 người dùng giả cùng chia nhau 2 nhân CPU.
+- B3: phát cho 50 người nhận mất trung vị khoảng 0,3 ms, tăng gần tuyến tính theo số người nhận.
+- B4: đồng bộ lại với 1000 thao tác offline và 1000 thao tác bỏ lỡ mất khoảng 65 ms.
+
+Các số này chỉ có ý nghĩa trên máy ảo đã đo. Hãy chạy lại trên máy của nhóm (xem mục 5) và dùng số của máy đó.
+
+### Điều đáng chú ý về code (không phải kết quả đo)
+Mỗi lần xử lý một thao tác sửa, `getOperationsSince` duyệt toàn bộ lịch sử của phòng (tối đa 10 000 thao tác). Chi phí vì vậy tăng theo độ dài lịch sử. Chưa đo riêng ảnh hưởng này. Nếu cần tối ưu, có thể lập chỉ mục theo vị trí trong lịch sử.
+
 ## 4. Hướng dẫn nối vào client và mạng (gửi cho M1, M3)
 
 Client (M1/M2), mỗi phòng tạo một `OfflineOperationQueue(roomId, userId, userName)`:
@@ -93,13 +121,15 @@ Quy ước đồng hồ Lamport: client tăng đồng hồ trước khi tạo th
 1. Mở `overleaf-server/src/test/java/.../collaboration/`.
 2. Bấm mũi tên xanh cạnh hàm `main` của `M4Smoke` hoặc `OfflineResyncSmoke`, chọn Run.
 3. Cuối log phải có dòng `ALL PASSED`. Nếu chữ tiếng Việt hiện dấu `?`, vào Run, Edit Configurations, ở VM options nhập `-Dfile.encoding=UTF-8`.
+4. Benchmark: chạy `BenchmarkM4.main()` tương tự (mất khoảng 2 phút, nên đóng bớt chương trình khác khi đo). Kết quả in ra màn hình và ghi vào file `benchmark-results.md` ở thư mục đang chạy.
 
 ## 6. Việc cần làm tiếp (theo thứ tự ưu tiên)
 1. Chạy `mvn clean compile -pl overleaf-common,overleaf-server -am` trên máy, rồi commit và mở Pull Request cho mục A (nhánh gợi ý `feat/m4-offline-resync`).
 2. Báo M3 và M1 nội dung mục 4. Đây là phần đang chặn việc chạy thử cả dự án.
 3. Chuyển hai chương trình kiểm tra sang JUnit 5 để `mvn clean test` chạy được theo quy ước của nhóm.
 4. Đưa phần M4 vào báo cáo (xem bản nháp tiếng Việt), thêm mục offline vào các phần Novelty, Limitations và Future Work.
-5. Nếu còn thời gian: mục B (tua lại lịch sử) và C (benchmark, chỉ ghi số liệu đã đo thật).
+5. Chạy `BenchmarkM4` trên máy của nhóm và thay số liệu trong báo cáo bằng số đo được.
+6. Nếu còn thời gian: mục B (tua lại lịch sử).
 
 ## 7. Rủi ro ngoài phạm vi M4 (đã báo cho nhóm)
 - File `database/src/main/resources/config.properties` chứa mật khẩu MongoDB thật và đã bị commit lên GitHub. Cần M5 đổi mật khẩu trên MongoDB Atlas, bỏ file khỏi Git, và sửa `.gitignore`.
