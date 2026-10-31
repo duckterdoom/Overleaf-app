@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 
-/** M3 wire v1: big-endian length, version, five UTF-8 strings, timestamp. No object deserialization. */
+/** Wire v2 adds the Lamport clock after the wall-clock timestamp; v1 reads remain supported. */
 public final class MessageCodec {
     public static final int MAX_FRAME_BYTES = 1024 * 1024;
     private MessageCodec() { }
@@ -14,18 +14,19 @@ public final class MessageCodec {
         if (message == null) throw new IOException("Missing message");
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         DataOutputStream body = new DataOutputStream(buffer);
-        body.writeInt(1);
+        body.writeInt(2);
         for (String value : new String[]{message.getMessageType().name(), message.getRoomId(),
                 message.getSenderId(), message.getSenderName(), message.getPayload()}) {
             if (value.length() > MAX_FRAME_BYTES) throw new IOException("String too large");
             byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-            if (bytes.length > MAX_FRAME_BYTES || buffer.size() + bytes.length + 4 > MAX_FRAME_BYTES - 8) {
+            if (bytes.length > MAX_FRAME_BYTES || buffer.size() + bytes.length + 4 > MAX_FRAME_BYTES - 16) {
                 throw new IOException("Frame too large");
             }
             body.writeInt(bytes.length);
             body.write(bytes);
         }
         body.writeLong(message.getTimestamp());
+        body.writeLong(message.getLamportTimestamp());
         return buffer.toByteArray();
     }
 
@@ -52,11 +53,13 @@ public final class MessageCodec {
         byte[] bytes = new byte[length];
         stream.readFully(bytes);
         DataInputStream body = new DataInputStream(new ByteArrayInputStream(bytes));
-        if (body.readInt() != 1) throw new IOException("Unsupported protocol version");
+        int version = body.readInt();
+        if (version != 1 && version != 2) throw new IOException("Unsupported protocol version");
         try {
             MessageType type = MessageType.valueOf(readString(body));
-            SyncMessage result = new SyncMessage(type, readString(body), readString(body),
-                    readString(body), readString(body), body.readLong());
+            String room = readString(body), sender = readString(body), name = readString(body), payload = readString(body);
+            SyncMessage result = new SyncMessage(type, room, sender, name, payload, body.readLong(),
+                    version == 2 ? body.readLong() : 0);
             if (body.available() != 0) throw new IOException("Trailing bytes");
             return result;
         } catch (IllegalArgumentException e) {

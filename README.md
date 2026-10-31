@@ -4,6 +4,8 @@
 
 Tài liệu cập nhật ngày **01/11/2026**, mô tả source hiện có trong workspace. Cột member thể hiện trách nhiệm theo phân công và phần tích hợp đã thực hiện, không phải xác nhận tác giả Git của từng dòng code.
 
+Hợp đồng tích hợp mới nhất: [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md). Wire v2 bổ sung clock snapshot, RESYNC nhiều frame và ACK_BATCH; cần cập nhật cả client/server cùng phiên bản. Các tài liệu Markdown đang bị xóa trong working tree của người dùng không được tự khôi phục trong lần sửa code này.
+
 ## 1. Phân công thành viên
 
 | Member | Vai trò | Thư mục/phần việc chính |
@@ -77,6 +79,7 @@ Các bảng dưới liệt kê file source, cấu hình, script và tài liệu 
 | `MessageType.java` | Enum JOIN/LEAVE, TEXT_EDIT, FULL_SYNC, ACK, RESYNC, CHECKPOINT, cursor, presence, heartbeat, error và AUTH | M4 tạo hợp đồng collaboration; M3 thêm AUTH |
 | `SyncMessage.java` | Envelope bất biến: type, room, sender ID/name, payload, timestamp; các factory tạo message | M4; M3 sử dụng cho transport |
 | `MessageCodec.java` | Mã hóa/đọc frame nhị phân có tiền tố độ dài, giới hạn 1 MiB và kiểm tra UTF-8/version/type | M3 |
+| `ResyncTransfer.java` | Chia upload offline lớn thành nhiều frame, ghép đủ rồi mới giao một RESYNC cho M4; giới hạn 4 MiB | M3/M4 |
 | `TlsContexts.java` | Nạp PKCS12 keystore/truststore và tạo SSLContext từ cấu hình ngoài JAR | M3 |
 | `CRDTOperation.java` | Mô tả insert/delete, operation ID, vị trí, nội dung, user và Lamport timestamp | M4 |
 | `DocumentState.java` | Nội dung tài liệu, version và thao tác thay đổi nội dung trong RAM | M4 |
@@ -86,6 +89,8 @@ Các bảng dưới liệt kê file source, cấu hình, script và tài liệu 
 | `OfflineOperationQueue.java` | Giữ thao tác chưa ACK, trạng thái online/resync và last-seen operation; chưa lưu xuống đĩa | M4; M3 sửa trạng thái online sau CHECKPOINT |
 
 Test: `src/test/java/com/overleaf/common/sync/MessageCodecTest.java` kiểm tra codec, dữ liệu sai và chuyển queue sang online sau JOIN/CHECKPOINT — **M3**.
+
+`src/test/java/com/overleaf/common/sync/ResyncTransferTest.java` kiểm tra ghép upload, Unicode ở ranh giới chunk, giới hạn và batch ACK — **M3/M4**.
 
 ## 5. overleaf-client — Desktop client
 
@@ -104,6 +109,7 @@ Test: `src/test/java/com/overleaf/common/sync/MessageCodecTest.java` kiểm tra 
 | `io/ProjectFileManager.java` | Đọc/ghi/tạo/xóa/đổi tên file, liệt kê tài liệu, định vị PDF và nhận biết own-write | M2 |
 | `io/WorkspaceWatcher.java` | Theo dõi thay đổi filesystem, thông báo cho caller và dừng watcher khi đóng | M2 |
 | `net/NetworkClient.java` | TCP/TLS, xác thực token, hostname verification, reader/writer, queue gửi FIFO và heartbeat | M3 |
+| `net/ConnectionScope.java` | Guard theo generation/phòng để callback cũ không cập nhật phiên GUI mới | M3 |
 | `net/NetworkDemo.java` | Console headless kiểm tra JOIN, insert/delete, cursor, snapshot và ACK | M3 |
 
 ### 5.2 Tài nguyên và test
@@ -113,6 +119,7 @@ Test: `src/test/java/com/overleaf/common/sync/MessageCodecTest.java` kiểm tra 
 | `src/main/resources/styles/overleaf-theme.css` | Theme cho các component JavaFX | M1 |
 | `src/test/java/com/overleaf/client/io/ProjectFileManagerTest.java` | Test hành vi file manager | M2 |
 | `src/test/java/com/overleaf/client/net/NetworkClientTest.java` | Test API transport với server thật, disconnect, token và certificate TLS/hostname | M3 |
+| `src/test/java/com/overleaf/client/net/ConnectionScopeTest.java` | Regression callback cũ khi đổi phòng hoặc reconnect cùng phòng | M3 |
 
 ## 6. overleaf-server — Networking và collaboration
 
@@ -209,6 +216,7 @@ Các test database cần môi trường MongoDB phù hợp. Việc có `Database
 | `run-client.bat` | Script JavaFX cũ của M1; chưa cập nhật để compile package `net` và dùng cache mới, không dùng làm lệnh chuẩn cho bản hiện tại |
 | `run-client-swing.bat` | Script Swing cũ; luồng compile hiện tham chiếu ClientApp/JavaFX nên cần cập nhật trước khi sử dụng |
 | `README.md` | Bản đồ thư mục/file, chức năng, phân công và cách chạy hiện tại |
+| `SYNC_PROTOCOL.md` | Hợp đồng v2 hiện tại cho Lamport, RESYNC nhiều frame, ACK_BATCH và phiên GUI |
 | `AI_Handoff.md` | Trạng thái bàn giao, lịch sử thay đổi, kết quả kiểm chứng và phần việc còn lại theo member |
 | `NETWORKING_M3.md` | Hợp đồng TCP, cấu hình, API client và giới hạn networking |
 | `DEPLOY_SERVER.md` | Hướng dẫn JAR, SSH tunnel, TLS public và systemd |
@@ -315,9 +323,9 @@ Lệnh chọn dependency cache hiện tại trên Windows; nếu cache chứa nh
 Test chọn lọc, không chạy test MongoDB:
 
 ```powershell
-mvn "-Dtest=MessageCodecTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+mvn "-Dtest=MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
 ```
 
-Kết quả kiểm chứng trước lần cập nhật tài liệu: **35/35 test pass** và smoke test server JAR thành công. Chi tiết phạm vi/môi trường nằm trong [AI_Handoff.md](AI_Handoff.md). `mvn test` không chọn lọc sẽ bao gồm test database và cần cấu hình MongoDB.
+Kết quả sau cập nhật hợp đồng v2: **42/42 test pass**. Chi tiết phạm vi/môi trường nằm trong [AI_Handoff.md](AI_Handoff.md). `mvn test` không chọn lọc sẽ bao gồm test database và cần cấu hình MongoDB.
 
-Triển khai lên VPS theo [DEPLOY_SERVER.md](DEPLOY_SERVER.md). Wire protocol và toàn bộ biến môi trường nằm trong [NETWORKING_M3.md](NETWORKING_M3.md).
+Triển khai lên VPS theo [DEPLOY_SERVER.md](DEPLOY_SERVER.md). Hợp đồng đồng bộ mới nhất nằm trong [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md); cập nhật JAR cả hai đầu cùng phiên bản.

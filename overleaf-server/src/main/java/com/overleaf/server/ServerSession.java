@@ -33,9 +33,14 @@ public final class ServerSession implements ClientSession, AutoCloseable {
     void readLoop() {
         try {
             if (socket instanceof SSLSocket ssl) ssl.startHandshake();
+            ResyncTransfer.Receiver transfer = new ResyncTransfer.Receiver();
             SyncMessage message;
             while (isOpen() && (message = MessageCodec.read(socket.getInputStream())) != null) {
-                server.handle(this, message);
+                if (!authenticated) server.handle(this, message);
+                else {
+                    SyncMessage complete = transfer.accept(message);
+                    if (complete != null) server.handle(this, complete);
+                }
             }
         } catch (IOException | RuntimeException e) {
             // Malformed frames, idle timeouts and connection resets affect this peer only.

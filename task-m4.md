@@ -1,5 +1,7 @@
 # M4 Collaboration Logic - Danh sách công việc
 
+> Cập nhật tích hợp 01/11/2026: M3/JavaFX đã nối với M4. Xem [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md) cho wire v2, metadata Lamport, RESYNC nhiều frame và ACK_BATCH. Các ghi chú sandbox/PR bên dưới là lịch sử triển khai M4, không phải trạng thái kiểm chứng mới nhất. Bộ test tích hợp hiện tại: 42/42 pass qua Maven, không chạy test MongoDB.
+
 ## Phase 1: Mô hình dùng chung trong `overleaf-common`
 - [x] `CRDTOperation.java`, `DocumentState.java`, `SyncMessage.java`, `MessageType.java`, `CursorPosition.java`, `CollaboratorInfo.java`
 
@@ -32,7 +34,7 @@
 - [ ] Commit `BenchmarkM4.java` cùng Pull Request của Phase 4
 
 ## Phase 6: Việc chưa làm / phụ thuộc người khác
-- [ ] M3 cài `ClientSession` trên socket và gọi `handleMessage`, `handleDisconnect`
-- [ ] M1/M2 dùng `OfflineOperationQueue` trong client (xem hướng dẫn trong `walkthrough.md`)
+- [x] M3 cài `ClientSession` trên socket, gọi `processMessage` đồng bộ (entry point dùng chung với `handleMessage`) và `handleDisconnect`
+- [x] JavaFX dùng `OfflineOperationQueue`, xử lý clock snapshot, ACK/ACK_BATCH và reconnect/RESYNC; xem `SYNC_PROTOCOL.md`
 - [ ] Mục B (tua lại lịch sử): chưa bắt đầu
 - [ ] Đưa phần M4 vào báo cáo (đã có bản nháp tiếng Việt)

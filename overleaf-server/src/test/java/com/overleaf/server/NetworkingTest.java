@@ -213,4 +213,23 @@ class NetworkingTest {
             assertTrue(socket.isClosed());
         }
     }
+
+    @Test void lateJoinClockPreventsDoubleTransformAndUnknownRoomCodeIsStable() throws Exception {
+        try (OverleafServer server = new OverleafServer(config(8, 60000, 100000))) {
+            server.start();
+            try (Peer alice = new Peer(server, "alice"); Peer bob = new Peer(server, "bob")) {
+                alice.join();
+                alice.edit(alice.op("alice1", "alice", 0, "Hello", 1)); alice.expect(MessageType.ACK);
+                bob.send(SyncMessage.createJoinRoom("r", "bob", "bob"));
+                SyncMessage snapshot = bob.expect(MessageType.FULL_SYNC);
+                SyncMessage checkpoint = bob.expect(MessageType.CHECKPOINT);
+                assertTrue(snapshot.getLamportTimestamp() >= 1);
+                bob.edit(bob.op("bob1", "bob", 0, ">", checkpoint.getLamportTimestamp() + 1));
+                bob.expect(MessageType.ACK);
+                try (Peer observer = new Peer(server, "observer")) { assertEquals(">Hello", observer.join()); }
+                bob.send(new SyncMessage(MessageType.RESYNC, "missing", "bob", "bob", ""));
+                assertEquals("ROOM_UNKNOWN", bob.expect(MessageType.ERROR).getPayload());
+            }
+        }
+    }
 }

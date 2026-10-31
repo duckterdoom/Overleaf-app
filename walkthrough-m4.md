@@ -1,5 +1,7 @@
 # M4 Collaboration Logic - Tiến độ công việc
 
+> **Cập nhật tích hợp 01/11/2026:** Networking và JavaFX đã nối với M4; 42 test Common/networking/M4/IO pass bằng Maven thật. Đọc [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md) cho hợp đồng mới nhất. Server gọi `processMessage` đồng bộ để giữ thứ tự TCP; RESYNC được upload nhiều frame nhưng chỉ giao cho M4 sau khi ghép đủ. FULL_SYNC/CHECKPOINT mang thêm metadata Lamport và upload lớn dùng ACK_BATCH. Payload văn bản/checkpoint vẫn giữ nguyên định dạng. Những trạng thái “M3 chưa có code/chưa chạy JUnit thật” bên dưới là ghi chú lịch sử, không còn là kết luận hiện tại. Chưa chạy lại benchmark VPS hoặc toàn bộ test MongoDB.
+
 Cập nhật: 31/10/2026. Người phụ trách: M4.
 
 ## 1. Tóm tắt nhanh

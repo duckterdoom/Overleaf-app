@@ -105,6 +105,11 @@ public class OfflineOperationQueue {
     /** Chuyển mọi thông điệp nhận từ server vào đây để hàng đợi cập nhật trạng thái. */
     public synchronized void handleServerMessage(SyncMessage message) {
         switch (message.getMessageType()) {
+            case ACK_BATCH:
+                for (String id : message.getPayload().split("\n")) {
+                    if (!id.isEmpty()) { unacked.remove(id); lastSeenOperationId = id; }
+                }
+                break;
             case ACK:
                 unacked.remove(message.getPayload());
                 lastSeenOperationId = message.getPayload();
@@ -120,7 +125,6 @@ public class OfflineOperationQueue {
                 lastSeenOperationId = message.getPayload();
                 online = true;
                 resyncing = false;
-                online = true;
                 break;
             case ERROR:
                 // Đồng bộ lại bị từ chối (ví dụ phòng không còn): giữ nguyên thao tác chưa gửi

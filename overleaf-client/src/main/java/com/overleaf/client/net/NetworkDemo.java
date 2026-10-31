@@ -19,6 +19,7 @@ public final class NetworkDemo {
         try (NetworkClient client = new NetworkClient(args[0], Integer.parseInt(args[1]),
                 Boolean.parseBoolean(System.getenv().getOrDefault("OVERLEAF_TLS", "false")), System.getenv("OVERLEAF_TOKEN"))) {
             client.start(message -> {
+                clock.accumulateAndGet(message.getLamportTimestamp(), Math::max);
                 System.out.println(message.getMessageType() + ": " + message.getPayload());
                 if (message.getMessageType() == MessageType.TEXT_EDIT) {
                     clock.accumulateAndGet(OperationCodec.fromJson(message.getPayload()).getLamportTimestamp(), Math::max);

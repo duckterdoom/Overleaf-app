@@ -53,6 +53,7 @@ final class M4TestSupport {
         public synchronized void send(SyncMessage m) {
             received.add(m);
             if (dropAcks && m.getMessageType() == MessageType.ACK) return;
+            clock.accumulateAndGet(m.getLamportTimestamp(), Math::max);
             queue.handleServerMessage(m);
             switch (m.getMessageType()) {
                 case FULL_SYNC:

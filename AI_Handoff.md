@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Trạng thái mới nhất — đồng bộ M3/M4 ngày 01/11/2026:** đã sửa bốn điểm trong review; xem mục 13 và [SYNC_PROTOCOL.md](SYNC_PROTOCOL.md). 42/42 test pass. Phần mô tả v1, giới hạn RESYNC 1000 và kết quả 35 test ở các mục cũ là lịch sử trước lần sửa này, không còn là hợp đồng hiện tại.
+
 Cập nhật: **01/11/2026**. Nền mã nguồn được kiểm tra: `main`, commit **`df06601`**. Tài liệu này ghi trạng thái code thực tế sau khi tích hợp M3; thay thế handoff ngày 30/10 vốn mô tả nhánh `protocol_networking`.
 
 ## 1. Kết quả và phạm vi
@@ -246,3 +248,38 @@ Phân công dưới đây dựa trên báo cáo và chức năng code đã đố
 - **M5** giữ schema/repository/service; phối hợp M3/M4 để hoàn thiện tài khoản/quyền dự án và lưu nội dung bền vững.
 
 Lần cập nhật này chỉ thêm README và bổ sung bản đồ trách nhiệm vào handoff; không thay đổi code runtime hoặc chạy lại test nghiệp vụ. Kết quả 35/35 ở mục 7 là lần kiểm chứng code trước đó, không phải một lần chạy test mới cho thay đổi tài liệu.
+
+## 13. Đồng bộ code M3/M4 sau review
+
+Đã sửa code theo yêu cầu người dùng, không chỉ cập nhật tài liệu:
+
+| Vấn đề | Sửa đổi |
+| --- | --- |
+| Late JOIN có clock quá thấp, chèn đầu Hello thành Hello> | SyncMessage thêm metadata Lamport; codec ghi wire v2. M4 gắn clock vào snapshot/checkpoint/ACK/edit. JavaFX/demo cập nhật clock trước khi tạo thao tác kế tiếp. Payload FULL_SYNC và CHECKPOINT không đổi. |
+| Callback cũ ghi đè phòng mới | Thêm `ConnectionScope`; kiểm tra generation/room/client khi chạy callback trên FX thread, và đóng kết quả connect task đã cũ thay vì gán đè connection mới. |
+| Pending hơn 1000 không RESYNC được | Thêm `ResyncTransfer`, RESYNC_BEGIN/PART/END. Server ghép đủ mới gọi M4 một lần, không tự rebase từng phần riêng. Tối đa upload 4 MiB, 30.000 operation và 128 phần; giới hạn document vẫn áp dụng. |
+| ACK dồn khi RESYNC lớn | M4 gửi ACK_BATCH cho upload trên 64 operation; mỗi ACK_BATCH tối đa 2048 ID. Offline queue chỉ xóa các ID đã ACK; replay vẫn idempotent trong lịch sử còn giữ. |
+| ROOM_UNKNOWN có tiền tố khác hợp đồng | Trả đúng payload `ROOM_UNKNOWN` qua TCP; validation error khác vẫn giữ tiền tố. |
+
+### 13.1 File và vai trò cập nhật
+
+- **M3/Common:** sửa `SyncMessage.java`, `MessageCodec.java`, `MessageType.java`; thêm `ResyncTransfer.java` và test. Codec đọc được frame v1 nhưng chỉ ghi v2, do đó phải rebuild/deploy cả hai đầu, không dùng client JAR cũ.
+- **M3/Client:** thêm `net/ConnectionScope.java`, sửa `NetworkClient` để gửi các frame của một upload liên tiếp, và cập nhật clock trong demo.
+- **M1 + M3/GUI:** cập nhật callback nhận dữ liệu, connect task và ACK_BATCH; guard kiểm tra tại thời điểm thực thi callback. Không sửa layout giao diện.
+- **M4/Server:** gắn metadata clock và batch ACK trong `DocumentSyncManager`. Entry point đồng bộ và cơ chế khóa chung ở routing vẫn giữ như trước.
+- **M4/Common:** queue xử lý ACK_BATCH, bỏ phép gán online trùng; test adapter M4 cũng cập nhật clock theo metadata như client thật.
+- **M3/Server:** session ghép upload chỉ sau AUTH, lỗi/truncated upload không giao cho M4; tăng giới hạn operation và chuẩn hóa ROOM_UNKNOWN.
+
+### 13.2 Kiểm chứng lần sửa mới
+
+Maven compile toàn reactor và chạy chọn lọc **42/42 test pass**: MessageCodecTest 6, ResyncTransferTest 3, ConnectionScopeTest 1, NetworkingTest 10, NetworkClientTest 3, M4CollaborationTest 6, OfflineResyncTest 5, ProjectFileManagerTest 8. Log ở `target/sync-integration-tests.log`.
+
+Test hồi quy bao gồm chèn đúng đầu tài liệu sau JOIN, kiểm tra callback trễ, upload 1.200 operation trên 1 MiB qua NetworkClient/ServerSession thật, replay không nhân đôi, batch ACK, chunk Unicode không cắt surrogate pair, upload thiếu/sai/vượt giới hạn, đọc frame v1 và mã lỗi chính xác. Test scope không truy cập MongoDB. Chưa kiểm thử GUI bằng thao tác tay hoặc triển khai VPS.
+
+`task-m4.md` và `walkthrough-m4.md` đã thêm trạng thái tích hợp mới, vẫn giữ phần lịch sử. Không khôi phục các file Markdown đang bị người dùng xóa trong working tree, bao gồm `NETWORKING_M3.md` và các bản report/blueprint. Hợp đồng hiện tại nằm trong `SYNC_PROTOCOL.md`.
+
+Các giới hạn còn lại: dữ liệu và offline queue ở RAM, chưa nối MongoDB; routing server còn khóa chung; client chậm có thể bị ngắt bởi backpressure. Upload vượt 4 MiB/30.000 operation cần người dùng giữ bản local và xử lý phù hợp, không có cam kết đồng bộ vô hạn.
+
+### 13.3 Artifact khi server cũ đang chạy
+
+Không thể ghi đè `dist/overleaf-server.jar` vì Windows báo file đang được tiến trình sử dụng. Không tự dừng tiến trình của người dùng. Đã bổ sung `-OutputDirectory` cho `build-network.ps1` để xuất bản v2 vào `dist/v2/`. Dừng server cũ rồi chạy JAR v2, đồng thời khởi động lại GUI từ output Maven mới hoặc dùng demo v2. Các `.bat` hiện tại vẫn trỏ tới JAR ở root `dist/`, do đó dùng đường dẫn v2 trực tiếp trong lần cập nhật này. Restart server làm mất dữ liệu RAM như giới hạn đã ghi ở trên; lưu file local trước khi chuyển phiên.

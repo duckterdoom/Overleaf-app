@@ -115,7 +115,8 @@ public final class OverleafServer implements AutoCloseable {
                 default -> throw new IllegalArgumentException("UNSUPPORTED_CLIENT_MESSAGE");
             }
         } catch (IllegalArgumentException e) {
-            session.send(SyncMessage.createError(request.getRoomId(), "INVALID_REQUEST: " + e.getMessage()));
+            session.send(SyncMessage.createError(request.getRoomId(),
+                    "ROOM_UNKNOWN".equals(e.getMessage()) ? "ROOM_UNKNOWN" : "INVALID_REQUEST: " + e.getMessage()));
         }
     }
 
@@ -157,7 +158,7 @@ public final class OverleafServer implements AutoCloseable {
 
     private void validateOperations(String user, String room, List<CRDTOperation> operations) {
         long size = Optional.ofNullable(manager.getDocumentContent(room)).orElse("").length();
-        if (operations.size() > 1000) throw new IllegalArgumentException("TOO_MANY_OPERATIONS");
+        if (operations.size() > ResyncTransfer.MAX_OPERATIONS) throw new IllegalArgumentException("TOO_MANY_OPERATIONS");
         for (CRDTOperation operation : operations) {
             if (!user.equals(operation.getUserId()) || !validId(operation.getOperationId())
                     || operation.getPosition() < 0 || operation.getLamportTimestamp() < 1

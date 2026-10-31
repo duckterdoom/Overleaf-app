@@ -106,7 +106,7 @@ public class DocumentSyncManager {
             // Gửi trạng thái đầy đủ cho người mới (đọc trong khóa → nhất quán với op kế tiếp),
             // kèm CHECKPOINT để client biết mình đã thấy đến thao tác nào.
             broadcaster.sendTo(roomId, info.getUserId(),
-                    SyncMessage.createFullSync(roomId, room.document.getContent()));
+                    SyncMessage.createFullSync(roomId, room.document.getContent()).withLamportTimestamp(room.engine.getCurrentLamportTime()));
             broadcaster.sendTo(roomId, info.getUserId(), checkpoint(roomId));
         }
         broadcastUserList(room);
@@ -132,7 +132,7 @@ public class DocumentSyncManager {
 
     private SyncMessage checkpoint(String roomId) {
         return new SyncMessage(MessageType.CHECKPOINT, roomId, "SERVER", "Server",
-                history.getLastOperationId(roomId));
+                history.getLastOperationId(roomId)).withLamportTimestamp(rooms.get(roomId).engine.getCurrentLamportTime());
     }
 
     // =========================================================================
@@ -194,7 +194,7 @@ public class DocumentSyncManager {
             if (history.contains(roomId, incoming.getOperationId())) {
                 // Client gửi lại thao tác đã áp dụng (ACK bị mất): chỉ xác nhận lại
                 broadcaster.sendTo(roomId, userId,
-                        SyncMessage.createAck(roomId, incoming.getOperationId()));
+                        SyncMessage.createAck(roomId, incoming.getOperationId()).withLamportTimestamp(room.engine.getCurrentLamportTime()));
                 return;
             }
 
@@ -220,6 +220,11 @@ public class DocumentSyncManager {
      */
     private boolean applyAndPublish(Room room, CollaboratorInfo user, String senderName,
                                     CRDTOperation op, CRDTOperation original) {
+        return applyAndPublish(room, user, senderName, op, original, null);
+    }
+
+    private boolean applyAndPublish(Room room, CollaboratorInfo user, String senderName,
+                                    CRDTOperation op, CRDTOperation original, List<String> batchAcks) {
         String roomId = room.roomId;
         long version = room.engine.applyOperation(op);
         if (version < 0) {
@@ -231,10 +236,11 @@ public class DocumentSyncManager {
         user.markEditing();
 
         // ACK + phát trong khóa để giữ đúng thứ tự áp dụng giữa các client
-        broadcaster.sendTo(roomId, user.getUserId(),
-                SyncMessage.createAck(roomId, original.getOperationId()));
+        if (batchAcks != null) batchAcks.add(original.getOperationId());
+        else broadcaster.sendTo(roomId, user.getUserId(),
+                    SyncMessage.createAck(roomId, original.getOperationId()).withLamportTimestamp(room.engine.getCurrentLamportTime()));
         broadcaster.broadcast(roomId,
-                SyncMessage.createTextEdit(roomId, user.getUserId(), senderName, operationToJson(op)),
+                SyncMessage.createTextEdit(roomId, user.getUserId(), senderName, operationToJson(op)).withLamportTimestamp(room.engine.getCurrentLamportTime()),
                 user.getUserId());
         return true;
     }
@@ -281,10 +287,12 @@ public class DocumentSyncManager {
             CollaboratorInfo user = registerCollaborator(room, session, message);
 
             // Bước 1: bỏ các thao tác đã áp dụng trước đó
+            List<String> batchAcks = request.getPending().size() > 64 ? new ArrayList<>() : null;
             List<CRDTOperation> pending = new ArrayList<>();
             for (CRDTOperation op : request.getPending()) {
                 if (history.contains(roomId, op.getOperationId())) {
-                    broadcaster.sendTo(roomId, userId, SyncMessage.createAck(roomId, op.getOperationId()));
+                    if (batchAcks != null) batchAcks.add(op.getOperationId());
+                    else broadcaster.sendTo(roomId, userId, SyncMessage.createAck(roomId, op.getOperationId()));
                 } else {
                     pending.add(op);
                 }
@@ -304,7 +312,7 @@ public class DocumentSyncManager {
                                 transformed = room.engine.transformOperation(transformed, concurrent);
                             }
                         }
-                        applyAndPublish(room, user, message.getSenderName(), transformed, op);
+                        applyAndPublish(room, user, message.getSenderName(), transformed, op, batchAcks);
                     }
                 } else {
                     // Bước 2: dịch vị trí lần lượt
@@ -316,14 +324,21 @@ public class DocumentSyncManager {
                             rebased = room.engine.transformOperation(rebased, m);
                         }
                         missed = nextMissed;
-                        applyAndPublish(room, user, message.getSenderName(), rebased, op);
+                        applyAndPublish(room, user, message.getSenderName(), rebased, op, batchAcks);
                     }
                 }
             }
 
             // Bước 4: văn bản chuẩn + điểm đã thấy mới
+            if (batchAcks != null) {
+                for (int offset = 0; offset < batchAcks.size(); offset += 2048) {
+                    broadcaster.sendTo(roomId, userId, new SyncMessage(MessageType.ACK_BATCH, roomId, "SERVER", "Server",
+                            String.join("\n", batchAcks.subList(offset, Math.min(offset + 2048, batchAcks.size()))))
+                            .withLamportTimestamp(room.engine.getCurrentLamportTime()));
+                }
+            }
             broadcaster.sendTo(roomId, userId,
-                    SyncMessage.createFullSync(roomId, room.document.getContent()));
+                    SyncMessage.createFullSync(roomId, room.document.getContent()).withLamportTimestamp(room.engine.getCurrentLamportTime()));
             broadcaster.sendTo(roomId, userId, checkpoint(roomId));
         }
         broadcastUserList(room);

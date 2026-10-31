@@ -16,6 +16,10 @@ public enum MessageType {
 
     /** M3 transport handshake; payload is the configured shared access token. */
     AUTH,
+    /** Bounded transport upload of a RESYNC too large for a single frame. */
+    RESYNC_BEGIN,
+    RESYNC_PART,
+    RESYNC_END,
 
     // ---- Quản lý phòng cộng tác ----
 
@@ -35,6 +39,8 @@ public enum MessageType {
 
     /** Server xác nhận đã nhận và xử lý thành công thao tác của client */
     ACK,
+    /** Newline-separated operation IDs acknowledged after a large offline upload. */
+    ACK_BATCH,
 
     // ---- Đồng bộ lại sau khi mất kết nối (chế độ offline) ----
 

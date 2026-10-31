@@ -32,6 +32,7 @@ public class SyncMessage implements Serializable {
     private final String senderName;
     private final String payload;    // Nội dung JSON tuỳ loại thông điệp
     private final long timestamp;
+    private final long lamportTimestamp;
 
     /**
      * Hàm khởi tạo đầy đủ.
@@ -39,12 +40,7 @@ public class SyncMessage implements Serializable {
     public SyncMessage(MessageType messageType, String roomId,
                        String senderId, String senderName,
                        String payload) {
-        this.messageType = Objects.requireNonNull(messageType, "messageType không được null");
-        this.roomId = Objects.requireNonNull(roomId, "roomId không được null");
-        this.senderId = Objects.requireNonNull(senderId, "senderId không được null");
-        this.senderName = senderName != null ? senderName : senderId;
-        this.payload = payload != null ? payload : "";
-        this.timestamp = System.currentTimeMillis();
+        this(messageType, roomId, senderId, senderName, payload, System.currentTimeMillis(), 0);
     }
 
     /**
@@ -53,12 +49,19 @@ public class SyncMessage implements Serializable {
     public SyncMessage(MessageType messageType, String roomId,
                        String senderId, String senderName,
                        String payload, long timestamp) {
+        this(messageType, roomId, senderId, senderName, payload, timestamp, 0);
+    }
+
+    public SyncMessage(MessageType messageType, String roomId, String senderId, String senderName,
+                       String payload, long timestamp, long lamportTimestamp) {
+        if (lamportTimestamp < 0) throw new IllegalArgumentException("Negative Lamport clock");
         this.messageType = Objects.requireNonNull(messageType);
         this.roomId = Objects.requireNonNull(roomId);
         this.senderId = Objects.requireNonNull(senderId);
         this.senderName = senderName != null ? senderName : senderId;
         this.payload = payload != null ? payload : "";
         this.timestamp = timestamp;
+        this.lamportTimestamp = lamportTimestamp;
     }
 
     // =========================================================================
@@ -158,6 +161,11 @@ public class SyncMessage implements Serializable {
     public String getSenderName()       { return senderName; }
     public String getPayload()          { return payload; }
     public long getTimestamp()           { return timestamp; }
+    public long getLamportTimestamp() { return lamportTimestamp; }
+
+    public SyncMessage withLamportTimestamp(long clock) {
+        return new SyncMessage(messageType, roomId, senderId, senderName, payload, timestamp, clock);
+    }
 
     @Override
     public String toString() {

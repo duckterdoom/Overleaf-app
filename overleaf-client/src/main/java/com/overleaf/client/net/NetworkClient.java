@@ -4,6 +4,7 @@ import com.overleaf.common.sync.*;
 import java.io.*;
 import java.net.*;
 import java.util.Objects;
+import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -12,7 +13,7 @@ import javax.net.ssl.*;
 /** GUI-independent transport. Connect off the UI thread; send is bounded and nonblocking. */
 public final class NetworkClient implements AutoCloseable {
     private final Socket socket;
-    private final BlockingQueue<byte[]> outgoing = new ArrayBlockingQueue<>(64);
+    private final BlockingQueue<List<byte[]>> outgoing = new ArrayBlockingQueue<>(64);
     private final AtomicBoolean closed = new AtomicBoolean();
     private final AtomicBoolean started = new AtomicBoolean();
     private final ScheduledExecutorService heartbeat = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -78,7 +79,7 @@ public final class NetworkClient implements AutoCloseable {
 
     public synchronized void send(SyncMessage message) throws IOException {
         if (closed.get()) throw new IOException("Connection closed");
-        byte[] encoded = MessageCodec.encode(message);
+        List<byte[]> encoded = ResyncTransfer.encode(message);
         if (!outgoing.offer(encoded)) throw new IOException("Client send queue full; pending edits remain in offline queue");
         if (message.getMessageType() == MessageType.JOIN_ROOM || message.getMessageType() == MessageType.RESYNC) {
             room = message.getRoomId(); user = message.getSenderId();
@@ -87,7 +88,9 @@ public final class NetworkClient implements AutoCloseable {
 
     private void writeLoop() {
         try {
-            while (!closed.get()) MessageCodec.writeFrame(socket.getOutputStream(), outgoing.take());
+            while (!closed.get()) {
+                for (byte[] frame : outgoing.take()) MessageCodec.writeFrame(socket.getOutputStream(), frame);
+            }
         } catch (IOException e) { finish(e, true); }
         catch (InterruptedException e) { Thread.currentThread().interrupt(); }
     }

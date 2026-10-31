@@ -4,6 +4,7 @@ import com.overleaf.client.compiler.LatexCompilerService;
 import com.overleaf.client.io.ProjectFileManager;
 import com.overleaf.client.io.WorkspaceWatcher;
 import com.overleaf.client.net.NetworkClient;
+import com.overleaf.client.net.ConnectionScope;
 import com.overleaf.common.sync.CRDTOperation;
 import com.overleaf.common.sync.OfflineOperationQueue;
 import com.overleaf.common.sync.OperationCodec;
@@ -84,6 +85,7 @@ public class OverleafFxApp extends Application {
 
     // M3 length-prefixed transport, shared with the headless deployment demo.
     private volatile NetworkClient networkClient;
+    private final ConnectionScope connectionScope = new ConnectionScope();
     private String queueRoomId = currentRoomId;
     private String accessToken = System.getenv().getOrDefault("OVERLEAF_TOKEN", "");
     private boolean useTls = Boolean.parseBoolean(System.getenv().getOrDefault("OVERLEAF_TLS", "false"));
@@ -669,8 +671,10 @@ public class OverleafFxApp extends Application {
     // XỬ LÝ M4: NHẬN THÔNG ĐIỆP TỪ SERVER (QUY TẮC 2, 4, 5)
     // =========================================================================
 
-    private void handleIncomingServerMessage(SyncMessage msg) {
+    private void handleIncomingServerMessage(SyncMessage msg, NetworkClient source, long generation) {
         Platform.runLater(() -> {
+            if (networkClient != source || !connectionScope.accepts(generation, msg.getRoomId())) return;
+            lamportClock.accumulateAndGet(msg.getLamportTimestamp(), Math::max);
             if (operationQueue != null) {
                 operationQueue.handleServerMessage(msg);
             }
@@ -699,6 +703,7 @@ public class OverleafFxApp extends Application {
                     break;
 
                 case ACK:
+                case ACK_BATCH:
                     appendLog("[M4-ACK] Server xác nhận thao tác ID: " + msg.getPayload());
                     updatePendingBadge();
                     break;
@@ -821,6 +826,11 @@ public class OverleafFxApp extends Application {
     }
 
     private void connectToRoom(String host, int port, String room, String user, boolean isReconnecting) {
+        closeSocketQuietly();
+        isConnected = false;
+        long generation = connectionScope.begin(room);
+        boolean requestedTls = useTls;
+        String requestedToken = accessToken;
         statusLabel.setText("Đang kết nối tới Server " + host + ":" + port + "...");
 
         if (operationQueue == null || !queueRoomId.equals(room)) {
@@ -828,21 +838,22 @@ public class OverleafFxApp extends Application {
             queueRoomId = room;
         }
 
-        Task<Boolean> connectTask = new Task<>() {
+        Task<NetworkClient> connectTask = new Task<>() {
             @Override
-            protected Boolean call() throws Exception {
-                closeSocketQuietly();
-                networkClient = new NetworkClient(host, port, useTls, accessToken);
-                return true;
+            protected NetworkClient call() throws Exception {
+                return new NetworkClient(host, port, requestedTls, requestedToken);
             }
         };
 
         connectTask.setOnSucceeded(e -> {
+            NetworkClient connected = connectTask.getValue();
+            if (!connectionScope.isCurrent(generation)) { connected.close(); return; }
+            networkClient = connected;
             isConnected = true;
             appendLog(String.format("[NETWORK] Đã kết nối TCP thành công: %s:%s | Phòng: %s | Người dùng: %s", host, port, room, user));
             updateCollabListDisplay();
 
-            startSocketReaderThread();
+            startSocketReaderThread(generation);
 
             if (isReconnecting) {
                 SyncMessage resyncMsg = operationQueue.onReconnected();
@@ -862,7 +873,9 @@ public class OverleafFxApp extends Application {
         });
 
         connectTask.setOnFailed(e -> {
+            if (!connectionScope.isCurrent(generation)) return;
             isConnected = false;
+            codeEditor.setEditable(true);
             if (operationQueue != null) {
                 operationQueue.onConnectionLost();
             }
@@ -915,10 +928,10 @@ public class OverleafFxApp extends Application {
         appendLog("[NETWORK] Đã rời phòng làm việc nhóm. Trở về chế độ lưu trữ cục bộ.");
     }
 
-    private void startSocketReaderThread() {
+    private void startSocketReaderThread(long generation) {
         NetworkClient client = networkClient;
-        client.start(this::handleIncomingServerMessage, error -> Platform.runLater(() -> {
-            if (networkClient == client) {
+        client.start(msg -> handleIncomingServerMessage(msg, client, generation), error -> Platform.runLater(() -> {
+            if (networkClient == client && connectionScope.isCurrent(generation)) {
                 if (error != null) appendLog("[NETWORK] " + error.getMessage());
                 simulateConnectionLost();
             }
@@ -940,6 +953,7 @@ public class OverleafFxApp extends Application {
     }
 
     private void closeSocketQuietly() {
+        connectionScope.invalidate();
         NetworkClient client = networkClient;
         networkClient = null;
         if (client != null) client.close();

@@ -1,9 +1,9 @@
-param([string]$JavaHome = $env:JAVA_HOME)
+param([string]$JavaHome = $env:JAVA_HOME, [string]$OutputDirectory = (Join-Path $PSScriptRoot 'dist'))
 $ErrorActionPreference = 'Stop'
 $compiler = if ($JavaHome) { Join-Path $JavaHome 'bin\javac.exe' } else { 'javac' }
 $archiver = if ($JavaHome) { Join-Path $JavaHome 'bin\jar.exe' } else { 'jar' }
 $output = Join-Path $PSScriptRoot 'target\network-classes'
-$distribution = Join-Path $PSScriptRoot 'dist'
+$distribution = [IO.Path]::GetFullPath($OutputDirectory)
 New-Item -ItemType Directory -Path $output, $distribution -Force | Out-Null
 $sources = foreach ($relative in @('overleaf-common\src\main\java', 'overleaf-server\src\main\java', 'overleaf-client\src\main\java\com\overleaf\client\net')) {
     Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot $relative) -Recurse -Filter '*.java'
@@ -14,4 +14,4 @@ if ($LASTEXITCODE -ne 0) { throw 'Compilation failed' }
 if ($LASTEXITCODE -ne 0) { throw 'Server packaging failed' }
 & $archiver --create --file (Join-Path $distribution 'overleaf-network-demo.jar') --main-class com.overleaf.client.net.NetworkDemo -C $output com/overleaf/common -C $output com/overleaf/client/net
 if ($LASTEXITCODE -ne 0) { throw 'Demo packaging failed' }
-Write-Host 'Built dist/overleaf-server.jar and dist/overleaf-network-demo.jar (Java 17+)'
+Write-Host "Built $distribution\overleaf-server.jar and overleaf-network-demo.jar (Java 17+)"

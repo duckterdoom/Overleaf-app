@@ -13,7 +13,7 @@ class MessageCodecTest {
     }
 
     @Test void roundTripsAllFieldsAndUnicode() throws Exception {
-        SyncMessage source = new SyncMessage(MessageType.FULL_SYNC, "room", "id", "Nguyễn", "LaTeX 🌏\n".repeat(12000), 42L);
+        SyncMessage source = new SyncMessage(MessageType.FULL_SYNC, "room", "id", "Nguyễn", "LaTeX 🌏\n".repeat(12000), 42L, 123L);
         SyncMessage result = MessageCodec.read(new ByteArrayInputStream(wire(source)));
         assertEquals(source.getMessageType(), result.getMessageType());
         assertEquals(source.getRoomId(), result.getRoomId());
@@ -21,6 +21,7 @@ class MessageCodecTest {
         assertEquals(source.getSenderName(), result.getSenderName());
         assertEquals(source.getPayload(), result.getPayload());
         assertEquals(42L, result.getTimestamp());
+        assertEquals(123L, result.getLamportTimestamp());
     }
 
     @Test void handlesFragmentationAndConsecutiveFrames() throws Exception {
@@ -76,5 +77,16 @@ class MessageCodecTest {
         queue.handleServerMessage(new SyncMessage(MessageType.CHECKPOINT, "r", "SERVER", "Server", ""));
         assertTrue(queue.isOnline());
         assertFalse(queue.isResyncing());
+    }
+
+    @Test void readsLegacyVersionOneWithoutClock() throws Exception {
+        byte[] body = MessageCodec.encode(SyncMessage.createFullSync("r", "hello").withLamportTimestamp(123));
+        body = Arrays.copyOf(body, body.length - 8);
+        body[3] = 1;
+        ByteArrayOutputStream wire = new ByteArrayOutputStream();
+        MessageCodec.writeFrame(wire, body);
+        SyncMessage legacy = MessageCodec.read(new ByteArrayInputStream(wire.toByteArray()));
+        assertEquals("hello", legacy.getPayload());
+        assertEquals(0, legacy.getLamportTimestamp());
     }
 }
