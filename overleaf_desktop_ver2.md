@@ -65,10 +65,10 @@ overleaf-desktop-project/
 ├── overleaf-common/             # Shared Module (Models, TCP Message Protocols)
 │   ├── pom.xml
 │   └── src/main/java/...
-├── overleaf-client/             # M1 & M2: GUI Client, Editor, Local I/O & PDF Rendering
+├── overleaf-client/             # M1 & M2: GUI Client, Editor, Local I/O & PDF Rendering, ProcessBuilder
 │   ├── pom.xml
 │   └── src/main/java/...
-├── overleaf-server/             # M2 & M3: TCP Server, Room Management, Thread Pools, ProcessBuilder
+├── overleaf-server/             # M3: TCP Server, Room Management, Thread Pools
 │   ├── pom.xml
 │   └── src/main/java/...
 └── database/                    # M5: Independent Database Module
