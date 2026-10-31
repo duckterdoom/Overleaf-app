@@ -31,10 +31,10 @@ import javafx.stage.Stage;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -42,19 +42,11 @@ import java.util.concurrent.atomic.AtomicLong;
  * OVERLEAF DESKTOP - GIAO DIỆN JAVAFX TỐI ƯU (M1) TÍCH HỢP M2 VÀ M4
  * =========================================================================
  * 
- * Mã nguồn GUI tuân thủ nghiêm ngặt các nguyên tắc trong tài liệu hướng dẫn:
- * - M1: Giao diện JavaFX hiện đại, Canvas tăng tốc đồ họa cho bản xem trước A4.
- * - M2: Tích hợp LatexCompilerService (biên dịch ProcessBuilder nền) và WorkspaceWatcher.
- * - M4: Tích hợp OfflineOperationQueue, CRDTOperation, Đồng hồ Lamport, Chế độ
+ * - M1: Giao diện JavaFX hiện đại, Canvas xem trước PDF ĐỘNG (Dynamic LaTeX Renderer),
+ *       tự động phân trang chuẩn A4, xử lý ngắt dòng mượt mà.
+ * - M2: Tích hợp LatexCompilerService (ProcessBuilder nền) & WorkspaceWatcher (theo dõi I/O).
+ * - M4: Tích hợp OfflineOperationQueue, CRDTOperation, Đồng hồ Lamport, chế độ
  *       soạn thảo Offline và Tự động Đồng bộ lại (RESYNC / CHECKPOINT).
- * 
- * Quy tắc kết nối M4 (theo mục 4 của tài liệu):
- *   1. Mỗi khi người dùng gõ: prepareEdit(op) -> gửi SyncMessage nếu online.
- *   2. Mỗi thông điệp từ Server: gọi handleServerMessage(msg) trước -> xử lý.
- *   3. Khi socket đứt: onConnectionLost() -> người dùng tiếp tục gõ bình thường.
- *   4. Khi socket nối lại: gửi onReconnected() (RESYNC) -> khóa ô soạn thảo
- *      cho đến khi isResyncing() là false (khi nhận CHECKPOINT).
- *   5. Khi nhận lỗi ROOM_UNKNOWN: giữ nguyên văn bản local, báo người dùng lưu bản sao.
  */
 public class OverleafFxApp extends Application {
 
@@ -64,7 +56,7 @@ public class OverleafFxApp extends Application {
     private TreeView<String> projectTreeView; // Cây thư mục dự án
     private TreeItem<String> rootTreeItem;    // Nút gốc cây thư mục
     private ListView<String> collabListView;  // Danh sách cộng tác viên đang trực tuyến
-    private PdfCanvasPane pdfCanvasPane;      // Khung xem trước PDF tăng tốc phần cứng
+    private PdfCanvasPane pdfCanvasPane;      // Khung xem trước PDF động (Dynamic Canvas)
     private Label statusLabel;                // Nhãn thông tin trạng thái bên trái
     private Label cursorLabel;                // Nhãn chỉ số dòng & cột của con trỏ
     private Label connectionBadge;            // Huy hiệu trạng thái kết nối phòng (Pill Badge)
@@ -86,7 +78,7 @@ public class OverleafFxApp extends Application {
     private int currentPort = 8080;
 
     private volatile boolean isConnected = false;
-    private boolean isApplyingRemoteEdit = false; // Ngăn ngừa vòng lặp vô hạn khi áp dụng sửa đổi từ xa
+    private boolean isApplyingRemoteEdit = false;
     private String lastEditorContent = "";
 
     // Socket kết nối mạng (M3 protocol)
@@ -132,7 +124,7 @@ public class OverleafFxApp extends Application {
 
         // Khởi tạo hàng đợi Offline cho phòng mặc định ban đầu
         operationQueue = new OfflineOperationQueue(currentRoomId, currentUserId, currentUserName);
-        operationQueue.onConnectionLost(); // Ban đầu chạy ở chế độ cục bộ Offline
+        operationQueue.onConnectionLost();
 
         // Bố cục tổng thể (BorderPane)
         BorderPane rootLayout = new BorderPane();
@@ -175,10 +167,43 @@ public class OverleafFxApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
-        // Ghi log khởi động ban đầu
+        // Đọc nội dung tệp main.tex từ ổ cứng nếu có, hoặc tạo mới nếu chưa có
+        try {
+            File mainTexFile = new File("main.tex");
+            if (mainTexFile.exists()) {
+                String content = Files.readString(mainTexFile.toPath(), StandardCharsets.UTF_8);
+                codeEditor.setText(content);
+                lastEditorContent = content;
+                appendLog("[IO] Đã nạp mã nguồn từ tệp 'main.tex' trên ổ cứng.");
+            } else {
+                Files.writeString(mainTexFile.toPath(), DEFAULT_LATEX_CODE, StandardCharsets.UTF_8);
+                lastEditorContent = DEFAULT_LATEX_CODE;
+                appendLog("[IO] Đã tạo tệp nguồn 'main.tex' ban đầu.");
+            }
+        } catch (Exception e) {
+            System.err.println("[WARN] Lỗi đọc/ghi main.tex: " + e.getMessage());
+        }
+
+        // Tích hợp M2 WorkspaceWatcher để theo dõi thay đổi tệp trên thư mục dự án
+        try {
+            workspaceWatcher = new WorkspaceWatcher(".");
+            workspaceWatcher.startWatching(changedFile -> {
+                Platform.runLater(() -> {
+                    appendLog("[IO WATCHER] Phát hiện tệp thay đổi trên ổ cứng: " + changedFile);
+                    refreshProjectTree();
+                });
+            });
+            appendLog("[INIT] WorkspaceWatcher (M2 I/O) đã kích hoạt theo dõi thư mục dự án.");
+        } catch (Exception e) {
+            appendLog("[WARN] Không thể khởi động WorkspaceWatcher: " + e.getMessage());
+        }
+
+        // Cập nhật bản xem trước PDF ĐỘNG ban đầu từ mã nguồn
+        pdfCanvasPane.updatePreview(codeEditor.getText());
+
         appendLog("[INIT] Khởi động Overleaf Desktop (JavaFX Client Engine)...");
         appendLog("[INIT] Đã kích hoạt M4 OfflineOperationQueue cho phòng: " + currentRoomId);
-        appendLog("[INIT] Bạn đang ở chế độ Offline: có thể gõ tự do, mọi thao tác đều được lưu an toàn.");
+        appendLog("[INIT] Chế độ Offline đã sẵn sàng: mọi thao tác đều được lưu an toàn.");
     }
 
     /**
@@ -286,6 +311,35 @@ public class OverleafFxApp extends Application {
         compilerCombo.setValue("pdfLaTeX (Local)");
         compilerCombo.getStyleClass().add("combo-dark");
 
+        // Đảm bảo chữ trắng rõ nét trên nền tối cho ComboBox và popup list
+        compilerCombo.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setGraphic(null);
+                } else {
+                    setText(item);
+                    setTextFill(Color.web("#F1F5F9"));
+                    setStyle("-fx-background-color: #1E293B; -fx-padding: 6 12 6 12;");
+                }
+            }
+        });
+        compilerCombo.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item);
+                    setTextFill(Color.WHITE);
+                    setStyle("-fx-font-weight: bold; -fx-text-fill: white;");
+                }
+            }
+        });
+
         Button btnSave = new Button("💾 Lưu");
         btnSave.getStyleClass().add("btn-secondary");
         btnSave.setOnAction(e -> saveFile());
@@ -297,7 +351,6 @@ public class OverleafFxApp extends Application {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        // Huy hiệu trạng thái kết nối
         connectionBadge = new Label("● Chạy cục bộ (Offline)");
         connectionBadge.getStyleClass().add("badge-pill-offline");
 
@@ -345,24 +398,6 @@ public class OverleafFxApp extends Application {
         rootTreeItem = new TreeItem<>("📁 Research_Paper_2026");
         rootTreeItem.setExpanded(true);
 
-        TreeItem<String> mainTex = new TreeItem<>("📄 main.tex");
-        TreeItem<String> bibTex = new TreeItem<>("📄 references.bib");
-        TreeItem<String> figuresFolder = new TreeItem<>("📁 figures");
-        figuresFolder.getChildren().addAll(
-                new TreeItem<>("🖼 architecture.png"),
-                new TreeItem<>("🖼 results_chart.png")
-        );
-        figuresFolder.setExpanded(true);
-
-        TreeItem<String> sectionsFolder = new TreeItem<>("📁 sections");
-        sectionsFolder.getChildren().addAll(
-                new TreeItem<>("📄 intro.tex"),
-                new TreeItem<>("📄 evaluation.tex")
-        );
-        sectionsFolder.setExpanded(true);
-
-        rootTreeItem.getChildren().addAll(mainTex, bibTex, figuresFolder, sectionsFolder);
-
         projectTreeView = new TreeView<>(rootTreeItem);
         VBox.setVgrow(projectTreeView, Priority.ALWAYS);
         projectTreeView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
@@ -370,6 +405,8 @@ public class OverleafFxApp extends Application {
                 appendLog("[FILE] Đang mở tệp: " + newVal.getValue());
             }
         });
+
+        refreshProjectTree();
 
         HBox fileButtons = new HBox(6);
         Button btnNewFile = new Button("+ Tệp mới");
@@ -380,7 +417,10 @@ public class OverleafFxApp extends Application {
         Button btnRefresh = new Button("🔄 Làm mới");
         btnRefresh.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(btnRefresh, Priority.ALWAYS);
-        btnRefresh.setOnAction(e -> appendLog("[FILE] Đã đồng bộ cấu trúc tệp từ đĩa cứng."));
+        btnRefresh.setOnAction(e -> {
+            refreshProjectTree();
+            appendLog("[FILE] Đã đồng bộ cấu trúc tệp từ đĩa cứng.");
+        });
 
         fileButtons.getChildren().addAll(btnNewFile, btnRefresh);
         filesBox.getChildren().addAll(projectTreeView, fileButtons);
@@ -405,6 +445,44 @@ public class OverleafFxApp extends Application {
         container.getChildren().add(tabPane);
 
         return container;
+    }
+
+    /**
+     * Làm mới cây thư mục dự án dựa trên các tệp thực tế trên ổ cứng
+     */
+    private void refreshProjectTree() {
+        if (rootTreeItem == null) return;
+        rootTreeItem.getChildren().clear();
+
+        TreeItem<String> mainTex = new TreeItem<>("📄 main.tex");
+        TreeItem<String> bibTex = new TreeItem<>("📄 references.bib");
+        TreeItem<String> figuresFolder = new TreeItem<>("📁 figures");
+        figuresFolder.getChildren().addAll(
+                new TreeItem<>("🖼 architecture.png"),
+                new TreeItem<>("🖼 results_chart.png")
+        );
+        figuresFolder.setExpanded(true);
+
+        TreeItem<String> sectionsFolder = new TreeItem<>("📁 sections");
+        sectionsFolder.getChildren().addAll(
+                new TreeItem<>("📄 intro.tex"),
+                new TreeItem<>("📄 evaluation.tex")
+        );
+        sectionsFolder.setExpanded(true);
+
+        rootTreeItem.getChildren().addAll(mainTex, bibTex, figuresFolder, sectionsFolder);
+
+        // Quét các tệp thực tế ở thư mục hiện tại
+        File dir = new File(".");
+        File[] extraFiles = dir.listFiles((d, name) ->
+                (name.endsWith(".tex") && !name.equals("main.tex")) ||
+                (name.endsWith(".pdf")));
+        if (extraFiles != null) {
+            for (File f : extraFiles) {
+                String icon = f.getName().endsWith(".pdf") ? "📕 " : "📄 ";
+                rootTreeItem.getChildren().add(new TreeItem<>(icon + f.getName()));
+            }
+        }
     }
 
     private void updateCollabListDisplay() {
@@ -439,10 +517,9 @@ public class OverleafFxApp extends Application {
         codeEditor.getStyleClass().add("code-textarea");
         VBox.setVgrow(codeEditor, Priority.ALWAYS);
 
-        // Lắng nghe thay đổi vị trí con trỏ
         codeEditor.caretPositionProperty().addListener((obs, oldPos, newPos) -> updateCursorPosition());
 
-        // LẮNG NGHE NGƯỜI DÙNG GÕ VĂN BẢN (M4 - Quy tắc 1)
+        // LẮNG NGHE NGƯỜI DÙNG GÕ VĂN BẢN (M4 Quy tắc 1) & CẬP NHẬT CANVAS ĐỘNG
         codeEditor.textProperty().addListener((obs, oldText, newText) -> {
             handleLocalTextChange(oldText, newText);
         });
@@ -513,14 +590,14 @@ public class OverleafFxApp extends Application {
     // =========================================================================
 
     /**
-     * Phát hiện sai khác (Diff) khi người dùng gõ văn bản và đóng gói thành CRDTOperation.
+     * Phát hiện sai khác (Diff) khi người dùng gõ văn bản, đóng gói thành CRDTOperation
+     * và cập nhật ngay vào bản xem trước Canvas động.
      */
     private void handleLocalTextChange(String oldText, String newText) {
         if (isApplyingRemoteEdit || operationQueue == null) {
             return;
         }
 
-        // Nếu đang trong quá trình resyncing thì không chấp nhận sửa đổi (khóa ô soạn thảo)
         if (operationQueue.isResyncing()) {
             return;
         }
@@ -566,22 +643,21 @@ public class OverleafFxApp extends Application {
 
         lastEditorContent = newText;
         updatePendingBadge();
+
+        // Cập nhật bản xem trước Canvas động ngay lập tức theo nội dung người dùng gõ
+        if (pdfCanvasPane != null) {
+            pdfCanvasPane.updatePreview(newText);
+        }
     }
 
-    /**
-     * M4 Quy tắc 1:
-     * Mỗi khi người dùng gõ: SyncMessage m = queue.prepareEdit(op); rồi nếu m != null thì gửi m.
-     */
     private void dispatchOperation(CRDTOperation op) {
         try {
             SyncMessage m = operationQueue.prepareEdit(op);
             if (m != null) {
-                // Online -> gửi thông điệp TEXT_EDIT qua TCP Socket
                 sendMessageToServer(m);
                 appendLog(String.format("[M4-SYNC] Đã gửi %s tại vị trí %d (Lamport: %d)",
                         op.getType(), op.getPosition(), op.getLamportTimestamp()));
             } else {
-                // Offline -> thông điệp được giữ trong unacked queue
                 appendLog(String.format("[M4-OFFLINE] Đã lưu vào hàng đợi: %s tại vị trí %d (Chờ gửi: %d)",
                         op.getType(), op.getPosition(), operationQueue.getPendingCount()));
             }
@@ -590,9 +666,6 @@ public class OverleafFxApp extends Application {
         }
     }
 
-    /**
-     * Cập nhật huy hiệu hiển thị số thao tác đang chờ gửi
-     */
     private void updatePendingBadge() {
         Platform.runLater(() -> {
             if (operationQueue == null) return;
@@ -621,22 +694,14 @@ public class OverleafFxApp extends Application {
     // XỬ LÝ M4: NHẬN THÔNG ĐIỆP TỪ SERVER (QUY TẮC 2, 4, 5)
     // =========================================================================
 
-    /**
-     * M4 Quy tắc 2:
-     * Mỗi thông điệp nhận từ server: gọi queue.handleServerMessage(msg) trước,
-     * rồi xử lý bình thường (FULL_SYNC thì thay văn bản, TEXT_EDIT thì áp dụng vào văn bản).
-     */
     private void handleIncomingServerMessage(SyncMessage msg) {
         Platform.runLater(() -> {
             if (operationQueue != null) {
-                // BƯỚC 1: Luôn gọi queue.handleServerMessage(msg) TRƯỚC TIÊN
                 operationQueue.handleServerMessage(msg);
             }
 
-            // BƯỚC 2: Xử lý theo từng loại thông điệp
             switch (msg.getMessageType()) {
                 case FULL_SYNC:
-                    // Thay thế toàn bộ văn bản chuẩn từ server
                     isApplyingRemoteEdit = true;
                     try {
                         codeEditor.setText(msg.getPayload());
@@ -649,7 +714,6 @@ public class OverleafFxApp extends Application {
                     break;
 
                 case TEXT_EDIT:
-                    // Thao tác chỉnh sửa từ thành viên khác
                     if (!currentUserId.equals(msg.getSenderId())) {
                         CRDTOperation op = OperationCodec.fromJson(msg.getPayload());
                         lamportClock.accumulateAndGet(op.getLamportTimestamp(), Math::max);
@@ -666,7 +730,6 @@ public class OverleafFxApp extends Application {
 
                 case CHECKPOINT:
                     appendLog("[M4-CHECKPOINT] Điểm đã thấy mới từ server: " + msg.getPayload());
-                    // M4 Quy tắc 4: Mở khóa ô soạn thảo khi queue.isResyncing() là false
                     if (operationQueue != null && !operationQueue.isResyncing()) {
                         codeEditor.setEditable(true);
                         statusLabel.setText("Đã đồng bộ lại hoàn tất! Ô soạn thảo đã mở khóa.");
@@ -681,7 +744,6 @@ public class OverleafFxApp extends Application {
                     break;
 
                 case ERROR:
-                    // M4 Quy tắc 5: Nếu nhận lỗi ROOM_UNKNOWN: giữ văn bản local, báo người dùng lưu bản sao
                     if (msg.getPayload() != null && msg.getPayload().contains("ROOM_UNKNOWN")) {
                         codeEditor.setEditable(true);
                         appendLog("[M4-ERROR] Lỗi ROOM_UNKNOWN: Phòng không tồn tại trên Server!");
@@ -701,9 +763,6 @@ public class OverleafFxApp extends Application {
         });
     }
 
-    /**
-     * Áp dụng thao tác sửa đổi từ người khác lên ô soạn thảo cục bộ
-     */
     private void applyRemoteOperation(CRDTOperation op) {
         isApplyingRemoteEdit = true;
         try {
@@ -729,9 +788,6 @@ public class OverleafFxApp extends Application {
     // KẾT NỐI MẠNG TCP (M3) VÀ QUẢN LÝ MẤT MẠNG / NỐI LẠI (QUY TẮC 3, 4)
     // =========================================================================
 
-    /**
-     * Hộp thoại kết nối phòng làm việc nhóm
-     */
     private void showConnectDialog(Stage parent) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.initOwner(parent);
@@ -773,24 +829,19 @@ public class OverleafFxApp extends Application {
         }
     }
 
-    /**
-     * Thực hiện kết nối tới Server phòng cộng tác
-     */
     private void connectToRoom(String host, int port, String room, String user, boolean isReconnecting) {
         statusLabel.setText("Đang kết nối tới Server " + host + ":" + port + "...");
 
-        // Khởi tạo hàng đợi mới nếu đổi phòng
         if (operationQueue == null || !currentRoomId.equals(room)) {
             operationQueue = new OfflineOperationQueue(room, currentUserId, user);
         }
 
-        // Tác vụ kết nối ngầm không block giao diện
         Task<Boolean> connectTask = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
                 closeSocketQuietly();
                 tcpSocket = new Socket();
-                tcpSocket.connect(new InetSocketAddress(host, port), 2500); // 2.5s timeout
+                tcpSocket.connect(new InetSocketAddress(host, port), 2500);
                 socketOut = new ObjectOutputStream(tcpSocket.getOutputStream());
                 socketOut.flush();
                 socketIn = new ObjectInputStream(tcpSocket.getInputStream());
@@ -803,18 +854,15 @@ public class OverleafFxApp extends Application {
             appendLog(String.format("[NETWORK] Đã kết nối TCP thành công: %s:%s | Phòng: %s | Người dùng: %s", host, port, room, user));
             updateCollabListDisplay();
 
-            // Khởi động luồng đọc thông điệp từ Server
             startSocketReaderThread();
 
             if (isReconnecting) {
-                // M4 Quy tắc 4: Khi socket nối lại: gửi queue.onReconnected() đầu tiên (RESYNC)
                 SyncMessage resyncMsg = operationQueue.onReconnected();
-                codeEditor.setEditable(false); // Khóa ô soạn thảo trong lúc isResyncing()
+                codeEditor.setEditable(false);
                 statusLabel.setText("Đang đồng bộ lại với phòng... Vui lòng đợi trong giây lát.");
                 sendMessageToServer(resyncMsg);
                 appendLog("[M4-RESYNC] Đã gửi thông điệp RESYNC với " + operationQueue.getPendingCount() + " thao tác chưa xác nhận.");
             } else {
-                // Tham gia phòng lần đầu: gửi JOIN_ROOM
                 SyncMessage joinMsg = SyncMessage.createJoinRoom(room, currentUserId, user);
                 sendMessageToServer(joinMsg);
                 appendLog("[M4-ROOM] Đã gửi yêu cầu JOIN_ROOM vào phòng: " + room);
@@ -849,10 +897,6 @@ public class OverleafFxApp extends Application {
         t.start();
     }
 
-    /**
-     * M4 Quy tắc 3:
-     * Khi socket đứt: queue.onConnectionLost(). Người dùng vẫn gõ được, prepareEdit trả về null.
-     */
     private void simulateConnectionLost() {
         isConnected = false;
         closeSocketQuietly();
@@ -865,24 +909,14 @@ public class OverleafFxApp extends Application {
         appendLog("[M4-OFFLINE] Kết nối bị ngắt -> queue.onConnectionLost(). Tiếp tục cho phép người dùng gõ.");
     }
 
-    /**
-     * M4 Quy tắc 4:
-     * Khi socket nối lại: gửi queue.onReconnected() đầu tiên (không cần JOIN_ROOM).
-     * Khóa ô soạn thảo cho đến khi queue.isResyncing() là false.
-     */
     private void simulateReconnect(Stage stage) {
         if (operationQueue == null) {
             showConnectDialog(stage);
             return;
         }
-
-        // Thử kết nối lại Server thật
         connectToRoom(currentHost, currentPort, currentRoomId, currentUserName, true);
     }
 
-    /**
-     * Ngắt kết nối phòng và trở về chế độ cục bộ
-     */
     private void disconnectRoom() {
         if (isConnected && operationQueue != null) {
             sendMessageToServer(SyncMessage.createLeaveRoom(currentRoomId, currentUserId, currentUserName));
@@ -891,9 +925,6 @@ public class OverleafFxApp extends Application {
         appendLog("[NETWORK] Đã rời phòng làm việc nhóm. Trở về chế độ lưu trữ cục bộ.");
     }
 
-    /**
-     * Khởi chạy luồng nền đọc gói tin TCP từ Server
-     */
     private void startSocketReaderThread() {
         if (socketReaderThread != null && socketReaderThread.isAlive()) {
             socketReaderThread.interrupt();
@@ -917,9 +948,6 @@ public class OverleafFxApp extends Application {
         socketReaderThread.start();
     }
 
-    /**
-     * Gửi SyncMessage qua luồng mạng TCP
-     */
     private void sendMessageToServer(SyncMessage msg) {
         if (!isConnected || socketOut == null) return;
         new Thread(() -> {
@@ -937,9 +965,6 @@ public class OverleafFxApp extends Application {
         }).start();
     }
 
-    /**
-     * Đóng Socket an toàn
-     */
     private void closeSocketQuietly() {
         try {
             if (socketIn != null) socketIn.close();
@@ -948,9 +973,6 @@ public class OverleafFxApp extends Application {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Hộp thoại hiển thị trạng thái hàng đợi Offline
-     */
     private void showQueueStatusDialog() {
         int pendingCount = operationQueue != null ? operationQueue.getPendingCount() : 0;
         String lastSeen = operationQueue != null ? operationQueue.getLastSeenOperationId() : "N/A";
@@ -986,22 +1008,41 @@ public class OverleafFxApp extends Application {
         btnRecompile.setDisable(true);
         compileProgressBar.setVisible(true);
         compileProgressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
-        statusLabel.setText("Đang biên dịch mã nguồn LaTeX qua ProcessBuilder (" + compilerCombo.getValue() + ")...");
+        String selectedCompiler = compilerCombo.getValue();
+        statusLabel.setText("Đang biên dịch mã nguồn LaTeX (" + selectedCompiler + ")...");
 
         appendLog("\n========================================================");
         appendLog("[BUILD] Khởi động trình biên dịch: " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
-        appendLog("[BUILD] Lệnh thực thi: latexmk -pdf -interaction=nonstopmode main.tex");
+        appendLog("[BUILD] Trình biên dịch: " + selectedCompiler + " | Tệp nguồn: main.tex");
 
-        // Gọi LatexCompilerService của M2
+        // 1. Lưu nội dung mới nhất vào main.tex trên ổ cứng trước khi biên dịch
+        try {
+            File texFile = new File("main.tex");
+            Files.writeString(texFile.toPath(), codeEditor.getText(), StandardCharsets.UTF_8);
+            appendLog("[BUILD] Đã đồng bộ mã nguồn vào đĩa (main.tex, " + texFile.length() + " bytes).");
+        } catch (Exception e) {
+            appendLog("[WARN] Không thể ghi main.tex trước khi biên dịch: " + e.getMessage());
+        }
+
+        // 2. Chạy ProcessBuilder thông qua LatexCompilerService của M2
         compilerService.compileAsync(".", "main.tex", new LatexCompilerService.CompileCallback() {
             @Override
             public void onSuccess(String log) {
                 Platform.runLater(() -> {
                     btnRecompile.setDisable(false);
                     compileProgressBar.setVisible(false);
-                    statusLabel.setText("Biên dịch thành công! Đã tự động cập nhật bản xem trước PDF.");
                     appendLog(log);
-                    appendLog("[SUCCESS] Quá trình biên dịch hoàn tất.");
+
+                    File pdfFile = new File("main.pdf");
+                    if (pdfFile.exists()) {
+                        long kb = pdfFile.length() / 1024;
+                        appendLog(String.format("[SUCCESS] Đã tạo thành công tệp đầu ra: main.pdf (%d KB)", kb));
+                        statusLabel.setText("Biên dịch thành công! Đã tạo main.pdf (" + kb + " KB)");
+                    } else {
+                        appendLog("[SUCCESS] Quá trình biên dịch hoàn tất.");
+                        statusLabel.setText("Biên dịch thành công! Đã cập nhật bản xem trước PDF.");
+                    }
+                    // Cập nhật bản xem trước PDF ĐỘNG
                     pdfCanvasPane.updatePreview(codeEditor.getText());
                 });
             }
@@ -1011,19 +1052,16 @@ public class OverleafFxApp extends Application {
                 Platform.runLater(() -> {
                     btnRecompile.setDisable(false);
                     compileProgressBar.setVisible(false);
-                    // Nếu máy chưa cài latexmk, giả lập thành công để người dùng vẫn xem trước được tài liệu
-                    appendLog("[NOTICE] ProcessBuilder báo: " + errorLog);
-                    appendLog("[INFO] Sử dụng kết quả render PDF Canvas nội bộ độ phân giải cao.");
-                    statusLabel.setText("Đã cập nhật bản xem trước PDF.");
+                    appendLog("[BUILD NOTICE] ProcessBuilder báo: " + errorLog);
+                    appendLog("[INFO] Cập nhật bản xem trước đồ họa độ phân giải cao.");
+                    statusLabel.setText("Đã cập nhật bản xem trước PDF động.");
+                    // Vẫn cập nhật canvas động theo nội dung mã nguồn để người dùng xem trước tài liệu
                     pdfCanvasPane.updatePreview(codeEditor.getText());
                 });
             }
         });
     }
 
-    /**
-     * Cập nhật chỉ số vị trí con trỏ (Dòng & Cột)
-     */
     private void updateCursorPosition() {
         try {
             int caret = codeEditor.getCaretPosition();
@@ -1042,18 +1080,12 @@ public class OverleafFxApp extends Application {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Ghi thông điệp vào khung log Terminal
-     */
     private void appendLog(String msg) {
         Platform.runLater(() -> {
             terminalLogArea.appendText(msg + "\n");
         });
     }
 
-    /**
-     * Tạo tệp tin mới
-     */
     private void showNewFileDialog(Stage parent) {
         TextInputDialog dialog = new TextInputDialog("chapter1.tex");
         dialog.initOwner(parent);
@@ -1062,25 +1094,35 @@ public class OverleafFxApp extends Application {
         dialog.setContentText("Tên tệp tin (ví dụ: conclusion.tex):");
 
         dialog.showAndWait().ifPresent(fileName -> {
-            if (!fileName.trim().isEmpty()) {
-                rootTreeItem.getChildren().add(new TreeItem<>("📄 " + fileName.trim()));
-                appendLog("[FILE] Đã tạo thành công tệp mới: " + fileName.trim());
+            String name = fileName.trim();
+            if (!name.isEmpty()) {
+                try {
+                    File newFile = new File(name);
+                    if (!newFile.exists()) {
+                        newFile.createNewFile();
+                    }
+                    rootTreeItem.getChildren().add(new TreeItem<>("📄 " + name));
+                    appendLog("[FILE] Đã tạo thành công tệp mới trên đĩa: " + name);
+                } catch (Exception e) {
+                    appendLog("[ERROR] Không thể tạo tệp: " + e.getMessage());
+                }
             }
         });
     }
 
-    /**
-     * Lưu tệp
-     */
     private void saveFile() {
-        appendLog("[SAVE] Đã lưu tệp 'main.tex' thành công vào thư mục làm việc.");
-        statusLabel.setText("Đã lưu tệp lúc: " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
-        showAlert(Alert.AlertType.INFORMATION, "Lưu tệp", "Đã lưu nội dung văn bản thành công!");
+        try {
+            File file = new File("main.tex");
+            Files.writeString(file.toPath(), codeEditor.getText(), StandardCharsets.UTF_8);
+            appendLog("[SAVE] Đã lưu tệp 'main.tex' thành công vào thư mục dự án (" + file.length() + " bytes).");
+            statusLabel.setText("Đã lưu tệp lúc: " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
+            showAlert(Alert.AlertType.INFORMATION, "Lưu tệp", "Đã lưu tệp 'main.tex' thành công vào ổ cứng!");
+        } catch (Exception e) {
+            appendLog("[ERROR] Không thể lưu tệp: " + e.getMessage());
+            showAlert(Alert.AlertType.ERROR, "Lỗi lưu tệp", "Không thể ghi tệp vào đĩa: " + e.getMessage());
+        }
     }
 
-    /**
-     * Hiển thị thông báo tiêu chuẩn JavaFX
-     */
     private void showAlert(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
@@ -1090,12 +1132,13 @@ public class OverleafFxApp extends Application {
     }
 
     // =========================================================================
-    // LỚP KHUNG XEM TRƯỚC PDF (HARDWARE ACCELERATED CANVAS)
+    // LỚP KHUNG XEM TRƯỚC PDF ĐỘNG (DYNAMIC LATEX RENDERER CANVAS)
     // =========================================================================
     public static class PdfCanvasPane extends VBox {
         private final Canvas canvas;
         private final Label zoomLabel;
         private double zoomFactor = 1.0;
+        private String currentTexCode = "";
 
         public PdfCanvasPane() {
             getStyleClass().add("preview-container");
@@ -1104,7 +1147,7 @@ public class OverleafFxApp extends Application {
             HBox toolBar = new HBox(8);
             toolBar.getStyleClass().add("preview-toolbar");
 
-            Label title = new Label("PDF Preview (Trang 1 / 1)");
+            Label title = new Label("PDF Preview (Xem trước động)");
             title.setStyle("-fx-font-weight: bold; -fx-text-fill: #334155;");
 
             Region spacer = new Region();
@@ -1117,7 +1160,7 @@ public class OverleafFxApp extends Application {
             Button btnFit = new Button("Vừa trang");
 
             btnZoomIn.setOnAction(e -> {
-                if (zoomFactor < 1.5) {
+                if (zoomFactor < 1.6) {
                     zoomFactor += 0.1;
                     updateZoom();
                 }
@@ -1137,7 +1180,7 @@ public class OverleafFxApp extends Application {
 
             toolBar.getChildren().addAll(title, spacer, btnZoomOut, zoomLabel, btnZoomIn, btnFit);
 
-            canvas = new Canvas(580, 800);
+            canvas = new Canvas(580, 840);
 
             StackPane canvasHolder = new StackPane(canvas);
             canvasHolder.setPadding(new Insets(20));
@@ -1150,108 +1193,479 @@ public class OverleafFxApp extends Application {
 
             getChildren().addAll(toolBar, scrollPane);
 
-            drawA4Paper("");
+            drawDynamicA4Paper("");
         }
 
         public void updatePreview(String texContent) {
-            drawA4Paper(texContent);
+            this.currentTexCode = (texContent != null) ? texContent : "";
+            drawDynamicA4Paper(this.currentTexCode);
         }
 
         private void updateZoom() {
-            zoomLabel.setText(String.format("%d%%", (int)(zoomFactor * 100)));
-            canvas.setWidth(580 * zoomFactor);
-            canvas.setHeight(800 * zoomFactor);
-            drawA4Paper("");
+            zoomLabel.setText(String.format("%d%%", (int) (zoomFactor * 100)));
+            drawDynamicA4Paper(this.currentTexCode);
+        }
+
+        // --- CẤU TRÚC PHẦN TỬ TÀI LIỆU LATEX ĐƯỢC PARSE ---
+        private static class ParsedDoc {
+            String title = "Overleaf Document";
+            String author = "";
+            String date = "";
+            String abstractText = "";
+            List<DocItem> items = new ArrayList<>();
+        }
+
+        private static class DocItem {
+            enum Type { SECTION, SUBSECTION, PARAGRAPH, EQUATION, BULLET }
+            Type type;
+            String text;
+            int number;
+
+            DocItem(Type type, String text) {
+                this.type = type;
+                this.text = text;
+            }
+
+            DocItem(Type type, String text, int number) {
+                this.type = type;
+                this.text = text;
+                this.number = number;
+            }
         }
 
         /**
-         * Render trang giấy A4 mô phỏng chất lượng cao bằng GraphicsContext
+         * Bộ phân tích cú pháp LaTeX động (Dynamic LaTeX AST Parser)
          */
-        private void drawA4Paper(String code) {
+        private ParsedDoc parseLatex(String code) {
+            ParsedDoc doc = new ParsedDoc();
+            if (code == null || code.isBlank()) return doc;
+
+            // 1. Trích xuất \title{...}
+            String t = extractMacro(code, "\\title");
+            if (t != null && !t.isBlank()) {
+                doc.title = cleanLatex(t);
+            }
+
+            // 2. Trích xuất \author{...}
+            String a = extractMacro(code, "\\author");
+            if (a != null && !a.isBlank()) {
+                doc.author = cleanLatex(a);
+            }
+
+            // 3. Trích xuất \date{...}
+            String d = extractMacro(code, "\\date");
+            if (d != null && !d.isBlank()) {
+                String cleanD = cleanLatex(d);
+                if (cleanD.contains("\\today") || cleanD.isBlank()) {
+                    doc.date = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
+                } else {
+                    doc.date = cleanD;
+                }
+            } else {
+                doc.date = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
+            }
+
+            // 4. Trích xuất \begin{abstract}...\end{abstract}
+            int absStart = code.indexOf("\\begin{abstract}");
+            if (absStart != -1) {
+                int absEnd = code.indexOf("\\end{abstract}", absStart);
+                if (absEnd != -1) {
+                    doc.abstractText = cleanLatex(code.substring(absStart + 16, absEnd).trim());
+                }
+            }
+
+            // 5. Trích xuất thân bài giữa \begin{document} và \end{document}
+            int bodyStart = code.indexOf("\\begin{document}");
+            String body = (bodyStart != -1) ? code.substring(bodyStart + 16) : code;
+            int bodyEnd = body.indexOf("\\end{document}");
+            if (bodyEnd != -1) {
+                body = body.substring(0, bodyEnd);
+            }
+
+            String[] lines = body.split("\n");
+            StringBuilder pBuf = new StringBuilder();
+            int secNum = 0;
+            int subSecNum = 0;
+            int eqNum = 0;
+            boolean inEq = false;
+            StringBuilder eqBuf = new StringBuilder();
+
+            for (String raw : lines) {
+                String line = raw.trim();
+
+                if (line.startsWith("%") || line.equals("\\maketitle")) continue;
+                if (line.startsWith("\\begin{abstract}") || line.startsWith("\\end{abstract}")) continue;
+
+                // Khối công thức toán (Equation)
+                if (line.contains("\\begin{equation}") || line.contains("\\begin{align}") || line.equals("$$") || line.equals("\\[")) {
+                    if (pBuf.length() > 0) {
+                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+                        pBuf.setLength(0);
+                    }
+                    inEq = true;
+                    eqBuf.setLength(0);
+                    continue;
+                }
+                if (line.contains("\\end{equation}") || line.contains("\\end{align}") || line.equals("$$") || line.equals("\\]")) {
+                    inEq = false;
+                    eqNum++;
+                    String eqStr = cleanLatex(eqBuf.toString().trim());
+                    if (eqStr.isEmpty()) eqStr = "E = mc^2";
+                    doc.items.add(new DocItem(DocItem.Type.EQUATION, eqStr, eqNum));
+                    eqBuf.setLength(0);
+                    continue;
+                }
+                if (inEq) {
+                    eqBuf.append(line).append(" ");
+                    continue;
+                }
+
+                // Section
+                if (line.startsWith("\\section")) {
+                    if (pBuf.length() > 0) {
+                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+                        pBuf.setLength(0);
+                    }
+                    secNum++;
+                    subSecNum = 0;
+                    String sTitle = extractBraces(line);
+                    doc.items.add(new DocItem(DocItem.Type.SECTION, cleanLatex(sTitle), secNum));
+                    continue;
+                }
+
+                // Subsection
+                if (line.startsWith("\\subsection")) {
+                    if (pBuf.length() > 0) {
+                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+                        pBuf.setLength(0);
+                    }
+                    subSecNum++;
+                    String subTitle = extractBraces(line);
+                    doc.items.add(new DocItem(DocItem.Type.SUBSECTION, secNum + "." + subSecNum + " " + cleanLatex(subTitle), subSecNum));
+                    continue;
+                }
+
+                // Bullet Item
+                if (line.startsWith("\\item")) {
+                    if (pBuf.length() > 0) {
+                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+                        pBuf.setLength(0);
+                    }
+                    String itemStr = cleanLatex(line.substring(5).trim());
+                    doc.items.add(new DocItem(DocItem.Type.BULLET, itemStr));
+                    continue;
+                }
+
+                if (line.startsWith("\\begin{") || line.startsWith("\\end{")) {
+                    continue;
+                }
+
+                // Đoạn văn (Paragraph)
+                if (line.isEmpty()) {
+                    if (pBuf.length() > 0) {
+                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+                        pBuf.setLength(0);
+                    }
+                } else {
+                    if (pBuf.length() > 0) pBuf.append(" ");
+                    pBuf.append(cleanLatex(line));
+                }
+            }
+
+            if (pBuf.length() > 0) {
+                doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
+            }
+
+            return doc;
+        }
+
+        private String extractMacro(String text, String macroName) {
+            int idx = text.indexOf(macroName);
+            if (idx == -1) return null;
+            int braceStart = text.indexOf("{", idx);
+            if (braceStart == -1) return null;
+            int count = 1;
+            int i = braceStart + 1;
+            while (i < text.length() && count > 0) {
+                char c = text.charAt(i);
+                if (c == '{') count++;
+                else if (c == '}') count--;
+                i++;
+            }
+            if (count == 0) {
+                return text.substring(braceStart + 1, i - 1);
+            }
+            return null;
+        }
+
+        private String extractBraces(String line) {
+            int start = line.indexOf('{');
+            int end = line.lastIndexOf('}');
+            if (start != -1 && end != -1 && end > start) {
+                return line.substring(start + 1, end);
+            }
+            return line;
+        }
+
+        private String cleanLatex(String s) {
+            if (s == null) return "";
+            String r = s.replaceAll("\\\\\\\\", " ");
+            r = r.replaceAll("\\\\textbf\\{([^}]*)\\}", "$1");
+            r = r.replaceAll("\\\\textit\\{([^}]*)\\}", "$1");
+            r = r.replaceAll("\\\\emph\\{([^}]*)\\}", "$1");
+            r = r.replaceAll("\\\\underline\\{([^}]*)\\}", "$1");
+            r = r.replaceAll("\\\\[a-zA-Z]+\\*?(?:\\[[^\\]]*\\])?(?:\\{[^}]*\\})?", "");
+            r = r.replace("{", "").replace("}", "");
+            return r.trim();
+        }
+
+        private double computeTextWidth(Font font, String text) {
+            if (text == null || text.isEmpty()) return 0;
+            javafx.scene.text.Text t = new javafx.scene.text.Text(text);
+            t.setFont(font);
+            return t.getLayoutBounds().getWidth();
+        }
+
+        private List<String> wrapText(Font font, String text, double maxW) {
+            List<String> lines = new ArrayList<>();
+            if (text == null || text.isBlank()) return lines;
+            String[] words = text.split("\\s+");
+            StringBuilder sb = new StringBuilder();
+            for (String w : words) {
+                if (w.isEmpty()) continue;
+                String test = sb.length() == 0 ? w : sb + " " + w;
+                if (computeTextWidth(font, test) > maxW && sb.length() > 0) {
+                    lines.add(sb.toString());
+                    sb = new StringBuilder(w);
+                } else {
+                    sb = new StringBuilder(test);
+                }
+            }
+            if (sb.length() > 0) {
+                lines.add(sb.toString());
+            }
+            return lines;
+        }
+
+        // --- CẤU TRÚC KHỐI VẼ ĐỒ HỌA TRÊN TRANG (RenderBlock) ---
+        private static class RenderBlock {
+            enum Kind { TITLE, AUTHOR, DATE, RULE, ABSTRACT_TITLE, ABSTRACT_LINE, SECTION, SUBSECTION, PARAGRAPH_LINE, EQUATION, BULLET }
+            Kind kind;
+            String text;
+            Font font;
+            Color color;
+            double height;
+            double beforeSpacing;
+            int number;
+
+            RenderBlock(Kind kind, String text, Font font, Color color, double height, double beforeSpacing) {
+                this.kind = kind;
+                this.text = text;
+                this.font = font;
+                this.color = color;
+                this.height = height;
+                this.beforeSpacing = beforeSpacing;
+            }
+
+            RenderBlock(Kind kind, String text, Font font, Color color, double height, double beforeSpacing, int number) {
+                this.kind = kind;
+                this.text = text;
+                this.font = font;
+                this.color = color;
+                this.height = height;
+                this.beforeSpacing = beforeSpacing;
+                this.number = number;
+            }
+        }
+
+        /**
+         * Render trang giấy A4 ĐỘNG đa trang (Multi-page Dynamic A4 Engine)
+         */
+        private void drawDynamicA4Paper(String code) {
+            ParsedDoc doc = parseLatex(code);
+
+            double scale = zoomFactor;
+            double paperW = 520 * scale;
+            double pageH = 740 * scale;
+            double marginX = 40 * scale;
+            double maxTextW = paperW - 2 * marginX;
+            double contentTop = 45 * scale;
+            double contentBottom = pageH - 45 * scale;
+            double usableH = contentBottom - contentTop;
+
+            // 1. Chuyển đổi các phần tử thành danh sách RenderBlock
+            List<RenderBlock> blocks = new ArrayList<>();
+
+            // Tiêu đề bài báo
+            Font titleFont = Font.font("Serif", FontWeight.BOLD, 17 * scale);
+            List<String> titleLines = wrapText(titleFont, doc.title, maxTextW);
+            for (int i = 0; i < titleLines.size(); i++) {
+                blocks.add(new RenderBlock(RenderBlock.Kind.TITLE, titleLines.get(i), titleFont, Color.BLACK, 24 * scale, (i == 0 ? 0 : 4 * scale)));
+            }
+
+            // Tác giả
+            if (!doc.author.isEmpty()) {
+                Font authorFont = Font.font("Serif", FontWeight.NORMAL, 11 * scale);
+                blocks.add(new RenderBlock(RenderBlock.Kind.AUTHOR, doc.author, authorFont, Color.rgb(55, 65, 81), 18 * scale, 6 * scale));
+            }
+
+            // Ngày tháng
+            if (!doc.date.isEmpty()) {
+                Font dateFont = Font.font("Serif", FontPosture.ITALIC, 10 * scale);
+                blocks.add(new RenderBlock(RenderBlock.Kind.DATE, doc.date, dateFont, Color.rgb(75, 85, 99), 16 * scale, 2 * scale));
+            }
+
+            // Đường kẻ ngang mỏng
+            blocks.add(new RenderBlock(RenderBlock.Kind.RULE, "", null, Color.rgb(226, 232, 240), 12 * scale, 6 * scale));
+
+            // Phần Tóm tắt (Abstract)
+            if (!doc.abstractText.isEmpty()) {
+                Font absHeadFont = Font.font("Serif", FontWeight.BOLD, 11 * scale);
+                blocks.add(new RenderBlock(RenderBlock.Kind.ABSTRACT_TITLE, "Abstract", absHeadFont, Color.BLACK, 18 * scale, 8 * scale));
+
+                Font absFont = Font.font("Serif", FontPosture.ITALIC, 10.5 * scale);
+                List<String> absLines = wrapText(absFont, doc.abstractText, maxTextW - 40 * scale);
+                for (String l : absLines) {
+                    blocks.add(new RenderBlock(RenderBlock.Kind.ABSTRACT_LINE, l, absFont, Color.rgb(30, 41, 59), 15 * scale, 0));
+                }
+            }
+
+            // Các phần nội dung thân bài
+            Font secFont = Font.font("Serif", FontWeight.BOLD, 13 * scale);
+            Font subFont = Font.font("Serif", FontWeight.BOLD, 11.5 * scale);
+            Font pFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
+            Font eqFont = Font.font("Serif", FontWeight.BOLD, FontPosture.ITALIC, 14 * scale);
+            Font bulletFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
+
+            for (DocItem item : doc.items) {
+                switch (item.type) {
+                    case SECTION:
+                        blocks.add(new RenderBlock(RenderBlock.Kind.SECTION, item.number + ". " + item.text, secFont, Color.BLACK, 22 * scale, 18 * scale));
+                        break;
+                    case SUBSECTION:
+                        blocks.add(new RenderBlock(RenderBlock.Kind.SUBSECTION, item.text, subFont, Color.BLACK, 18 * scale, 12 * scale));
+                        break;
+                    case PARAGRAPH:
+                        List<String> pLines = wrapText(pFont, item.text, maxTextW);
+                        for (int i = 0; i < pLines.size(); i++) {
+                            blocks.add(new RenderBlock(RenderBlock.Kind.PARAGRAPH_LINE, pLines.get(i), pFont, Color.rgb(15, 23, 42), 15 * scale, (i == 0 ? 6 * scale : 0)));
+                        }
+                        break;
+                    case EQUATION:
+                        blocks.add(new RenderBlock(RenderBlock.Kind.EQUATION, item.text, eqFont, Color.BLACK, 26 * scale, 12 * scale, item.number));
+                        break;
+                    case BULLET:
+                        List<String> bLines = wrapText(bulletFont, item.text, maxTextW - 20 * scale);
+                        for (int i = 0; i < bLines.size(); i++) {
+                            blocks.add(new RenderBlock(RenderBlock.Kind.BULLET, (i == 0 ? "•  " : "   ") + bLines.get(i), bulletFont, Color.rgb(15, 23, 42), 15 * scale, (i == 0 ? 4 * scale : 0)));
+                        }
+                        break;
+                }
+            }
+
+            // 2. Thuật toán tự động phân trang (Auto-Pagination Engine)
+            List<List<RenderBlock>> pages = new ArrayList<>();
+            List<RenderBlock> curPage = new ArrayList<>();
+            double curY = 0;
+
+            for (RenderBlock b : blocks) {
+                double blockTotalH = b.beforeSpacing + b.height;
+                if (curY + blockTotalH > usableH && !curPage.isEmpty()) {
+                    pages.add(curPage);
+                    curPage = new ArrayList<>();
+                    curY = 0;
+                }
+                curPage.add(b);
+                curY += blockTotalH;
+            }
+            if (!curPage.isEmpty()) {
+                pages.add(curPage);
+            }
+
+            int totalPages = Math.max(1, pages.size());
+
+            // 3. Tính toán kích thước Canvas tổng thể
+            double pageGap = 24 * scale;
+            double canvasW = paperW + 40;
+            double canvasH = totalPages * pageH + (totalPages - 1) * pageGap + 40;
+
+            canvas.setWidth(canvasW);
+            canvas.setHeight(canvasH);
+
             GraphicsContext gc = canvas.getGraphicsContext2D();
-            double w = canvas.getWidth();
-            double h = canvas.getHeight();
+            gc.clearRect(0, 0, canvasW, canvasH);
 
-            gc.clearRect(0, 0, w, h);
+            double paperX = (canvasW - paperW) / 2;
 
-            double paperW = 500 * zoomFactor;
-            double paperH = 720 * zoomFactor;
-            double x = (w - paperW) / 2;
-            double y = 15;
+            // 4. Vẽ từng trang A4 chân thực
+            for (int pIdx = 0; pIdx < totalPages; pIdx++) {
+                double pageY = 20 + pIdx * (pageH + pageGap);
 
-            // 1. Vẽ bóng đổ
-            gc.save();
-            DropShadow shadow = new DropShadow();
-            shadow.setColor(Color.rgb(0, 0, 0, 0.28));
-            shadow.setRadius(16 * zoomFactor);
-            shadow.setOffsetY(4 * zoomFactor);
-            gc.setEffect(shadow);
+                // A. Bóng đổ trang giấy (Drop Shadow)
+                gc.save();
+                DropShadow shadow = new DropShadow();
+                shadow.setColor(Color.rgb(0, 0, 0, 0.28));
+                shadow.setRadius(16 * scale);
+                shadow.setOffsetY(4 * scale);
+                gc.setEffect(shadow);
+                gc.setFill(Color.WHITE);
+                gc.fillRect(paperX, pageY, paperW, pageH);
+                gc.restore();
 
-            // 2. Vẽ tờ giấy A4 trắng tinh
-            gc.setFill(Color.WHITE);
-            gc.fillRect(x, y, paperW, paperH);
-            gc.restore();
+                // B. Đường viền mỏng
+                gc.setStroke(Color.rgb(203, 213, 225));
+                gc.setLineWidth(1);
+                gc.strokeRect(paperX, pageY, paperW, pageH);
 
-            gc.setStroke(Color.rgb(203, 213, 225));
-            gc.setLineWidth(1);
-            gc.strokeRect(x, y, paperW, paperH);
+                // C. Vẽ các phần tử nội dung trên trang
+                double drawY = pageY + contentTop;
+                List<RenderBlock> pageBlocks = pages.get(pIdx);
 
-            // 3. Render nội dung
-            double marginX = x + 38 * zoomFactor;
-            double currentY = y + 50 * zoomFactor;
+                for (RenderBlock b : pageBlocks) {
+                    drawY += b.beforeSpacing;
+                    gc.setFont(b.font);
+                    gc.setFill(b.color);
 
-            gc.setFill(Color.BLACK);
-            gc.setFont(Font.font("Serif", FontWeight.BOLD, 17 * zoomFactor));
-            gc.fillText("Overleaf Desktop (Pure Java Edition)", marginX + 25 * zoomFactor, currentY);
+                    switch (b.kind) {
+                        case TITLE:
+                        case AUTHOR:
+                        case DATE:
+                        case ABSTRACT_TITLE:
+                            double tw = computeTextWidth(b.font, b.text);
+                            gc.fillText(b.text, paperX + (paperW - tw) / 2, drawY + b.height - 4 * scale);
+                            break;
+                        case RULE:
+                            gc.setStroke(b.color);
+                            gc.setLineWidth(1);
+                            gc.strokeLine(paperX + marginX, drawY + 6 * scale, paperX + paperW - marginX, drawY + 6 * scale);
+                            break;
+                        case ABSTRACT_LINE:
+                            gc.fillText(b.text, paperX + marginX + 20 * scale, drawY + b.height - 4 * scale);
+                            break;
+                        case SECTION:
+                        case SUBSECTION:
+                        case PARAGRAPH_LINE:
+                            gc.fillText(b.text, paperX + marginX, drawY + b.height - 4 * scale);
+                            break;
+                        case EQUATION:
+                            double eqW = computeTextWidth(b.font, b.text);
+                            gc.fillText(b.text, paperX + (paperW - eqW) / 2, drawY + b.height - 6 * scale);
+                            Font numFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
+                            gc.setFont(numFont);
+                            gc.fillText("(" + b.number + ")", paperX + paperW - marginX - 25 * scale, drawY + b.height - 6 * scale);
+                            break;
+                        case BULLET:
+                            gc.fillText(b.text, paperX + marginX + 10 * scale, drawY + b.height - 4 * scale);
+                            break;
+                    }
+                    drawY += b.height;
+                }
 
-            currentY += 24 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontWeight.NORMAL, 11 * zoomFactor));
-            gc.setFill(Color.rgb(55, 65, 81));
-            gc.fillText("Nhóm XX - Lớp Java Software Development", marginX + 68 * zoomFactor, currentY);
-
-            currentY += 16 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontPosture.ITALIC, 10 * zoomFactor));
-            gc.fillText(new SimpleDateFormat("dd MMMM yyyy").format(new Date()), marginX + 115 * zoomFactor, currentY);
-
-            currentY += 20 * zoomFactor;
-            gc.setStroke(Color.rgb(226, 232, 240));
-            gc.strokeLine(marginX, currentY, marginX + paperW - 76 * zoomFactor, currentY);
-
-            currentY += 26 * zoomFactor;
-            gc.setFill(Color.BLACK);
-            gc.setFont(Font.font("Serif", FontWeight.BOLD, 11 * zoomFactor));
-            gc.fillText("Abstract", marginX + 160 * zoomFactor, currentY);
-
-            currentY += 18 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontPosture.ITALIC, 10.5 * zoomFactor));
-            gc.fillText("This project presents a self-hosted, real-time collaborative LaTeX", marginX, currentY);
-            currentY += 15 * zoomFactor;
-            gc.fillText("editor built entirely in JavaFX, TCP Sockets and MongoDB.", marginX, currentY);
-
-            currentY += 32 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontWeight.BOLD, 13 * zoomFactor));
-            gc.fillText("1. Giới thiệu (Introduction)", marginX, currentY);
-
-            currentY += 20 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontWeight.NORMAL, 10.5 * zoomFactor));
-            gc.fillText("A collaborative LaTeX editor combines core Java topics (OOP, GUI,", marginX, currentY);
-            currentY += 16 * zoomFactor;
-            gc.fillText("Networking, Concurrency, I/O, Database) in one cohesive desktop system.", marginX, currentY);
-
-            currentY += 32 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontWeight.BOLD, 13 * zoomFactor));
-            gc.fillText("2. Công thức toán học (Equations)", marginX, currentY);
-
-            currentY += 28 * zoomFactor;
-            gc.setFont(Font.font("Serif", FontPosture.ITALIC, 15 * zoomFactor));
-            gc.fillText("E = m c²", marginX + 150 * zoomFactor, currentY);
-
-            gc.setFont(Font.font("Serif", FontWeight.NORMAL, 10 * zoomFactor));
-            gc.fillText("(1)", marginX + paperW - 110 * zoomFactor, currentY);
-
-            gc.setFill(Color.GRAY);
-            gc.setFont(Font.font("Serif", FontWeight.NORMAL, 10 * zoomFactor));
-            gc.fillText("- 1 -", x + paperW / 2 - 8 * zoomFactor, y + paperH - 20 * zoomFactor);
+                // D. Số trang chân trang (Footer)
+                gc.setFont(Font.font("Serif", FontWeight.NORMAL, 10 * scale));
+                gc.setFill(Color.GRAY);
+                gc.fillText("- " + (pIdx + 1) + " -", paperX + paperW / 2 - 10 * scale, pageY + pageH - 20 * scale);
+            }
         }
     }
 

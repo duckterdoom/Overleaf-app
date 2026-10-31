@@ -88,20 +88,79 @@
     -fx-background-color: #1E293B;
 }
 
-/* ComboBox chọn Trình biên dịch */
+/* ComboBox chọn Trình biên dịch (Header ToolBar) */
 .combo-dark {
     -fx-background-color: #334155;
-    -fx-text-fill: #F8FAFC;
-    -fx-background-radius: 4px;
+    -fx-background-radius: 5px;
+    -fx-border-color: #475569;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
     -fx-font-size: 12px;
-}
-
-.combo-dark .cell {
-    -fx-text-fill: #F8FAFC;
+    -fx-cursor: hand;
 }
 
 .combo-dark:hover {
     -fx-background-color: #475569;
+    -fx-border-color: #64748B;
+}
+
+.combo-dark:focused, .combo-dark:showing {
+    -fx-background-color: #334155;
+    -fx-border-color: #388E3C;
+    -fx-border-width: 1.5px;
+}
+
+/* Nút hiển thị giá trị đã chọn trên ComboBox */
+.combo-dark > .list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+    -fx-padding: 3 8 3 8;
+}
+
+/* Mũi tên chỉ xuống của ComboBox */
+.combo-dark .arrow-button {
+    -fx-background-color: transparent;
+    -fx-padding: 0 6 0 2;
+}
+
+.combo-dark .arrow {
+    -fx-background-color: #CBD5E1;
+}
+
+.combo-dark:hover .arrow {
+    -fx-background-color: #FFFFFF;
+}
+
+/* Popup danh sách lựa chọn của ComboBox */
+.combo-box-popup .list-view {
+    -fx-background-color: #1E293B;
+    -fx-background-radius: 5px;
+    -fx-border-color: #475569;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
+    -fx-padding: 4px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.4), 8, 0, 0, 3);
+}
+
+.combo-box-popup .list-cell {
+    -fx-background-color: #1E293B;
+    -fx-text-fill: #F1F5F9;
+    -fx-font-size: 12px;
+    -fx-padding: 6 12 6 12;
+    -fx-background-radius: 3px;
+}
+
+.combo-box-popup .list-cell:filled:hover {
+    -fx-background-color: #388E3C;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
+}
+
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #2E7D32;
+    -fx-text-fill: #FFFFFF;
+    -fx-font-weight: bold;
 }
 
 /* Pill Badge Trạng thái kết nối phòng */
