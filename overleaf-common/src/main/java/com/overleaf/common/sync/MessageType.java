@@ -33,6 +33,20 @@ public enum MessageType {
     /** Server xác nhận đã nhận và xử lý thành công thao tác của client */
     ACK,
 
+    // ---- Đồng bộ lại sau khi mất kết nối (chế độ offline) ----
+
+    /**
+     * Client gửi sau khi kết nối lại: mã thao tác cuối cùng đã thấy cộng với
+     * các thao tác viết khi offline chưa được server xác nhận.
+     */
+    RESYNC,
+
+    /**
+     * Server báo mã thao tác cuối cùng trong lịch sử phòng (có thể rỗng).
+     * Client lưu lại để lần đồng bộ lại sau biết mình đã thấy đến đâu.
+     */
+    CHECKPOINT,
+
     // ---- Thông tin cộng tác viên ----
 
     /** Client gửi cập nhật vị trí con trỏ (dòng, cột) để hiển thị trên máy khác */

@@ -44,6 +44,9 @@ public class OperationHistory {
     /** Giới hạn dung lượng tối đa cho mỗi phòng */
     private final int maxHistorySize;
 
+    /** Các phòng đã từng bị xóa bớt thao tác cũ (lịch sử không còn đầy đủ từ đầu) */
+    private final java.util.Set<String> trimmedRooms = ConcurrentHashMap.newKeySet();
+
     /**
      * Khởi tạo với dung lượng mặc định.
      */
@@ -81,6 +84,7 @@ public class OperationHistory {
         // Nếu vượt giới hạn → xóa thao tác cũ nhất (đầu hàng đợi)
         while (history.size() > maxHistorySize) {
             history.pollFirst();
+            trimmedRooms.add(roomId);
         }
     }
 
@@ -180,6 +184,55 @@ public class OperationHistory {
      */
     public void clearHistory(String roomId) {
         roomHistories.remove(roomId);
+        trimmedRooms.remove(roomId);
+    }
+
+    // =========================================================================
+    // HỖ TRỢ ĐỒNG BỘ LẠI SAU KHI OFFLINE
+    // =========================================================================
+
+    /** Phòng này đã từng bị xóa bớt thao tác cũ chưa (lịch sử không còn đầy đủ). */
+    public boolean wasTrimmed(String roomId) {
+        return trimmedRooms.contains(roomId);
+    }
+
+    /** Thao tác có mã này đã nằm trong lịch sử phòng chưa (dùng để chống áp dụng trùng). */
+    public boolean contains(String roomId, String operationId) {
+        ConcurrentLinkedDeque<CRDTOperation> history = roomHistories.get(roomId);
+        if (history == null) return false;
+        for (CRDTOperation op : history) {
+            if (op.getOperationId().equals(operationId)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Các thao tác nằm SAU thao tác có mã operationId, theo đúng thứ tự server
+     * đã áp dụng.
+     *
+     * @return danh sách (có thể rỗng), hoặc Optional.empty() nếu không tìm thấy
+     *         mã đó (đã bị xóa khỏi lịch sử hoặc không tồn tại)
+     */
+    public java.util.Optional<List<CRDTOperation>> getOperationsAfter(String roomId, String operationId) {
+        ConcurrentLinkedDeque<CRDTOperation> history = roomHistories.get(roomId);
+        if (history == null) return java.util.Optional.empty();
+        List<CRDTOperation> result = new ArrayList<>();
+        boolean found = false;
+        for (CRDTOperation op : history) {
+            if (found) {
+                result.add(op);
+            } else if (op.getOperationId().equals(operationId)) {
+                found = true;
+            }
+        }
+        return found ? java.util.Optional.of(result) : java.util.Optional.empty();
+    }
+
+    /** Mã thao tác mới nhất trong lịch sử phòng, hoặc chuỗi rỗng nếu chưa có. */
+    public String getLastOperationId(String roomId) {
+        ConcurrentLinkedDeque<CRDTOperation> history = roomHistories.get(roomId);
+        CRDTOperation last = history == null ? null : history.peekLast();
+        return last == null ? "" : last.getOperationId();
     }
 
     /**

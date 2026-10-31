@@ -5,6 +5,8 @@ import com.overleaf.common.sync.SyncMessage;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * =========================================================================
@@ -43,6 +45,18 @@ public class SyncBroadcaster {
 
     private final CollaborationThreadPool threadPool;
 
+    /**
+     * Hộp thư đi của từng client. Mỗi client chỉ có MỘT luồng đang gửi tại một
+     * thời điểm nên thông điệp luôn đến đúng thứ tự đã đưa vào (nếu để broadcast
+     * pool tự chia luồng thì hai thông điệp liên tiếp có thể đến đảo thứ tự).
+     */
+    private static final class Outbox {
+        final ConcurrentLinkedQueue<SyncMessage> queue = new ConcurrentLinkedQueue<>();
+        final AtomicBoolean draining = new AtomicBoolean(false);
+    }
+
+    private final ConcurrentHashMap<ClientSession, Outbox> outboxes = new ConcurrentHashMap<>();
+
     public SyncBroadcaster(CollaborationThreadPool threadPool) {
         this.threadPool = threadPool;
     }
@@ -59,6 +73,7 @@ public class SyncBroadcaster {
 
     /** Xóa client khỏi phòng; xóa luôn phòng nếu không còn ai. */
     public void unregister(String roomId, ClientSession session) {
+        outboxes.remove(session);
         Set<ClientSession> sessions = roomSessions.get(roomId);
         if (sessions == null) return;
         sessions.remove(session);
@@ -71,7 +86,13 @@ public class SyncBroadcaster {
     public void unregisterUser(String roomId, String userId) {
         Set<ClientSession> sessions = roomSessions.get(roomId);
         if (sessions == null) return;
-        sessions.removeIf(s -> s.getUserId().equals(userId));
+        sessions.removeIf(s -> {
+            if (s.getUserId().equals(userId)) {
+                outboxes.remove(s);
+                return true;
+            }
+            return false;
+        });
         if (sessions.isEmpty()) {
             roomSessions.remove(roomId, sessions);
         }
@@ -129,19 +150,39 @@ public class SyncBroadcaster {
         return sessions != null ? sessions : Collections.emptySet();
     }
 
-    /** Gửi không chặn qua broadcast pool; lỗi gửi → loại phiên khỏi phòng. */
+    /** Đưa thông điệp vào hộp thư đi của client; gửi không chặn qua broadcast pool. */
     private void dispatch(String roomId, ClientSession session, SyncMessage message) {
+        Outbox outbox = outboxes.computeIfAbsent(session, k -> new Outbox());
+        outbox.queue.add(message);
+        scheduleDrain(roomId, session, outbox);
+    }
+
+    private void scheduleDrain(String roomId, ClientSession session, Outbox outbox) {
+        if (!outbox.draining.compareAndSet(false, true)) {
+            return; // đã có một luồng đang gửi, nó sẽ lấy luôn thông điệp mới
+        }
         threadPool.submitBroadcastTask(() -> {
             try {
-                if (!session.isOpen()) {
-                    unregister(roomId, session);
-                    return;
+                SyncMessage next;
+                while ((next = outbox.queue.poll()) != null) {
+                    if (!session.isOpen()) {
+                        outbox.queue.clear();
+                        unregister(roomId, session);
+                        return;
+                    }
+                    session.send(next);
                 }
-                session.send(message);
             } catch (RuntimeException e) {
                 System.err.println("[Broadcaster] Gửi thất bại tới "
                         + session.getUserId() + " (phòng " + roomId + "): " + e.getMessage());
+                outbox.queue.clear();
                 unregister(roomId, session);
+            } finally {
+                outbox.draining.set(false);
+                // Có thông điệp vào đúng lúc vừa thoát vòng lặp → gửi tiếp
+                if (!outbox.queue.isEmpty()) {
+                    scheduleDrain(roomId, session, outbox);
+                }
             }
         });
     }

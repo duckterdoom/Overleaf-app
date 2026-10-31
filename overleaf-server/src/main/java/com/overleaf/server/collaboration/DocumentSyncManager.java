@@ -1,10 +1,11 @@
 package com.overleaf.server.collaboration;
 
 import com.overleaf.common.sync.CRDTOperation;
-import com.overleaf.common.sync.CRDTOperation.OpType;
 import com.overleaf.common.sync.CollaboratorInfo;
 import com.overleaf.common.sync.CursorPosition;
 import com.overleaf.common.sync.DocumentState;
+import com.overleaf.common.sync.MessageType;
+import com.overleaf.common.sync.OperationCodec;
 import com.overleaf.common.sync.SyncMessage;
 import com.overleaf.server.collaboration.SyncBroadcaster.ClientSession;
 
@@ -72,6 +73,7 @@ public class DocumentSyncManager {
                 switch (message.getMessageType()) {
                     case JOIN_ROOM:     handleJoinRoom(session, message);   break;
                     case LEAVE_ROOM:    handleLeaveRoom(session, message);  break;
+                    case RESYNC:        handleResync(session, message);     break;
                     case TEXT_EDIT:     handleEditMessage(message);         break;
                     case CURSOR_UPDATE: handleCursorUpdate(message);        break;
                     case HEARTBEAT:     handleHeartbeat(message);           break;
@@ -96,18 +98,38 @@ public class DocumentSyncManager {
         Room room = rooms.computeIfAbsent(roomId, id -> new Room(id, ""));
 
         synchronized (room) {
-            // Người đầu tiên là HOST, những người sau là EDITOR
-            CollaboratorInfo info = room.collaborators.isEmpty()
+            CollaboratorInfo info = registerCollaborator(room, session, message);
+
+            // Gửi trạng thái đầy đủ cho người mới (đọc trong khóa → nhất quán với op kế tiếp),
+            // kèm CHECKPOINT để client biết mình đã thấy đến thao tác nào.
+            broadcaster.sendTo(roomId, info.getUserId(),
+                    SyncMessage.createFullSync(roomId, room.document.getContent()));
+            broadcaster.sendTo(roomId, info.getUserId(), checkpoint(roomId));
+        }
+        broadcastUserList(room);
+    }
+
+    /**
+     * Thêm người dùng vào phòng (người đầu tiên là HOST, sau đó là EDITOR) và
+     * đăng ký phiên để nhận phát sóng. Gọi trong khóa của phòng.
+     */
+    private CollaboratorInfo registerCollaborator(Room room, ClientSession session, SyncMessage message) {
+        CollaboratorInfo info = room.collaborators.get(message.getSenderId());
+        if (info == null) {
+            info = room.collaborators.isEmpty()
                     ? CollaboratorInfo.createHost(message.getSenderId(), message.getSenderName())
                     : CollaboratorInfo.createEditor(message.getSenderId(), message.getSenderName());
             room.collaborators.put(info.getUserId(), info);
-            broadcaster.register(roomId, session);
-
-            // Gửi trạng thái đầy đủ cho người mới (đọc trong khóa → nhất quán với op kế tiếp)
-            broadcaster.sendTo(roomId, info.getUserId(),
-                    SyncMessage.createFullSync(roomId, room.document.getContent()));
         }
-        broadcastUserList(room);
+        // Bỏ phiên cũ (nếu còn sót lại sau khi mất mạng) rồi đăng ký phiên mới
+        broadcaster.unregisterUser(room.roomId, info.getUserId());
+        broadcaster.register(room.roomId, session);
+        return info;
+    }
+
+    private SyncMessage checkpoint(String roomId) {
+        return new SyncMessage(MessageType.CHECKPOINT, roomId, "SERVER", "Server",
+                history.getLastOperationId(roomId));
     }
 
     // =========================================================================
@@ -159,12 +181,17 @@ public class DocumentSyncManager {
 
         CRDTOperation incoming = operationFromJson(message.getPayload());
 
-        CRDTOperation toBroadcast;
         synchronized (room) {
             CollaboratorInfo user = room.collaborators.get(userId);
             if (user == null || !user.canEdit()) {
                 broadcaster.sendTo(roomId, userId,
                         SyncMessage.createError(roomId, "Không có quyền chỉnh sửa"));
+                return;
+            }
+            if (history.contains(roomId, incoming.getOperationId())) {
+                // Client gửi lại thao tác đã áp dụng (ACK bị mất): chỉ xác nhận lại
+                broadcaster.sendTo(roomId, userId,
+                        SyncMessage.createAck(roomId, incoming.getOperationId()));
                 return;
             }
 
@@ -176,24 +203,157 @@ public class DocumentSyncManager {
                     transformed = room.engine.transformOperation(transformed, concurrent);
                 }
             }
+            applyAndPublish(room, user, message.getSenderName(), transformed, incoming);
+        }
+    }
 
-            long version = room.engine.applyOperation(transformed);
-            if (version < 0) {
-                broadcaster.sendTo(roomId, userId,
-                        SyncMessage.createError(roomId, "Không áp dụng được thao tác"));
-                return;
+    /**
+     * Áp dụng thao tác (đã đổi sang hệ tọa độ của server) → lưu lịch sử → ACK
+     * người gửi → phát cho người khác. Gọi trong khóa của phòng.
+     *
+     * @param op       thao tác đã được biến đổi
+     * @param original thao tác gốc client gửi (dùng mã của nó để ACK)
+     * @return true nếu áp dụng thành công
+     */
+    private boolean applyAndPublish(Room room, CollaboratorInfo user, String senderName,
+                                    CRDTOperation op, CRDTOperation original) {
+        String roomId = room.roomId;
+        long version = room.engine.applyOperation(op);
+        if (version < 0) {
+            broadcaster.sendTo(roomId, user.getUserId(),
+                    SyncMessage.createError(roomId, "Không áp dụng được thao tác"));
+            return false;
+        }
+        history.addOperation(roomId, op);
+        user.markEditing();
+
+        // ACK + phát trong khóa để giữ đúng thứ tự áp dụng giữa các client
+        broadcaster.sendTo(roomId, user.getUserId(),
+                SyncMessage.createAck(roomId, original.getOperationId()));
+        broadcaster.broadcast(roomId,
+                SyncMessage.createTextEdit(roomId, user.getUserId(), senderName, operationToJson(op)),
+                user.getUserId());
+        return true;
+    }
+
+    // =========================================================================
+    // RESYNC (đồng bộ lại sau khi offline)
+    // =========================================================================
+
+    /**
+     * Xử lý yêu cầu đồng bộ lại của client vừa nối lại mạng.
+     *
+     * Payload: mã thao tác cuối cùng client đã thấy + các thao tác chưa được xác nhận.
+     *
+     * Cách làm:
+     *  1. Thao tác nào đã có trong lịch sử (đã áp dụng nhưng ACK bị mất) → chỉ ACK lại.
+     *  2. "Phần còn thiếu" = các thao tác của người khác nằm sau điểm đã thấy.
+     *     Từng thao tác offline được dịch vị trí qua phần còn thiếu (và ngược lại,
+     *     để thao tác offline kế tiếp dịch đúng), rồi áp dụng như một thao tác thường.
+     *  3. Nếu điểm đã thấy không còn trong lịch sử (bị xóa bớt) thì quay về cách
+     *     dùng đồng hồ Lamport như TEXT_EDIT thường (kém chính xác hơn).
+     *  4. Cuối cùng gửi FULL_SYNC (văn bản chuẩn đã gồm mọi thứ) và CHECKPOINT.
+     *
+     * Nếu phòng không còn (server khởi động lại, phòng đã dọn) → trả lỗi
+     * ROOM_UNKNOWN và KHÔNG đụng đến dữ liệu; client vẫn giữ thao tác của mình.
+     */
+    public void handleResync(ClientSession session, SyncMessage message) {
+        String roomId = message.getRoomId();
+        String userId = message.getSenderId();
+        Room room = rooms.get(roomId);
+        if (room == null) {
+            safeSend(session, SyncMessage.createError(roomId, "ROOM_UNKNOWN"));
+            return;
+        }
+
+        OperationCodec.ResyncRequest request;
+        try {
+            request = OperationCodec.decodeResync(message.getPayload());
+        } catch (RuntimeException e) {
+            safeSend(session, SyncMessage.createError(roomId, "RESYNC_INVALID"));
+            return;
+        }
+
+        synchronized (room) {
+            CollaboratorInfo user = registerCollaborator(room, session, message);
+
+            // Bước 1: bỏ các thao tác đã áp dụng trước đó
+            List<CRDTOperation> pending = new ArrayList<>();
+            for (CRDTOperation op : request.getPending()) {
+                if (history.contains(roomId, op.getOperationId())) {
+                    broadcaster.sendTo(roomId, userId, SyncMessage.createAck(roomId, op.getOperationId()));
+                } else {
+                    pending.add(op);
+                }
             }
-            history.addOperation(roomId, transformed);
-            user.markEditing();
-            toBroadcast = transformed;
 
-            // ACK + phát trong khóa để giữ đúng thứ tự áp dụng giữa các client
+            if (!pending.isEmpty() && !user.canEdit()) {
+                broadcaster.sendTo(roomId, userId,
+                        SyncMessage.createError(roomId, "Không có quyền chỉnh sửa"));
+            } else if (!pending.isEmpty()) {
+                List<CRDTOperation> missed = findMissedOperations(roomId, request.getLastSeenOperationId(), userId);
+                if (missed == null) {
+                    // Bước 3: không xác định được phần còn thiếu → dùng đồng hồ Lamport
+                    for (CRDTOperation op : pending) {
+                        CRDTOperation transformed = op;
+                        for (CRDTOperation concurrent : history.getOperationsSince(roomId, op.getLamportTimestamp() - 1)) {
+                            if (!concurrent.getUserId().equals(userId)) {
+                                transformed = room.engine.transformOperation(transformed, concurrent);
+                            }
+                        }
+                        applyAndPublish(room, user, message.getSenderName(), transformed, op);
+                    }
+                } else {
+                    // Bước 2: dịch vị trí lần lượt
+                    for (CRDTOperation op : pending) {
+                        CRDTOperation rebased = op;
+                        List<CRDTOperation> nextMissed = new ArrayList<>(missed.size());
+                        for (CRDTOperation m : missed) {
+                            nextMissed.add(room.engine.transformOperation(m, rebased));
+                            rebased = room.engine.transformOperation(rebased, m);
+                        }
+                        missed = nextMissed;
+                        applyAndPublish(room, user, message.getSenderName(), rebased, op);
+                    }
+                }
+            }
+
+            // Bước 4: văn bản chuẩn + điểm đã thấy mới
             broadcaster.sendTo(roomId, userId,
-                    SyncMessage.createAck(roomId, incoming.getOperationId()));
-            broadcaster.broadcast(roomId,
-                    SyncMessage.createTextEdit(roomId, userId, message.getSenderName(),
-                            operationToJson(toBroadcast)),
-                    userId);
+                    SyncMessage.createFullSync(roomId, room.document.getContent()));
+            broadcaster.sendTo(roomId, userId, checkpoint(roomId));
+        }
+        broadcastUserList(room);
+    }
+
+    /**
+     * Các thao tác của NGƯỜI KHÁC mà client chưa thấy, theo thứ tự server áp dụng.
+     *
+     * @return danh sách, hoặc null nếu không xác định được (lịch sử đã bị xóa bớt)
+     */
+    private List<CRDTOperation> findMissedOperations(String roomId, String lastSeen, String userId) {
+        List<CRDTOperation> after;
+        if (lastSeen == null || lastSeen.isEmpty()) {
+            if (history.wasTrimmed(roomId)) return null;
+            after = history.getFullHistory(roomId);
+        } else {
+            java.util.Optional<List<CRDTOperation>> found = history.getOperationsAfter(roomId, lastSeen);
+            if (found.isEmpty()) return null;
+            after = found.get();
+        }
+        List<CRDTOperation> others = new ArrayList<>();
+        for (CRDTOperation op : after) {
+            // Thao tác của chính client đã nằm trong bản local của nó nên không tính
+            if (!op.getUserId().equals(userId)) others.add(op);
+        }
+        return others;
+    }
+
+    private void safeSend(ClientSession session, SyncMessage message) {
+        try {
+            session.send(message);
+        } catch (RuntimeException e) {
+            System.err.println("[SyncManager] Không gửi được tới " + session.getUserId() + ": " + e.getMessage());
         }
     }
 
@@ -291,101 +451,21 @@ public class DocumentSyncManager {
               .append(c.getRole()).append('|').append(c.getStatus());
         }
         broadcaster.broadcastToAll(room.roomId,
-                new SyncMessage(com.overleaf.common.sync.MessageType.USER_LIST_UPDATE,
+                new SyncMessage(MessageType.USER_LIST_UPDATE,
                         room.roomId, "SERVER", "Server", sb.toString()));
     }
 
     // =========================================================================
-    // JSON (tối giản, không cần thư viện ngoài)
+    // JSON (giữ lại để mã cũ vẫn gọi được; việc chuyển đổi nằm trong Operation Codec ở Common)
     // =========================================================================
 
     /** Chuyển CRDTOperation thành chuỗi JSON. */
     public static String operationToJson(CRDTOperation op) {
-        return "{\"id\":" + quote(op.getOperationId())
-                + ",\"type\":" + quote(op.getType().name())
-                + ",\"pos\":" + op.getPosition()
-                + ",\"content\":" + quote(op.getContent())
-                + ",\"user\":" + quote(op.getUserId())
-                + ",\"lamport\":" + op.getLamportTimestamp()
-                + ",\"ts\":" + op.getCreatedAt() + "}";
+        return OperationCodec.toJson(op);
     }
 
     /** Đọc CRDTOperation từ JSON do {@link #operationToJson} tạo ra. */
     public static CRDTOperation operationFromJson(String json) {
-        if (json == null || json.isEmpty()) {
-            throw new IllegalArgumentException("payload rỗng");
-        }
-        Map<String, String> f = new java.util.HashMap<>();
-        int i = json.indexOf('{') + 1;
-        int n = json.length();
-        while (i < n) {
-            int ks = json.indexOf('"', i);
-            if (ks < 0) break;
-            int[] end = new int[1];
-            String key = readString(json, ks, end);
-            int colon = json.indexOf(':', end[0]);
-            int vs = colon + 1;
-            while (vs < n && json.charAt(vs) == ' ') vs++;
-            String value;
-            if (json.charAt(vs) == '"') {
-                value = readString(json, vs, end);
-                i = end[0];
-            } else {
-                int ve = vs;
-                while (ve < n && json.charAt(ve) != ',' && json.charAt(ve) != '}') ve++;
-                value = json.substring(vs, ve).trim();
-                i = ve;
-            }
-            f.put(key, value);
-        }
-        return new CRDTOperation(
-                f.get("id"),
-                OpType.valueOf(f.get("type")),
-                Integer.parseInt(f.get("pos")),
-                f.get("content"),
-                f.get("user"),
-                Long.parseLong(f.get("lamport")),
-                Long.parseLong(f.get("ts")));
-    }
-
-    private static String quote(String s) {
-        StringBuilder sb = new StringBuilder("\"");
-        for (char c : s.toCharArray()) {
-            switch (c) {
-                case '"':  sb.append("\\\""); break;
-                case '\\': sb.append("\\\\"); break;
-                case '\n': sb.append("\\n");  break;
-                case '\r': sb.append("\\r");  break;
-                case '\t': sb.append("\\t");  break;
-                default:
-                    if (c < 0x20) sb.append(String.format("\\u%04x", (int) c));
-                    else sb.append(c);
-            }
-        }
-        return sb.append('"').toString();
-    }
-
-    /** Đọc chuỗi JSON bắt đầu tại dấu " ở vị trí start; end[0] = vị trí sau dấu " đóng. */
-    private static String readString(String s, int start, int[] end) {
-        StringBuilder sb = new StringBuilder();
-        int i = start + 1;
-        while (i < s.length()) {
-            char c = s.charAt(i);
-            if (c == '"') { end[0] = i + 1; return sb.toString(); }
-            if (c == '\\') {
-                char e = s.charAt(++i);
-                switch (e) {
-                    case 'n': sb.append('\n'); break;
-                    case 'r': sb.append('\r'); break;
-                    case 't': sb.append('\t'); break;
-                    case 'u': sb.append((char) Integer.parseInt(s.substring(i + 1, i + 5), 16)); i += 4; break;
-                    default:  sb.append(e);
-                }
-            } else {
-                sb.append(c);
-            }
-            i++;
-        }
-        throw new IllegalArgumentException("JSON chuỗi không đóng");
+        return OperationCodec.fromJson(json);
     }
 }
