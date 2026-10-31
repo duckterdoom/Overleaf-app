@@ -25,7 +25,11 @@ public class UserRepositoryImpl implements UserRepository {
         if (user.getId() == null) {
             userCollection.insertOne(user);
         } else {
-            userCollection.replaceOne(Filters.eq("_id", user.getId()), user);
+            userCollection.replaceOne(
+                    Filters.eq("_id", user.getId()),
+                    user,
+                    new com.mongodb.client.model.ReplaceOptions().upsert(true) // <--- Thêm upsert(true)
+            );
         }
         return user;
     }
@@ -66,6 +70,16 @@ public class UserRepositoryImpl implements UserRepository {
             userCollection.updateOne(
                     Filters.eq("_id", new ObjectId(userId)),
                     Updates.push("project_ids", new ObjectId(projectId))
+            );
+        } catch (IllegalArgumentException ignored) {}
+    }
+
+    @Override
+    public void removeProjectFromUser(String userId, String projectId) {
+        try {
+            userCollection.updateOne(
+                    Filters.eq("_id", new ObjectId(userId)),
+                    Updates.pull("project_ids", new ObjectId(projectId))
             );
         } catch (IllegalArgumentException ignored) {}
     }

@@ -60,6 +60,47 @@ class UserRepositoryTest {
         assertEquals(projectId, userOpt.get().getProjectIds().get(0).toHexString());
     }
 
+    @Test
+    void testRemoveProjectFromUser() {
+        // 1. Tạo và lưu User mới vào Database để lấy ID thực tế
+        User testUser = new User("user_test_remove", "remove_proj@example.com", "pass_hash");
+        userRepository.save(testUser);
+
+        assertNotNull(testUser.getId(), "User ID không được null");
+        String userIdStr = testUser.getId().toHexString();
+
+        // 2. Tạo 2 Project ID giả lập
+        ObjectId mockProjectId1 = new ObjectId();
+        ObjectId mockProjectId2 = new ObjectId();
+
+        // 3. Thêm 2 project vào User trong DB
+        userRepository.addProjectToUser(userIdStr, mockProjectId1.toHexString());
+        userRepository.addProjectToUser(userIdStr, mockProjectId2.toHexString());
+
+        // Kiểm tra đã có đủ 2 project trước khi xóa
+        Optional<User> userBeforeRemove = userRepository.findById(userIdStr);
+        assertTrue(userBeforeRemove.isPresent());
+        assertEquals(2, userBeforeRemove.get().getProjectIds().size());
+
+        // 4. Thực thi hàm cần test: Xóa mockProjectId1 khỏi User
+        userRepository.removeProjectFromUser(userIdStr, mockProjectId1.toHexString());
+
+        // 5. Kiểm tra kết quả (Assertions)
+        Optional<User> updatedUserOpt = userRepository.findById(userIdStr);
+        assertTrue(updatedUserOpt.isPresent(), "User phải tồn tại trong DB");
+
+        User updatedUser = updatedUserOpt.get();
+
+        // Đảm bảo danh sách project_ids chỉ còn 1 phần tử
+        assertEquals(1, updatedUser.getProjectIds().size(), "Danh sách project_ids phải giảm xuống còn 1");
+
+        // Đảm bảo mockProjectId1 không còn nằm trong danh sách
+        assertFalse(updatedUser.getProjectIds().contains(mockProjectId1), "Project ID 1 phải bị loại bỏ");
+
+        // Đảm bảo mockProjectId2 vẫn còn giữ nguyên
+        assertTrue(updatedUser.getProjectIds().contains(mockProjectId2), "Project ID 2 vẫn phải tồn tại");
+    }
+
     @AfterAll
     static void tearDown() {
         MongoDatabaseManager.close();

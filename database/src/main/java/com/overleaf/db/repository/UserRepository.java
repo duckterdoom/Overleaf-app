@@ -35,6 +35,8 @@ public interface UserRepository {
      */
     void addProjectToUser(String userId, String projectId);
 
+    void removeProjectFromUser(String userId, String projectId);
+
     /**
      * Xóa User theo ID.
      */
