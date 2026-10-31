@@ -1,9 +1,9 @@
 package com.overleaf.client.gui;
 
 import com.overleaf.client.compiler.LatexCompilerService;
+import com.overleaf.client.io.ProjectFileManager;
 import com.overleaf.client.io.WorkspaceWatcher;
 import com.overleaf.common.sync.CRDTOperation;
-import com.overleaf.common.sync.MessageType;
 import com.overleaf.common.sync.OfflineOperationQueue;
 import com.overleaf.common.sync.OperationCodec;
 import com.overleaf.common.sync.SyncMessage;
@@ -66,7 +66,9 @@ public class OverleafFxApp extends Application {
 
     // --- TÍCH HỢP M2 (COMPILER & WORKSPACE WATCHER) ---
     private final LatexCompilerService compilerService = new LatexCompilerService();
+    private ProjectFileManager fileManager;
     private WorkspaceWatcher workspaceWatcher;
+    private final String mainTexFileName = "main.tex";
 
     // --- TÍCH HỢP M4 (COLLABORATION LOGIC & OFFLINE RESYNC) ---
     private OfflineOperationQueue operationQueue;
@@ -87,34 +89,33 @@ public class OverleafFxApp extends Application {
     private ObjectInputStream socketIn;
     private Thread socketReaderThread;
 
-    // Mã nguồn LaTeX mặc định ban đầu
     private static final String DEFAULT_LATEX_CODE =
-        "\\documentclass{article}\n" +
-        "\\usepackage[utf8]{vietnam}\n" +
-        "\\usepackage{amsmath}\n" +
-        "\\usepackage{graphicx}\n\n" +
-        "\\title{\\textbf{Overleaf Desktop (Pure Java Edition)}}\n" +
-        "\\author{Nhóm XX - Lớp Java Software Development}\n" +
-        "\\date{\\today}\n\n" +
-        "\\begin{document}\n\n" +
-        "\\maketitle\n\n" +
-        "\\begin{abstract}\n" +
-        "Báo cáo xây dựng trình soạn thảo LaTeX cộng tác thời gian thực\n" +
-        "hoàn toàn bằng JavaFX, TCP Socket, ProcessBuilder và MongoDB.\n" +
-        "Hỗ trợ chế độ soạn thảo Offline và tự động Resync bằng CRDT.\n" +
-        "\\end{abstract}\n\n" +
-        "\\section{Giới thiệu}\n" +
-        "Dự án cho phép người dùng biên dịch tài liệu LaTeX trực tiếp trên\n" +
-        "máy tính cá nhân (offline-capable) thông qua ProcessBuilder,\n" +
-        "đồng thời kết nối phòng làm việc nhóm qua Java TCP Sockets.\n\n" +
-        "\\section{Công thức toán học}\n" +
-        "Ví dụ công thức phương trình Einstein:\n" +
-        "\\begin{equation}\n" +
-        "    E = mc^2\n" +
-        "\\end{equation}\n\n" +
-        "\\section{Kết luận}\n" +
-        "Giao diện JavaFX mượt mà, tăng tốc đồ họa phần cứng và tương thích 100% với hệ thống.\n\n" +
-        "\\end{document}\n";
+            "\\documentclass{article}\n" +
+                    "\\usepackage[utf8]{vietnam}\n" +
+                    "\\usepackage{amsmath}\n" +
+                    "\\usepackage{graphicx}\n\n" +
+                    "\\title{\\textbf{Overleaf Desktop (Pure Java Edition)}}\n" +
+                    "\\author{Nhóm XX - Lớp Java Software Development}\n" +
+                    "\\date{\\today}\n\n" +
+                    "\\begin{document}\n\n" +
+                    "\\maketitle\n\n" +
+                    "\\begin{abstract}\n" +
+                    "Báo cáo xây dựng trình soạn thảo LaTeX cộng tác thời gian thực\n" +
+                    "hoàn toàn bằng JavaFX, TCP Socket, ProcessBuilder và MongoDB.\n" +
+                    "Hỗ trợ chế độ soạn thảo Offline và tự động Resync bằng CRDT.\n" +
+                    "\\end{abstract}\n\n" +
+                    "\\section{Giới thiệu}\n" +
+                    "Dự án cho phép người dùng biên dịch tài liệu LaTeX trực tiếp trên\n" +
+                    "máy tính cá nhân (offline-capable) thông qua ProcessBuilder,\n" +
+                    "đồng thời kết nối phòng làm việc nhóm qua Java TCP Sockets.\n\n" +
+                    "\\section{Công thức toán học}\n" +
+                    "Ví dụ công thức phương trình Einstein:\n" +
+                    "\\begin{equation}\n" +
+                    "    E = mc^2\n" +
+                    "\\end{equation}\n\n" +
+                    "\\section{Kết luận}\n" +
+                    "Giao diện JavaFX mượt mà, tăng tốc đồ họa phần cứng và tương thích 100% với hệ thống.\n\n" +
+                    "\\end{document}\n";
 
     @Override
     public void start(Stage primaryStage) {
@@ -122,25 +123,35 @@ public class OverleafFxApp extends Application {
         primaryStage.setMinWidth(960);
         primaryStage.setMinHeight(640);
 
-        // Khởi tạo hàng đợi Offline cho phòng mặc định ban đầu
+        // Khởi tạo M2 ProjectFileManager tại thư mục làm việc hiện tại
+        fileManager = new ProjectFileManager(".");
+
+        // Nạp nội dung từ file main.tex thực tế (nếu chưa có thì tạo mới bằng mã mặc định)
+        String initialCode = DEFAULT_LATEX_CODE;
+        try {
+            String diskContent = fileManager.readTexFile(mainTexFileName);
+            if (diskContent != null && !diskContent.isBlank()) {
+                initialCode = diskContent;
+            } else {
+                fileManager.writeTexFile(mainTexFileName, DEFAULT_LATEX_CODE);
+            }
+        } catch (IOException e) {
+            System.err.println("[WARN] Không thể đọc/ghi file main.tex ban đầu: " + e.getMessage());
+        }
+
+        // Khởi tạo hàng đợi Offline cho phòng mặc định
         operationQueue = new OfflineOperationQueue(currentRoomId, currentUserId, currentUserName);
         operationQueue.onConnectionLost();
 
-        // Bố cục tổng thể (BorderPane)
         BorderPane rootLayout = new BorderPane();
 
-        // 1. Phần đỉnh (Top): Menu Bar + Main ToolBar (Overleaf Brand)
         VBox topContainer = new VBox();
         topContainer.getChildren().addAll(createMenuBar(primaryStage), createMainToolBar(primaryStage));
         rootLayout.setTop(topContainer);
 
-        // 2. Phần trung tâm (Center): 3 Cột Workspace (File Tree | Editor & Logs | PDF Preview)
-        rootLayout.setCenter(createMainWorkspace(primaryStage));
-
-        // 3. Phần đáy (Bottom): Status Bar chuyên nghiệp
+        rootLayout.setCenter(createMainWorkspace(primaryStage, initialCode));
         rootLayout.setBottom(createStatusBar());
 
-        // Thiết lập Scene và nạp CSS giao diện hiện đại
         Scene scene = new Scene(rootLayout, 1260, 780);
         try {
             java.net.URL cssUrl = getClass().getResource("/styles/overleaf-theme.css");
@@ -153,17 +164,14 @@ public class OverleafFxApp extends Application {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[WARN] Khong the tai file CSS: " + e.getMessage());
+            System.err.println("[WARN] Không thể tải file CSS: " + e.getMessage());
         }
 
-        // Đăng ký phím tắt toàn cục: Ctrl+S (Lưu) và F5 / Ctrl+Enter (Recompile)
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN), this::saveFile);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.ENTER, KeyCombination.CONTROL_DOWN), this::triggerRecompile);
         scene.getAccelerators().put(new KeyCodeCombination(KeyCode.F5), this::triggerRecompile);
 
-        // Đóng các tiến trình chạy ngầm khi tắt ứng dụng
         primaryStage.setOnCloseRequest(e -> cleanupOnExit());
-
         primaryStage.setScene(scene);
         primaryStage.show();
 
@@ -202,13 +210,11 @@ public class OverleafFxApp extends Application {
         pdfCanvasPane.updatePreview(codeEditor.getText());
 
         appendLog("[INIT] Khởi động Overleaf Desktop (JavaFX Client Engine)...");
+        appendLog("[INIT] Đã kết nối M2 ProjectFileManager với thư mục: " + fileManager.getProjectRoot());
         appendLog("[INIT] Đã kích hoạt M4 OfflineOperationQueue cho phòng: " + currentRoomId);
         appendLog("[INIT] Chế độ Offline đã sẵn sàng: mọi thao tác đều được lưu an toàn.");
     }
 
-    /**
-     * Dọn dẹp tài nguyên khi thoát ứng dụng
-     */
     private void cleanupOnExit() {
         compilerService.shutdown();
         if (workspaceWatcher != null) {
@@ -217,13 +223,9 @@ public class OverleafFxApp extends Application {
         closeSocketQuietly();
     }
 
-    /**
-     * 1. THANH MENU (Menu Bar)
-     */
     private MenuBar createMenuBar(Stage stage) {
         MenuBar menuBar = new MenuBar();
 
-        // Menu File
         Menu fileMenu = new Menu("File");
         MenuItem itemNew = new MenuItem("Tạo file mới...");
         itemNew.setOnAction(e -> showNewFileDialog(stage));
@@ -239,7 +241,6 @@ public class OverleafFxApp extends Application {
 
         fileMenu.getItems().addAll(itemNew, itemSave, new SeparatorMenuItem(), itemExit);
 
-        // Menu Project
         Menu projectMenu = new Menu("Project");
         MenuItem itemCompile = new MenuItem("Recompile (F5 hoặc Ctrl + Enter)");
         itemCompile.setOnAction(e -> triggerRecompile());
@@ -252,7 +253,6 @@ public class OverleafFxApp extends Application {
 
         projectMenu.getItems().addAll(itemCompile, itemClean);
 
-        // Menu Collaboration (M4 & M3 Networking)
         Menu collabMenu = new Menu("Collaboration");
         MenuItem itemConnect = new MenuItem("Kết nối phòng (TCP Socket)...");
         itemConnect.setOnAction(e -> showConnectDialog(stage));
@@ -272,26 +272,22 @@ public class OverleafFxApp extends Application {
         collabMenu.getItems().addAll(itemConnect, itemSimulateDisconnect, itemSimulateReconnect,
                 new SeparatorMenuItem(), itemQueueStatus, itemDisconnect);
 
-        // Menu Help
         Menu helpMenu = new Menu("Help");
         MenuItem itemAbout = new MenuItem("Thông tin dự án");
         itemAbout.setOnAction(e -> showAlert(Alert.AlertType.INFORMATION, "Giới thiệu Overleaf Desktop",
                 "Overleaf Desktop (Pure Java Edition)\n" +
-                "Môn học: Java Software Development (2026-2027)\n\n" +
-                "Mô-đun M1: JavaFX GUI & Client Architecture\n" +
-                "Mô-đun M2: ProcessBuilder Compiler Engine & WorkspaceWatcher\n" +
-                "Mô-đun M3: TCP Socket Networking\n" +
-                "Mô-đun M4: CRDT Collaboration, Offline Queue & Resync Logic\n" +
-                "Mô-đun M5: MongoDB Persistence & Testing"));
+                        "Môn học: Java Software Development (2026-2027)\n\n" +
+                        "Mô-đun M1: JavaFX GUI & Client Architecture\n" +
+                        "Mô-đun M2: ProcessBuilder Compiler Engine & WorkspaceWatcher\n" +
+                        "Mô-đun M3: TCP Socket Networking\n" +
+                        "Mô-đun M4: CRDT Collaboration, Offline Queue & Resync Logic\n" +
+                        "Mô-đun M5: MongoDB Persistence & Testing"));
         helpMenu.getItems().add(itemAbout);
 
         menuBar.getMenus().addAll(fileMenu, projectMenu, collabMenu, helpMenu);
         return menuBar;
     }
 
-    /**
-     * 2. THANH CÔNG CỤ CHÍNH (Main ToolBar)
-     */
     private HBox createMainToolBar(Stage stage) {
         HBox toolBar = new HBox(12);
         toolBar.getStyleClass().add("main-toolbar");
@@ -361,15 +357,12 @@ public class OverleafFxApp extends Application {
         return toolBar;
     }
 
-    /**
-     * 3. KHU VỰC LÀM VIỆC CHÍNH (Main Workspace)
-     */
-    private SplitPane createMainWorkspace(Stage stage) {
+    private SplitPane createMainWorkspace(Stage stage, String initialContent) {
         SplitPane mainSplit = new SplitPane();
         mainSplit.setOrientation(Orientation.HORIZONTAL);
 
         VBox leftPane = createLeftPanel(stage);
-        SplitPane centerSplit = createCenterEditorPanel();
+        SplitPane centerSplit = createCenterEditorPanel(initialContent);
         pdfCanvasPane = new PdfCanvasPane();
 
         mainSplit.getItems().addAll(leftPane, centerSplit, pdfCanvasPane);
@@ -378,9 +371,6 @@ public class OverleafFxApp extends Application {
         return mainSplit;
     }
 
-    /**
-     * CỘT TRÁI: Cây thư mục và Danh sách cộng tác viên
-     */
     private VBox createLeftPanel(Stage stage) {
         VBox container = new VBox();
         VBox.setVgrow(container, Priority.ALWAYS);
@@ -389,7 +379,6 @@ public class OverleafFxApp extends Application {
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
         VBox.setVgrow(tabPane, Priority.ALWAYS);
 
-        // Tab 1: Cây thư mục dự án
         Tab filesTab = new Tab("Tệp tin");
         VBox filesBox = new VBox(8);
         filesBox.setPadding(new Insets(8));
@@ -426,7 +415,6 @@ public class OverleafFxApp extends Application {
         filesBox.getChildren().addAll(projectTreeView, fileButtons);
         filesTab.setContent(filesBox);
 
-        // Tab 2: Danh sách Cộng tác viên (M3 & M4 Socket)
         Tab collabTab = new Tab("Cộng tác");
         VBox collabBox = new VBox(8);
         collabBox.setPadding(new Insets(8));
@@ -496,10 +484,7 @@ public class OverleafFxApp extends Application {
         }
     }
 
-    /**
-     * CỘT GIỮA: Soạn thảo mã LaTeX (Trên) + Terminal Log (Dưới)
-     */
-    private SplitPane createCenterEditorPanel() {
+    private SplitPane createCenterEditorPanel(String initialContent) {
         SplitPane editorSplit = new SplitPane();
         editorSplit.setOrientation(Orientation.VERTICAL);
 
@@ -512,8 +497,8 @@ public class OverleafFxApp extends Application {
         editorTitle.getStyleClass().add("editor-header-title");
         editorHeader.getChildren().add(editorTitle);
 
-        codeEditor = new TextArea(DEFAULT_LATEX_CODE);
-        lastEditorContent = DEFAULT_LATEX_CODE;
+        codeEditor = new TextArea(initialContent);
+        lastEditorContent = initialContent;
         codeEditor.getStyleClass().add("code-textarea");
         VBox.setVgrow(codeEditor, Priority.ALWAYS);
 
@@ -526,7 +511,6 @@ public class OverleafFxApp extends Application {
 
         editorBox.getChildren().addAll(editorHeader, codeEditor);
 
-        // Terminal Console
         VBox terminalBox = new VBox();
         terminalBox.getStyleClass().add("terminal-container");
 
@@ -556,9 +540,6 @@ public class OverleafFxApp extends Application {
         return editorSplit;
     }
 
-    /**
-     * 4. THANH TRẠNG THÁI (Status Bar)
-     */
     private HBox createStatusBar() {
         HBox statusBar = new HBox(14);
         statusBar.getStyleClass().add("status-bar");
@@ -606,7 +587,6 @@ public class OverleafFxApp extends Application {
         if (newText == null) newText = "";
         if (oldText.equals(newText)) return;
 
-        // Tìm điểm bắt đầu sai khác (Common Prefix)
         int start = 0;
         int oldLen = oldText.length();
         int newLen = newText.length();
@@ -614,7 +594,6 @@ public class OverleafFxApp extends Application {
             start++;
         }
 
-        // Tìm điểm kết thúc sai khác (Common Suffix)
         int oldEnd = oldLen - 1;
         int newEnd = newLen - 1;
         while (oldEnd >= start && newEnd >= start && oldText.charAt(oldEnd) == newText.charAt(newEnd)) {
@@ -625,7 +604,6 @@ public class OverleafFxApp extends Application {
         int deletedCount = oldEnd - start + 1;
         int insertedCount = newEnd - start + 1;
 
-        // 1. Thao tác xóa nếu có
         if (deletedCount > 0) {
             String deletedContent = oldText.substring(start, start + deletedCount);
             long ts = lamportClock.incrementAndGet();
@@ -633,7 +611,6 @@ public class OverleafFxApp extends Application {
             dispatchOperation(delOp);
         }
 
-        // 2. Thao tác chèn nếu có
         if (insertedCount > 0) {
             String inserted = newText.substring(start, start + insertedCount);
             long ts = lamportClock.incrementAndGet();
@@ -749,8 +726,8 @@ public class OverleafFxApp extends Application {
                         appendLog("[M4-ERROR] Lỗi ROOM_UNKNOWN: Phòng không tồn tại trên Server!");
                         showAlert(Alert.AlertType.WARNING, "Phòng không tồn tại (ROOM_UNKNOWN)",
                                 "Phòng '" + currentRoomId + "' hiện không có trên Server (có thể do Server vừa khởi động lại).\n\n" +
-                                "Toàn bộ văn bản và thao tác cục bộ của bạn ĐƯỢC GIỮ NGUYÊN AN TOÀN.\n" +
-                                "Vui lòng bấm 'Lưu' để giữ bản sao, sau đó kết nối lại phòng!");
+                                        "Toàn bộ văn bản và thao tác cục bộ của bạn ĐƯỢC GIỮ NGUYÊN AN TOÀN.\n" +
+                                        "Vui lòng bấm 'Lưu' để giữ bản sao, sau đó kết nối lại phòng!");
                         simulateConnectionLost();
                     } else {
                         appendLog("[SERVER ERROR] " + msg.getPayload());
@@ -783,10 +760,6 @@ public class OverleafFxApp extends Application {
             isApplyingRemoteEdit = false;
         }
     }
-
-    // =========================================================================
-    // KẾT NỐI MẠNG TCP (M3) VÀ QUẢN LÝ MẤT MẠNG / NỐI LẠI (QUY TẮC 3, 4)
-    // =========================================================================
 
     private void showConnectDialog(Stage parent) {
         Dialog<ButtonType> dialog = new Dialog<>();
@@ -886,10 +859,10 @@ public class OverleafFxApp extends Application {
 
             showAlert(Alert.AlertType.INFORMATION, "Chế độ Offline (M4)",
                     "Chưa thể kết nối tới Server TCP tại " + host + ":" + port + ".\n\n" +
-                    "Ứng dụng đã tự động kích hoạt CHẾ ĐỘ OFFLINE của M4:\n" +
-                    "- Bạn có thể tiếp tục gõ văn bản bình thường.\n" +
-                    "- Các thao tác sửa đổi được lưu an toàn vào hàng đợi.\n" +
-                    "- Khi có Server kết nối lại, hệ thống sẽ tự động đồng bộ hóa (Resync)!");
+                            "Ứng dụng đã tự động kích hoạt CHẾ ĐỘ OFFLINE của M4:\n" +
+                            "- Bạn có thể tiếp tục gõ văn bản bình thường.\n" +
+                            "- Các thao tác sửa đổi được lưu an toàn vào hàng đợi.\n" +
+                            "- Khi có Server kết nối lại, hệ thống sẽ tự động đồng bộ hóa (Resync)!");
         });
 
         Thread t = new Thread(connectTask);
@@ -981,12 +954,12 @@ public class OverleafFxApp extends Application {
 
         String info = String.format(
                 "Phòng: %s\n" +
-                "Người dùng: %s (ID: %s)\n" +
-                "Trạng thái hàng đợi: %s\n" +
-                "Đang đồng bộ lại (Resyncing): %s\n" +
-                "Số thao tác chờ gửi (Pending unacked): %d\n" +
-                "Mã thao tác cuối đã thấy (LastSeen): %s\n" +
-                "Đồng hồ Lamport hiện tại: %d",
+                        "Người dùng: %s (ID: %s)\n" +
+                        "Trạng thái hàng đợi: %s\n" +
+                        "Đang đồng bộ lại (Resyncing): %s\n" +
+                        "Số thao tác chờ gửi (Pending unacked): %d\n" +
+                        "Mã thao tác cuối đã thấy (LastSeen): %s\n" +
+                        "Đồng hồ Lamport hiện tại: %d",
                 currentRoomId, currentUserName, currentUserId,
                 online ? "Online (Sẵn sàng gửi ngay)" : "Offline (Đang tích lũy thao tác)",
                 resyncing ? "Có (Ô soạn thảo đang khóa)" : "Không (Ô soạn thảo sẵn sàng)",
@@ -997,13 +970,6 @@ public class OverleafFxApp extends Application {
         showAlert(Alert.AlertType.INFORMATION, "Trạng thái M4 Offline Queue", info);
     }
 
-    // =========================================================================
-    // TÍCH HỢP M2: PROCESSBUILDER VÀ WORKSPACE WATCHER
-    // =========================================================================
-
-    /**
-     * Biên dịch tài liệu LaTeX sử dụng LatexCompilerService (M2 ProcessBuilder)
-     */
     private void triggerRecompile() {
         btnRecompile.setDisable(true);
         compileProgressBar.setVisible(true);
@@ -1027,22 +993,13 @@ public class OverleafFxApp extends Application {
         // 2. Chạy ProcessBuilder thông qua LatexCompilerService của M2
         compilerService.compileAsync(".", "main.tex", new LatexCompilerService.CompileCallback() {
             @Override
-            public void onSuccess(String log) {
+            public void onSuccess(LatexCompilerService.CompileResult result) {
                 Platform.runLater(() -> {
                     btnRecompile.setDisable(false);
                     compileProgressBar.setVisible(false);
-                    appendLog(log);
-
-                    File pdfFile = new File("main.pdf");
-                    if (pdfFile.exists()) {
-                        long kb = pdfFile.length() / 1024;
-                        appendLog(String.format("[SUCCESS] Đã tạo thành công tệp đầu ra: main.pdf (%d KB)", kb));
-                        statusLabel.setText("Biên dịch thành công! Đã tạo main.pdf (" + kb + " KB)");
-                    } else {
-                        appendLog("[SUCCESS] Quá trình biên dịch hoàn tất.");
-                        statusLabel.setText("Biên dịch thành công! Đã cập nhật bản xem trước PDF.");
-                    }
-                    // Cập nhật bản xem trước PDF ĐỘNG
+                    statusLabel.setText("Biên dịch thành công! Hoàn tất trong " + result.durationMillis() + "ms.");
+                    appendLog(result.log());
+                    appendLog("[SUCCESS] Bản PDF được tạo tại: " + result.pdfPath());
                     pdfCanvasPane.updatePreview(codeEditor.getText());
                 });
             }
