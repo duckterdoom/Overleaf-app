@@ -116,8 +116,10 @@ public class OfflineOperationQueue {
                 }
                 break;
             case CHECKPOINT:
+                // Server gửi CHECKPOINT sau khi vào phòng hoặc đồng bộ lại xong => kết nối đang sống
                 lastSeenOperationId = message.getPayload();
                 resyncing = false;
+                online = true;
                 break;
             case ERROR:
                 // Đồng bộ lại bị từ chối (ví dụ phòng không còn): giữ nguyên thao tác chưa gửi
