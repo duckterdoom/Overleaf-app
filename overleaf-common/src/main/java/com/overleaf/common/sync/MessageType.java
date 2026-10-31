@@ -14,6 +14,9 @@ package com.overleaf.common.sync;
  */
 public enum MessageType {
 
+    /** M3 transport handshake; payload is the configured shared access token. */
+    AUTH,
+
     // ---- Quản lý phòng cộng tác ----
 
     /** Client gửi yêu cầu tham gia một phòng làm việc nhóm */

@@ -68,24 +68,27 @@ public class DocumentSyncManager {
      * @param session phiên gửi (dùng để đăng ký vào broadcaster khi JOIN)
      */
     public void handleMessage(ClientSession session, SyncMessage message) {
-        threadPool.submitSyncTask(() -> {
-            try {
-                switch (message.getMessageType()) {
-                    case JOIN_ROOM:     handleJoinRoom(session, message);   break;
-                    case LEAVE_ROOM:    handleLeaveRoom(session, message);  break;
-                    case RESYNC:        handleResync(session, message);     break;
-                    case TEXT_EDIT:     handleEditMessage(message);         break;
-                    case CURSOR_UPDATE: handleCursorUpdate(message);        break;
-                    case HEARTBEAT:     handleHeartbeat(message);           break;
-                    default: /* ACK, FULL_SYNC... là thông điệp server → client */ break;
-                }
-            } catch (RuntimeException e) {
-                System.err.println("[SyncManager] Lỗi xử lý " + message.getMessageType()
-                        + ": " + e.getMessage());
-                broadcaster.sendTo(message.getRoomId(), message.getSenderId(),
-                        SyncMessage.createError(message.getRoomId(), "Lỗi xử lý: " + e.getMessage()));
+        threadPool.submitSyncTask(() -> processMessage(session, message));
+    }
+
+    /** M3's dedicated socket reader uses this entry point to preserve JOIN/edit/LEAVE order. */
+    public void processMessage(ClientSession session, SyncMessage message) {
+        try {
+            switch (message.getMessageType()) {
+                case JOIN_ROOM:     handleJoinRoom(session, message);   break;
+                case LEAVE_ROOM:    handleLeaveRoom(session, message);  break;
+                case RESYNC:        handleResync(session, message);     break;
+                case TEXT_EDIT:     handleEditMessage(message);         break;
+                case CURSOR_UPDATE: handleCursorUpdate(message);        break;
+                case HEARTBEAT:     handleHeartbeat(message);           break;
+                default: /* ACK, FULL_SYNC... là thông điệp server → client */ break;
             }
-        });
+        } catch (RuntimeException e) {
+            System.err.println("[SyncManager] Lỗi xử lý " + message.getMessageType()
+                    + ": " + e.getMessage());
+            broadcaster.sendTo(message.getRoomId(), message.getSenderId(),
+                    SyncMessage.createError(message.getRoomId(), "Lỗi xử lý: " + e.getMessage()));
+        }
     }
 
     // =========================================================================

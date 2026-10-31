@@ -1,51 +1,72 @@
-# OVERLEAF DESKTOP - HƯỚNG DẪN KẾT NỐI GUI VỚI MÔ-ĐUN M2 VÀ M4
+# OVERLEAF DESKTOP - HƯỚNG DẪN DÀNH CHO VỊ TRÍ M1 (GUI & CLIENT)
 
 Nhánh hiện tại: **`feat/m1-gui-client`**  
-Mã nguồn GUI JavaFX tại mô-đun **`overleaf-client`** đã được kết nối hoàn chỉnh với:
-- **M2 (Core Compiler & File I/O)**: `LatexCompilerService` (ProcessBuilder chạy nền) và `WorkspaceWatcher`.
-- **M4 (Collaboration Logic & Resync)**: `OfflineOperationQueue`, `CRDTOperation`, Đồng hồ Lamport, chế độ gõ Offline và cơ chế tự động Resync / Checkpoint khi nối lại mạng.
+Mã nguồn GUI của bạn đã được nâng cấp lên **JavaFX 17+ Hiện Đại & Tối Ưu Hóa** tại mô-đun **`overleaf-client`** theo đúng đặc tả môn học (mục 7.1 của `overleaf_desktop_ver2.md`).
 
 ---
 
-## 1. Nguyên tắc triển khai kết nối theo mục 4 của tài liệu M4
+## 1. Cấu trúc thư mục mô-đun GUI (M1)
 
-1. **Gõ văn bản (`prepareEdit`)**:
-   Khi người dùng gõ vào `codeEditor`, hệ thống tính toán phần sai khác (Diff), tăng đồng hồ Lamport cục bộ và tạo `CRDTOperation` (INSERT hoặc DELETE).
-   Sau đó gọi `SyncMessage m = queue.prepareEdit(op);`:
-   - Nếu đang Online: Gửi gói tin `TEXT_EDIT` qua socket TCP tới Server.
-   - Nếu đang Offline: Thông điệp tự động lưu vào hàng đợi chưa xác nhận (`unacked queue`) để sẵn sàng đồng bộ lại.
-
-2. **Nhận thông điệp (`handleServerMessage`)**:
-   Khi có thông điệp đến, luôn gọi `queue.handleServerMessage(msg)` trước:
-   - `FULL_SYNC`: Cập nhật toàn bộ nội dung văn bản mới nhất từ server và làm mới bản xem trước PDF.
-   - `TEXT_EDIT`: Áp dụng thao tác sửa đổi từ thành viên khác vào đúng vị trí và cập nhật đồng hồ Lamport (`max(local, op.ts)`).
-   - `ACK`: Đánh dấu thao tác đã được server xác nhận.
-   - `CHECKPOINT`: Cập nhật điểm đã thấy mới nhất và **mở khóa ô soạn thảo** khi `isResyncing()` trở về `false`.
-   - `ERROR (ROOM_UNKNOWN)`: Giữ nguyên vẹn văn bản cục bộ, cảnh báo người dùng lưu bản sao trước khi vào lại phòng.
-
-3. **Mất kết nối / Rớt mạng (`onConnectionLost`)**:
-   Gọi `queue.onConnectionLost()`. Người dùng vẫn tiếp tục soạn thảo bình thường trên máy tính cá nhân.
-
-4. **Nối lại mạng (`onReconnected`)**:
-   Gửi thông điệp `queue.onReconnected()` (chứa loại `RESYNC`, điểm đã thấy `lastSeenOperationId` và toàn bộ thao tác chưa xác nhận). Khóa tạm thời ô soạn thảo cho đến khi nhận `CHECKPOINT`.
-
----
-
-## 2. Cách chạy thử ứng dụng
-
-### Cách 1: Chạy bằng script tự động
-Nhấp đúp chuột vào file **`run-client.bat`** ở thư mục gốc dự án.  
-*(Script sẽ tự động biên dịch `overleaf-common` và nạp các thư viện JavaFX 17 có sẵn trong `.m2` để khởi chạy ngay lập tức).*
-
-### Cách 2: Chạy bản Swing dự phòng
-Nhấp đúp chuột vào file **`run-client-swing.bat`**.
+```text
+overleaf-desktop-project/
+├── .gitignore                   # Loại trừ file IDE, tệp tạm biên dịch
+├── pom.xml                      # Root Parent POM (đã cấu hình JavaFX 17)
+├── HD_CHAY_UNG_DUNG.md          # Tài liệu hướng dẫn
+├── run-client.bat               # Script nhấp đúp để chạy ứng dụng JavaFX hiện đại
+├── run-client-swing.bat         # Script dự phòng chạy bản Java Swing cũ
+│
+├── overleaf-client/             # [PHẦN CỦA BẠN - M1: GUI & CLIENT]
+│   ├── pom.xml                  # Cấu hình javafx-controls, javafx-fxml, javafx-maven-plugin
+│   └── src/main/
+│       ├── java/com/overleaf/client/
+│       │   ├── ClientApp.java               - Điểm khởi chạy chính (hỗ trợ JavaFX và --swing)
+│       │   └── gui/
+│       │       ├── OverleafFxApp.java       - GIAO DIỆN JAVAFX TỐI ƯU (Flat Design, Hardware Canvas)
+│       │       └── OverleafDesktopApp.java  - Bản Java Swing cũ (được giữ nguyên dự phòng)
+│       └── resources/
+│           └── styles/
+│               └── overleaf-theme.css       - Theme phong cách Overleaf Web chuyên nghiệp
+│
+├── overleaf-common/             # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M4]
+├── overleaf-server/             # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M2 & M3]
+└── database/                    # [MÔ-ĐUN DÀNH CHO ĐỒNG ĐỘI - M5]
+```
 
 ---
 
-## 3. Các tính năng kiểm thử M4 trực tiếp trên GUI (Menu `Collaboration`)
+## 2. Cách chạy ứng dụng GUI JavaFX của bạn
 
-Trên thanh Menu `Collaboration`, bạn có thể kiểm tra thực tế:
-- **`Kết nối phòng (TCP Socket)...`**: Nhập Host, Port, Room ID và Tên hiển thị.
-- **`Mất mạng / Chế độ Offline (M4 Simulate Lost)`**: Giả lập tình huống rớt mạng, giao diện chuyển sang trạng thái Offline, cho phép gõ tự do và tích lũy thao tác vào hàng đợi.
-- **`Nối lại mạng & Tự động Resync (M4 Reconnect)`**: Giả lập kết nối lại, gửi gói tin RESYNC và đợi CHECKPOINT.
-- **`Xem hàng đợi Offline (Pending Operations)`**: Hộp thoại xem chi tiết số lượng thao tác chưa gửi, mã thao tác cuối cùng đã thấy và giá trị đồng hồ Lamport hiện tại.
+### Cách 1: Dùng script tự động
+Nhấp đúp chuột vào file **`run-client.bat`** ở thư mục gốc dự án.
+
+### Cách 2: Chạy bằng dòng lệnh Maven
+Mở Terminal / PowerShell tại thư mục gốc dự án:
+```bash
+# Biên dịch và khởi chạy giao diện JavaFX
+mvn compile javafx:run -pl overleaf-client
+```
+
+*(Nếu muốn chạy lại bản Swing cũ để đối chứng: nhấp đúp `run-client-swing.bat` hoặc chạy `java -cp bin com.overleaf.client.ClientApp --swing`).*
+
+---
+
+## 3. Các tính năng nổi bật của giao diện JavaFX (M1)
+
+1. **Giao diện chuẩn Overleaf**: Nút **Recompile** màu xanh đặc trưng (`#388E3C`), chọn bộ dịch `pdfLaTeX / XeLaTeX`, nhãn trạng thái kết nối phòng `● Chạy cục bộ` hoặc `● Đã kết nối ROOM-101`.
+2. **Khung xem trước PDF tăng tốc phần cứng (Hardware Accelerated Canvas)**: Vẽ chuẩn khổ giấy A4, hiệu ứng bóng đổ (Drop Shadow) chân thực, nút phóng to / thu nhỏ / vừa trang mượt mà.
+3. **Biên dịch nền bất đồng bộ (Background Daemon Task)**: Sử dụng `javafx.concurrent.Task` đảm bảo giao diện luôn mượt mà 60 FPS, cập nhật tiến trình và log `latexmk` thời gian thực.
+4. **Phím tắt tiện dụng**: `Ctrl + S` để Lưu file, `F5` hoặc `Ctrl + Enter` để Recompile.
+
+---
+
+## 4. Cách đẩy nhánh GUI lên GitHub
+
+Repository remote:
+`https://github.com/duckterdoom/Overleaf-app.git`
+
+Chạy lệnh sau trên Terminal:
+```bash
+git add .
+git commit -m "feat(gui): upgrade client GUI to modern JavaFX with CSS and hardware-accelerated PDF canvas"
+git push -u origin feat/m1-gui-client
+```

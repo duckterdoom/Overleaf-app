@@ -3,6 +3,10 @@
 bin/
 out/
 target/
+dist/
+.env
+*.p12
+*.jks
 
 # Package Files
 *.jar

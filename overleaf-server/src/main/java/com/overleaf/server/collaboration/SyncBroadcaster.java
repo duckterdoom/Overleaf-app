@@ -5,7 +5,8 @@ import com.overleaf.common.sync.SyncMessage;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * an toàn khi nhiều luồng cùng đăng ký / hủy đăng ký / phát sóng.
  *
  * LƯU Ý TÍCH HỢP: M3 (TCP Networking) cài đặt {@link ClientSession} cho từng
- * socket (ví dụ ghi ra ObjectOutputStream) rồi đăng ký qua {@link #register}.
+ * socket (M3 ghi frame qua MessageCodec) rồi đăng ký qua {@link #register}.
  */
 public class SyncBroadcaster {
 
@@ -38,12 +39,16 @@ public class SyncBroadcaster {
 
         /** Phiên còn mở hay không. */
         boolean isOpen();
+
+        /** Transport may close slow clients; default keeps existing in-memory M4 adapters compatible. */
+        default void disconnect() { }
     }
 
     private final ConcurrentHashMap<String, Set<ClientSession>> roomSessions =
             new ConcurrentHashMap<>();
 
     private final CollaborationThreadPool threadPool;
+    private final int outboxCapacity;
 
     /**
      * Hộp thư đi của từng client. Mỗi client chỉ có MỘT luồng đang gửi tại một
@@ -51,14 +56,21 @@ public class SyncBroadcaster {
      * pool tự chia luồng thì hai thông điệp liên tiếp có thể đến đảo thứ tự).
      */
     private static final class Outbox {
-        final ConcurrentLinkedQueue<SyncMessage> queue = new ConcurrentLinkedQueue<>();
+        final BlockingQueue<SyncMessage> queue;
         final AtomicBoolean draining = new AtomicBoolean(false);
+        Outbox(int capacity) { queue = new ArrayBlockingQueue<>(capacity); }
     }
 
     private final ConcurrentHashMap<ClientSession, Outbox> outboxes = new ConcurrentHashMap<>();
 
     public SyncBroadcaster(CollaborationThreadPool threadPool) {
+        this(threadPool, 1024);
+    }
+
+    public SyncBroadcaster(CollaborationThreadPool threadPool, int outboxCapacity) {
+        if (outboxCapacity < 1) throw new IllegalArgumentException("Invalid outbox capacity");
         this.threadPool = threadPool;
+        this.outboxCapacity = outboxCapacity;
     }
 
     // =========================================================================
@@ -152,8 +164,13 @@ public class SyncBroadcaster {
 
     /** Đưa thông điệp vào hộp thư đi của client; gửi không chặn qua broadcast pool. */
     private void dispatch(String roomId, ClientSession session, SyncMessage message) {
-        Outbox outbox = outboxes.computeIfAbsent(session, k -> new Outbox());
-        outbox.queue.add(message);
+        if (!session.isOpen()) return;
+        Outbox outbox = outboxes.computeIfAbsent(session, k -> new Outbox(outboxCapacity));
+        if (!outbox.queue.offer(message)) {
+            unregister(roomId, session);
+            session.disconnect();
+            return;
+        }
         scheduleDrain(roomId, session, outbox);
     }
 

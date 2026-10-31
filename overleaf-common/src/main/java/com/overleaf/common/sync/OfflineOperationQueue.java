@@ -117,6 +117,7 @@ public class OfflineOperationQueue {
                 break;
             case CHECKPOINT:
                 lastSeenOperationId = message.getPayload();
+                online = true;
                 resyncing = false;
                 break;
             case ERROR:

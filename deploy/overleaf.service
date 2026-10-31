@@ -1,0 +1,21 @@
+[Unit]
+Description=Overleaf Desktop TCP Collaboration Server
+After=network.target
+
+[Service]
+Type=simple
+User=overleaf
+Group=overleaf
+WorkingDirectory=/opt/overleaf
+EnvironmentFile=/etc/overleaf/overleaf.env
+ExecStart=/usr/bin/java -Xms64m -Xmx512m -jar /opt/overleaf/overleaf-server.jar
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

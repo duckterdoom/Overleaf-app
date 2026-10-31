@@ -3,6 +3,7 @@ package com.overleaf.client.gui;
 import com.overleaf.client.compiler.LatexCompilerService;
 import com.overleaf.client.io.ProjectFileManager;
 import com.overleaf.client.io.WorkspaceWatcher;
+import com.overleaf.client.net.NetworkClient;
 import com.overleaf.common.sync.CRDTOperation;
 import com.overleaf.common.sync.OfflineOperationQueue;
 import com.overleaf.common.sync.OperationCodec;
@@ -29,8 +30,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
@@ -83,11 +82,11 @@ public class OverleafFxApp extends Application {
     private boolean isApplyingRemoteEdit = false;
     private String lastEditorContent = "";
 
-    // Socket kết nối mạng (M3 protocol)
-    private Socket tcpSocket;
-    private ObjectOutputStream socketOut;
-    private ObjectInputStream socketIn;
-    private Thread socketReaderThread;
+    // M3 length-prefixed transport, shared with the headless deployment demo.
+    private volatile NetworkClient networkClient;
+    private String queueRoomId = currentRoomId;
+    private String accessToken = System.getenv().getOrDefault("OVERLEAF_TOKEN", "");
+    private boolean useTls = Boolean.parseBoolean(System.getenv().getOrDefault("OVERLEAF_TLS", "false"));
 
     private static final String DEFAULT_LATEX_CODE =
             "\\documentclass{article}\n" +
@@ -477,8 +476,7 @@ public class OverleafFxApp extends Application {
         collabListView.getItems().clear();
         collabListView.getItems().add("👤 " + currentUserName + " (Bạn - " + (isConnected ? "Online" : "Offline") + ")");
         if (isConnected) {
-            collabListView.getItems().add("🟢 Alice (Đang sửa dòng 24)");
-            collabListView.getItems().add("🟡 Bob (Đang xem PDF)");
+            collabListView.getItems().add("Đang chờ danh sách thành viên từ máy chủ...");
         } else {
             collabListView.getItems().add("⚪ Phòng chưa kết nối Server (Offline Mode)");
         }
@@ -717,7 +715,13 @@ public class OverleafFxApp extends Application {
 
                 case USER_LIST_UPDATE:
                     appendLog("[M4-ROOM] Danh sách người dùng trong phòng được cập nhật: " + msg.getPayload());
-                    updateCollabListDisplay();
+                    collabListView.getItems().clear();
+                    if (!msg.getPayload().isBlank()) {
+                        for (String member : msg.getPayload().split("\n")) {
+                            String[] fields = member.split("\\|", 4);
+                            collabListView.getItems().add(fields.length > 1 ? fields[1] + " (" + fields[0] + ")" : member);
+                        }
+                    }
                     break;
 
                 case ERROR:
@@ -731,6 +735,7 @@ public class OverleafFxApp extends Application {
                         simulateConnectionLost();
                     } else {
                         appendLog("[SERVER ERROR] " + msg.getPayload());
+                        if (!codeEditor.isEditable()) simulateConnectionLost();
                     }
                     break;
 
@@ -776,6 +781,10 @@ public class OverleafFxApp extends Application {
         TextField portField = new TextField(String.valueOf(currentPort));
         TextField roomField = new TextField(currentRoomId);
         TextField userField = new TextField(currentUserName);
+        PasswordField tokenField = new PasswordField();
+        tokenField.setText(accessToken);
+        CheckBox tlsField = new CheckBox("TLS (máy chủ từ xa)");
+        tlsField.setSelected(useTls);
 
         grid.add(new Label("Địa chỉ Máy chủ (Host):"), 0, 0);
         grid.add(hostField, 1, 0);
@@ -785,6 +794,9 @@ public class OverleafFxApp extends Application {
         grid.add(roomField, 1, 2);
         grid.add(new Label("Tên hiển thị:"), 0, 3);
         grid.add(userField, 1, 3);
+        grid.add(new Label("Access token:"), 0, 4);
+        grid.add(tokenField, 1, 4);
+        grid.add(tlsField, 1, 5);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -794,9 +806,15 @@ public class OverleafFxApp extends Application {
             currentHost = hostField.getText().trim();
             try {
                 currentPort = Integer.parseInt(portField.getText().trim());
-            } catch (NumberFormatException ignored) {}
+                if (currentPort < 1 || currentPort > 65535) throw new NumberFormatException();
+            } catch (NumberFormatException invalidPort) {
+                showAlert(Alert.AlertType.ERROR, "Cổng không hợp lệ", "Nhập cổng từ 1 đến 65535.");
+                return;
+            }
             currentRoomId = roomField.getText().trim();
             currentUserName = userField.getText().trim();
+            accessToken = tokenField.getText();
+            useTls = tlsField.isSelected();
 
             connectToRoom(currentHost, currentPort, currentRoomId, currentUserName, false);
         }
@@ -805,19 +823,16 @@ public class OverleafFxApp extends Application {
     private void connectToRoom(String host, int port, String room, String user, boolean isReconnecting) {
         statusLabel.setText("Đang kết nối tới Server " + host + ":" + port + "...");
 
-        if (operationQueue == null || !currentRoomId.equals(room)) {
+        if (operationQueue == null || !queueRoomId.equals(room)) {
             operationQueue = new OfflineOperationQueue(room, currentUserId, user);
+            queueRoomId = room;
         }
 
         Task<Boolean> connectTask = new Task<>() {
             @Override
             protected Boolean call() throws Exception {
                 closeSocketQuietly();
-                tcpSocket = new Socket();
-                tcpSocket.connect(new InetSocketAddress(host, port), 2500);
-                socketOut = new ObjectOutputStream(tcpSocket.getOutputStream());
-                socketOut.flush();
-                socketIn = new ObjectInputStream(tcpSocket.getInputStream());
+                networkClient = new NetworkClient(host, port, useTls, accessToken);
                 return true;
             }
         };
@@ -836,13 +851,14 @@ public class OverleafFxApp extends Application {
                 sendMessageToServer(resyncMsg);
                 appendLog("[M4-RESYNC] Đã gửi thông điệp RESYNC với " + operationQueue.getPendingCount() + " thao tác chưa xác nhận.");
             } else {
+                codeEditor.setEditable(false);
                 SyncMessage joinMsg = SyncMessage.createJoinRoom(room, currentUserId, user);
                 sendMessageToServer(joinMsg);
                 appendLog("[M4-ROOM] Đã gửi yêu cầu JOIN_ROOM vào phòng: " + room);
             }
 
             updatePendingBadge();
-            showAlert(Alert.AlertType.INFORMATION, "Kết nối phòng", "Đã kết nối thành công tới phòng " + room + "!");
+            statusLabel.setText("Đã kết nối máy chủ; đang chờ trạng thái phòng...");
         });
 
         connectTask.setOnFailed(e -> {
@@ -872,6 +888,7 @@ public class OverleafFxApp extends Application {
 
     private void simulateConnectionLost() {
         isConnected = false;
+        codeEditor.setEditable(true);
         closeSocketQuietly();
         if (operationQueue != null) {
             operationQueue.onConnectionLost();
@@ -899,51 +916,33 @@ public class OverleafFxApp extends Application {
     }
 
     private void startSocketReaderThread() {
-        if (socketReaderThread != null && socketReaderThread.isAlive()) {
-            socketReaderThread.interrupt();
-        }
-
-        socketReaderThread = new Thread(() -> {
-            try {
-                while (isConnected && socketIn != null) {
-                    Object obj = socketIn.readObject();
-                    if (obj instanceof SyncMessage msg) {
-                        handleIncomingServerMessage(msg);
-                    }
-                }
-            } catch (EOFException | java.net.SocketException e) {
-                Platform.runLater(this::simulateConnectionLost);
-            } catch (Exception e) {
-                Platform.runLater(() -> appendLog("[NETWORK READ ERROR] " + e.getMessage()));
+        NetworkClient client = networkClient;
+        client.start(this::handleIncomingServerMessage, error -> Platform.runLater(() -> {
+            if (networkClient == client) {
+                if (error != null) appendLog("[NETWORK] " + error.getMessage());
+                simulateConnectionLost();
             }
-        });
-        socketReaderThread.setDaemon(true);
-        socketReaderThread.start();
+        }));
     }
 
     private void sendMessageToServer(SyncMessage msg) {
-        if (!isConnected || socketOut == null) return;
-        new Thread(() -> {
-            try {
-                synchronized (socketOut) {
-                    socketOut.writeObject(msg);
-                    socketOut.flush();
-                }
-            } catch (Exception e) {
-                Platform.runLater(() -> {
-                    appendLog("[NETWORK SEND ERROR] Không thể gửi gói tin: " + e.getMessage());
-                    simulateConnectionLost();
-                });
-            }
-        }).start();
+        NetworkClient client = networkClient;
+        if (!isConnected || client == null) return;
+        try {
+            client.send(msg);
+        } catch (IOException e) {
+            Platform.runLater(() -> {
+                if (networkClient != client) return;
+                appendLog("[NETWORK SEND ERROR] " + e.getMessage());
+                simulateConnectionLost();
+            });
+        }
     }
 
     private void closeSocketQuietly() {
-        try {
-            if (socketIn != null) socketIn.close();
-            if (socketOut != null) socketOut.close();
-            if (tcpSocket != null && !tcpSocket.isClosed()) tcpSocket.close();
-        } catch (Exception ignored) {}
+        NetworkClient client = networkClient;
+        networkClient = null;
+        if (client != null) client.close();
     }
 
     private void showQueueStatusDialog() {
