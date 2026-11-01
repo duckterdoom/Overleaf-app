@@ -79,6 +79,81 @@ class LocalBackendTest {
     }
 
     @Test
+    void projectIconAndColorSurviveRenameAndIgnoreBadValues() throws Exception {
+        LocalBackend backend = new LocalBackend(home);
+        ProjectGateway.ProjectSummary styled = backend.create("Styled", "flask", "#4A7FDB");
+        assertEquals("flask", styled.icon());
+        assertEquals("#4A7FDB", styled.color());
+
+        ProjectGateway.ProjectSummary renamed = backend.rename(styled, "Styled again");
+        assertEquals("flask", renamed.icon());
+        assertEquals("#4A7FDB", renamed.color());
+        assertEquals("flask", backend.projects().get(0).icon());
+
+        ProjectGateway.ProjectSummary plain = backend.create("Plain");
+        assertNull(plain.icon());
+        assertNull(plain.color());
+
+        ProjectGateway.ProjectSummary bad = backend.create("Bad", "../etc", "red");
+        assertNull(bad.icon(), "icon ids are restricted to a-z, 0-9 and dashes");
+        assertNull(bad.color(), "colors must be #RRGGBB");
+        assertFalse(Files.exists(Path.of(bad.folder()).resolve(".overleaf-project")));
+    }
+
+    @Test
+    void displayNameChangeIsStoredAndValidated() throws Exception {
+        LocalBackend backend = new LocalBackend(home);
+        AuthGateway.Session ada = backend.register("Ada", "ada@example.edu", "analytical", false).join();
+        AuthGateway.Session renamed = backend.updateName(ada, "  Ada   Lovelace ");
+        assertEquals("Ada Lovelace", renamed.name());
+        assertEquals("ada@example.edu", renamed.email());
+        assertEquals("Ada Lovelace", backend.signIn("ada@example.edu", "analytical", false).join().name(),
+                "the password still works after the rename");
+        assertMessage(() -> backend.updateName(renamed, "   "), "Enter a name");
+        assertMessage(() -> backend.updateName(renamed, "x".repeat(41)), "40 characters");
+        AuthGateway.Session offline = backend.continueOffline("Local");
+        Path photo = home.resolve("offline.png");
+        javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB), "png", photo.toFile());
+        backend.setAvatar(offline, photo);
+        AuthGateway.Session guest = backend.updateName(offline, "Guest");
+        assertEquals("Guest", guest.name());
+        assertTrue(backend.avatar(guest).isPresent(), "an offline rename keeps the picture");
+    }
+
+    @Test
+    void passwordAndEmailChangesNeedTheCurrentPassword() throws Exception {
+        LocalBackend backend = new LocalBackend(home);
+        AuthGateway.Session ada = backend.register("Ada", "ada@example.edu", "analytical", true).join();
+        backend.register("Bob", "bob@example.edu", "builder1", false).join();
+
+        assertMessage(() -> backend.changePassword(ada, "wrong-one", "newpass1"), "not correct");
+        assertMessage(() -> backend.changePassword(ada, "analytical", "short"), "at least 6");
+        assertMessage(() -> backend.changePassword(ada, "analytical", "analytical"), "not using already");
+        backend.changePassword(ada, "analytical", "newpass1");
+        assertMessage(() -> backend.signIn("ada@example.edu", "analytical", false).join(), "not correct");
+        assertEquals("Ada", backend.signIn("ada@example.edu", "newpass1", true).join().name());
+
+        Path photo = home.resolve("me.png");
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(8, 8, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        javax.imageio.ImageIO.write(image, "png", photo.toFile());
+        backend.setAvatar(ada, photo);
+
+        assertMessage(() -> backend.changeEmail(ada, "new@example.edu", "bad-password"), "not correct");
+        assertMessage(() -> backend.changeEmail(ada, "bob@example.edu", "newpass1"), "already uses");
+        assertMessage(() -> backend.changeEmail(ada, "not-an-email", "newpass1"), "valid email");
+        AuthGateway.Session moved = backend.changeEmail(ada, " New@Example.edu ", "newpass1");
+        assertEquals("new@example.edu", moved.email());
+        assertEquals("Ada", moved.name());
+        assertEquals("new@example.edu", backend.restoreSession().email(), "keep-me-signed-in follows the move");
+        assertEquals("new@example.edu", backend.lastEmail());
+        assertTrue(backend.avatar(moved).isPresent(), "the picture moves with the account");
+        assertFalse(backend.avatar(ada).isPresent());
+        assertMessage(() -> backend.signIn("ada@example.edu", "newpass1", false).join(), "No account");
+        assertEquals("Ada", backend.signIn("new@example.edu", "newpass1", false).join().name());
+        assertMessage(() -> backend.changeEmail(backend.continueOffline("Guest"), "x@example.edu", "pw"), "Sign in with an account");
+    }
+
+    @Test
     void renameAndDeleteKeepFilesRecoverable() throws Exception {
         LocalBackend backend = new LocalBackend(home);
         ProjectGateway.ProjectSummary paper = backend.create("Paper");

@@ -9,8 +9,11 @@ import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Labeled;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
@@ -25,6 +28,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
@@ -63,6 +67,7 @@ public class HomeView extends BorderPane {
     private final AuthGateway.Session session;
     private final Consumer<ProjectSummary> onOpen;
     private final Runnable onSignOut;
+    private final Runnable onSettings;
     private final Consumer<Boolean> onLanguageChange;
     private String activeProjectName;
     private final StackPane host;
@@ -71,10 +76,10 @@ public class HomeView extends BorderPane {
     private final VBox railProjects = new VBox(2);
     private final VBox projectRows = new VBox(1);
     private final Button heroProject = new Button();
-    private final Label heroMeta = new Label();
     private final Label projectCount = new Label();
-    private final Label folderValue = new Label("—");
-    private final Label accountValue = new Label("—");
+    private final Label folderPrefix = new Label();
+    private final Label folderName = new Label("—");
+    private final StackPane projectTile = stripTile();
     private final ActivityHeatmap heatmap;
     private final Map<LocalDate, Integer> activityData;
 
@@ -88,6 +93,7 @@ public class HomeView extends BorderPane {
                     StackPane host,
                     Consumer<ProjectSummary> onOpen,
                     Runnable onSignOut,
+                    Runnable onSettings,
                     boolean vietnamese,
                     Consumer<Boolean> onLanguageChange,
                     BiConsumer<ProjectSummary, ProjectSummary> onProjectChanged,
@@ -100,6 +106,7 @@ public class HomeView extends BorderPane {
         this.host = host;
         this.onOpen = onOpen;
         this.onSignOut = onSignOut;
+        this.onSettings = onSettings;
         this.vi = vietnamese;
         this.onLanguageChange = onLanguageChange;
         this.onProjectChanged = onProjectChanged;
@@ -161,14 +168,14 @@ public class HomeView extends BorderPane {
         Label name = new Label(session.name());
         name.getStyleClass().add("rail-item-name");
         name.setTextOverrun(OverrunStyle.ELLIPSIS);
-        name.setMaxWidth(128);
+        name.setMaxWidth(92);
 
         Label host = new Label(session.offline()
                 ? t("Offline session", "Phiên ngoại tuyến")
                 : session.email());
         host.getStyleClass().add("rail-item-meta");
         host.setTextOverrun(OverrunStyle.ELLIPSIS);
-        host.setMaxWidth(128);
+        host.setMaxWidth(92);
 
         VBox info = new VBox(1, name, host);
         HBox.setHgrow(info, Priority.ALWAYS);
@@ -180,14 +187,21 @@ public class HomeView extends BorderPane {
         signOut.setOnAction(e -> onSignOut.run());
         signOut.addEventHandler(MouseEvent.MOUSE_CLICKED, MouseEvent::consume);
 
-        HBox chip = new HBox(9, avatar, info, signOut);
+        Button settings = new Button();
+        settings.setGraphic(UiSupport.iconBox(UiSupport.SETTINGS, 14, Color.web("#7A7A74"), 16));
+        settings.getStyleClass().add("icon-button");
+        settings.setTooltip(UiSupport.tooltip(t("Settings", "Cài đặt")));
+        settings.setOnAction(e -> onSettings.run());
+        settings.addEventHandler(MouseEvent.MOUSE_CLICKED, MouseEvent::consume);
+
+        HBox chip = new HBox(4, avatar, info, settings, signOut);
+        HBox.setMargin(info, new Insets(0, 0, 0, 5));
         chip.setAlignment(Pos.CENTER_LEFT);
         chip.getStyleClass().add("user-chip");
-        Tooltip.install(chip, UiSupport.tooltip(t("Change profile picture", "Đổi ảnh đại diện")));
+        Tooltip.install(chip, UiSupport.tooltip(t("Profile and settings", "Hồ sơ và cài đặt")));
         chip.setOnMouseClicked(e -> {
             if (e.getButton() == MouseButton.PRIMARY) {
-                ProfilePhotoDialog.show(this.host, profileGateway, session, vi,
-                        () -> UiSupport.applyAvatar(avatar, session.name(), profileGateway.avatar(session), 28));
+                onSettings.run();
             }
         });
         return chip;
@@ -204,13 +218,12 @@ public class HomeView extends BorderPane {
         today.getStyleClass().add("home-date");
         header.getChildren().addAll(UiSupport.spacer(), today, buildLanguageButton());
 
-        HBox board = new HBox(16, buildProjectsCard(), buildSideColumn());
-        board.setAlignment(Pos.TOP_LEFT);
-        HBox.setHgrow(board.getChildren().get(0), Priority.ALWAYS);
+        content.getChildren().addAll(header, buildWorkspaceStrip(), buildActivityCard(), buildProjectsCard());
 
-        content.getChildren().addAll(header, buildActivityCard(), buildContinueCard(), board);
-
-        ScrollPane scroll = new ScrollPane(content);
+        // Centred, so a Compact or Standard content width does not leave all the spare room on the right.
+        StackPane centred = new StackPane(content);
+        centred.setAlignment(Pos.TOP_CENTER);
+        ScrollPane scroll = new ScrollPane(centred);
         scroll.getStyleClass().add("home-scroll");
         scroll.setFitToWidth(true);
         scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -243,105 +256,6 @@ public class HomeView extends BorderPane {
         });
         language.getItems().addAll(english, vietnamese);
         return language;
-    }
-
-    private HBox buildContinueCard() {
-        Label eyebrow = new Label(t("CONTINUE WRITING", "TIẾP TỤC VIẾT"));
-        eyebrow.getStyleClass().add("card-eyebrow");
-
-        heroProject.getStyleClass().add("hero-project");
-        heroProject.setText(t("No project", "Chưa có dự án") + "  ⌄");
-        heroProject.setOnAction(e -> showProjectMenu(heroProject));
-
-        heroMeta.getStyleClass().add("hero-meta");
-        heroMeta.setTextOverrun(OverrunStyle.ELLIPSIS);
-
-        Button open = new Button(t("Open editor", "Mở trình soạn thảo"));
-        open.setGraphic(UiSupport.iconBox(UiSupport.PLAY, 12, Color.WHITE, 13));
-        open.getStyleClass().add("btn-primary");
-        open.setOnAction(e -> {
-            ProjectSummary active = activeProject();
-            if (active != null) {
-                onOpen.accept(active);
-            }
-        });
-
-        Button newProject = new Button(t("New project", "Dự án mới"));
-        newProject.setGraphic(UiSupport.iconBox(UiSupport.PLUS, 12, Color.web("#2B2B28"), 13));
-        newProject.getStyleClass().add("btn-secondary");
-        newProject.setOnAction(e -> newProjectDialog());
-
-        HBox actions = new HBox(8, open, newProject);
-        actions.setAlignment(Pos.CENTER_LEFT);
-
-        VBox copy = new VBox(eyebrow, heroProject, heroMeta, actions);
-        copy.setAlignment(Pos.CENTER_LEFT);
-        copy.setMinWidth(0);
-        VBox.setMargin(heroProject, new Insets(5, 0, 4, 0));
-        VBox.setMargin(actions, new Insets(16, 0, 0, 0));
-
-        HBox.setHgrow(copy, Priority.ALWAYS);
-
-        HBox card = new HBox(24, copy, buildPaperThumb());
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.getStyleClass().add("continue-card");
-        return card;
-    }
-
-    private StackPane buildPaperThumb() {
-        VBox sheet = new VBox(5);
-        sheet.getStyleClass().add("thumb-sheet");
-        sheet.setPadding(new Insets(13, 12, 12, 12));
-        sheet.setPrefSize(108, 144);
-        sheet.setMinSize(108, 144);
-        sheet.setMaxSize(108, 144);
-        sheet.getChildren().addAll(
-                thumbBar(20, "thumb-accent"),
-                gap(5),
-                thumbBar(66, "thumb-strong"),
-                thumbBar(78, "thumb-line"),
-                thumbBar(58, "thumb-line"),
-                gap(7),
-                thumbBar(72, "thumb-line"),
-                thumbBar(80, "thumb-line"),
-                thumbBar(64, "thumb-line"),
-                gap(7),
-                thumbBar(38, "thumb-strong"),
-                thumbBar(76, "thumb-line"),
-                thumbBar(70, "thumb-line"),
-                thumbBar(48, "thumb-line"));
-
-        StackPane front = new StackPane(sheet);
-        front.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-        front.setRotate(-4);
-
-        Region back = new Region();
-        back.getStyleClass().add("thumb-sheet-back");
-        back.setPrefSize(108, 144);
-        back.setMaxSize(108, 144);
-        back.setRotate(5);
-
-        StackPane stack = new StackPane(back, front);
-        stack.setMinSize(128, 158);
-        stack.setPrefSize(128, 158);
-        stack.setMaxSize(128, 158);
-        stack.getStyleClass().add("thumb-wrap");
-        return stack;
-    }
-
-    private Region thumbBar(double width, String styleClass) {
-        Region bar = new Region();
-        bar.getStyleClass().addAll("thumb-bar", styleClass);
-        bar.setPrefSize(width, styleClass.equals("thumb-strong") || styleClass.equals("thumb-accent") ? 4 : 3);
-        bar.setMaxSize(width, styleClass.equals("thumb-strong") || styleClass.equals("thumb-accent") ? 4 : 3);
-        return bar;
-    }
-
-    private Region gap(double height) {
-        Region region = new Region();
-        region.setMinHeight(height);
-        region.setPrefHeight(height);
-        return region;
     }
 
     private VBox buildProjectsCard() {
@@ -395,12 +309,6 @@ public class HomeView extends BorderPane {
         label.setAlignment(Pos.CENTER_RIGHT);
     }
 
-    private VBox buildSideColumn() {
-        VBox side = new VBox(16, buildWorkspaceCard());
-        side.getStyleClass().add("home-sidecol");
-        return side;
-    }
-
     private VBox buildActivityCard() {
         int totalEdits = activityData.values().stream().mapToInt(Integer::intValue).sum();
         int streak = currentStreak();
@@ -432,7 +340,7 @@ public class HomeView extends BorderPane {
             boolean active = heatmap.isGameActive();
             play.setText(active ? t("Back to heatmap", "Quay lại lưới") : t("Play Snake", "Chơi Snake"));
             play.setGraphic(UiSupport.iconBox(active ? UiSupport.ARROW_LEFT : UiSupport.PLAY, 10,
-                    Color.web("#23664A"), 12));
+                    ThemeManager.accent(), 12));
             hint.setText(active
                     ? t("Arrow keys to steer · Esc to return", "Phím mũi tên để di chuyển · Esc để quay lại")
                     : t("Double-click the grid · or press Play Snake",
@@ -489,8 +397,8 @@ public class HomeView extends BorderPane {
             return;
         }
         double usable = cardWidth - 36;
-        double cell = (usable - (WEEKS - 1) * 3) / WEEKS;
-        heatmap.setCellSize(Math.max(9, Math.min(17, cell)));
+        double cell = ActivityHeatmap.cellSizeFor(usable, WEEKS);
+        heatmap.setCellSize(Math.max(9, Math.min(20, cell)));
     }
 
     private VBox statBlock(String value, String label) {
@@ -501,44 +409,109 @@ public class HomeView extends BorderPane {
         return new VBox(0, number, text);
     }
 
-    private VBox buildWorkspaceCard() {
-        Label title = new Label(t("WORKSPACE", "KHÔNG GIAN LÀM VIỆC"));
-        title.getStyleClass().add("side-title");
+    /** Workspace details in one evenly divided strip: project, folder and compiler. */
+    private HBox buildWorkspaceStrip() {
+        heroProject.getStyleClass().add("strip-button");
+        heroProject.setContentDisplay(ContentDisplay.RIGHT);
+        heroProject.setGraphicTextGap(4);
+        heroProject.setGraphic(UiSupport.iconBox(UiSupport.CHEVRON_DOWN, 14, Color.web("#8B8B85"), 16));
+        heroProject.setTextOverrun(OverrunStyle.ELLIPSIS);
+        heroProject.setOnAction(e -> showProjectMenu(heroProject));
 
-        Label note = new Label(t("Local compiler · room sync ready",
-                "Trình biên dịch cục bộ · sẵn sàng đồng bộ phòng"));
-        note.getStyleClass().add("side-note");
-        note.setWrapText(true);
+        // The path reads as a breadcrumb: the folder it lives in fades back, the project name stands out.
+        folderPrefix.getStyleClass().add("strip-path");
+        folderPrefix.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
+        folderPrefix.setMinWidth(0);
+        folderName.getStyleClass().add("strip-value");
+        folderName.setMinWidth(Region.USE_PREF_SIZE);
+        HBox path = new HBox(folderPrefix, folderName);
+        path.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(folderPrefix, Priority.SOMETIMES);
 
-        folderValue.setTextOverrun(OverrunStyle.ELLIPSIS);
-        accountValue.setTextOverrun(OverrunStyle.ELLIPSIS);
-        folderValue.setMaxWidth(198);
-        accountValue.setMaxWidth(198);
+        Circle ready = new Circle(3, Color.web("#3E9B6D"));
+        Label compiler = new Label("pdfLaTeX");
+        compiler.getStyleClass().add("strip-value");
+        HBox compilerValue = new HBox(7, ready, compiler);
+        compilerValue.setAlignment(Pos.CENTER_LEFT);
 
-        VBox card = new VBox(9,
-                title,
-                envRow(t("Folder", "Thư mục"), folderValue),
-                envRow(t("Compiles with", "Biên dịch bằng"), staticValue("pdfLaTeX")),
-                envRow(t("Account", "Tài khoản"), accountValue),
-                note);
-        card.getStyleClass().addAll("panel", "mini-card");
-        VBox.setMargin(note, new Insets(4, 0, 0, 0));
-        return card;
+        StackPane folderTile = stripTile();
+        folderTile.getChildren().setAll(UiSupport.lineIcon(UiSupport.FOLDER, 15, ThemeManager.accent()));
+        StackPane compilerTile = stripTile();
+        compilerTile.getChildren().setAll(UiSupport.lineIcon(
+                ProjectAppearance.iconPath("code"), 15, ThemeManager.accent()));
+
+        HBox strip = new HBox(
+                stripCell(t("PROJECT", "DỰ ÁN"), projectTile, heroProject, 3),
+                stripDivider(),
+                stripCell(t("FOLDER", "THƯ MỤC"), folderTile, path, 5),
+                stripDivider(),
+                stripCell(t("COMPILES WITH", "BIÊN DỊCH BẰNG"), compilerTile, compilerValue, 2));
+        strip.setAlignment(Pos.TOP_LEFT);
+        strip.getStyleClass().addAll("panel", "workspace-strip");
+        return strip;
     }
 
-    private HBox envRow(String key, Label value) {
+    /** The project cell's tile takes the project's own icon and color; older projects show their initial. */
+    private void paintProjectTile(ProjectSummary active) {
+        String svg = active == null ? null : ProjectAppearance.iconPath(active.icon());
+        Color accent = active == null ? Color.web("#8B8B85") : ProjectAppearance.color(active.color());
+        if (svg != null) {
+            projectTile.getChildren().setAll(UiSupport.lineIcon(svg, 16, accent));
+            projectTile.setStyle("-fx-background-color: " + tint(accent) + ";");
+        } else if (active != null) {
+            Label initial = new Label(active.name().substring(0, 1).toUpperCase());
+            Color theme = ThemeManager.accent();
+            initial.setStyle(String.format("-fx-font-size: 14px; -fx-text-fill: #%02X%02X%02X;",
+                    Math.round(theme.getRed() * 255), Math.round(theme.getGreen() * 255), Math.round(theme.getBlue() * 255)));
+            projectTile.getChildren().setAll(initial);
+            projectTile.setStyle(null);
+        } else {
+            projectTile.getChildren().setAll(UiSupport.lineIcon(UiSupport.FOLDER, 15, accent));
+            projectTile.setStyle(null);
+        }
+    }
+
+    private static StackPane stripTile() {
+        StackPane tile = new StackPane();
+        tile.getStyleClass().add("strip-tile");
+        tile.setMinSize(36, 36);
+        tile.setPrefSize(36, 36);
+        tile.setMaxSize(36, 36);
+        return tile;
+    }
+
+    private Region stripDivider() {
+        Region divider = new Region();
+        divider.getStyleClass().add("strip-divider");
+        divider.setMinWidth(1);
+        divider.setPrefWidth(1);
+        divider.setMaxWidth(1);
+        HBox.setMargin(divider, new Insets(12, 0, 12, 0));
+        return divider;
+    }
+
+    /** Icon tile beside a label-over-value pair; the value row is a fixed height so every cell lines up. */
+    private HBox stripCell(String key, Node tile, Region value, int weight) {
         Label keyLabel = new Label(key);
-        keyLabel.getStyleClass().add("side-key");
-        value.getStyleClass().add("side-value");
-        HBox row = new HBox(10, keyLabel, UiSupport.spacer(), value);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }
-
-    private Label staticValue(String text) {
-        Label value = new Label(text);
-        value.getStyleClass().add("side-value");
-        return value;
+        keyLabel.getStyleClass().add("strip-key");
+        value.setMinHeight(20);
+        value.setPrefHeight(20);
+        value.setMaxHeight(20);
+        value.setMaxWidth(Double.MAX_VALUE);
+        if (value instanceof Labeled labeled) {
+            labeled.setAlignment(Pos.CENTER_LEFT);
+        }
+        VBox text = new VBox(2, keyLabel, value);
+        text.setAlignment(Pos.CENTER_LEFT);
+        text.setMinWidth(0);
+        HBox.setHgrow(text, Priority.ALWAYS);
+        HBox cell = new HBox(12, tile, text);
+        cell.setAlignment(Pos.CENTER_LEFT);
+        cell.getStyleClass().add("strip-cell");
+        cell.setMinWidth(0);
+        cell.setPrefWidth(weight * 100);
+        HBox.setHgrow(cell, Priority.ALWAYS);
+        return cell;
     }
 
     private void refreshProjects() {
@@ -548,18 +521,20 @@ public class HomeView extends BorderPane {
 
         ProjectSummary active = activeProject();
         heroProject.setText(active == null
-                ? t("No project", "Chưa có dự án") + "  ⌄"
-                : active.name() + "  ⌄");
-        heroMeta.setText(active == null
-                ? t("Create a project to start writing.", "Tạo một dự án để bắt đầu viết.")
-                : modifiedText(active.modified()) + "  ·  " + filesText(active.files())
-                + (active.shared() ? "  ·  " + t("Shared", "Chia sẻ") : ""));
+                ? t("No project", "Chưa có dự án")
+                : active.name());
         projectCount.setText(projects.size() + " "
                 + t(projects.size() == 1 ? "project" : "projects", "dự án"));
-        folderValue.setText(active == null ? "—" : shortenPath(active.folder()));
-        accountValue.setText(session.offline()
-                ? session.name() + " · " + t("offline", "ngoại tuyến")
-                : session.name());
+        if (active == null) {
+            folderPrefix.setText("");
+            folderName.setText("—");
+        } else {
+            java.nio.file.Path folder = java.nio.file.Path.of(active.folder());
+            String parent = folder.getParent() == null ? "" : folder.getParent().toString();
+            folderPrefix.setText(parent.isEmpty() ? "" : parent + java.io.File.separator);
+            folderName.setText(folder.getFileName().toString());
+        }
+        paintProjectTile(active);
     }
 
     private String filesText(int files) {
@@ -597,7 +572,7 @@ public class HomeView extends BorderPane {
             meta.getStyleClass().add("rail-item-meta");
 
             VBox text = new VBox(1, name, meta);
-            Circle dot = new Circle(2.5, active ? Color.web("#23664A") : Color.TRANSPARENT);
+            Circle dot = new Circle(2.5, active ? ProjectAppearance.color(project.color()) : Color.TRANSPARENT);
 
             HBox item = new HBox(8, dot, text);
             item.setAlignment(Pos.CENTER_LEFT);
@@ -622,8 +597,7 @@ public class HomeView extends BorderPane {
     }
 
     private HBox buildProjectRow(ProjectSummary project) {
-        Label icon = new Label(project.name().substring(0, 1).toUpperCase());
-        icon.getStyleClass().add("project-icon");
+        Node icon = projectBadge(project);
 
         Label name = new Label(project.name());
         name.getStyleClass().add("project-name");
@@ -773,7 +747,7 @@ public class HomeView extends BorderPane {
         VBox copy = new VBox(2, title, sub);
 
         StackPane iconTile = new StackPane(
-                UiSupport.lineIcon(UiSupport.PLUS, 16, Color.web("#23664A")));
+                UiSupport.lineIcon(UiSupport.PLUS, 16, ThemeManager.accent()));
         iconTile.getStyleClass().add("modal-icon-tile");
         iconTile.setMinSize(38, 38);
         iconTile.setPrefSize(38, 38);
@@ -797,6 +771,48 @@ public class HomeView extends BorderPane {
         error.setManaged(false);
         VBox nameBlock = new VBox(6, nameLabel, nameField, error);
 
+        String[] pickedIcon = {ProjectAppearance.DEFAULT_ICON};
+        String[] pickedColor = {ProjectAppearance.DEFAULT_COLOR};
+        Runnable previewLook = () -> {
+            Color accent = ProjectAppearance.color(pickedColor[0]);
+            iconTile.getChildren().setAll(UiSupport.lineIcon(
+                    ProjectAppearance.iconPath(pickedIcon[0]), 18, accent));
+            iconTile.setStyle("-fx-background-color: " + tint(accent) + ";");
+        };
+
+        Label iconLabel = new Label(t("PROJECT ICON", "BIỂU TƯỢNG"));
+        iconLabel.getStyleClass().add("field-label");
+        FlowPane iconGrid = pickGrid();
+        ProjectAppearance.icons().forEach((id, svg) -> {
+            StackPane tile = pickTile(UiSupport.lineIcon(svg, 16, Color.web("#3A3A36")));
+            tile.setUserData(id);
+            iconGrid.getChildren().add(tile);
+        });
+        selectTile(iconGrid, pickedIcon[0]);
+        iconGrid.getChildren().forEach(tile -> tile.setOnMouseClicked(e -> {
+            pickedIcon[0] = (String) tile.getUserData();
+            selectTile(iconGrid, pickedIcon[0]);
+            previewLook.run();
+        }));
+        VBox iconBlock = new VBox(6, iconLabel, iconGrid);
+
+        Label colorLabel = new Label(t("PROJECT COLOR", "MÀU DỰ ÁN"));
+        colorLabel.getStyleClass().add("field-label");
+        FlowPane colorGrid = pickGrid();
+        for (String hex : ProjectAppearance.colors()) {
+            StackPane tile = pickTile(new Circle(6.5, ProjectAppearance.color(hex)));
+            tile.setUserData(hex);
+            colorGrid.getChildren().add(tile);
+        }
+        selectTile(colorGrid, pickedColor[0]);
+        colorGrid.getChildren().forEach(tile -> tile.setOnMouseClicked(e -> {
+            pickedColor[0] = (String) tile.getUserData();
+            selectTile(colorGrid, pickedColor[0]);
+            previewLook.run();
+        }));
+        VBox colorBlock = new VBox(6, colorLabel, colorGrid);
+        previewLook.run();
+
         Label pathLabel = new Label(t("LOCATION", "VỊ TRÍ"));
         pathLabel.getStyleClass().add("field-label");
         Label path = new Label();
@@ -818,10 +834,10 @@ public class HomeView extends BorderPane {
         HBox footer = new HBox(8, hint, UiSupport.spacer(), cancel, create);
         footer.setAlignment(Pos.CENTER_LEFT);
 
-        VBox card = new VBox(16, head, nameBlock, pathBlock, footer);
+        VBox card = new VBox(16, head, nameBlock, iconBlock, colorBlock, pathBlock, footer);
         card.getStyleClass().add("modal-card");
-        card.setMaxWidth(430);
-        card.setPrefWidth(430);
+        card.setMaxWidth(520);
+        card.setPrefWidth(520);
         card.setMaxHeight(Region.USE_PREF_SIZE);
 
         StackPane scrim = new StackPane(card);
@@ -847,7 +863,7 @@ public class HomeView extends BorderPane {
             }
             ProjectSummary created;
             try {
-                created = projectGateway.create(name);
+                created = projectGateway.create(name, pickedIcon[0], pickedColor[0]);
             } catch (RuntimeException failure) {
                 showFieldError(nameField, error, failure.getMessage());
                 return;
@@ -886,6 +902,50 @@ public class HomeView extends BorderPane {
         });
     }
 
+    private static FlowPane pickGrid() {
+        FlowPane grid = new FlowPane(4, 4);
+        grid.getStyleClass().add("pick-grid");
+        return grid;
+    }
+
+    private static StackPane pickTile(Node content) {
+        StackPane tile = new StackPane(content);
+        tile.getStyleClass().add("pick-tile");
+        tile.setMinSize(28, 28);
+        tile.setPrefSize(28, 28);
+        tile.setMaxSize(28, 28);
+        return tile;
+    }
+
+    private static void selectTile(FlowPane grid, String id) {
+        for (Node tile : grid.getChildren()) {
+            tile.getStyleClass().remove("pick-tile-selected");
+            if (id.equals(tile.getUserData())) {
+                tile.getStyleClass().add("pick-tile-selected");
+            }
+        }
+    }
+
+    private static String tint(Color accent) {
+        return String.format("rgba(%d, %d, %d, 0.14)", Math.round(accent.getRed() * 255),
+                Math.round(accent.getGreen() * 255), Math.round(accent.getBlue() * 255));
+    }
+
+    /** Project icon in its chosen color; older projects without one fall back to the initial. */
+    private Node projectBadge(ProjectSummary project) {
+        String svg = ProjectAppearance.iconPath(project.icon());
+        if (svg == null) {
+            Label initial = new Label(project.name().substring(0, 1).toUpperCase());
+            initial.getStyleClass().add("project-icon");
+            return initial;
+        }
+        Color accent = ProjectAppearance.color(project.color());
+        StackPane badge = new StackPane(UiSupport.lineIcon(svg, 15, accent));
+        badge.getStyleClass().add("project-icon");
+        badge.setStyle("-fx-background-color: " + tint(accent) + ";");
+        return badge;
+    }
+
     private void showFieldError(TextField field, Label error, String message) {
         error.setText(message);
         error.setVisible(true);
@@ -913,17 +973,5 @@ public class HomeView extends BorderPane {
             day = day.minusDays(1);
         }
         return streak;
-    }
-
-    private static String shortenPath(String path) {
-        String home = System.getProperty("user.home");
-        String shown = path;
-        if (home != null && !home.isBlank() && path.startsWith(home)) {
-            shown = "~" + path.substring(home.length());
-        }
-        if (shown.length() > 30) {
-            shown = "…" + shown.substring(shown.length() - 29);
-        }
-        return shown;
     }
 }

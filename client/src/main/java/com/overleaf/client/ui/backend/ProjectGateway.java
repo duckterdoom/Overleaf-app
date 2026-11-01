@@ -7,12 +7,23 @@ import java.util.List;
  */
 public interface ProjectGateway {
 
-    record ProjectSummary(String name, String folder, String modified, int files, boolean shared) {
+    /** {@code icon} and {@code color} are the user's picks from the New project dialog; null on older projects. */
+    record ProjectSummary(String name, String folder, String modified, int files, boolean shared,
+                          String icon, String color) {
+
+        public ProjectSummary(String name, String folder, String modified, int files, boolean shared) {
+            this(name, folder, modified, files, shared, null, null);
+        }
     }
 
     List<ProjectSummary> projects();
 
-    ProjectSummary create(String name);
+    default ProjectSummary create(String name) {
+        return create(name, null, null);
+    }
+
+    /** Creates the project and remembers its icon id and {@code #RRGGBB} color (either may be null). */
+    ProjectSummary create(String name, String icon, String color);
 
     /** Renames the project folder; throws {@link IllegalStateException} with a user-facing message. */
     ProjectSummary rename(ProjectSummary project, String newName);

@@ -106,6 +106,26 @@ public final class UiSmoke {
             ((TextField) field(login, "nameField")).setText("Ada Lovelace");
             ((TextField) field(login, "emailField")).setText("ada@example.edu");
             ((TextField) field(login, "passwordField")).setText("analytical");
+            return null;
+        });
+        // Eye button: reveals the typed password, then hides it again.
+        TextField shown = field(login, "passwordShown");
+        TextField hidden = field(login, "passwordField");
+        Button eye = fx(() -> (Button) login.lookup(".eye-button"));
+        check("password hidden by default", fx(() -> !shown.isVisible() && hidden.isVisible()));
+        fx(() -> {
+            eye.fire();
+            return null;
+        });
+        check("eye reveals the password", fx(() -> shown.isVisible() && !hidden.isVisible()
+                && shown.getText().equals("analytical")));
+        snap("01b-login-password-shown");
+        fx(() -> {
+            eye.fire();
+            return null;
+        });
+        check("eye hides it again", fx(() -> !shown.isVisible() && hidden.isVisible()));
+        fx(() -> {
             ((Button) field(login, "primaryButton")).fire();
             return null;
         });
@@ -135,7 +155,164 @@ public final class UiSmoke {
         TextArea editor = field(app, "codeEditor");
         check("editor shows the project's main.tex",
                 fx(() -> editor.getText().contains("\\title{Smoke Thesis}")));
+        String original0 = fx(editor::getText);
         snap("04-editor");
+        // Highlight layer alignment: show the text area's own text in red over the colored layer,
+        // on a long document scrolled down; any drift shows as doubled glyphs.
+        fx(() -> {
+            StringBuilder longDoc = new StringBuilder(editor.getText());
+            for (int i = 1; i <= 80; i++) longDoc.append("Line ").append(i).append(" with $x^").append(i).append("$ % note\n");
+            editor.setText(longDoc.toString());
+            editor.setStyle(editor.getStyle() + " -fx-text-fill: rgba(255,0,0,0.75);");
+            editor.requestFocus();
+            int at = editor.getText().indexOf("Line 40");
+            editor.selectRange(at, at + 7);
+            editor.setScrollTop(500);
+            return null;
+        });
+        fx(() -> null);
+        snap("04x-overlay-alignment");
+        check("overlay matches the editor, no wrap (max drift px < 0.5)", fx(() -> overlayDrift(app, editor) < 0.5));
+        AppSettings wrapPrefs = field(app, "settings");
+        fx(() -> {
+            StringBuilder wrapped = new StringBuilder();
+            for (int i = 1; i <= 30; i++) {
+                wrapped.append("Paragraph ").append(i).append(" is long enough to wrap: \\textbf{bold} words $a+b$ ");
+                wrapped.append("and more words so the line runs past the right edge of the panel. % c\n");
+            }
+            editor.setText(wrapped.toString());
+            wrapPrefs.set(AppSettings.WORD_WRAP, true);
+            editor.setScrollTop(200);
+            return null;
+        });
+        fx(() -> null);
+        fx(() -> {
+            if (!editor.getStyle().contains("rgba(255,0,0")) editor.setStyle(editor.getStyle() + " -fx-text-fill: rgba(255,0,0,0.75);");
+            return null;
+        });
+        fx(() -> null);
+        snap("04y-overlay-wrap");
+        check("overlay matches the editor, word wrap on (max drift px < 0.5)", fx(() -> overlayDrift(app, editor) < 0.5));
+        fx(() -> {
+            wrapPrefs.set(AppSettings.WORD_WRAP, false);
+            StringBuilder big = new StringBuilder();
+            for (int i = 0; i < 5000; i++) big.append("\\section{Part ").append(i).append("} text $x_").append(i).append("$ % note\n");
+            editor.setText(big.toString());
+            return null;
+        });
+        fx(() -> null);
+        fx(() -> {
+            if (!editor.getStyle().contains("rgba(255,0,0")) editor.setStyle(editor.getStyle() + " -fx-text-fill: rgba(255,0,0,0.75);");
+            return null;
+        });
+        long started = System.nanoTime();
+        for (int k = 0; k < 10; k++) {
+            fx(() -> {
+                editor.insertText(editor.getText().length() / 2, "a");
+                return null;
+            });
+            fx(() -> null);
+        }
+        long perKeyMs = (System.nanoTime() - started) / 10 / 1_000_000;
+        System.out.println("[smoke] INFO  typing in a 5000-line file: ~" + perKeyMs + " ms per keystroke incl. recolor");
+        check("long file types quickly (< 150 ms per key)", perKeyMs < 150);
+        check("only the lines on screen are drawn", fx(() ->
+                (int) invoke(field(app, "codeOverlay"), "renderedLineCountForTests") < 120));
+        fx(() -> {
+            editor.setScrollTop(Double.MAX_VALUE);
+            return null;
+        });
+        fx(() -> null);
+        fx(() -> null);
+        check("overlay aligned at the end of a 5000-line file", fx(() -> overlayDrift(app, editor) < 0.5));
+        snap("04z-overlay-long-file-end");
+        fx(() -> {
+            editor.setText(original0);
+            editor.setScrollTop(0);
+            return null;
+        });
+        fx(() -> null);
+        fx(() -> {
+            editor.setStyle(editor.getStyle().replace(" -fx-text-fill: rgba(255,0,0,0.75);", ""));
+            editor.setText(original0);
+            editor.setScrollTop(0);
+            return null;
+        });
+
+        // 2b. Code toolbar: each action edits the text; the original is restored afterwards.
+        String original = fx(editor::getText);
+        fx(() -> {
+            int at = editor.getText().indexOf("Start writing here.");
+            editor.selectRange(at, at + "Start writing here.".length());
+            invoke(app, "wrapSelection", "\\textbf{", "}");
+            return null;
+        });
+        check("bold wraps the selection", fx(() -> editor.getText().contains("\\textbf{Start writing here.}")));
+        fx(() -> {
+            editor.setText(original);
+            editor.positionCaret(editor.getText().indexOf("\\section{Introduction}") + 3);
+            invoke(app, "applyHeading", "subsection");
+            return null;
+        });
+        check("text style makes a subsection", fx(() -> editor.getText().contains("\\subsection{Introduction}")));
+        fx(() -> {
+            invoke(app, "applyHeading", (Object) null);
+            return null;
+        });
+        check("normal text strips the heading", fx(() -> editor.getText().contains("\nIntroduction\n")));
+        fx(() -> {
+            editor.setText(original);
+            editor.positionCaret(editor.getText().indexOf("Start writing here."));
+            invoke(app, "toggleComment");
+            return null;
+        });
+        check("comment adds a percent", fx(() -> editor.getText().contains("% Start writing here.")));
+        fx(() -> {
+            invoke(app, "toggleComment");
+            return null;
+        });
+        check("comment toggles back", fx(() -> editor.getText().equals(original)));
+        fx(() -> {
+            invoke(app, "toggleFindBar");
+            ((TextField) field(app, "findField")).setText("introduction");
+            invoke(app, "findNext", true);
+            return null;
+        });
+        check("find selects a match", fx(() -> editor.getSelectedText().equalsIgnoreCase("introduction")));
+        check("find shows a count", fx(() -> ((Label) field(app, "findCount")).getText().contains(" of ")));
+        snap("04b-editor-toolbar");
+        fx(() -> {
+            invoke(app, "toggleFindBar");
+            editor.setText(original);
+            return null;
+        });
+        // Auto-close brackets: typing { adds }, typing } over it steps past it.
+        fx(() -> {
+            editor.setText("");
+            editor.requestFocus();
+            javafx.event.Event.fireEvent(editor, new javafx.scene.input.KeyEvent(javafx.scene.input.KeyEvent.KEY_TYPED,
+                    "{", "", javafx.scene.input.KeyCode.UNDEFINED, false, false, false, false));
+            return null;
+        });
+        check("typing { adds the closing brace", fx(() -> editor.getText().equals("{}") && editor.getCaretPosition() == 1));
+        fx(() -> {
+            javafx.event.Event.fireEvent(editor, new javafx.scene.input.KeyEvent(javafx.scene.input.KeyEvent.KEY_TYPED,
+                    "}", "", javafx.scene.input.KeyCode.UNDEFINED, false, false, false, false));
+            return null;
+        });
+        check("typing } steps over it", fx(() -> editor.getText().equals("{}") && editor.getCaretPosition() == 2));
+        fx(() -> {
+            editor.setText(original);
+            ((AppSettings) field(app, "settings")).set(AppSettings.MODE, "dark");
+            return null;
+        });
+        fx(() -> null);
+        snap("04c-editor-dark");
+        fx(() -> {
+            ((AppSettings) field(app, "settings")).resetAll();
+            return null;
+        });
+        fx(() -> null);
 
         // 3. Type, save, verify disk.
         fx(() -> {
@@ -276,6 +453,107 @@ public final class UiSmoke {
         waitFor("home again", () -> fx(() -> host.getChildren().get(0) instanceof HomeView));
         check("activity recorded", Files.readString(home.resolve(".app/activity.properties")).contains("edits."));
         snap("08-home-activity");
+        // Settings: gear opens the page; theme and mode restyle the live scene; reset restores defaults.
+        AppSettings prefs = field(app, "settings");
+        fx(() -> {
+            ((Button) host.lookupAll(".user-chip .icon-button").iterator().next()).fire();
+            return null;
+        });
+        check("settings page opens from the home gear", fx(() ->
+                host.getChildren().get(0) instanceof SettingsView));
+        snap("08d-settings-appearance");
+        fx(() -> {
+            prefs.set(AppSettings.THEME, "parchment");
+            return null;
+        });
+        fx(() -> null);
+        check("theme applied to the scene", fx(() -> host.getScene().getStylesheets().size() == 1
+                && host.getScene().getStylesheets().get(0).contains("overleaf-theme-")));
+        snap("08e-settings-parchment");
+        fx(() -> {
+            prefs.set(AppSettings.MODE, "dark");
+            return null;
+        });
+        fx(() -> null);
+        check("dark mode flagged on the root", fx(() -> host.getScene().getRoot().getStyleClass().contains("theme-dark")));
+        snap("08f-settings-dark");
+        fx(() -> {
+            invoke(app, "showHome");
+            return null;
+        });
+        snap("08g-home-dark");
+        // Dark mode in every theme, for review.
+        for (String themeId : new String[]{"forest", "mint", "bee", "parchment"}) {
+            fx(() -> {
+                prefs.set(AppSettings.THEME, themeId);
+                return null;
+            });
+            fx(() -> null);
+            fx(() -> invoke(app, "showHome"));
+            snap("09-dark-" + themeId);
+        }
+        // Snake takes the theme's colors: dark + Parchment, then light + Bee.
+        fx(() -> {
+            host.applyCss();
+            host.layout();
+            ActivityHeatmap map = (ActivityHeatmap) host.getChildren().get(0).lookup(".activity-heatmap");
+            map.startGame();
+            return null;
+        });
+        snap("08i-snake-dark-parchment");
+        fx(() -> {
+            prefs.set(AppSettings.MODE, "light");
+            prefs.set(AppSettings.THEME, "bee");
+            return null;
+        });
+        fx(() -> invoke(app, "showHome"));
+        fx(() -> {
+            // A freshly built Home is only reachable through its scroll pane after a layout pass.
+            host.applyCss();
+            host.layout();
+            ((ActivityHeatmap) host.getChildren().get(0).lookup(".activity-heatmap")).startGame();
+            return null;
+        });
+        snap("08j-snake-light-bee");
+        fx(() -> {
+            prefs.set(AppSettings.THEME, "parchment");
+            prefs.set(AppSettings.MODE, "dark");
+            return null;
+        });
+        fx(() -> {
+            invoke(app, "showSettings", false, "appearance");
+            return null;
+        });
+        fx(() -> {
+            for (Node n : host.getChildren().get(0).lookupAll(".settings-nav-item")) {
+                if (((Button) n).getText().equals("Editor")) ((Button) n).fire();
+            }
+            return null;
+        });
+        snap("08h-settings-editor-dark");
+        fx(() -> {
+            prefs.resetAll();
+            prefs.set(AppSettings.CONTENT_WIDTH, "compact");
+            return null;
+        });
+        fx(() -> null);
+        fx(() -> invoke(app, "showHome"));
+        snap("08m-home-compact");
+        fx(() -> {
+            invoke(app, "showSettings", false, "appearance");
+            return null;
+        });
+        fx(() -> {
+            prefs.resetAll();
+            return null;
+        });
+        fx(() -> null);
+        check("reset restores light mode", fx(() -> host.getScene().getRoot().getStyleClass().contains("theme-light")));
+        fx(() -> {
+            invoke(app, "showHome");
+            return null;
+        });
+        waitFor("home after settings", () -> fx(() -> host.getChildren().get(0) instanceof HomeView));
         // Profile picture: store one, rebuild Home, check both avatars render it, then remove via the modal.
         com.overleaf.client.ui.backend.LocalBackend profiles = field(app, "backend");
         var session = (com.overleaf.client.ui.backend.AuthGateway.Session) field(app, "session");
@@ -301,18 +579,109 @@ public final class UiSmoke {
                     false, false, null));
             return null;
         });
-        waitFor("profile picture modal", () -> fx(() -> host.getChildren().size() == 2));
-        snap("08a-profile-modal");
+        waitFor("profile settings page", () -> fx(() -> host.getChildren().get(0) instanceof SettingsView));
+        snap("08a-profile-settings");
         fx(() -> {
-            button(host.getChildren().get(1), "Remove photo").fire();
+            button(host.getChildren().get(0), "Remove photo").fire();
             return null;
         });
         check("photo removed from disk", profiles.avatar(session).isEmpty());
-        check("home avatar back to initials", fx(() -> "AL".equals(((Label) withPhoto.lookup(".user-chip .avatar")).getText())));
+        // Display name: Save is disabled until the name changes, then the account and session follow.
         fx(() -> {
-            button(host.getChildren().get(1), "Done").fire();
+            TextField nameField = (TextField) host.getChildren().get(0).lookup(".modal-field");
+            check("save starts disabled", button(host.getChildren().get(0), "Save").isDisabled());
+            nameField.setText("Ada L.");
+            check("save enables on change", !button(host.getChildren().get(0), "Save").isDisabled());
+            button(host.getChildren().get(0), "Save").fire();
             return null;
         });
+        check("new name stored in the account", Files.readString(home.resolve(".app/accounts.properties")).contains("|Ada L."));
+        check("session carries the new name", fx(() ->
+                "Ada L.".equals(((com.overleaf.client.ui.backend.AuthGateway.Session) field(app, "session")).name())));
+        fx(() -> {
+            TextField nameField = (TextField) host.getChildren().get(0).lookup(".modal-field");
+            nameField.setText("Ada Lovelace");
+            button(host.getChildren().get(0), "Save").fire();
+            return null;
+        });
+        // Change email and change password dialogs (each reverted so later steps keep working).
+        fx(() -> {
+            changeButtons(host.getChildren().get(0)).get(0).fire();
+            return null;
+        });
+        waitFor("change email dialog", () -> fx(() -> host.getChildren().size() == 2));
+        snap("08k-change-email");
+        fx(() -> {
+            Node modal = host.getChildren().get(1);
+            var fields = new ArrayList<>(modal.lookupAll(".modal-field"));
+            ((TextField) fields.get(0)).setText("ada2@example.edu");
+            ((TextField) fields.get(1)).setText("wrong-password");
+            button(modal, "Change email").fire();
+            return null;
+        });
+        check("wrong password keeps the email dialog open", fx(() -> host.getChildren().size() == 2
+                && host.getChildren().get(1).lookup(".modal-error").isVisible()));
+        fx(() -> {
+            Node modal = host.getChildren().get(1);
+            var fields = new ArrayList<>(modal.lookupAll(".modal-field"));
+            ((TextField) fields.get(1)).setText("analytical");
+            button(modal, "Change email").fire();
+            return null;
+        });
+        check("email changed in the account file", Files.readString(home.resolve(".app/accounts.properties"))
+                .contains("ada2@example.edu="));
+        check("session carries the new email", fx(() ->
+                "ada2@example.edu".equals(((com.overleaf.client.ui.backend.AuthGateway.Session) field(app, "session")).email())));
+        fx(() -> {
+            changeButtons(host.getChildren().get(0)).get(0).fire();
+            return null;
+        });
+        waitFor("change email dialog again", () -> fx(() -> host.getChildren().size() == 2));
+        fx(() -> {
+            Node modal = host.getChildren().get(1);
+            var fields = new ArrayList<>(modal.lookupAll(".modal-field"));
+            ((TextField) fields.get(0)).setText("ada@example.edu");
+            ((TextField) fields.get(1)).setText("analytical");
+            button(modal, "Change email").fire();
+            return null;
+        });
+        check("email changed back", Files.readString(home.resolve(".app/accounts.properties")).contains("ada@example.edu="));
+
+        fx(() -> {
+            changeButtons(host.getChildren().get(0)).get(1).fire();
+            return null;
+        });
+        waitFor("change password dialog", () -> fx(() -> host.getChildren().size() == 2));
+        snap("08l-change-password");
+        fx(() -> {
+            Node modal = host.getChildren().get(1);
+            var fields = new ArrayList<>(modal.lookupAll(".modal-field"));
+            ((TextField) fields.get(0)).setText("analytical");
+            ((TextField) fields.get(1)).setText("analytical2");
+            ((TextField) fields.get(2)).setText("different");
+            button(modal, "Change password").fire();
+            return null;
+        });
+        check("mismatched confirmation is refused", fx(() -> host.getChildren().size() == 2
+                && host.getChildren().get(1).lookup(".modal-error").isVisible()));
+        fx(() -> {
+            Node modal = host.getChildren().get(1);
+            var fields = new ArrayList<>(modal.lookupAll(".modal-field"));
+            ((TextField) fields.get(2)).setText("analytical2");
+            button(modal, "Change password").fire();
+            return null;
+        });
+        check("new password works", profiles.signIn("ada@example.edu", "analytical2", false).join().name() != null);
+        profiles.changePassword((com.overleaf.client.ui.backend.AuthGateway.Session) fx(() -> field(app, "session")),
+                "analytical2", "analytical");
+
+        fx(() -> {
+            button(host.getChildren().get(0), "Back").fire();
+            return null;
+        });
+        waitFor("home after profile", () -> fx(() -> host.getChildren().get(0) instanceof HomeView));
+        check("home avatar back to initials", fx(() ->
+                "AL".equals(((Label) host.getChildren().get(0).lookup(".user-chip .avatar")).getText())));
 
         com.overleaf.client.ui.backend.LocalBackend backend = field(app, "backend");
         var thesis = backend.projects().stream().filter(p -> p.name().equals("Smoke Thesis")).findFirst().orElseThrow();
@@ -337,7 +706,22 @@ public final class UiSmoke {
         fx(() -> invoke(app, "openProject", backend.projects().get(0)));
         check("renamed project still opens", fx(() -> editor.getText().contains("\\documentclass")));
         fx(() -> invoke(app, "showHome"));
-        fx(() -> invoke(app, "signOut"));
+        // Sign out asks first: Cancel keeps the session, Sign out confirms.
+        fx(() -> invoke(app, "confirmSignOut"));
+        waitFor("sign-out confirmation", () -> fx(() -> host.getChildren().size() == 2));
+        snap("08c-sign-out-confirm");
+        fx(() -> {
+            button(host.getChildren().get(1), "Cancel").fire();
+            return null;
+        });
+        check("cancel keeps you signed in", fx(() ->
+                host.getChildren().size() == 1 && host.getChildren().get(0) instanceof HomeView));
+        fx(() -> invoke(app, "confirmSignOut"));
+        waitFor("sign-out confirmation again", () -> fx(() -> host.getChildren().size() == 2));
+        fx(() -> {
+            button(host.getChildren().get(1), "Sign out").fire();
+            return null;
+        });
         waitFor("login after sign out", () -> fx(() -> host.getChildren().get(0) instanceof LoginView));
         LoginView again = fx(() -> (LoginView) host.getChildren().get(0));
         check("login pre-fills the last email",
@@ -384,6 +768,13 @@ public final class UiSmoke {
         check("outline shows the Vietnamese heading", fx(() ->
                 all((Node) field(app, "outlineRows")).stream().anyMatch(n -> n instanceof Label l && "Giới thiệu".equals(l.getText()))));
         snap("10-vietnamese");
+        // The interface language is a saved setting: it survives a restart.
+        fx(() -> invoke(app, "setVietnameseUi", true));
+        fx(() -> null);
+        check("language choice saved", Files.readString(home.resolve(".app/settings.properties")).contains("pref.language=vi"));
+        check("a fresh start reads it back", "vi".equals(new AppSettings(field(app, "backend")).get(AppSettings.LANGUAGE)));
+        fx(() -> invoke(app, "setVietnameseUi", false));
+        fx(() -> null);
     }
 
     // ---------------------------------------------------------------- helpers
@@ -440,6 +831,24 @@ public final class UiSmoke {
             if (node instanceof Button b && text.equals(b.getText()) && b.isVisible()) return b;
         }
         throw new AssertionError("No button '" + text + "'");
+    }
+
+    /** Drift in pixels between the editor's text layout and the colored lines on screen. */
+    private static double overlayDrift(OverleafFxApp app, TextArea editor) throws Exception {
+        Object overlay = field(app, "codeOverlay");
+        double drift = (double) invoke(overlay, "driftForTests");
+        int drawn = (int) invoke(overlay, "renderedLineCountForTests");
+        System.out.println("[smoke] INFO  overlay drift=" + drift + "px over " + drawn + " drawn lines");
+        return drawn > 0 ? drift : Double.MAX_VALUE;
+    }
+
+    /** The "Change…" buttons on the Profile page: email first, then password. */
+    private static List<Button> changeButtons(Node root) {
+        List<Button> out = new ArrayList<>();
+        for (Node node : all(root)) {
+            if (node instanceof Button b && "Change…".equals(b.getText())) out.add(b);
+        }
+        return out;
     }
 
     private static List<Node> all(Node root) {

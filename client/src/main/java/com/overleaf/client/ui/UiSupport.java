@@ -24,6 +24,17 @@ public final class UiSupport {
                     + "c-1 2-8 2.25-13 3.25S2 11.5 2 13.5s1.75 3.75 1.75 3.75C7 8 17 8 17 8z";
 
     public static final String ARROW_LEFT = "M19 12H5M12 19l-7-7 7-7";
+    public static final String CHEVRON_DOWN = "M6 9l6 6 6-6";
+    public static final String EYE = "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 15a3 3 0 100-6 3 3 0 000 6z";
+    public static final String EYE_OFF = "M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24M1 1l22 22";
+    public static final String UNDO = "M9 14L4 9l5-5M4 9h10.5a5.5 5.5 0 010 11H11";
+    public static final String REDO = "M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 000 11H13";
+    public static final String BOLD = "M6 4h8a4 4 0 010 8H6zM6 12h9a4 4 0 010 8H6z";
+    public static final String ITALIC = "M19 4h-9M14 20H5M15 4L9 20";
+    public static final String SEARCH = "M11 3a8 8 0 100 16 8 8 0 000-16zM21 21l-4.35-4.35";
+    public static final String ARROW_UP = "M12 19V5M5 12l7-7 7 7";
+    public static final String ARROW_DOWN = "M12 5v14M19 12l-7 7-7-7";
+    public static final String LOCK = "M5 11h14v10H5zM8 11V7a4 4 0 018 0v4";
     public static final String PLUS = "M12 5v14M5 12h14";
     public static final String FOLDER = "M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z";
     public static final String FILE = "M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8zM14 2v6h6";
@@ -76,6 +87,7 @@ public final class UiSupport {
         icon.setStrokeWidth(size >= 16 ? 1.7 : 1.9);
         icon.setStrokeLineCap(javafx.scene.shape.StrokeLineCap.ROUND);
         icon.setStrokeLineJoin(javafx.scene.shape.StrokeLineJoin.ROUND);
+        icon.getStyleClass().add("line-icon");
         double scale = size / 24.0;
         icon.setScaleX(scale);
         icon.setScaleY(scale);

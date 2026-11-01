@@ -35,19 +35,20 @@ import java.util.Random;
 public class ActivityHeatmap extends Canvas {
 
     private static final int ROWS = 7;
-    private static final int GAP = 3;
-    private static final double TOP_LABEL = 18;
+    private static final double GAP_RATIO = 0.3;
+    private static final double RADIUS_RATIO = 0.28;
+    private static final double BOTTOM_LABEL = 20;
 
-    private static final Color LEVEL_0 = Color.web("#EEEEEA");
-    private static final Color LEVEL_1 = Color.web("#DCE9DF");
-    private static final Color LEVEL_2 = Color.web("#B3D1BD");
-    private static final Color LEVEL_3 = Color.web("#77A98B");
-    private static final Color LEVEL_4 = Color.web("#2A6A4D");
-    private static final Color BLANK_CELL = Color.web("#EDEDE7");
     private static final long TICK_MILLIS = 180;
-    private static final Color INK = Color.web("#191917");
-    private static final Color PIXEL_CREAM = Color.web("#FCFCF8");
-    private static final Color PIXEL_SHADOW = Color.web("#C9C9C1");
+    // Game colors follow the theme and light/dark mode in force when the heat map is built.
+    private final boolean dark = ThemeManager.isDark();
+    private final Color ink = dark ? Color.web("#E6EDF3") : Color.web("#191917");
+    private final Color pixelCream = dark ? Color.web("#161B22") : Color.web("#FCFCF8");
+    private final Color pixelShadow = dark ? Color.web("#010409") : Color.web("#C9C9C1");
+    private final Color accent = ThemeManager.accent();
+    private final Color snakeHead = ThemeManager.accentAt(dark ? 0.78 : 0.16);
+    private final Color snakeBody = ThemeManager.accentAt(dark ? 0.60 : 0.26);
+    private final Color food = ThemeManager.foodColor();
     private static final Color SKULL_COLOR = Color.web("#B0604A");
     private static final Color TROPHY_COLOR = Color.web("#C9822B");
 
@@ -85,6 +86,7 @@ public class ActivityHeatmap extends Canvas {
             DateTimeFormatter.ofPattern("MMM d, yyyy", Locale.ENGLISH);
     private static final Locale VI_LOCALE = Locale.forLanguageTag("vi-VN");
 
+    private final Color[] levels = ThemeManager.heatLevels();
     private final Map<LocalDate, Integer> activity;
     private final LocalDate start;
     private final LocalDate today;
@@ -213,17 +215,17 @@ public class ActivityHeatmap extends Canvas {
     }
 
     private void applySize() {
-        setWidth(columns * cell + (columns - 1) * GAP);
-        setHeight(TOP_LABEL + ROWS * cell + (ROWS - 1) * GAP);
+        setWidth(columns * cell + (columns - 1) * gap());
+        setHeight(ROWS * cell + (ROWS - 1) * gap() + BOTTOM_LABEL);
     }
 
     private void onMouseMoved(MouseEvent event) {
         if (gameOn) {
             return;
         }
-        double step = cell + GAP;
+        double step = cell + gap();
         int column = (int) Math.floor(event.getX() / step);
-        int row = (int) Math.floor((event.getY() - TOP_LABEL) / step);
+        int row = (int) Math.floor(event.getY() / step);
         if (column < 0 || column >= columns || row < 0 || row >= ROWS) {
             tooltip.hide();
             return;
@@ -390,22 +392,14 @@ public class ActivityHeatmap extends Canvas {
         g.setTextAlign(TextAlignment.LEFT);
         g.setGlobalAlpha(1);
 
-        double step = cell + GAP;
         if (gameOn) {
             drawGameChrome(g);
-            double gridWidth = columns * cell + (columns - 1) * GAP;
-            double gridHeight = ROWS * cell + (ROWS - 1) * GAP;
-            g.setFill(BLANK_CELL);
-            g.fillRect(0, TOP_LABEL, gridWidth, gridHeight);
-            g.setFill(Color.WHITE);
-            g.beginPath();
-            for (int column = 1; column < columns; column++) {
-                g.rect(column * (cell + GAP) - GAP, TOP_LABEL, GAP, gridHeight);
+            g.setFill(levels[0]);
+            for (int column = 0; column < columns; column++) {
+                for (int row = 0; row < ROWS; row++) {
+                    drawCell(g, column, row);
+                }
             }
-            for (int row = 1; row < ROWS; row++) {
-                g.rect(0, TOP_LABEL + row * (cell + GAP) - GAP, gridWidth, GAP);
-            }
-            g.fill();
             drawFood(g);
             drawSnake(g);
             if (gameOver) {
@@ -418,28 +412,42 @@ public class ActivityHeatmap extends Canvas {
         for (int column = 0; column < columns; column++) {
             for (int row = 0; row < ROWS; row++) {
                 LocalDate date = start.plusDays((long) column * 7 + row);
-                if (date.isAfter(today)) {
-                    continue;
-                }
-                int count = activity.getOrDefault(date, 0);
+                int count = date.isAfter(today) ? 0 : activity.getOrDefault(date, 0);
                 g.setFill(colorFor(count));
-                g.fillRoundRect(column * step, TOP_LABEL + row * step, cell, cell, 3, 3);
+                drawCell(g, column, row);
             }
         }
     }
 
+    private void drawCell(GraphicsContext g, int column, int row) {
+        double step = cell + gap();
+        double radius = cell * RADIUS_RATIO * 2;
+        g.fillRoundRect(column * step, row * step, cell, cell, radius, radius);
+    }
+
+    /** Spacing between cells, proportional to the cell size so the grid scales evenly. */
+    private double gap() {
+        return Math.max(3, cell * GAP_RATIO);
+    }
+
+    /** Largest cell size that fits {@code columns} weeks into {@code width} pixels. */
+    public static double cellSizeFor(double width, int columns) {
+        return width / (columns + (columns - 1) * GAP_RATIO);
+    }
+
     private void drawMonthLabels(GraphicsContext g) {
-        g.setFont(Font.font("System", 9));
+        g.setFont(Font.font("System", 10));
         g.setFill(Color.web("#A0A09A"));
+        double labelY = ROWS * cell + (ROWS - 1) * gap() + 14;
         String lastMonth = "";
         int lastLabelX = -1000;
         for (int column = 0; column < columns; column++) {
             LocalDate weekStart = start.plusDays((long) column * 7);
             String month = weekStart.getMonth().getDisplayName(TextStyle.SHORT,
                     vi ? VI_LOCALE : Locale.ENGLISH);
-            int x = (int) (column * (cell + GAP));
-            if (!month.equals(lastMonth) && x - lastLabelX >= 26 && x <= getWidth() - 26) {
-                g.fillText(month, x, 9);
+            int x = (int) (column * (cell + gap()));
+            if (!month.equals(lastMonth) && x - lastLabelX >= 30 && x <= getWidth() - 26) {
+                g.fillText(month, x, labelY);
                 lastMonth = month;
                 lastLabelX = x;
             }
@@ -447,15 +455,16 @@ public class ActivityHeatmap extends Canvas {
     }
 
     private void drawGameChrome(GraphicsContext g) {
+        double y = ROWS * cell + (ROWS - 1) * gap() + 14;
         g.setFont(Font.font("Monospaced", FontWeight.BOLD, 9));
-        g.setFill(Color.web("#23664A"));
-        g.fillText("SNAKE", 0, 11);
+        g.setFill(accent);
+        g.fillText("SNAKE", 0, y);
         g.setFill(Color.web("#8B8B85"));
-        g.fillText("SCORE " + score, 42, 11);
+        g.fillText("SCORE " + score, 42, y);
         g.setFill(score > 0 && score >= bestScore ? TROPHY_COLOR : Color.web("#8B8B85"));
-        g.fillText("BEST " + bestScore, 104, 11);
+        g.fillText("BEST " + bestScore, 104, y);
         g.setTextAlign(TextAlignment.RIGHT);
-        g.fillText(vi ? "Esc để thoát" : "Esc to exit", getWidth(), 11);
+        g.fillText(vi ? "Esc để thoát" : "Esc to exit", getWidth(), y);
         g.setTextAlign(TextAlignment.LEFT);
     }
 
@@ -463,41 +472,41 @@ public class ActivityHeatmap extends Canvas {
         if (foodColumn < 0 || foodRow < 0) {
             return;
         }
-        double step = cell + GAP;
+        double step = cell + gap();
         double centerX = foodColumn * step + cell / 2;
-        double centerY = TOP_LABEL + foodRow * step + cell / 2;
-        g.setFill(Color.web("#C9822B"));
+        double centerY = foodRow * step + cell / 2;
+        g.setFill(food);
         g.fillOval(centerX - cell * 0.32, centerY - cell * 0.32, cell * 0.64, cell * 0.64);
-        g.setFill(Color.web("#E7BC7B"));
+        g.setFill(food.interpolate(Color.WHITE, 0.55));
         g.fillOval(centerX - cell * 0.12, centerY - cell * 0.18, cell * 0.22, cell * 0.22);
     }
 
     private void drawSnake(GraphicsContext g) {
-        double step = cell + GAP;
+        double step = cell + gap();
         int index = 0;
         for (int[] part : snake) {
-            g.setFill(index == 0 ? Color.web("#123D2B") : Color.web("#1F5A40"));
-            g.fillRoundRect(part[0] * step + 1, TOP_LABEL + part[1] * step + 1,
+            g.setFill(index == 0 ? snakeHead : snakeBody);
+            g.fillRoundRect(part[0] * step + 1, part[1] * step + 1,
                     cell - 2, cell - 2, 4, 4);
             index++;
         }
     }
 
     private void drawGameResult(GraphicsContext g) {
-        double gridWidth = columns * cell + (columns - 1) * GAP;
-        double gridHeight = ROWS * cell + (ROWS - 1) * GAP;
+        double gridWidth = columns * cell + (columns - 1) * gap();
+        double gridHeight = ROWS * cell + (ROWS - 1) * gap();
         g.setFill(Color.rgb(20, 27, 23, 0.45));
-        g.fillRect(0, TOP_LABEL, gridWidth, gridHeight);
+        g.fillRect(0, 0, gridWidth, gridHeight);
 
         double scale = Math.max(0.78, Math.min(1.0, (gridHeight - 6) / 96.0));
         double boxWidth = Math.min(gridWidth - 24, 380);
         double boxHeight = 96 * scale;
         double x = (gridWidth - boxWidth) / 2;
-        double y = TOP_LABEL + (gridHeight - boxHeight) / 2;
+        double y = (gridHeight - boxHeight) / 2;
 
-        g.setFill(PIXEL_SHADOW);
+        g.setFill(pixelShadow);
         g.fillRect(x + 4, y + 4, boxWidth, boxHeight);
-        g.setFill(PIXEL_CREAM);
+        g.setFill(pixelCream);
         g.fillRect(x, y, boxWidth, boxHeight);
         drawPixelFrame(g, x, y, boxWidth, boxHeight);
 
@@ -518,21 +527,21 @@ public class ActivityHeatmap extends Canvas {
         g.setFont(Font.font("Monospaced", FontWeight.BOLD, 15 * scale));
         g.setFill(Color.rgb(25, 25, 23, 0.18));
         g.fillText(title, textX + 1, y + 31 * scale);
-        g.setFill(INK);
+        g.setFill(ink);
         g.fillText(title, textX, y + 30 * scale);
 
         String scoreLine = vi
                 ? "ĐIỂM " + score + "   KỶ LỤC " + bestScore
                 : "SCORE " + score + "   BEST " + bestScore;
         g.setFont(Font.font("Monospaced", FontWeight.BOLD, 11 * scale));
-        g.setFill(gameWon ? TROPHY_COLOR : Color.web("#23664A"));
+        g.setFill(gameWon ? TROPHY_COLOR : accent);
         g.fillText(scoreLine, textX, y + 48 * scale);
 
-        g.setFill(Color.web("#DFDFD7"));
+        g.setFill(dark ? Color.web("#30363D") : Color.web("#DFDFD7"));
         g.fillRect(textX, y + 55 * scale, boxWidth - (textX - x) - pad, 1);
 
         g.setFont(Font.font("Monospaced", 9 * scale));
-        g.setFill(Color.web("#6B6B65"));
+        g.setFill(dark ? Color.web("#8B949E") : Color.web("#6B6B65"));
         g.fillText(vi ? "SPACE HOẶC NHẤP ĐÚP ĐỂ CHƠI LẠI" : "SPACE OR DOUBLE-CLICK TO RETRY",
                 textX, y + 71 * scale);
         g.fillText(vi ? "ESC HOẶC ← QUAY LẠI LƯỚI" : "ESC OR ← BACK TO HEATMAP",
@@ -540,7 +549,7 @@ public class ActivityHeatmap extends Canvas {
     }
 
     private void drawPixelFrame(GraphicsContext g, double x, double y, double width, double height) {
-        g.setFill(INK);
+        g.setFill(ink);
         g.fillRect(x + 4, y, width - 8, 2);
         g.fillRect(x + 4, y + height - 2, width - 8, 2);
         g.fillRect(x, y + 4, 2, height - 8);
@@ -564,24 +573,24 @@ public class ActivityHeatmap extends Canvas {
         }
     }
 
-    private static Color colorFor(int count) {
+    private Color colorFor(int count) {
         if (count <= 0) {
-            return LEVEL_0;
+            return levels[0];
         }
         if (count <= 4) {
-            return LEVEL_1;
+            return levels[1];
         }
         if (count <= 9) {
-            return LEVEL_2;
+            return levels[2];
         }
         if (count <= 19) {
-            return LEVEL_3;
+            return levels[3];
         }
-        return LEVEL_4;
+        return levels[4];
     }
 
     public static Color[] legendColors() {
-        return new Color[]{LEVEL_0, LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4};
+        return ThemeManager.heatLevels();
     }
 
     public LocalDate rangeStart() {

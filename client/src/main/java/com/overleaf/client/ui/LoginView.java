@@ -35,6 +35,9 @@ public class LoginView extends GridPane {
     private final TextField nameField = new TextField();
     private final TextField emailField = new TextField();
     private final PasswordField passwordField = new PasswordField();
+    /** Shows the same text as {@link #passwordField} while the eye is toggled on. */
+    private final TextField passwordShown = new TextField();
+    private final StackPane passwordBox = new StackPane();
     private final CheckBox rememberBox = new CheckBox("Keep me signed in");
     private final Label errorLabel = new Label();
     private final Button primaryButton = new Button("Sign in");
@@ -155,6 +158,7 @@ public class LoginView extends GridPane {
         emailField.setPromptText("Email address");
         passwordField.getStyleClass().add("q-pill-field");
         passwordField.setPromptText("Password");
+        buildPasswordBox();
 
         rememberBox.getStyleClass().add("q-check");
 
@@ -168,6 +172,7 @@ public class LoginView extends GridPane {
 
         emailField.setOnAction(e -> submit());
         passwordField.setOnAction(e -> submit());
+        passwordShown.setOnAction(e -> submit());
         nameField.setOnAction(e -> submit());
 
         Label consent = new Label("Your drafts and compiles stay on this machine. "
@@ -189,7 +194,7 @@ public class LoginView extends GridPane {
         VBox.setMargin(hint, new Insets(16, 0, 0, 0));
 
         VBox form = new VBox(brandRow, nameGroup,
-                emailField, passwordField, errorLabel, consent,
+                emailField, passwordBox, errorLabel, consent,
                 optionsRow, primaryButton, hint);
         form.getStyleClass().add("login-form");
         form.setMaxWidth(380);
@@ -197,7 +202,7 @@ public class LoginView extends GridPane {
         form.setMaxHeight(Region.USE_PREF_SIZE);
         form.setFillWidth(true);
         VBox.setMargin(emailField, new Insets(0, 0, 12, 0));
-        VBox.setMargin(passwordField, new Insets(0, 0, 4, 0));
+        VBox.setMargin(passwordBox, new Insets(0, 0, 4, 0));
 
         Label version = new Label("Overleaf Desktop · v1.0");
         version.getStyleClass().add("login-foot");
@@ -288,6 +293,42 @@ public class LoginView extends GridPane {
                 : message;
     }
 
+    /** Password field with an eye button on its right edge that reveals the text. */
+    private void buildPasswordBox() {
+        passwordShown.getStyleClass().addAll("q-pill-field", "q-pill-field-eye");
+        passwordShown.setPromptText("Password");
+        passwordShown.textProperty().bindBidirectional(passwordField.textProperty());
+        passwordField.getStyleClass().add("q-pill-field-eye");
+
+        Button eye = new Button();
+        eye.getStyleClass().add("eye-button");
+        eye.setFocusTraversable(false);
+        eye.setCursor(javafx.scene.Cursor.HAND);
+        eye.setOnAction(e -> setPasswordVisible(!passwordShown.isVisible()));
+        eye.setUserData("eye");
+        StackPane.setAlignment(eye, Pos.CENTER_RIGHT);
+        StackPane.setMargin(eye, new Insets(0, 10, 0, 0));
+
+        passwordBox.getChildren().addAll(passwordField, passwordShown, eye);
+        setPasswordVisible(false);
+    }
+
+    private void setPasswordVisible(boolean visible) {
+        passwordShown.setVisible(visible);
+        passwordShown.setManaged(visible);
+        passwordField.setVisible(!visible);
+        passwordField.setManaged(!visible);
+        Button eye = (Button) passwordBox.getChildren().get(2);
+        eye.setGraphic(UiSupport.iconBox(visible ? UiSupport.EYE_OFF : UiSupport.EYE, 15,
+                javafx.scene.paint.Color.web("#8B8B85"), 20));
+        eye.setTooltip(UiSupport.tooltip(visible ? "Hide password" : "Show password"));
+        TextField active = visible ? passwordShown : passwordField;
+        if (passwordField.isFocused() || passwordShown.isFocused()) {
+            active.requestFocus();
+            active.positionCaret(active.getText() == null ? 0 : active.getText().length());
+        }
+    }
+
     private void setBusy(boolean value) {
         busy = value;
         primaryButton.setDisable(value);
@@ -296,6 +337,7 @@ public class LoginView extends GridPane {
         nameField.setDisable(value);
         emailField.setDisable(value);
         passwordField.setDisable(value);
+        passwordShown.setDisable(value);
         if (value) {
             primaryButton.setText(registerMode ? "Creating account…" : "Signing in…");
         } else {
@@ -330,6 +372,7 @@ public class LoginView extends GridPane {
         setBusy(false);
         hideError();
         passwordField.clear();
+        setPasswordVisible(false);
         Platform.runLater(() -> (emailField.getText().isBlank() ? emailField : passwordField).requestFocus());
     }
 }

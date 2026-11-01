@@ -16,4 +16,13 @@ public interface AuthGateway {
     CompletableFuture<Session> register(String name, String email, String password, boolean remember);
 
     Session continueOffline(String name);
+
+    /** Changes the display name; throws {@link IllegalStateException} with a user-facing message. */
+    Session updateName(Session session, String newName);
+
+    /** Moves the account to a new email after checking the password; throws {@link IllegalStateException} with a user-facing message. */
+    Session changeEmail(Session session, String newEmail, String currentPassword);
+
+    /** Replaces the password after checking the current one; throws {@link IllegalStateException} with a user-facing message. */
+    void changePassword(Session session, String currentPassword, String newPassword);
 }

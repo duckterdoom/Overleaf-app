@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OverleafFxApp extends Application {
 
     // --- CÁC THÀNH PHẦN GIAO DIỆN CHÍNH (UI COMPONENTS) ---
+    private CodeOverlay codeOverlay;          // Syntax-colored layer drawn behind the editor
     private TextArea codeEditor;              // Khung soạn thảo mã LaTeX (Monospace)
     private TextArea terminalLogArea;         // Terminal Console hiển thị log biên dịch
     private TreeView<String> projectTreeView; // Cây thư mục dự án
@@ -86,6 +87,8 @@ public class OverleafFxApp extends Application {
     private HomeView homeView;
     private BorderPane editorRoot;
     private final LocalBackend backend = new LocalBackend();
+    private final AppSettings settings = new AppSettings(backend);
+    private javafx.animation.Timeline autoSaveTimer;
     private AuthGateway.Session session;
     private boolean vietnameseUi = false;
     private String activeProjectName = "";
@@ -139,7 +142,19 @@ public class OverleafFxApp extends Application {
         screenHost = new StackPane();
         screenHost.getStyleClass().add("screen-host");
         Scene scene = new Scene(screenHost, 1320, 860);
-        applyStylesheet(scene);
+        vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
+        ThemeManager.apply(scene, settings);
+        settings.onChange(key -> Platform.runLater(() -> onSettingChanged(scene, key)));
+        try {
+            Platform.getPreferences().colorSchemeProperty().addListener((obs, was, now) -> {
+                if ("system".equals(settings.get(AppSettings.MODE))) {
+                    ThemeManager.apply(scene, settings);
+                    if (codeOverlay != null) codeOverlay.repaint();
+                }
+            });
+        } catch (RuntimeException noSystemTheme) {
+            // Older toolkits cannot report the OS appearance; "System" then behaves like Light.
+        }
         installAccelerators(scene);
 
         primaryStage.setOnCloseRequest(e -> cleanupOnExit());
@@ -169,15 +184,6 @@ public class OverleafFxApp extends Application {
         root.setCenter(createMainWorkspace(stage, initialCode));
         root.setBottom(createStatusBar());
         return root;
-    }
-
-    private void applyStylesheet(Scene scene) {
-        java.net.URL cssUrl = UiSupport.stylesheet();
-        if (cssUrl != null) {
-            scene.getStylesheets().add(cssUrl.toExternalForm());
-        } else {
-            System.err.println("[WARN] Could not load overleaf-theme.css");
-        }
     }
 
     private void installAccelerators(Scene scene) {
@@ -241,7 +247,7 @@ public class OverleafFxApp extends Application {
             saveIfDirty();
         }
         homeView = new HomeView(backend, backend, backend, session, activeProjectName, screenHost,
-                this::openProject, this::signOut, vietnameseUi, this::setVietnameseUi,
+                this::openProject, this::confirmSignOut, () -> showSettings(false, "profile"), vietnameseUi, this::setVietnameseUi,
                 this::onProjectChanged, this::revealFolder);
         screenHost.getChildren().setAll(homeView);
         if (stage != null) stage.setTitle("Overleaf Desktop — Home");
@@ -289,6 +295,7 @@ public class OverleafFxApp extends Application {
 
     private void setVietnameseUi(boolean vietnamese) {
         this.vietnameseUi = vietnamese;
+        settings.set(AppSettings.LANGUAGE, vietnamese ? "vi" : "en");
         Platform.runLater(this::showHome);
     }
 
@@ -412,6 +419,21 @@ public class OverleafFxApp extends Application {
         return home != null && text.startsWith(home) ? "~" + text.substring(home.length()) : text;
     }
 
+    /** Every visible Sign out control asks first; {@link #signOut()} does the work. */
+    private void confirmSignOut() {
+        boolean vi = vietnameseUi;
+        UiModal modal = UiModal.create(screenHost, UiSupport.SIGN_OUT, UiModal.Tone.NEUTRAL,
+                vi ? "Đăng xuất?" : "Sign out?", null);
+        modal.text(vi
+                ? "Thay đổi chưa lưu sẽ được lưu trước, và bạn sẽ rời khỏi phòng cộng tác đang mở. Dự án vẫn nằm trên máy này."
+                : "Unsaved changes are saved first and you leave any live room. Your projects stay on this machine.");
+        modal.actions(null, vi ? "Hủy" : "Cancel", vi ? "Đăng xuất" : "Sign out", UiModal.Tone.NEUTRAL, () -> {
+            signOut();
+            return true;
+        });
+        modal.show();
+    }
+
     private void signOut() {
         saveIfDirty();
         disconnectRoom();
@@ -529,7 +551,7 @@ public class OverleafFxApp extends Application {
 
         compilerCombo = new ComboBox<>();
         compilerCombo.getItems().addAll("pdfLaTeX", "XeLaTeX", "LuaLaTeX");
-        compilerCombo.setValue("pdfLaTeX");
+        compilerCombo.setValue(settings.get(AppSettings.COMPILER));
         compilerCombo.getStyleClass().add("compiler-combo");
         compilerCombo.setPrefWidth(86);
         compilerCombo.setMinHeight(30);
@@ -612,7 +634,7 @@ public class OverleafFxApp extends Application {
                         + "Java Software Development · 2026–2027"));
 
         MenuItem signOutItem = new MenuItem("Sign out");
-        signOutItem.setOnAction(e -> signOut());
+        signOutItem.setOnAction(e -> confirmSignOut());
 
         overflow.getItems().addAll(newFile, save, compile, openPdf, clean, revealFolder, new SeparatorMenuItem(),
                 connect, offline, reconnect, queue, disconnect, new SeparatorMenuItem(), about, signOutItem);
@@ -772,19 +794,16 @@ public class OverleafFxApp extends Application {
 
         sideUserAvatarLabel = new Label();
         sideUserAvatarLabel.getStyleClass().addAll("side-user-avatar", "avatar-clickable");
-        sideUserAvatarLabel.setTooltip(UiSupport.tooltip("Change profile picture"));
-        sideUserAvatarLabel.setOnMouseClicked(e -> {
-            if (session != null) {
-                ProfilePhotoDialog.show(screenHost, backend, session, vietnameseUi, this::updateSideUserChip);
-            }
-        });
+        sideUserAvatarLabel.setTooltip(UiSupport.tooltip("Profile and settings"));
+        sideUserAvatarLabel.setOnMouseClicked(e -> showSettings(true, "profile"));
         sideUserNameLabel = new Label();
         sideUserNameLabel.getStyleClass().add("side-user-name");
         sideUserMetaLabel = new Label();
         sideUserMetaLabel.getStyleClass().add("side-user-meta");
         VBox userText = new VBox(1, sideUserNameLabel, sideUserMetaLabel);
-        Button signOutButton = iconButton(UiSupport.SIGN_OUT, "Sign out", this::signOut);
-        HBox userRow = new HBox(8, sideUserAvatarLabel, userText, UiSupport.spacer(), signOutButton);
+        Button signOutButton = iconButton(UiSupport.SIGN_OUT, "Sign out", this::confirmSignOut);
+        Button settingsButton = iconButton(UiSupport.SETTINGS, "Settings", () -> showSettings(true, "profile"));
+        HBox userRow = new HBox(4, sideUserAvatarLabel, userText, UiSupport.spacer(), settingsButton, signOutButton);
         userRow.getStyleClass().add("side-user");
         userRow.setAlignment(Pos.CENTER_LEFT);
 
@@ -1167,6 +1186,412 @@ public class OverleafFxApp extends Application {
         }
     }
 
+    // ----------------------------------------------------------------- settings
+
+    private void showSettings(boolean fromEditor, String startSection) {
+        if (session == null) return;
+        boolean returnToEditor = fromEditor && editorRoot != null && activeProjectRoot != null;
+        if (fromEditor && editorVisible()) saveIfDirty();
+        SettingsView.Profile profile = new SettingsView.Profile(screenHost, session, backend, backend,
+                renamed -> {
+                    session = renamed;
+                    currentUserName = renamed.name();
+                    updateSideUserChip();
+                },
+                this::updateSideUserChip,
+                this::confirmSignOut);
+        SettingsView view = new SettingsView(settings, profile, vietnameseUi, startSection,
+                () -> {
+                    if (returnToEditor) {
+                        screenHost.getChildren().setAll(editorRoot);
+                    } else {
+                        showHome();
+                    }
+                },
+                vi -> {
+                    vietnameseUi = vi;
+                    settings.set(AppSettings.LANGUAGE, vi ? "vi" : "en");
+                    Platform.runLater(() -> showSettings(fromEditor, "appearance"));
+                });
+        screenHost.getChildren().setAll(view);
+        if (stage != null) stage.setTitle("Overleaf Desktop — Settings");
+    }
+
+    private void onSettingChanged(Scene scene, String key) {
+        switch (key) {
+            case AppSettings.MODE, AppSettings.THEME, AppSettings.FONT_STYLE, AppSettings.CONTENT_WIDTH -> {
+                ThemeManager.apply(scene, settings);
+                if (codeOverlay != null) codeOverlay.repaint();
+            }
+            case AppSettings.LANGUAGE -> vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
+            default -> applyEditorSettings();
+        }
+    }
+
+    /** Pushes font, wrapping, default compiler and auto-save from the settings onto the live editor. */
+    private void applyEditorSettings() {
+        if (codeEditor == null) return;
+        // One concrete installed family for both layers, so the colored text lines up with the caret.
+        String family = monoFamily(settings.get(AppSettings.EDITOR_FONT));
+        int size = settings.integer(AppSettings.EDITOR_FONT_SIZE);
+        codeEditor.setStyle("-fx-font-size: " + size + "px; -fx-font-family: \"" + family + "\";");
+        codeOverlay.setFont(Font.font(family, size));
+        codeOverlay.setWrap(settings.bool(AppSettings.WORD_WRAP));
+        codeEditor.setWrapText(settings.bool(AppSettings.WORD_WRAP));
+        if (compilerCombo != null && !settings.get(AppSettings.COMPILER).equals(compilerCombo.getValue())) {
+            compilerCombo.setValue(settings.get(AppSettings.COMPILER));
+        }
+        if (autoSaveTimer != null) autoSaveTimer.stop();
+        if (settings.bool(AppSettings.AUTO_SAVE)) {
+            autoSaveTimer = new javafx.animation.Timeline(new javafx.animation.KeyFrame(
+                    javafx.util.Duration.seconds(20), e -> {
+                if (editorVisible()) saveIfDirty();
+            }));
+            autoSaveTimer.setCycleCount(javafx.animation.Animation.INDEFINITE);
+            autoSaveTimer.play();
+        }
+    }
+
+    private static String monoFamily(String choice) {
+        List<String> wanted = switch (choice) {
+            case "menlo" -> List.of("Menlo", "Monaco", "Consolas");
+            case "courier" -> List.of("Courier New", "Courier");
+            default -> List.of("JetBrains Mono", "SF Mono", "Menlo", "Consolas");
+        };
+        List<String> installed = Font.getFamilies();
+        for (String family : wanted) {
+            if (installed.contains(family)) return family;
+        }
+        return "Monospaced";
+    }
+
+    /** Typing { ( [ or $ adds the closing character; typing a closer that is already next just steps over it. */
+    private void installEditorBehaviours() {
+        codeEditor.addEventFilter(javafx.scene.input.KeyEvent.KEY_TYPED, e -> {
+            if (!settings.bool(AppSettings.AUTO_CLOSE) || !codeEditor.isEditable() || e.isShortcutDown()
+                    || e.isAltDown() || e.getCharacter().length() != 1) return;
+            char typed = e.getCharacter().charAt(0);
+            String closer = switch (typed) {
+                case '{' -> "}";
+                case '(' -> ")";
+                case '[' -> "]";
+                case '$' -> "$";
+                default -> null;
+            };
+            String text = codeEditor.getText();
+            IndexRange range = codeEditor.getSelection();
+            int at = range.getStart();
+            boolean escaped = at > 0 && text.charAt(at - 1) == '\\';
+            if (closer == null) {
+                if ((typed == '}' || typed == ')' || typed == ']') && range.getLength() == 0
+                        && at < text.length() && text.charAt(at) == typed) {
+                    codeEditor.positionCaret(at + 1);
+                    e.consume();
+                }
+                return;
+            }
+            if (typed == '$' && range.getLength() == 0 && at < text.length() && text.charAt(at) == '$') {
+                codeEditor.positionCaret(at + 1);
+                e.consume();
+                return;
+            }
+            if (escaped) return;
+            String selected = codeEditor.getSelectedText();
+            codeEditor.replaceText(at, range.getEnd(), typed + selected + closer);
+            if (selected.isEmpty()) {
+                codeEditor.positionCaret(at + 1);
+            } else {
+                codeEditor.selectRange(at + 1, at + 1 + selected.length());
+            }
+            e.consume();
+        });
+    }
+
+    // ------------------------------------------------------------ code toolbar
+
+    private TextField findField;
+    private Label findCount;
+    private HBox findBar;
+
+    /** Formatting and search controls above the code editor; every action edits through the normal text path. */
+    private VBox buildCodeToolbar() {
+        Color glyph = Color.web("#B4BBC8");
+
+        Button undo = toolButton(UiSupport.UNDO, "Undo (Ctrl/Cmd+Z)", glyph, () -> codeEditor.undo());
+        Button redo = toolButton(UiSupport.REDO, "Redo (Ctrl/Cmd+Shift+Z)", glyph, () -> codeEditor.redo());
+
+        Label small = new Label("T");
+        small.setStyle("-fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: #B4BBC8;");
+        Label large = new Label("T");
+        large.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #B4BBC8;");
+        HBox letters = new HBox(1, small, large);
+        letters.setAlignment(Pos.BOTTOM_CENTER);
+        Button style = new Button();
+        style.setGraphic(new HBox(3, letters, UiSupport.iconBox(UiSupport.CHEVRON_DOWN, 12, glyph, 12)));
+        ((HBox) style.getGraphic()).setAlignment(Pos.CENTER);
+        style.getStyleClass().add("tool-button");
+        style.setMinWidth(46);
+        style.setTooltip(UiSupport.tooltip("Text style"));
+        ContextMenu styleMenu = new ContextMenu(
+                menuItem("Normal text", () -> applyHeading(null)),
+                menuItem("Section", () -> applyHeading("section")),
+                menuItem("Subsection", () -> applyHeading("subsection")),
+                menuItem("Subsubsection", () -> applyHeading("subsubsection")),
+                menuItem("Paragraph", () -> applyHeading("paragraph")));
+        style.setOnAction(e -> styleMenu.show(style, javafx.geometry.Side.BOTTOM, 0, 4));
+
+        Button bold = toolButton(UiSupport.BOLD, "Bold (Ctrl/Cmd+B)", glyph, () -> wrapSelection("\\textbf{", "}"));
+        Button italic = toolButton(UiSupport.ITALIC, "Italic (Ctrl/Cmd+I)", glyph, () -> wrapSelection("\\textit{", "}"));
+
+        HBox dots = new HBox(3);
+        dots.setAlignment(Pos.CENTER);
+        for (int i = 0; i < 3; i++) {
+            dots.getChildren().add(new Circle(1.5, glyph));
+        }
+        Button more = new Button();
+        more.setGraphic(dots);
+        more.getStyleClass().add("tool-button");
+        more.setTooltip(UiSupport.tooltip("More"));
+        ContextMenu moreMenu = new ContextMenu(
+                menuItem("Underline", () -> wrapSelection("\\underline{", "}")),
+                menuItem("Monospace", () -> wrapSelection("\\texttt{", "}")),
+                menuItem("Inline math", () -> wrapSelection("$", "$")),
+                new SeparatorMenuItem(),
+                menuItem("Bulleted list", () -> insertList("itemize")),
+                menuItem("Numbered list", () -> insertList("enumerate")),
+                new SeparatorMenuItem(),
+                menuItem("Comment / uncomment lines (Ctrl/Cmd+/)", this::toggleComment));
+        more.setOnAction(e -> moreMenu.show(more, javafx.geometry.Side.BOTTOM, 0, 4));
+
+        Button search = toolButton(UiSupport.SEARCH, "Find (Ctrl/Cmd+F)", glyph, this::toggleFindBar);
+
+        HBox bar = new HBox(2, undo, redo, toolSeparator(), style, toolSeparator(), bold, italic, toolSeparator(), more,
+                UiSupport.spacer(), search);
+        bar.getStyleClass().add("code-toolbar");
+        bar.setAlignment(Pos.CENTER_LEFT);
+
+        // Editing controls follow the editor: they go dark while a room join holds it read-only.
+        for (Button edit : List.of(undo, redo, style, bold, italic, more)) {
+            edit.disableProperty().bind(codeEditor.editableProperty().not());
+        }
+
+        codeEditor.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, e -> {
+            if (!e.isShortcutDown() || e.isAltDown()) return;
+            switch (e.getCode()) {
+                case B -> { if (codeEditor.isEditable()) wrapSelection("\\textbf{", "}"); }
+                case I -> { if (codeEditor.isEditable()) wrapSelection("\\textit{", "}"); }
+                case SLASH -> { if (codeEditor.isEditable()) toggleComment(); }
+                case F -> toggleFindBar();
+                default -> { return; }
+            }
+            e.consume();
+        });
+
+        return new VBox(bar, buildFindBar());
+    }
+
+    private Button toolButton(String iconPath, String tip, Color glyph, Runnable action) {
+        Button button = new Button();
+        button.setGraphic(UiSupport.iconBox(iconPath, 15, glyph, 18));
+        button.getStyleClass().add("tool-button");
+        button.setTooltip(UiSupport.tooltip(tip));
+        button.setFocusTraversable(false);
+        button.setOnAction(e -> action.run());
+        return button;
+    }
+
+    private static MenuItem menuItem(String text, Runnable action) {
+        MenuItem item = new MenuItem(text);
+        item.setOnAction(e -> action.run());
+        return item;
+    }
+
+    private static Region toolSeparator() {
+        Region line = new Region();
+        line.getStyleClass().add("tool-separator");
+        line.setMinSize(1, 16);
+        line.setPrefSize(1, 16);
+        line.setMaxSize(1, 16);
+        HBox.setMargin(line, new Insets(0, 6, 0, 6));
+        return line;
+    }
+
+    /** Wraps the selection (or drops the caret between the pair when nothing is selected). */
+    private void wrapSelection(String before, String after) {
+        IndexRange range = codeEditor.getSelection();
+        String selected = codeEditor.getSelectedText();
+        int start = range.getStart();
+        codeEditor.replaceText(start, range.getEnd(), before + selected + after);
+        if (selected.isEmpty()) {
+            codeEditor.positionCaret(start + before.length());
+        } else {
+            codeEditor.selectRange(start + before.length(), start + before.length() + selected.length());
+        }
+        codeEditor.requestFocus();
+    }
+
+    /** Turns the caret's line into {@code \command{...}}; a null command strips any heading back to plain text. */
+    private void applyHeading(String command) {
+        String text = codeEditor.getText();
+        int caret = Math.min(codeEditor.getCaretPosition(), text.length());
+        int lineStart = text.lastIndexOf('\n', caret - 1) + 1;
+        int lineEnd = text.indexOf('\n', caret);
+        if (lineEnd < 0) lineEnd = text.length();
+        String line = text.substring(lineStart, lineEnd);
+        java.util.regex.Matcher heading = java.util.regex.Pattern
+                .compile("^\\s*\\\\(?:sub)*(?:section|paragraph)\\*?\\{(.*)}\\s*$").matcher(line);
+        String inner = heading.matches() ? heading.group(1) : line.strip();
+        String result = command == null ? inner : "\\" + command + "{" + inner + "}";
+        codeEditor.replaceText(lineStart, lineEnd, result);
+        codeEditor.positionCaret(lineStart + result.length());
+        codeEditor.requestFocus();
+    }
+
+    /** Selected lines become {@code \item}s inside the environment; with no selection a starter list is inserted. */
+    private void insertList(String environment) {
+        IndexRange range = codeEditor.getSelection();
+        String selected = codeEditor.getSelectedText();
+        StringBuilder body = new StringBuilder();
+        if (selected.isBlank()) {
+            body.append("  \\item ");
+        } else {
+            for (String line : selected.split("\n")) {
+                if (!line.isBlank()) {
+                    body.append("  \\item ").append(line.strip()).append('\n');
+                }
+            }
+            if (body.length() > 0) body.setLength(body.length() - 1);
+        }
+        String block = "\\begin{" + environment + "}\n" + body + "\n\\end{" + environment + "}";
+        int start = range.getStart();
+        codeEditor.replaceText(start, range.getEnd(), block);
+        if (selected.isBlank()) {
+            codeEditor.positionCaret(start + ("\\begin{" + environment + "}\n  \\item ").length());
+        }
+        codeEditor.requestFocus();
+    }
+
+    /** Comments the selected lines with {@code % }, or removes it when they are all already commented. */
+    private void toggleComment() {
+        String text = codeEditor.getText();
+        IndexRange range = codeEditor.getSelection();
+        int from = range.getStart();
+        int to = range.getEnd();
+        if (to > from && text.charAt(to - 1) == '\n') to--;
+        int blockStart = text.lastIndexOf('\n', from - 1) + 1;
+        int blockEnd = text.indexOf('\n', to);
+        if (blockEnd < 0) blockEnd = text.length();
+        String[] lines = text.substring(blockStart, blockEnd).split("\n", -1);
+        boolean allCommented = true;
+        for (String line : lines) {
+            if (!line.isBlank() && !line.stripLeading().startsWith("%")) allCommented = false;
+        }
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            if (i > 0) out.append('\n');
+            if (line.isBlank()) {
+                out.append(line);
+            } else if (allCommented) {
+                int at = line.indexOf('%');
+                int cut = at + 1 < line.length() && line.charAt(at + 1) == ' ' ? at + 2 : at + 1;
+                out.append(line, 0, at).append(line.substring(cut));
+            } else {
+                out.append("% ").append(line);
+            }
+        }
+        codeEditor.replaceText(blockStart, blockEnd, out.toString());
+        codeEditor.selectRange(blockStart, blockStart + out.length());
+        codeEditor.requestFocus();
+    }
+
+    private HBox buildFindBar() {
+        findField = new TextField();
+        findField.setPromptText("Find in file");
+        findField.getStyleClass().add("find-field");
+        HBox.setHgrow(findField, Priority.ALWAYS);
+        findCount = new Label();
+        findCount.getStyleClass().add("find-count");
+
+        Color glyph = Color.web("#B4BBC8");
+        Button previous = toolButton(UiSupport.ARROW_UP, "Previous match (Shift+Enter)", glyph, () -> findNext(false));
+        Button next = toolButton(UiSupport.ARROW_DOWN, "Next match (Enter)", glyph, () -> findNext(true));
+        Button close = toolButton(UiSupport.CLOSE, "Close (Esc)", glyph, this::toggleFindBar);
+
+        findBar = new HBox(4, findField, findCount, previous, next, close);
+        findBar.getStyleClass().add("find-bar");
+        findBar.setAlignment(Pos.CENTER_LEFT);
+        findBar.setVisible(false);
+        findBar.setManaged(false);
+
+        findField.textProperty().addListener((obs, oldText, newText) -> updateFindCount(false));
+        findField.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER) {
+                findNext(!e.isShiftDown());
+                e.consume();
+            } else if (e.getCode() == KeyCode.ESCAPE) {
+                toggleFindBar();
+                e.consume();
+            }
+        });
+        return findBar;
+    }
+
+    private void toggleFindBar() {
+        boolean show = !findBar.isVisible();
+        findBar.setVisible(show);
+        findBar.setManaged(show);
+        if (show) {
+            String picked = codeEditor.getSelectedText();
+            if (!picked.isEmpty() && !picked.contains("\n")) findField.setText(picked);
+            findField.requestFocus();
+            findField.selectAll();
+            updateFindCount(false);
+        } else {
+            codeEditor.requestFocus();
+        }
+    }
+
+    /** Selects the next (or previous) case-insensitive match, wrapping at the ends of the file. */
+    private void findNext(boolean forward) {
+        String query = findField.getText() == null ? "" : findField.getText().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            updateFindCount(false);
+            return;
+        }
+        String text = codeEditor.getText().toLowerCase(Locale.ROOT);
+        IndexRange range = codeEditor.getSelection();
+        int at;
+        if (forward) {
+            at = text.indexOf(query, range.getEnd());
+            if (at < 0) at = text.indexOf(query);
+        } else {
+            at = range.getStart() > 0 ? text.lastIndexOf(query, range.getStart() - 1) : -1;
+            if (at < 0) at = text.lastIndexOf(query);
+        }
+        if (at >= 0) {
+            codeEditor.selectRange(at, at + query.length());
+        }
+        updateFindCount(true);
+    }
+
+    private void updateFindCount(boolean selectionIsMatch) {
+        String query = findField.getText() == null ? "" : findField.getText().toLowerCase(Locale.ROOT);
+        if (query.isEmpty()) {
+            findCount.setText("");
+            return;
+        }
+        String text = codeEditor.getText().toLowerCase(Locale.ROOT);
+        int total = 0;
+        int current = 0;
+        int selectedStart = codeEditor.getSelection().getStart();
+        for (int at = text.indexOf(query); at >= 0; at = text.indexOf(query, at + query.length())) {
+            total++;
+            if (selectionIsMatch && at == selectedStart) current = total;
+        }
+        findCount.setText(total == 0 ? "No results" : (current > 0 ? current + " of " + total : total + " found"));
+    }
+
     private SplitPane createCenterEditorPanel(String initialContent) {
         SplitPane editorSplit = new SplitPane();
         editorSplit.setOrientation(Orientation.VERTICAL);
@@ -1206,7 +1631,11 @@ public class OverleafFxApp extends Application {
             }
         });
 
-        editorBox.getChildren().addAll(editorHeader, codeEditor);
+        codeOverlay = new CodeOverlay(codeEditor);
+        VBox.setVgrow(codeOverlay.node(), Priority.ALWAYS);
+        editorBox.getChildren().addAll(editorHeader, buildCodeToolbar(), codeOverlay.node());
+        installEditorBehaviours();
+        applyEditorSettings();
 
         VBox terminalBox = new VBox();
 
@@ -2000,8 +2429,18 @@ public class OverleafFxApp extends Application {
     // LỚP KHUNG XEM TRƯỚC PDF ĐỘNG (DYNAMIC LATEX RENDERER CANVAS)
     // =========================================================================
     public static class PdfCanvasPane extends VBox {
-        private final Canvas canvas;
+        // One canvas per page: a single canvas for the whole document exceeds the GPU's
+        // 16384 px texture limit after about 16 pages and the preview goes blank.
+        private final VBox pagesBox = new VBox();
+        private final javafx.beans.property.DoubleProperty docWidth = new javafx.beans.property.SimpleDoubleProperty(580);
+        private final javafx.beans.property.DoubleProperty docHeight = new javafx.beans.property.SimpleDoubleProperty(840);
         private final Label zoomLabel;
+        private static final int PREVIEW_PAUSE_MS = 250;
+        /** Beyond this the preview stops drawing pages; the compiled PDF has the rest. */
+        private static final int MAX_PREVIEW_PAGES = 50;
+        private long lastDrawMillis;
+        private final javafx.animation.PauseTransition redraw = new javafx.animation.PauseTransition(
+                javafx.util.Duration.millis(PREVIEW_PAUSE_MS));
         private double zoomFactor = 1.0;
         private boolean autoFit = true;
         private String currentTexCode = "";
@@ -2060,14 +2499,15 @@ public class OverleafFxApp extends Application {
 
             toolBar.getChildren().addAll(title, sub, spacer, btnZoomOut, zoomLabel, btnZoomIn, btnFit);
 
-            canvas = new Canvas(580, 840);
+            pagesBox.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+            pagesBox.setAlignment(Pos.TOP_CENTER);
 
-            StackPane canvasHolder = new StackPane(canvas);
+            StackPane canvasHolder = new StackPane(pagesBox);
             canvasHolder.setPadding(new Insets(20));
             canvasHolder.setAlignment(Pos.TOP_CENTER);
-            canvasHolder.setStyle("-fx-background-color: #ECECE7;");
-            canvasHolder.prefWidthProperty().bind(canvas.widthProperty().add(40));
-            canvasHolder.prefHeightProperty().bind(canvas.heightProperty().add(40));
+            canvasHolder.getStyleClass().add("preview-holder");
+            canvasHolder.prefWidthProperty().bind(docWidth.add(40));
+            canvasHolder.prefHeightProperty().bind(docHeight.add(40));
 
             ScrollPane scrollPane = new ScrollPane(canvasHolder);
             scrollPane.getStyleClass().add("preview-scroll");
@@ -2076,11 +2516,11 @@ public class OverleafFxApp extends Application {
             scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
             scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
             canvasHolder.minWidthProperty().bind(Bindings.createDoubleBinding(
-                    () -> Math.max(canvas.getWidth() + 40, scrollPane.getViewportBounds().getWidth()),
-                    canvas.widthProperty(), scrollPane.viewportBoundsProperty()));
+                    () -> Math.max(docWidth.get() + 40, scrollPane.getViewportBounds().getWidth()),
+                    docWidth, scrollPane.viewportBoundsProperty()));
             canvasHolder.minHeightProperty().bind(Bindings.createDoubleBinding(
-                    () -> Math.max(canvas.getHeight() + 40, scrollPane.getViewportBounds().getHeight()),
-                    canvas.heightProperty(), scrollPane.viewportBoundsProperty()));
+                    () -> Math.max(docHeight.get() + 40, scrollPane.getViewportBounds().getHeight()),
+                    docHeight, scrollPane.viewportBoundsProperty()));
             VBox.setVgrow(scrollPane, Priority.ALWAYS);
 
             getChildren().addAll(toolBar, scrollPane);
@@ -2096,6 +2536,10 @@ public class OverleafFxApp extends Application {
                 }
             });
 
+            redraw.setOnFinished(e -> {
+                lastDrawMillis = System.currentTimeMillis();
+                drawDynamicA4Paper(currentTexCode);
+            });
             drawDynamicA4Paper("");
         }
 
@@ -2114,9 +2558,16 @@ public class OverleafFxApp extends Application {
             }
         }
 
+        /** Redraws now if the preview has been idle, otherwise once typing pauses, so long files stay responsive. */
         public void updatePreview(String texContent) {
             this.currentTexCode = (texContent != null) ? texContent : "";
-            drawDynamicA4Paper(this.currentTexCode);
+            long now = System.currentTimeMillis();
+            if (now - lastDrawMillis >= PREVIEW_PAUSE_MS && redraw.getStatus() != javafx.animation.Animation.Status.RUNNING) {
+                lastDrawMillis = now;
+                drawDynamicA4Paper(this.currentTexCode);
+            } else {
+                redraw.playFromStart();
+            }
         }
 
         private void updateZoom() {
@@ -2511,22 +2962,19 @@ public class OverleafFxApp extends Application {
 
             int totalPages = Math.max(1, pages.size());
 
-            // 3. Tính toán kích thước Canvas tổng thể
-            double pageGap = 24 * scale;
+            // 3. Kích thước mỗi trang: một Canvas riêng cho từng trang, có lề cho bóng đổ
+            double pagePad = 20;
             double canvasW = paperW + 40;
-            double canvasH = totalPages * pageH + (totalPages - 1) * pageGap + 40;
-
-            canvas.setWidth(canvasW);
-            canvas.setHeight(canvasH);
-
-            GraphicsContext gc = canvas.getGraphicsContext2D();
-            gc.clearRect(0, 0, canvasW, canvasH);
-
             double paperX = (canvasW - paperW) / 2;
+            List<Canvas> pageCanvases = new ArrayList<>();
 
-            // 4. Vẽ từng trang A4 chân thực
-            for (int pIdx = 0; pIdx < totalPages; pIdx++) {
-                double pageY = 20 + pIdx * (pageH + pageGap);
+            // 4. Vẽ từng trang A4 chân thực (tối đa MAX_PREVIEW_PAGES trang)
+            int drawnPages = Math.min(totalPages, MAX_PREVIEW_PAGES);
+            for (int pIdx = 0; pIdx < drawnPages; pIdx++) {
+                Canvas pageCanvas = new Canvas(canvasW, pageH + 2 * pagePad);
+                pageCanvases.add(pageCanvas);
+                GraphicsContext gc = pageCanvas.getGraphicsContext2D();
+                double pageY = pagePad;
 
                 // A. Bóng đổ trang giấy (Drop Shadow)
                 gc.save();
@@ -2593,6 +3041,18 @@ public class OverleafFxApp extends Application {
                 gc.setFill(Color.GRAY);
                 gc.fillText("- " + (pIdx + 1) + " -", paperX + paperW / 2 - 10 * scale, pageY + pageH - 20 * scale);
             }
+            pagesBox.getChildren().setAll(pageCanvases);
+            double noteHeight = 0;
+            if (drawnPages < totalPages) {
+                Label more = new Label("Preview shows the first " + drawnPages + " of " + totalPages
+                        + " pages. Recompile for the full PDF.");
+                more.getStyleClass().add("pane-sub");
+                more.setPadding(new Insets(4, 0, 12, 0));
+                pagesBox.getChildren().add(more);
+                noteHeight = 36;
+            }
+            docWidth.set(canvasW);
+            docHeight.set(drawnPages * (pageH + 2 * pagePad) + noteHeight);
         }
     }
 

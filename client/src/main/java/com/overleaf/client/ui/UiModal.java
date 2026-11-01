@@ -48,6 +48,7 @@ public final class UiModal {
             sub.setWrapText(true);
             copy.getChildren().add(sub);
         }
+        copy.setAlignment(Pos.CENTER_LEFT);
         HBox.setHgrow(copy, Priority.ALWAYS);
 
         Color iconColor = tone == Tone.DANGER ? Color.web("#B4453A") : Color.web("#23664A");

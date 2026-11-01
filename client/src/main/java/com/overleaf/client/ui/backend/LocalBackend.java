@@ -49,6 +49,8 @@ import java.util.stream.Stream;
 public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGateway, ProfileGateway {
 
     public static final String MAIN_FILE = "main.tex";
+    /** Per-project icon and color, kept inside the folder so it follows renames. */
+    private static final String LOOK_FILE = ".overleaf-project";
 
     private static final int PBKDF2_ITERATIONS = 120_000;
     private static final java.util.regex.Pattern WINDOWS_RESERVED =
@@ -145,6 +147,118 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     public Session continueOffline(String name) {
         String resolved = name == null || name.isBlank() ? "Local User" : name.trim();
         return new Session(resolved, "", true);
+    }
+
+    @Override
+    public Session updateName(Session session, String newName) {
+        String name = newName == null ? "" : newName.trim().replaceAll("\\s+", " ");
+        if (name.isEmpty()) {
+            throw new IllegalStateException("Enter a name.");
+        }
+        if (name.length() > 40) {
+            throw new IllegalStateException("Use 40 characters or fewer.");
+        }
+        if (session.offline()) {
+            // Offline pictures are keyed by name, so the picture moves with the rename.
+            Session renamed = new Session(name, session.email(), true);
+            moveAvatar(session, renamed);
+            return renamed;
+        }
+        synchronized (lock) {
+            Properties accounts = load(accountsFile);
+            String record = accounts.getProperty(session.email());
+            if (record == null) {
+                throw new IllegalStateException("That account no longer exists.");
+            }
+            Account old = Account.parse(record);
+            accounts.setProperty(session.email(), new Account(name, old.iterations(), old.salt(), old.hash()).format());
+            store(accountsFile, accounts, "Overleaf Desktop local accounts (PBKDF2-SHA256)");
+        }
+        return new Session(name, session.email(), false);
+    }
+
+    @Override
+    public void changePassword(Session session, String currentPassword, String newPassword) {
+        requireAccount(session);
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalStateException("Choose a password with at least 6 characters.");
+        }
+        synchronized (lock) {
+            Properties accounts = load(accountsFile);
+            Account old = verifiedAccount(accounts, session, currentPassword);
+            if (old.matches(newPassword)) {
+                throw new IllegalStateException("Choose a password you are not using already.");
+            }
+            byte[] salt = new byte[SALT_BYTES];
+            random.nextBytes(salt);
+            Account updated = new Account(old.name(), PBKDF2_ITERATIONS, salt, hash(newPassword, salt, PBKDF2_ITERATIONS));
+            accounts.setProperty(session.email(), updated.format());
+            store(accountsFile, accounts, "Overleaf Desktop local accounts (PBKDF2-SHA256)");
+        }
+    }
+
+    @Override
+    public Session changeEmail(Session session, String newEmail, String currentPassword) {
+        requireAccount(session);
+        String key = normalizeEmail(newEmail);
+        synchronized (lock) {
+            Properties accounts = load(accountsFile);
+            Account account = verifiedAccount(accounts, session, currentPassword);
+            if (key.equals(session.email())) {
+                throw new IllegalStateException("That is already your email.");
+            }
+            if (accounts.containsKey(key)) {
+                throw new IllegalStateException("Another account already uses that email.");
+            }
+            Session moved = new Session(account.name(), key, false);
+            accounts.remove(session.email());
+            accounts.setProperty(key, account.format());
+            store(accountsFile, accounts, "Overleaf Desktop local accounts (PBKDF2-SHA256)");
+            moveAvatar(session, moved);
+            updateSettings(settings -> {
+                if (session.email().equals(settings.getProperty("remembered.email"))) {
+                    settings.setProperty("remembered.email", key);
+                }
+                if (session.email().equals(settings.getProperty("last.email"))) {
+                    settings.setProperty("last.email", key);
+                }
+            });
+            return moved;
+        }
+    }
+
+    private static void requireAccount(Session session) {
+        if (session.offline() || session.email() == null || session.email().isBlank()) {
+            throw new IllegalStateException("Sign in with an account to change this.");
+        }
+    }
+
+    private Account verifiedAccount(Properties accounts, Session session, String password) {
+        String record = accounts.getProperty(session.email());
+        if (record == null) {
+            throw new IllegalStateException("That account no longer exists.");
+        }
+        Account account = Account.parse(record);
+        if (!account.matches(password)) {
+            throw new IllegalStateException("That password is not correct.");
+        }
+        return account;
+    }
+
+    /** Keeps the profile picture with the account when its email (and so its picture key) changes. */
+    private void moveAvatar(Session from, Session to) {
+        String oldId = avatarId(from);
+        String newId = avatarId(to);
+        try {
+            for (String type : AVATAR_TYPES) {
+                Path source = avatarDir().resolve(oldId + "." + type);
+                if (Files.isRegularFile(source)) {
+                    Files.move(source, avatarDir().resolve(newId + "." + type), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        } catch (IOException ignored) {
+            // The account moved; at worst the picture falls back to initials.
+        }
     }
 
     /** Session restored from "Keep me signed in", if the account still exists. */
@@ -287,7 +401,7 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     }
 
     @Override
-    public ProjectSummary create(String name) {
+    public ProjectSummary create(String name, String icon, String color) {
         String folderName = folderName(name);
         try {
             Files.createDirectories(projectsDir);
@@ -297,6 +411,16 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
             }
             Files.createDirectories(dir);
             Files.writeString(dir.resolve(MAIN_FILE), template(dir.getFileName().toString()), StandardCharsets.UTF_8);
+            Properties look = new Properties();
+            if (icon != null && icon.matches("[a-z0-9-]{1,24}")) {
+                look.setProperty("icon", icon);
+            }
+            if (color != null && color.matches("#[0-9A-Fa-f]{6}")) {
+                look.setProperty("color", color);
+            }
+            if (!look.isEmpty()) {
+                store(dir.resolve(LOOK_FILE), look, "Overleaf Desktop project appearance");
+            }
             return summarize(dir, Instant.now());
         } catch (IOException e) {
             throw new IllegalStateException("Could not create the project folder: " + e.getMessage(), e);
@@ -376,6 +500,15 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
         return load(settingsFile).getProperty("last.project");
     }
 
+    /** A stored UI preference (theme, editor font, ...), or {@code fallback} when never set. */
+    public String preference(String key, String fallback) {
+        return load(settingsFile).getProperty("pref." + key, fallback);
+    }
+
+    public void setPreference(String key, String value) {
+        updateSettings(settings -> settings.setProperty("pref." + key, value));
+    }
+
     public void rememberProject(String name) {
         updateSettings(settings -> settings.setProperty("last.project", name));
     }
@@ -428,7 +561,14 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
             // Count stays 0; the project still opens.
         }
         boolean shared = Files.isRegularFile(dir.resolve(".overleaf-room"));
-        return new ProjectSummary(dir.getFileName().toString(), dir.toString(), describeModified(modified), files, shared);
+        Properties look;
+        try {
+            look = load(dir.resolve(LOOK_FILE));
+        } catch (IllegalStateException unreadable) {
+            look = new Properties();
+        }
+        return new ProjectSummary(dir.getFileName().toString(), dir.toString(), describeModified(modified), files, shared,
+                look.getProperty("icon"), look.getProperty("color"));
     }
 
     private static Instant lastModified(Path dir) {
