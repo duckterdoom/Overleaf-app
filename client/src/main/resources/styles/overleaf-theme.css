@@ -830,6 +830,25 @@
 
 .outline-box { -fx-padding: 8 0 0 0; }
 
+.new-project-menu { -fx-min-width: 260px; }
+.project-menu-heading { -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 4 8; }
+.project-dialog-scroll,
+.project-dialog-scroll > .viewport { -fx-background-color: transparent; -fx-background: transparent; }
+.project-dialog-scroll { -fx-padding: 0; -fx-border-color: transparent; }
+
+.sidebar-split {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+.sidebar-split > .split-pane-divider {
+    -fx-background-color: #D8DCD6;
+    -fx-padding: 4 0 4 0;
+    -fx-cursor: v_resize;
+}
+.sidebar-split > .split-pane-divider:hover {
+    -fx-background-color: #9BBEAC;
+}
+
 .outline-scroll,
 .outline-scroll > .viewport {
     -fx-background-color: transparent;
@@ -1000,7 +1019,7 @@
 
 .log-textarea {
     -fx-font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace;
-    -fx-font-size: 10.5px;
+    -fx-font-size: 14px;
     -fx-text-fill: #e7e9ee;
     -fx-background-color: #2f3a4c;
     -fx-padding: 0;
@@ -1018,7 +1037,11 @@
     -fx-border-width: 0 0 3 0;
     -fx-padding: 7 10 4 14;
 }
-.terminal-header .pane-sub { -fx-text-fill: #909194; }
+.terminal-header .pane-title { -fx-font-size: 13px; }
+.terminal-header .pane-sub {
+    -fx-font-size: 12px;
+    -fx-text-fill: #909194;
+}
 
 .editor-split.code-stack {
     -fx-background-color: #1b222c;
@@ -1518,3 +1541,11 @@
 .btn-secondary .line-icon { -fx-stroke: #2B2B28; }
 .snake-button .line-icon { -fx-stroke: #23664A; }
 .pick-tile .line-icon { -fx-stroke: #3A3A36; }
+.add-files-nav { -fx-background-color: #F3F4F3; -fx-border-width: 0; }
+.add-files-nav .list-cell { -fx-padding: 12 10; -fx-background-color: transparent; -fx-text-fill: #354239; }
+.add-files-nav .list-cell:filled:selected { -fx-background-color: #E4EDE6; -fx-text-fill: #23664A; }
+.add-files-scroll, .add-files-scroll > .viewport { -fx-background-color: transparent; }
+.add-files-drop { -fx-border-color: #84958b; -fx-border-style: segments(5, 3); -fx-border-radius: 5; -fx-padding: 18; }
+.pdf-continuous-sheet { -fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 9, 0.05, 0, 2); }
+.pdf-internal-link { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-text-fill: transparent; }
+.pdf-internal-link:hover, .pdf-internal-link:focused { -fx-background-color: rgba(50,110,210,0.13); }

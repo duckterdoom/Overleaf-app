@@ -1,5 +1,21 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — PDF cuộn và liên kết (02/11/2026):** preview xếp trang liên tiếp, cuộn qua các trang, bấm liên kết nội bộ đến tiêu đề và quay lại bằng `↶`. Render theo vùng xem với ngân sách ảnh, giữ nguyên export PDF thật. **120/120 JUnit chọn lọc đạt**, smoke PDF 13 trang và regression compile/export 7 trang đạt. Xem **mục 25**; mô tả viewer một trang ở mục 19 là lịch sử.
+
+> **Mới nhất — sửa ZIP nhiều chương (02/11/2026):** tái hiện trực tiếp `D:\download\latex-test-project-v2.zip`: thiếu gói TeX và chưa có thư mục aux cho `\include`. Đã bổ sung TinyTeX, tự tạo output subfolder, ưu tiên lỗi gốc và retry cache lỗi. ZIP nguyên gốc ra **13 trang với cả ba engine**, có tiếng Việt/Biber, nguồn giữ nguyên. **117/117 JUnit chọn lọc đạt**. Xem **mục 24**.
+
+> **Mới nhất — workspace (02/11/2026):** thêm thư mục/tệp con, upload nhiều tệp hoặc thư mục, kéo thả/dán ảnh, sao chép từ dự án khác/tệp đầu ra và tải URL HTTPS. Hộp thoại Anh/Việt theo ảnh, cây hiển thị thư mục rỗng và tài nguyên. **110/110 JUnit chọn lọc đạt**, smoke JavaFX + tải HTTPS thật đạt. Xem **mục 23**.
+
+> **Mới nhất — tạo/nhập dự án và chọn thư mục (02/11/2026):** menu mới đầy đủ Anh/Việt, 9 nhóm template, nhập ZIP/Word/Markdown/GitHub; chọn nơi lưu từng dự án, đổi mặc định và chuyển dự án có bản phục hồi. **98/98 test chọn lọc đạt**, kiểm thử PDF thật và JavaFX đạt. Xem **mục 22**. Các mục trước giữ lại làm lịch sử.
+
+> **Mới nhất — tiếng Việt và Outline (01/11/2026):** Outline có thanh kéo giữa cây file và danh sách đề mục, nhớ tỷ lệ sau khi thả chuột; không còn khóa chiều cao 120–260 px. Thêm kiểm tra PDF mất ký tự và bản preamble tương thích ba engine. Xem **mục 20–21**. Bộ regression **84/84 test đạt**.
+
+> **Trạng thái mới nhất — PDF preview/export thật (01/11/2026):** đã bỏ Canvas mô phỏng, dùng PDFBox đọc PDF từ compiler; Export chép đúng bytes của PDF đang xem. Nguồn đổi/lỗi compile khóa xuất và ghi rõ trạng thái cũ. **81/81 test đạt**, smoke UI trên tài liệu người dùng 7 trang đạt. Xem **mục 19**; các nhận định “preview Canvas” bên dưới là lịch sử.
+
+> **Sửa lỗi toolchain sau kiểm thử người dùng (01/11/2026):** đã bổ sung tự nhận `latexmk` khi Settings trống; **76/76 test đạt** và đã compile thành công bản sao đúng tài liệu test trong ảnh. Xem **mục 18**. Tiến trình app cũ cần được đóng/mở lại để nhận code mới.
+
+> **Cập nhật mới nhất — tiêu chí Compile (01/11/2026):** nhánh `feat/m1-gui-client`, nền `b89dbc5` kèm thay đổi local. Đã thêm Settings → Compilation, timeout tùy chỉnh/không giới hạn, đường dẫn latexmk, kiểm tra toolchain, Stop và tích hợp Error Explainer. **72/72 test chọn lọc đạt**, smoke PDF thật ba engine + TikZ/tiếng Việt và smoke UI đạt. Xem **mục 17**; số 35/42/52 và nhận định chưa compile LaTeX ở các mục trước là lịch sử.
+
 > **Trạng thái mới nhất — đồng bộ M3/M4 ngày 01/11/2026:** đã sửa bốn điểm trong review; xem mục 13 và [README.md §5](README.md#5-giao-thức-wire-v2). 42/42 test pass. Phần mô tả v1, giới hạn RESYNC 1000 và kết quả 35 test ở các mục cũ là lịch sử trước lần sửa này, không còn là hợp đồng hiện tại.
 
 Cập nhật: **01/11/2026**. Nền mã nguồn được kiểm tra: `main`, commit **`df06601`**. Tài liệu này ghi trạng thái code thực tế sau khi tích hợp M3; thay thế handoff ngày 30/10 vốn mô tả nhánh `protocol_networking`.
@@ -391,3 +407,336 @@ README §3 chỉ giữ cách chạy. Chi tiết kỹ thuật ở đây:
   ```
 
 - `mvn test` không chọn lọc chạy cả test `persistence`: cần MongoDB và `persistence/src/main/resources/config.properties` (tạo từ `.example`, không commit). `BenchmarkM4.main()` đo engine M4, ghi `benchmark-results.md`.
+
+## 16. Sửa lỗi khởi động Windows sau khi chuyển nhánh Network
+
+Ngày 01/11/2026, trên nền `Network` commit `190cecb`:
+
+- Kiểm tra còn đầy đủ **66 file source `.java`** trong bốn module mới `common`, `client`, `server`, `persistence` (bao gồm source test). Không có việc tự đổi `.java` thành `.class`.
+- Bốn folder tên cũ `overleaf-client`, `overleaf-common`, `overleaf-server`, `database` chỉ chứa output `target/` từ nhánh trước, không còn source hoặc file được Git theo dõi trên nhánh hiện tại. Đã kiểm tra đường dẫn/không có symlink rồi chuyển nguyên trạng vào `target/legacy-build-output-20261101-095848/`, có manifest; không xóa source, `main.tex`, tài liệu hoặc dữ liệu người dùng.
+- Tái hiện được lỗi launcher: `mvn is not recognized` và `JAVA_HOME` trống. Sửa `scripts/run-client.bat` để tự tìm JDK và Maven cài sẵn/đi kèm IntelliJ, sử dụng cache workspace và giữ cửa sổ báo lỗi. Launcher Windows dùng batch native, không phụ thuộc PowerShell/profile/execution policy. Thêm tham số `-BuildOnly` cho kiểm tra build mà không mở app.
+- Lần compile đầu có lỗi test không nhìn thấy một số class client vừa được compile, trong khi chạy riêng test-compile lại thành công. POM parent bổ sung `fork=true` để tách tiến trình javac giữa module Java 17 và client Java 21.
+- Đã chạy `scripts\run-client.bat -BuildOnly`: toàn bộ 5 bước reactor, gồm parent và 4 module, **BUILD SUCCESS** trên Windows với JDK Microsoft 21.0.13 và Maven của IntelliJ. Log: `target/network-client-build-native.log`.
+- Đã kiểm tra khởi tạo JavaFX 23 thật: tạo Stage/scene đăng nhập thành công (`UI_STARTUP_OK`) bằng helper tạm, dữ liệu ở `target/ui-startup-check/`. Không dùng tài khoản/dự án thật, không sửa dữ liệu `~/OverleafDesktop`. Helper nằm trong `target/`, không phải source runtime.
+
+Lệnh người dùng chạy từ thư mục gốc: `.\scripts\run-client.bat`. Mở source tại các module tên mới, không mở class trong `target/classes`. Bước kiểm tra Windows này xác nhận build và startup, chưa khẳng định đã kiểm tra thao tác Telex/Unikey thủ công hoặc chạy lại toàn bộ UiSmoke.
+
+## 17. Cải thiện tiêu chí 1 — Compile local và kiểm chứng PDF thật
+
+Ngày **01/11/2026**, nhánh **`feat/m1-gui-client`**, nền **`b89dbc5`**. Các thay đổi vẫn ở working tree, chưa commit/push. Giữ nguyên các thay đổi Windows launcher/POM/tài liệu có từ trước.
+
+### 17.1 Đã triển khai
+
+| Phần / vai trò | File | Thay đổi |
+| --- | --- | --- |
+| **M2 — Compiler** | `client/.../compiler/LatexCompilerService.java` | `Options` bất biến gồm đường dẫn latexmk và timeout; snapshot theo từng request để chỉnh Settings không đổi build đang chạy/chờ. Timeout mặc định vẫn 120 giây, **0 = không giới hạn**. Đường dẫn được truyền trực tiếp cho ProcessBuilder, không ghép shell command. Thêm thư mục executable vào PATH riêng của process con để dùng đúng engine cùng bộ TeX. |
+| **M2 — Compiler** | Cùng file | `cancelCompile()` dừng cả process tree, loại build đang chờ, báo `EXIT_INTERRUPTED`, service có thể dùng lại. Giữ cơ chế chỉ giữ yêu cầu chờ mới nhất; không xóa `build/` mỗi lần compile, để latexmk reuse cache. Thông báo thiếu toolchain chỉ rõ đường dẫn và nơi cấu hình. |
+| **M2 — Chẩn đoán** | `compiler/ToolchainDiagnostics.java` (mới) | Chạy `latexmk -v` và `--version` của ba engine, mỗi tool tối đa 8 giây; trả executable/version/lỗi. Không tự cài package hoặc sửa PATH hệ thống. Chạy trong worker nền từ UI. |
+| **M1 — Settings** | `ui/SettingsView.java`, `ui/AppSettings.java` | Mục **Compilation/Biên dịch** riêng: chọn engine, nhập/chọn tệp latexmk, nhập timeout (0 hoặc số giây dương), lưu và kiểm tra toolchain đã lưu. Cấu hình lưu local qua backend hiện có. Đường dẫn có khoảng trắng được truyền nguyên một argument. |
+| **M1 — Compile UI** | `ui/OverleafFxApp.java` | Nút **Stop** hiện lúc compile; chặn bấm compile trùng từ phím tắt/menu. Log executable/engine/timeout, hiển thị thời gian từ kết quả compile; hết timeout hướng dẫn vào Settings. |
+| **M1/M2 — Lỗi dễ hiểu** | `LatexErrorExplainer.java`, `OverleafFxApp.java` | Gọi explainer cho lỗi đã parse và mã lỗi startup/timeout/cancel; ghi `[EXPLAIN]`, nguyên nhân và gợi ý vào Build output theo ngôn ngữ UI. Sửa rule file thiếu để không nhận “File ... already exists” là “not found”. Đây là bộ rule offline, không gọi AI qua mạng và không tự sửa source. |
+| **Testing/build** | `LatexErrorExplainerTest.java`, `client/pom.xml` | Chuyển annotation/assertion từ TestNG/JUnit 4 sang JUnit 5; thêm regression file tồn tại; bỏ hai dependency compile-scope TestNG và JUnit 4 `RELEASE` không còn được dùng. Maven phát hiện đầy đủ 9 test explainer. |
+| **Testing** | `compiler/LatexCompilerServiceTest.java` (mới) | 8 test, dùng tiến trình Java fixture để kiểm tra lỗi start, đủ ba flag engine, giữ auxiliary files, exit 0 thiếu PDF, timeout snapshot, kill process con, Stop khi không giới hạn, discard/coalesce queue và chẩn đoán thiếu tool. Fixture không phải compiler TeX thật. |
+| **Smoke thật** | `compiler/CompilerSmoke.java`, `ui/CompilerUiSmoke.java` (mới, test source) | Hai main chạy tường minh: PDF/cache/ba engine/TikZ/template tiếng Việt; và UI Settings/compile/explainer/Stop. Không chạy tự động bởi Surefire, cần toolchain thật; UI smoke cần desktop. Chỉ dùng thư mục dữ liệu thử mới. |
+
+### 17.2 Toolchain trên máy kiểm tra
+
+Không tìm thấy latexmk/ba engine trên PATH ban đầu. Đã tải **TinyTeX-1 v2026.03.02 Windows** từ [release chính thức](https://github.com/rstudio/tinytex-releases/releases/tag/v2026.03.02), xác nhận SHA-256 archive:
+
+```text
+af5fda147cfdccd071f9a8d3dbec3b6c30a1f6d77ff30d8b42e449b4e5d1c147
+```
+
+Giải nén vào **`D:\Overleaf-app\target\TinyTeX`** (bị Git ignore). Không sửa PATH hệ thống, registry hoặc dữ liệu thật `~/OverleafDesktop`. Cập nhật tlmgr của bộ portable; thêm `vntex`, `babel-vietnamese`, `babel-english`/`hyphen-english`, `pgf` và dependency cần thiết. Đây là toolchain local phục vụ kiểm tra, không được đóng vào JAR hay cam kết có sẵn trên máy member khác. Không chạy `mvn clean` ở root nếu cần giữ toolchain/cache/backup trong `target/`.
+
+Version đã chạy: latexmk **4.87**, pdfTeX **1.40.29**, XeTeX **0.999998**, LuaHBTeX **1.24.0**, TeX Live **2026**. Bản portable không chứa mọi package TeX; dự án khác có thể cần cài bổ sung.
+
+### 17.3 Kết quả kiểm chứng
+
+**Maven: 72/72 đạt, 0 fail/error/skip** = 55 test hiện có trên nhánh + 8 compiler mới + 9 explainer đã được JUnit phát hiện. `LocalBackendTest` hiện 13 test, nên con số 52 trong README cũ đã lỗi thời. Test MongoDB không được chọn. Log: `target/compile-improvements-tests.log`.
+
+Smoke thật qua chính `LatexCompilerService`:
+
+- Ba engine đều sinh file có header PDF thật; thành công với tài liệu có công thức/tham chiếu, TikZ 100 nét và template của app có chữ tiếng Việt.
+- Không sửa nội dung rồi compile lần hai: latexmk báo `Nothing to do`/`up-to-date`, xác nhận reuse cache. Sau sửa nhỏ vẫn compile thành công.
+- Kết quả một lần chạy trên máy hiện tại (tài liệu nhỏ, một số bước chạy song song với UI smoke):
+
+| Engine | Lần đầu (ms) | Không sửa (ms) | Sửa nhỏ (ms) |
+| --- | ---: | ---: | ---: |
+| pdfLaTeX | 486 | 246 | 358 |
+| XeLaTeX | 3409 | 202 | 407 |
+| LuaLaTeX | 5144 | 208 | 745 |
+
+Đây là thời gian wall-clock end-to-end từ service, **không phải benchmark so với Overleaf**, không phải thống kê p50/p95 hoặc đo CPU/RAM. Chưa kiểm tra hình thức từng glyph/trang PDF bằng mắt. Dữ liệu/log: `target/compile-smoke-02/`, bảng `results.md`, `target/real-compile-smoke.log`.
+
+**JavaFX smoke trên Windows đạt** (`COMPILER_UI_SMOKE_OK`): timeout âm bị từ chối; timeout 0 lưu được; diagnostics chạy nền; compile UI sinh PDF; source cố ý sai `\texbf` hiện `[EXPLAIN] Lệnh không tồn tại` trong Build output; Stop dừng vòng lặp TeX khi timeout không giới hạn và mở lại nút Recompile. Đã xác nhận lại trên bản cuối, dữ liệu riêng ở `target/compiler-ui-smoke-02`, log `target/compiler-ui-smoke.log`. Không chạy lại toàn bộ `UiSmoke` cũ.
+
+Sau bổ sung kiểm tra đường dẫn không hợp lệ (bao gồm NUL) ngay trong `Options`, chạy lại chọn lọc **17/17 compiler/explainer test đạt**; log `target/compile-final-tests.log`. Cấu hình lưu từ UI chuẩn hóa đường dẫn absolute để không phụ thuộc working directory của project.
+
+Sandbox từng gây `AccessDeniedException` khi javac đóng JDK `lib/ct.sym`; chạy kiểm tra ngoài sandbox đã giải quyết, không phải lỗi Java source. Các lần smoke thất bại trước khi thêm đủ package được giữ ở `target/compile-smoke-01` để truy vết, không dùng làm kết quả thành công.
+
+### 17.4 Cách dùng và chạy lại
+
+1. Mở app: `.\scripts\run-client.bat`.
+2. Mở Settings → **Compilation / Biên dịch**. Trên máy hiện tại chọn **`D:\Overleaf-app\target\TinyTeX\bin\windows\latexmk.exe`**. Trên máy khác chọn latexmk của TeX Live/MiKTeX, hoặc để trống nếu đã có trên PATH.
+3. Nhập timeout, **0** nếu muốn không giới hạn; bấm **Save compiler settings** rồi **Check saved toolchain**. Đổi engine qua Settings hoặc toolbar.
+4. Về editor, F5/Ctrl+Enter để compile; bấm **Stop** nếu cần. Xem đường dẫn PDF và thời gian trong Build output/status bar.
+
+Chạy test bằng Maven đã cài:
+
+```powershell
+mvn "-Dtest=LatexCompilerServiceTest,LatexErrorExplainerTest,MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,LocalBackendTest" "-Dsurefire.failIfNoSpecifiedTests=false" test
+```
+
+Main smoke cần build test-classes trước (`mvn -DskipTests test`), classpath gồm `client/target/classes`, `client/target/test-classes`, `common/target/classes`; UI thêm `server/target/classes` và JavaFX module path. Truyền `<absolute-latexmk-path> <new-output-directory>` cho `com.overleaf.client.compiler.CompilerSmoke` hoặc `com.overleaf.client.ui.CompilerUiSmoke`. Phải dùng thư mục output mới mỗi lần để không làm sai phép đo cold build. Các `.cmd` trong `target/` chỉ là helper riêng máy này, không phải script phát hành.
+
+### 17.5 Giới hạn còn lại của tiêu chí Compile
+
+- Chưa có Typst, tùy chọn shell-escape trong UI, quản lý nhiều phiên bản TeX tự động hoặc profiling CPU/RAM. Dùng executable path để chủ động chọn bộ TeX đã cài.
+- PDF preview trong app vẫn là Canvas mô phỏng; PDF thật mở ngoài app. Cải thiện tiêu chí preview/SyncTeX là phần việc riêng, chưa làm trong mục này.
+- Thời gian thực tế tùy máy/package/document. Không tuyên bố app nhanh hơn Overleaf, compile vô hạn theo mặc định hoặc tận dụng toàn bộ CPU.
+- Error Explainer dựa vào rule và lỗi dạng file:line; lỗi log không có định dạng này có thể chỉ nhận giải thích chung theo exit code. Không phải AI chẩn đoán mọi lỗi.
+
+## 18. Sửa lỗi “Không chạy được latexmk” từ ảnh kiểm thử
+
+Ngày **01/11/2026**, cùng nhánh `feat/m1-gui-client` và working tree mục 17.
+
+- Ảnh hiển thị thông báo startup cũ, không có dòng log executable/timeout và giải thích mới. Đây là lỗi khởi động compiler, không phải lỗi công thức LaTeX. Không tự kill các tiến trình Java đang chạy của người dùng; phải lưu file rồi khởi động lại app sau khi build.
+- Thiếu sót trong bản mục 17: khi Settings để trống, chỉ gọi `latexmk` trên PATH; bộ portable trong `target/TinyTeX` không tự được tìm thấy. Các smoke trước đã truyền đường dẫn tường minh nên chưa bao phủ trường hợp này.
+- **M2:** thêm `compiler/LatexToolchain.java`: ưu tiên đường dẫn đã cấu hình → `OVERLEAF_LATEXMK` → executable trên PATH → portable trong workspace/ancestor (hỗ trợ chạy từ module client) → các thư mục TinyTeX/MiKTeX phổ biến. Không ghi cấu hình cá nhân, không tải package tự động hoặc sửa PATH hệ thống.
+- **M1:** `AppSettings.compileOptions()` dùng resolver; Settings cập nhật mô tả “để trống để tự tìm”. **M3/build:** launcher Windows thêm bin portable vào PATH của riêng tiến trình nếu có.
+- Thêm **4 `LatexToolchainTest`** kiểm tra ưu tiên cấu hình/PATH, environment override, không có toolchain và tự tìm portable từ module client. `CompilerUiSmoke` đổi sang **không lưu đường dẫn** và kiểm tra tự nhận, compile UI, giải thích tiếng Việt và Stop. Kết quả **76/76 test đạt**, smoke UI đạt; dữ liệu thử mới `target/compiler-ui-smoke-03`, log `target/compiler-ui-smoke.log`.
+- Đã đọc source test của người dùng để tái hiện: chỉ sao chép `Untitled project/main.tex` từ thư mục dự án local sang `target/user-compile-repro/`, không sửa file gốc. Tài liệu dùng nhiều package hơn mẫu nhỏ ở mục 17. Thêm vào TinyTeX portable: `setspace`, `fancyhdr`, `enumitem`, `multirow`, `pgfplots`, `algorithms`, `algorithmicx`, `mathtools`, `caption`, `listings`, `microtype` (các package phổ biến khác đã có).
+- Bản sao nguyên nội dung trong thư mục mới **`target/user-compile-repro-02`** đã compile thành công bằng **pdfLaTeX**, qua `LatexCompilerService` và resolver với cấu hình trống. Log `target/user-compile-replay.log`: `USER_DOCUMENT_PDF_OK`, **6741 ms**; PDF `target/user-compile-repro-02/build/main.pdf`. Đây là kết quả trên chính tài liệu người dùng, không chỉ mẫu smoke nhỏ. Chưa kiểm tra hình thức từng trang bằng mắt.
+- Khi vừa cài package sau một lần lỗi, latexmk có thể giữ kết quả lỗi cũ trong cache dù báo up-to-date. Lần tái hiện dùng thư mục copy mới để tách cache; nếu gặp trong app, dùng menu **Clean temporary files** rồi compile lại. Không tự xóa output/dữ liệu của người dùng.
+
+Cách dùng trên máy hiện tại: lưu file, đóng cửa sổ app cũ, chạy `.\scripts\run-client.bat`. Có thể để đường dẫn latexmk trong Settings trống, app tự nhận `D:\Overleaf-app\target\TinyTeX\bin\windows\latexmk.exe`. Kiểm tra Build output phải có `[BUILD] latexmk: ...` và timeout. Nội dung preview Canvas vẫn là mô phỏng; xem PDF compile thật bằng menu mở PDF hoặc file `build/main.pdf`.
+
+## 19. Preview đúng PDF và export cùng kết quả compiler
+
+Ngày **01/11/2026**, theo yêu cầu tránh làm người dùng nhầm preview sai với lỗi LaTeX. Cùng nhánh `feat/m1-gui-client`, chưa commit/push. Mục này thay thế giới hạn Canvas ở các mục trước.
+
+### 19.1 Hành vi sản phẩm
+
+- **Preview đọc PDF thật từ lần compile thành công**, giữ nguyên nội dung/trang/kích thước/rotation/font trong PDF; bỏ hoàn toàn lớp parser/vẽ LaTeX `PdfCanvasPane` (~700 dòng) khỏi `OverleafFxApp`.
+- Dùng [Apache PDFBox 3.0.8](https://pdfbox.apache.org/3.0/getting-started.html), chỉ thêm dependency vào client. Render ở worker nền, một trang mỗi lần, có bộ đếm trang, trước/sau, zoom và Fit. Không còn giới hạn 50 trang của bản Canvas; không nạp ảnh của toàn bộ tài liệu cùng lúc.
+- **Export PDF…** trên preview hoặc menu `⋯` chép nguyên bytes của PDF thành công đang xem; không chụp màn hình, không tái dựng PDF từ ảnh hoặc parser. File xuất giữ chất lượng/vector/font của kết quả compiler.
+- Thông báo **xanh**: PDF đã biên dịch thành công, có thể xuất. **Vàng**: nguồn đã đổi/đang compile/bản cũ. **Đỏ**: compile hoặc render thất bại. Nếu còn PDF thành công trước đó thì tiếp tục cho xem, nhưng ghi rõ là bản cũ và khóa xuất.
+- Mới mở/đổi dự án phải compile để xác nhận PDF; không mặc nhiên tin file `build/main.pdf` cũ. Sửa bất kỳ file editor, đổi engine, sửa từ mạng hoặc thay dependency trên đĩa đều làm preview cũ. Thành công của compile thuộc workspace trước không được gán sang workspace mới.
+- Lỗi compile không được đưa PDF tạm/partial vào preview hoặc Export. Menu mở PDF và đường mở `build/main.pdf` trong cây file cũng dùng kiểm tra phiên bản hiện tại; PDF đầu vào khác trong cây file vẫn mở bình thường.
+
+### 19.2 File và trách nhiệm
+
+| Vai trò | File | Nội dung |
+| --- | --- | --- |
+| **M2 — artifact PDF** | `client/.../compiler/PdfSnapshot.java` (mới) | Giữ snapshot byte bất biến, đọc/validate bằng PDFBox, render đúng page crop box/rotation, xuất bytes bằng temp + atomic move khi filesystem hỗ trợ. Compile sau ghi đè file build không làm đổi snapshot đang xem. |
+| **M2 — tính mới của nguồn** | `compiler/ProjectInputs.java` (mới), `LatexCompilerService.java` | SHA-256 tên/nội dung file input trong project, loại `build/` và `.git/`. Compiler gắn fingerprint trước compile vào `CompileResult`; UI so lại khi nhận PDF. Không chỉ dựa vào timestamp/kích thước. I/O/hash chạy nền. |
+| **M1 — viewer** | `ui/PdfPreviewPane.java` (mới) | Viewer PDF thật, điều khiển trang/zoom, trạng thái và nút Export. Render queue giới hạn, generation bỏ kết quả render cũ; render lỗi hiển thị lỗi và khóa xuất. |
+| **M1 — điều phối** | `ui/OverleafFxApp.java` | Bỏ nested Canvas/parser, nối compile thành công → snapshot → viewer; revision + workspace generation; stale/error state; save dialog Export PDF, kiểm tra fingerprint và FX state trước xuất; mở external viewer từ snapshot tạm thay vì file build có thể bị ghi đè. |
+| **M2 — watcher** | `workspace/WorkspaceWatcher.java` | Theo dõi thêm hình/font/PDF dữ liệu đầu vào, `.csv/.dat`, style bibliography, `.lua/.tikz`…; vẫn bỏ qua thư mục build/ẩn. Tạo/đổi tên/xóa file từ UI cũng invalidates PDF. |
+| **M1/build** | `client/pom.xml` | PDFBox 3.0.8, transitively pdfbox-io/fontbox/commons-logging. Không thêm dependency PDFBox vào common/server hoặc wire protocol. |
+| **Testing** | `compiler/PdfSnapshotTest.java` (mới) | 5 test: kích thước/trang quay/pixel thật; export byte-identical dù compiler ghi đè output; PDF/page/zoom sai; fingerprint bỏ qua build nhưng nhận sửa dependency cùng size/mtime; rename/delete binary asset. |
+| **Testing UI** | `ui/PdfPreviewUiSmoke.java` (mới) | Main cần desktop + TeX thật, dùng bản sao source và home mới. So mẫu pixel của các trang preview với PDF renderer; file xuất giống byte-for-byte, stale/error recovery, đổi project. Không tự chạy bằng Surefire. |
+
+Export kiểm tra lại input trên đĩa và revision trên FX thread trước ghi. Lỗi ghi file (quyền/disk full) báo riêng, không tự kết luận nguồn sai. Bộ kiểm tra input chỉ bao phủ file trong project; không theo dõi tự động thay đổi TeX distribution/font hệ thống hoặc dependency nằm ngoài project. Nếu thay các thành phần đó thì compile lại.
+
+### 19.3 Kiểm chứng
+
+- Maven chọn lọc **81/81 đạt** = 76 test mục 18 + 5 `PdfSnapshotTest`; không gọi MongoDB. Log `target/pdf-preview-tests.log`.
+- Smoke JavaFX trên **bản sao đúng tài liệu test người dùng**, compile bằng pdfLaTeX ra **7 trang**. Mẫu pixel của trang 1–4 khớp với render PDF; ảnh minh chứng **`target/pdf-preview-ui-02/preview.png`** là trang 4 có công thức/bảng đúng layout.
+- File **`target/pdf-preview-ui-02/exported.pdf`** giống byte-for-byte với output compiler được preview; có kiểm tra `Files.mismatch(...) == -1`.
+- Chỉnh source khóa xuất ngay; cố xuất stale PDF không sinh file; compile lỗi giữ snapshot thành công cũ, không nhận PDF partial; sửa lỗi và compile lại thay snapshot; đổi project xóa snapshot. Kết quả `PDF_PREVIEW_UI_SMOKE_OK`, log `target/pdf-preview-ui.log`.
+- Đã xem ảnh chụp UI trang có công thức/bảng. Không tuyên bố chứng minh mọi PDF/font hoặc mọi lỗi nội dung LaTeX: viewer thể hiện kết quả compiler; không kiểm tra đúng/sai về mặt khoa học của công thức. Các cảnh báo LaTeX vẫn cần đọc trong Build output.
+- Source/dữ liệu gốc của người dùng không bị sửa; helper, ảnh, PDF thử và cache đều ở `target/` bị ignore. Chưa chạy toàn bộ `UiSmoke` cũ; UI PDF có smoke riêng như trên.
+
+### 19.4 Cách sử dụng và chạy lại
+
+Lưu file và đóng app cũ, chạy `.\scripts\run-client.bat`, mở dự án rồi F5/Ctrl+Enter. Chờ trạng thái preview xanh, dùng `‹`/`›` chuyển trang, zoom/Fit; **Export PDF…** để chọn file đích `.pdf`. Sau sửa source, compile lại trước khi xuất. Build output/preview phân biệt thất bại với bản đã compile thành công.
+
+Chạy test: lệnh ở README có thêm `PdfSnapshotTest`. Chạy smoke: build test-classes, classpath gồm client/main + client/test + common + server + dependency PDFBox và module-path JavaFX; main `com.overleaf.client.ui.PdfPreviewUiSmoke <source.tex> <new-home>`. Helper riêng máy này: `target/run-pdf-preview-ui.cmd`; phải đổi home mới mỗi lần.
+
+Giới hạn hiện tại: preview raster cho việc hiển thị (PDF export vẫn nguyên bản vector), một trang mỗi lần; ảnh render giới hạn khoảng 12 triệu pixel và scale tối đa 3 để tránh hết bộ nhớ; snapshot PDF tối đa 128 MiB, vượt giới hạn báo lỗi rõ ràng. Chưa có chọn/copy text trên PDF, annotation hoặc SyncTeX hai chiều; đó là phần phát triển tiếp, không dùng parser Canvas thay thế.
+
+## 20. Sửa nguyên nhân chữ tiếng Việt lỗi khi đổi engine
+
+Ngày 01/11/2026. Tái hiện trên bản sao tài liệu người dùng: pdfLaTeX sinh PDF đúng; XeLaTeX và LuaLaTeX đều trả exit 0 nhưng có hàng loạt `Missing character` cho `ệ`, `đ`, `ư`… vì tài liệu dùng cố định `inputenc`, `fontenc[T5]`, `lmodern` của luồng pdfLaTeX. Xe/Lua đọc UTF-8 trực tiếp; cần nhánh Unicode với fontspec. Nguồn: [LaTeX Project về inputenc](https://www.latex-project.org/news/latex2e-news/ltnews.pdf), [fontspec](https://ctan.org/pkg/fontspec).
+
+- Không tự sửa tài liệu gốc trong `~/OverleafDesktop`. Bản sao đã sửa nằm ở **`target/vietnamese-fixed/main.tex`**: `iftex` tách pdfLaTeX (UTF-8/T5/lmodern) với Xe/Lua (`fontspec`, Latin Modern Roman OpenType cùng font bold/italic). Chọn font theo **tệp `.otf`** để portable Windows không phụ thuộc font đã đăng ký trên hệ điều hành. `literate` trong listings có `{ạ}{{a}}1` làm mất dấu do chính mapping; bản sao đổi thành `\d{a}`.
+- **M1/M2:** `LocalBackend.template()` sinh preamble nhánh engine, bổ sung chọn font OpenType theo tệp. Chỉ dự án mới nhận template mới; tài liệu cũ cần sửa khai báo riêng.
+- **M2:** `LatexCompilerService` thêm `EXIT_MISSING_GLYPHS = -5`; dù exit 0, nếu console hoặc file TeX `.log` có `Missing character:` thì không gọi onSuccess. Kiểm tra `.log` cả khi latexmk dùng cache. Các cảnh báo thường như hyphenation không bị coi là mất ký tự.
+- **M1:** status báo PDF thiếu ký tự; đường onError giữ preview cũ có cảnh báo và khóa Export. `LatexErrorExplainer.explainExit` thêm hướng dẫn T5/fontspec theo engine, tiếng Việt/Anh.
+- Thêm 2 compiler regression và 1 explainer regression: tổng chọn lọc từ 81 → **84/84 đạt**; log `target/pdf-preview-tests.log`. Không tính smoke thật vào số JUnit.
+- Thêm main test **`compiler/VietnamesePdfSmoke.java`**: compile bản sao qua ba engine, kiểm tra không mất glyph, trích xuất PDF rồi chuẩn hóa NFC, kiểm tra các chuỗi `Tài liệu`, `Định lý`, `Tiếng Việt`; render trang 1 để xem.
+- Trong quá trình kiểm tra có crash native XeTeX Windows khi chạy nền. Các thử nghiệm đổi launcher/wrapper không giải quyết ổn định nên **đã bỏ khỏi source runtime**. Bộ TinyTeX portable được cập nhật `xetex` cùng các dependency LaTeX/kernel, chạy lại font cache; regenerate format LuaLaTeX/pdfLaTeX để tránh `Mismatched LaTeX support files`. Chỉ sửa bộ TeX trong `target/`, không đổi cài đặt toàn hệ thống. Log cập nhật `target/xetex-update.log`, format `target/portable-formats.log`.
+- **Kiểm chứng cuối cùng sau cập nhật:** `VietnamesePdfSmoke` chạy qua chính service, cả pdfLaTeX/XeLaTeX/LuaLaTeX đều đạt: **7 trang, 0 missing glyph, đủ 3 chuỗi tiếng Việt có dấu**. Kết quả `target/vietnamese-fixed-check.log`; PDF, text trích xuất và ảnh trang 1 nằm trong `target/vietnamese-fixed-check-09/{PDFLATEX,XELATEX,LUALATEX}/`. Đây là kiểm chứng bản source đã sửa; bản gốc dùng T5 cố định vẫn cần đổi preamble.
+
+Nếu thấy lỗi tiếng Việt ở tài liệu cũ, sửa preamble theo bản sao tương thích; việc đổi compiler trong toolbar không tự chuyển đổi source LaTeX. Không đánh đồng “có file PDF” hoặc exit 0 với “không rơi ký tự”.
+
+## 21. Outline có thể kéo lên/xuống thay vì chiều cao cố định
+
+Ngày 01/11/2026, theo yêu cầu mới của người dùng.
+
+- **M1:** `OverleafFxApp.createLeftPanel()` đặt cây file và Outline trong **SplitPane dọc** (`#file-outline-split`). Kéo thanh ngang lên để mở rộng Outline, kéo xuống để thu lại; cây file và Outline cuộn riêng. Bỏ `prefHeight=180`, `minHeight=120`, `maxHeight=260` cũ; giữ min vùng Outline khoảng 80 px và vùng file khoảng 100 px để tránh mất hẳn nội dung.
+- **M1 — UI:** thêm ký hiệu `↕`, tooltip hướng dẫn kéo; CSS `.sidebar-split` có thanh kéo đủ dày và highlight khi hover.
+- **M1 — Settings:** `AppSettings.OUTLINE_SPLIT` lưu tỷ lệ sau **mouse release**, không ghi file mỗi pixel khi drag. Khôi phục khi tạo sidebar, clamp giá trị và bỏ NaN. Listener không gọi lại applyEditorSettings khi lưu divider, nên không reset engine/cỡ chữ do thao tác resize.
+- **UI smoke thật:** `ui/OutlineUiSmoke.java` dùng home riêng, mở app JavaFX, thay divider và kiểm tra chiều cao tăng/giảm + preference lưu + engine không bị đổi. Kết quả `OUTLINE_UI_SMOKE_OK`, số đo cửa sổ kiểm tra: **241 → 422 → 133 px**, saved ratio ~0.3002. Log `target/outline-ui.log`, dữ liệu `target/outline-ui-02`.
+- Kiểm chứng dựa trên layout/control JavaFX thật và sự kiện thả chuột; chưa phải test Robot kéo bằng tọa độ màn hình. Nút và giới hạn chiều cao đều do SplitPane chuẩn xử lý.
+
+Sử dụng: lưu file, đóng app cũ, chạy `.\scripts\run-client.bat`; ở tab **Files**, kéo thanh ngang ngay trên tiêu đề **OUTLINE**. Tỷ lệ được lưu local để dùng lại.
+
+## 22. Menu tạo dự án, nhập tài liệu và thư mục lưu tùy chọn
+
+Ngày **02/11/2026**, nhánh `feat/m1-gui-client`, nền `b89dbc5` cùng các thay đổi local ở mục 17–21. Chưa commit/push. Đây là chức năng desktop local; không phải API lưu dự án lên MongoDB hoặc server cộng tác.
+
+### 22.1 Đã triển khai và cách dùng
+
+- **Dự án mới / New project** mở menu: dự án trống, nhập ZIP, Word `.docx`, Markdown, kho GitHub công khai, dự án ví dụ, thêm mẫu và thêm đơn vị. Các nhãn, hướng dẫn, lỗi trong luồng mới có tiếng Anh/Việt theo ngôn ngữ UI.
+- **Thêm mẫu dự án** có bài báo, sách, thư trang trọng, bài tập, poster, thuyết trình, báo cáo, CV và luận văn; **Xem tất cả** mở bộ chọn. Các mẫu tạo file LaTeX thật với class/bố cục phù hợp, hỗ trợ tiếng Việt và ba engine. Dự án ví dụ có `main.tex`, `sections/introduction.tex`, `references.bib` và citation thật.
+- Hộp thoại tạo/nhập cho sửa trực tiếp đường dẫn hoặc dùng DirectoryChooser. Đường dẫn là **thư mục cha**; app tạo thư mục con theo tên dự án, tự thêm hậu tố khi trùng tên, không ghi đè dự án cũ. Có thể cuộn nội dung hộp thoại khi cửa sổ thấp.
+- **Cài đặt → Dự án** hoặc **Dự án mới → Thư mục dự án mặc định…** đổi vị trí dùng cho lần tạo tiếp theo. Các dự án cũ không bị chuyển theo và vẫn có trong danh sách.
+- Trang chủ → nhấp phải dự án → **Đổi thư mục lưu…** chuyển dự án hiện có. Sao chép qua staging ở đích, đối chiếu bytes từng file, rồi giữ thư mục nguồn trong `<thư mục cha cũ>/.overleaf-moved-backups/<tên>-<UUID>`. Cách này không cần rename trực tiếp giữa hai ổ đĩa; kiểm thử hiện tại chưa xác nhận bằng hai ổ vật lý khác nhau. Không tự dọn bản phục hồi.
+- **Thêm đơn vị…** lưu tên trường/cơ quan local, điền vào tác giả của template mới, escape ký tự LaTeX. Không liên kết tài khoản với tổ chức trên Overleaf web.
+
+### 22.2 File, folder và vai trò bàn giao
+
+| Nhóm / member phụ trách | File và phần việc mới |
+| --- | --- |
+| M1 — `client/.../ui/` | `HomeView`: menu, form, template gallery, chọn/chuyển thư mục, affiliation, task nền có hủy và lỗi song ngữ; `SettingsView`: trang Dự án; `AppSettings`: truy cập ProjectGateway; `UiModal`: tooltip đóng bản dịch; CSS menu và vùng cuộn |
+| M1 — tích hợp workspace | `OverleafFxApp`: nhớ dự án bằng đường dẫn đầy đủ thay vì chỉ tên; cập nhật watcher/file manager khi đổi tên/chuyển, bỏ PDF cũ của vị trí trước |
+| M1/M2 — `ui/backend/` local | `NewProjectRequest`: loại tạo/nhập và vị trí; `ProjectGateway`: contract mới; `LocalBackend`: catalog vị trí ngoài mặc định, tạo staging, đổi mặc định, rename/delete/move tại vị trí thật; `ProjectFiles`: copy, xác minh, dọn staging sở hữu bởi app |
+| M2 — nhập/template | `ProjectImports`: ZIP, Git clone, Pandoc và giới hạn; `ProjectTemplates`: 9 nhóm mẫu + ví dụ; `ProjectFailure`: mã lỗi và thông điệp Anh/Việt |
+| M2 — `compiler/` | `CompileWorkspace` + `LatexCompilerService`: tránh lỗi latexmk/Perl trên Windows khi đường dẫn dự án chứa ký tự Unicode bằng bản sao tạm ASCII; PDF thành công và log trả về `build/` thật, fingerprint vẫn lấy nguồn gốc |
+| M5 — kiểm thử / cả nhóm đọc | `ProjectWorkflowTest` (12 test), `CompileWorkspaceTest` (2 test); `ProjectImportSmoke`, `NewProjectUiSmoke`; cập nhật `UiSmoke` để chọn mục Dự án trống sau khi mở menu mới |
+
+Phân công trên là phạm vi module cần bàn giao, không khẳng định member đã tự viết các thay đổi trong phiên AI này. Không sửa giao thức M3/M4 hay schema MongoDB M5.
+
+### 22.3 Dữ liệu và công cụ
+
+- Catalog `~/OverleafDesktop/.app/projects.properties` lưu đường dẫn dự án; `.app/settings.properties` lưu thư mục mặc định, last-project bằng đường dẫn và affiliation. Catalog giữ được hai dự án cùng tên ở hai nơi. Không nên chuyển bằng Explorer vì app chưa tự dò vị trí bị đổi bên ngoài.
+- Nhập ZIP hỗ trợ bọc ngoài một folder, giữ tài nguyên; cần `main.tex` ở root hoặc root `.tex` có `\documentclass` để tạo bản `main.tex`. Chặn traversal, đường dẫn tuyệt đối, Windows ADS/device names, mục trùng không phân biệt hoa/thường; tối đa **10.000 mục / 500 MiB giải nén**. Thất bại không công bố dự án dở.
+- Word chỉ `.docx`, Markdown UTF-8; nguồn tối đa **50 MiB**, giữ bản gốc trong `source/`. Pandoc xuất LaTeX standalone, trích media, font T5/Unicode; chuyển đổi có thể mất định dạng phức tạp. Không hứa PDF giống từng pixel với Word. Tham khảo [Pandoc Manual](https://pandoc.org/MANUAL.html).
+- Pandoc tìm theo `OVERLEAF_PANDOC`, `target/pandoc/pandoc.exe`, rồi PATH. Đã chuẩn bị bản portable **3.13** từ [release chính thức](https://github.com/jgm/pandoc/releases/tag/3.13); SHA-256 ZIP `23e1f2e978a3df80db8bf65c9c59534f41a23140480cfb4f783a882ab7dc6a4e`. Portable ở `target/` chỉ phục vụ máy hiện tại, không được commit.
+- GitHub cần Git trên PATH; chỉ nhận URL HTTPS `github.com/owner/repo[.git]`, không credential/query/fragment, shallow clone, không recurse submodule, tắt credential prompt/hooks cục bộ. Chưa hỗ trợ kho private hay URL trỏ vào nhánh/subfolder. Không chạy script của kho sau nhập.
+- Tiến trình nhập có timeout **120 giây**, xử lý nền, hủy sẽ dừng process tree; không tự compile dự án vừa tải. Tài liệu/engine có thể cần cài thêm package TeX vào môi trường người dùng.
+- Windows với đường dẫn Unicode dùng workspace tạm để tránh lỗi `File::Path Invalid argument` của Perl/latexmk. Build tạm này chưa giữ cache giữa các lần compile; thư mục temp của Java cần đường dẫn ASCII. Đường dẫn ASCII bình thường vẫn compile tại chỗ và giữ cache. PDF lỗi không thay bản PDF tốt trước đó.
+
+### 22.4 Kiểm chứng thực tế
+
+- **98/98 JUnit chọn lọc đạt**, không skip/failure/error: common 9 + server 21 + client 68. Log `target/new-projects-tests.log`; lệnh README đã gồm `ProjectWorkflowTest`, `CompileWorkspaceTest` và regression compiler/workspace/network trước đó.
+- **PDF thật:** `ProjectImportSmoke` tạo và compile thành công cả **9 template tiếng Việt** trong đường dẫn có dấu, dự án ví dụ có BibTeX, chuyển và compile Word/Markdown có tiếng Việt/công thức; PDFBox trích được `Tiếng Việt`, bản nguồn không đổi bytes. Clone được kho công khai `https://github.com/gcstinchfield/latex-paper-template`, có `main.tex` và `.git`. Log `target/project-import-smoke.log`, kết quả `PROJECT_IMPORT_SMOKE_OK`; dữ liệu `target/project-import-smoke-04`.
+- **JavaFX thật:** `NewProjectUiSmoke` kiểm menu Anh/Việt và đủ nhóm mẫu, tạo dự án ở thư mục riêng, đổi mặc định vẫn thấy dự án cũ, chuyển dự án và lưu thư mục qua Settings. Kết quả `NEW_PROJECT_UI_SMOKE_OK`; log `target/new-project-ui-smoke.log`, dữ liệu `target/new-project-ui-smoke-03`. Dùng control/event thật với home cô lập, chưa phải Robot bấm bằng tọa độ. Không chạy lại toàn bộ `UiSmoke` cũ trong lần này.
+- Chạy smoke bằng main class tương ứng trong `client/src/test/java`, classpath client test/main + common + PDFBox; smoke UI thêm JavaFX module path. Luôn truyền thư mục test home **chưa tồn tại**; GitHub smoke tùy chọn URL repo công khai. Các `.cmd` thử nghiệm dưới `target/` là helper local, không phải script phân phối.
+
+Sau cập nhật, đóng app cũ rồi chạy `.\scripts\run-client.bat`. Không cần chuyển hoặc xóa dự án người dùng đang có để bật tính năng.
+
+## 23. Workspace: thêm thư mục, tệp, upload và lấy tệp từ nguồn khác
+
+Ngày **02/11/2026**, cùng working tree `feat/m1-gui-client`; chưa commit/push. Hoàn thành yêu cầu hộp thoại Add files theo ảnh và thao tác trong thư mục workspace. Giữ các thay đổi compiler/PDF/project từ trước.
+
+### 23.1 Hành vi và sử dụng
+
+- Sidebar có **Thêm tệp / Add files**, **Thư mục mới / New folder**, **Tải lên / Upload**. Nhấp phải thư mục cũng có ba thao tác này. Thư mục đang chọn (hoặc thư mục cha của tệp đang chọn) được điền sẵn làm đích; có thể chọn/nhập thư mục khác, để trống dùng gốc.
+- Hộp thoại rộng có menu bên trái: **Tệp mới**, **Thư mục mới**, **Tải lên**, **Từ dự án khác**, **Từ URL bên ngoài**, **Thư viện tài liệu (.bib)**; tên/hướng dẫn/lỗi/thao tác mới có Anh/Việt. Đổi ngôn ngữ cập nhật cả các nút workspace mới và menu thêm tệp. Thẻ nội dung có vùng cuộn.
+- Tạo tệp trống; nếu tên cuối chưa có đuôi, thêm `.tex`. Chấp nhận đường dẫn con như `chapters/intro.tex`, tự tạo thư mục cha. Tạo thư mục rỗng vẫn hiện ngay trong cây và có thể nhấp phải để thêm tệp.
+- Upload nhiều tệp hoặc cả thư mục qua FileChooser/DirectoryChooser; kéo thả từ hệ điều hành hoặc **Dán tệp / ảnh**. `Ctrl+V` khi vùng thả có focus cũng nhận clipboard. Danh sách chờ cho bỏ mục trước khi xác nhận upload. Upload folder giữ tên folder, cấu trúc và folder rỗng; file nhị phân giữ nguyên bytes. Ảnh clipboard mã hóa PNG với tên riêng.
+- **Từ dự án khác:** chọn trong các dự án local đã đăng ký, chọn tệp, đổi tên tại dự án đích. Bật **Chọn từ tệp đầu ra (build)** để lấy PDF/log/tệp build. Sao chép độc lập, không tạo liên kết hay tự cập nhật khi nguồn đổi.
+- **URL:** nhập HTTPS trực tiếp và tên đích; theo tối đa 5 redirect HTTPS, không nhận credentials trong URL, yêu cầu HTTP 200; tối đa 100 MiB, connect/read timeout 15 giây. Đây là tải tệp, không xử lý trang chia sẻ/đăng nhập cloud, không thực thi tệp tải về. Hủy dừng khi vòng đọc kiểm tra ngắt; một read đang chờ có thể cần đến timeout.
+- **Thư viện tài liệu:** tải file `.bib` đã xuất từ ReadCube/Zotero/Mendeley. Không có OAuth hay đồng bộ tài khoản các dịch vụ đó; không hiển thị các kết nối giả. Các folder/tài nguyên mới lưu local, không mở rộng phòng cộng tác vốn chỉ đồng bộ `main.tex`.
+
+### 23.2 File và vai trò
+
+| Phần / member phụ trách bàn giao | Thay đổi |
+| --- | --- |
+| M1 — `client/.../ui/AddFilesDialog.java` | Hộp thoại dùng chung các điểm vào, menu trái, thư mục đích, các form, queue upload, drag/drop, clipboard PNG, chọn dự án/đầu ra, URL, `.bib`; Task nền cho copy/download, lỗi dịch và hủy |
+| M1 — `OverleafFxApp.java` | Nút workspace và context menu thư mục; dùng selected directory; hiển thị thư mục rỗng, tệp ảnh/font/tài nguyên, tới 32 cấp; bỏ symlink khỏi cây; file nhị phân không đưa vào text editor, mở ngoài bằng nhấp đúp; thêm tệp làm PDF cũ không còn hợp lệ |
+| M1 — `UiModal.java`, theme CSS | `width()` responsive cho hộp thoại rộng, menu trái/vùng thả/vùng cuộn theo style app |
+| M2 — `client/.../workspace/WorkspaceFiles.java` | Kiểm đường dẫn, tạo folder/file, lập kế hoạch nhập, staging, không ghi đè, rollback các mục mới khi lỗi, giới hạn bytes/số mục, download HTTPS |
+| M5 — kiểm thử / cả nhóm đọc | `WorkspaceFilesTest` (12 test), `WorkspaceFilesUiSmoke`; cập nhật control mới trong `UiSmoke` để test cũ gọi đúng tên field/nút |
+
+Đây là phạm vi bàn giao theo module, không xác nhận member đã tự viết thay đổi trong phiên AI. Không đổi protocol M3/M4 hay database.
+
+### 23.3 Tính toàn vẹn và giới hạn
+
+- Đường dẫn nằm trong dự án; từ chối traversal, tên rỗng/ẩn, device name Windows, ADS, segment `build`, ký tự cấm và symlink đích. Upload không theo symlink nguồn. Root `build/` được dành cho compiler; muốn lấy output từ dự án khác cần lưu với tên ngoài build.
+- Không ghi đè file/folder đã có; từ chối tên trùng trong cùng lô kể cả khác hoa/thường. Kiểm tra toàn bộ kế hoạch trước khi ghi; dữ liệu copy vào staging ẩn `.overleaf-upload-*` trước khi công bố. Nếu công bố lỗi, chỉ rollback các file/folder vừa tạo, giữ mục cũ. Staging lỗi còn sót bị ẩn khỏi cây; không xóa dữ liệu nguồn.
+- Mỗi lô tối đa **10.000 mục / 500 MiB**, thư mục tính vào số mục; ảnh dán giới hạn **25 triệu pixel** trước khi mã hóa. Chưa có luồng ghi đè có xác nhận; gặp trùng cần đổi tên hoặc bỏ mục trong queue.
+- Không tự thêm `\input`/`\includegraphics`/bibliography vào `main.tex`, không tự compile sau upload. Người dùng thêm lệnh sử dụng tài nguyên rồi biên dịch như bình thường.
+- Build output chỉ hiện PDF trong cây chính; chọn output để sao chép có thể lấy các file khác. File không thuộc nhóm text hỗ trợ được mở bằng ứng dụng hệ điều hành khi nhấp đúp; app không tự mở binary vừa upload.
+
+### 23.4 Kiểm chứng
+
+- **110/110 JUnit chọn lọc đạt**, không failure/error/skip: common 9 + server 21 + client 80; `target/workspace-files-tests.log`. Test mới kiểm Unicode/thư mục rỗng, path traversal/tên cấm, không ghi đè, giữ hierarchy/bytes nhị phân, conflict cả lô, trùng hoa/thường, copy output đổi tên, chặn copy folder chứa project, rollback publish lỗi, giới hạn số mục, URL sai và hủy.
+- `WorkspaceFilesUiSmoke` trên JavaFX thật: tạo folder và file đúng folder đang chọn, upload folder có ảnh và folder rỗng, đối chiếu bytes ảnh, encode ảnh dán PNG và đối chiếu pixel, sao chép `.tex` tiếng Việt và PDF output, từ chối trùng tên, bản dịch VI/EN và cập nhật sidebar. Đã tải HTTPS thật README Pandoc 3.13 vào dự án thử và kiểm nội dung. Log `target/workspace-files-ui-smoke.log`: `HTTPS_DOWNLOAD_OK`, `WORKSPACE_FILES_UI_SMOKE_OK`.
+- Home cô lập `target/workspace-files-ui-smoke-04`, ảnh riêng scene ứng dụng: `upload-dialog.png`, `copy-dialog.png`, `new-file-dialog.png`; đã kiểm tra bố cục. Smoke gọi control/event và handler với nguồn test, không thao tác clipboard thật của người dùng, chưa dùng Robot kéo thả hoặc tự bấm native file chooser. Không chạy lại toàn bộ `UiSmoke` cũ.
+- Chạy main `WorkspaceFilesUiSmoke <home-chưa-tồn-tại> [url-test]` với JavaFX module path và client/test/common/server/PDFBox classpath như smoke mục 22. URL test tùy chọn đang kiểm nội dung có `pandoc`; dùng `https://raw.githubusercontent.com/jgm/pandoc/3.13/README.md`. Script helper local `target/run-workspace-files-ui-smoke.cmd` không được Git theo dõi.
+
+Đóng tiến trình app cũ, chạy `.\scripts\run-client.bat` để nhận code mới. Các dự án đang có không cần nhập lại.
+
+## 24. Sửa biên dịch ZIP nhiều chương và thông báo exit code 12
+
+Ngày **02/11/2026**, theo báo lỗi khi nhập `D:\download\latex-test-project-v2.zip`, cùng working tree chưa commit/push. Chỉ đọc ZIP gốc, nhập/compile các bản sao dưới `target/`, không sửa tệp gốc hoặc dự án đang dùng.
+
+### 24.1 Nguyên nhân đã tái hiện
+
+1. TinyTeX portable ban đầu thiếu `csquotes.sty`; log có `! LaTeX Error: File 'csquotes.sty' not found` trước `preamble.tex:15: Emergency stop`. ZIP còn yêu cầu titlesec, siunitx, biblatex/Biber, cleveref… Đây là phụ thuộc môi trường TeX, không phải hỏng ZIP/UTF-8 khi giải nén.
+2. Sau bổ sung gói, `main.tex:42` lỗi `I can't write on file 'chapters/01-introduction.aux'`. Compiler dùng `-outdir=build` nhưng chỉ tạo `build/`, chưa tạo `build/chapters`, `build/appendix`; TeX không tự tạo các thư mục con cho `\include`.
+3. Parser cũ chỉ đọc `file:line: message`, bỏ mất lỗi bắt đầu bằng `!`, nhưng nhận cả `runscript.tlu:933: command failed with exit code 12`. UI giải thích thông báo tổng kết của launcher như lỗi tài liệu nên gợi ý ngoặc nhọn không phù hợp.
+
+### 24.2 Thay đổi và vai trò
+
+- **M2 — `CompileWorkspace.prepareOutputDirectories`:** tạo cây thư mục đầu ra tương ứng các thư mục nguồn trước khi khởi chạy TeX; bỏ qua `build/`, thư mục ẩn và không đi theo symlink. Dùng cho cả build tại chỗ và bản staging ASCII của đường dẫn Unicode. Không thay đổi `\include`/tệp nguồn.
+- **M2 — `LatexCompilerService`:** gọi chuẩn bị output; nếu TeX log cũ có lỗi thì thêm `-g` cho lần retry để tránh latexmk giữ thất bại sau khi thư mục/gói đã được sửa. Build bình thường không lỗi vẫn dùng cache. Khi output thất bại không có lỗi phân tích được, bổ sung chẩn đoán từ TeX log (đọc tối đa 16 MiB).
+- **M2/M1 — parser và UI:** nhận cả lỗi `!`, gắn vị trí từ dòng chẩn đoán tiếp theo nếu có; bỏ lỗi launcher `runscript.tlu` và thông báo `command failed with exit code`, bỏ fatal/emergency phụ khi đã có nguyên nhân, gộp lỗi lặp. UI hỗ trợ lỗi chưa biết file/số dòng, không in vị trí giả `:0`.
+- **M1 — `LatexErrorExplainer`:** giải thích lỗi không ghi được `.aux`; nếu nhận riêng thông báo wrapper thì nói rõ exit code chỉ là tổng kết và hướng dẫn tìm lỗi đầu tiên, không đoán thiếu ngoặc.
+- **M5 — kiểm thử:** thêm 7 regression (4 compiler/parser/retry, 1 output-directory, 2 explainer); `ImportedZipCompileSmoke` nhận ZIP gốc và home thử mới, chạy ba engine, kiểm PDFBox và đối chiếu bytes toàn bộ tệp nhập.
+- **Môi trường local:** bổ sung vào `target/TinyTeX` các gói còn thiếu `csquotes`, `titlesec`, `siunitx`, `biblatex`, `biber` (kèm binary Windows), `cleveref`, `logreq`; xác nhận pgfplots/listings/enumitem/setspace/fancyhdr/mathtools/caption/booktabs/tools đã có. `xspace.sty` thuộc gói `tools`, không phải tên package tlmgr riêng. Không đổi PATH hệ thống hoặc tự tải gói khi người dùng bấm compile; portable không được Git theo dõi.
+
+### 24.3 Kiểm chứng và bằng chứng
+
+- Tái hiện thiếu gói: `target/user-zip-v2-repro-01/PDFLATEX.log`; tái hiện lỗi aux sau bổ sung gói: `target/user-zip-v2-repro-02/PDFLATEX.log`.
+- ZIP nguyên gốc nhập qua `LocalBackend`/`ProjectImports`, compile bằng service thật: **pdfLaTeX, XeLaTeX, LuaLaTeX đều thành công, mỗi PDF 13 trang**. PDFBox tìm được `Dự án kiểm thử`, `Giới thiệu`, `Dữ liệu thô`, `Tài liệu tham khảo`, không có citation `[?]`; `build/main.bbl` có entry `knuth1984` của Biber. Các tệp nguồn/ảnh/CSV sau import và compile vẫn đúng bytes trong ZIP.
+- Log `target/imported-zip-smoke.log`: `IMPORTED_ZIP_COMPILE_SMOKE_OK`; PDF/text/log từng engine ở `target/user-zip-v2-verified-01/evidence/` (`PDFLATEX.pdf`, `XELATEX.pdf`, `LUALATEX.pdf`). Smoke này kiểm tài liệu thật, không tính vào số JUnit.
+- **117/117 JUnit chọn lọc đạt**, common 9 + server 21 + client 87, không failure/error/skip; log `target/workspace-files-tests.log`. Lệnh README giữ nguyên nhóm test vì các regression mới nằm trong class đã có.
+- Main smoke có thể chạy `ImportedZipCompileSmoke <zip> <home-chưa-tồn-tại>` với classpath client/main/test + common + PDFBox; đây là fixture riêng cho ZIP nhiều chương người dùng, kiểm các cụm tiếng Việt và BibLaTeX nêu trên, không phải validator chung cho mọi ZIP.
+
+Cách dùng sau sửa: đóng app cũ, chạy `.\scripts\run-client.bat`, mở lại dự án đã nhập và **Recompile**. Không cần sửa nguồn hoặc nhập lại ZIP. Các phụ thuộc portable chỉ được cài trên máy kiểm thử; máy mới cần cài TeX và các package tương ứng.
+
+## 25. Preview PDF cuộn liên tục và liên kết nội bộ
+
+Ngày **02/11/2026**, theo ảnh và yêu cầu cuộn qua các trang, bấm mục lục/tham chiếu để tới tiêu đề. Cùng working tree `feat/m1-gui-client`, chưa commit/push.
+
+### 25.1 Sử dụng và hành vi
+
+- Sau Recompile thành công, preview xếp các trang thật theo chiều dọc, có khoảng cách và bóng giữa trang. Cuộn chuột/thanh cuộn để xem trang tiếp theo, không cần nhấn nút chuyển từng trang. Bộ đếm cập nhật theo trang chiếm nhiều vùng nhìn nhất. Vẫn giữ `‹`/`›`, zoom và Fit.
+- Bấm liên kết mục lục, tham chiếu chương/hình/bảng trong PDF để tới đúng trang và tọa độ dọc của tiêu đề/đích liên kết. `↶` quay lại vị trí trước khi bấm liên kết; lịch sử tối đa 100 vị trí, reset khi đổi PDF/dự án.
+- Lấy link annotation/đích thật từ PDF: direct destination và GoTo, kể cả named destinations của `hyperref`. Không suy ra đích từ màu chữ hay đoán tiêu đề. Tài liệu cần tạo link sẵn trong PDF; thường dùng `\usepackage[colorlinks=true]{hyperref}` và compile đủ các lượt.
+- Chưa mở URI website, tệp ngoài hoặc chạy action/script của PDF. Các destination không có tọa độ heading được đưa về đầu trang; không phải SyncTeX giữa source và PDF, không bổ sung text selection/search.
+- Export tiếp tục chép đúng bytes của snapshot PDF; nguồn đổi hoặc compile lỗi vẫn đánh dấu bản cũ và khóa xuất. Cuộn/zoom/bấm liên kết không thay PDF hay mở khóa xuất cho bản cũ.
+
+### 25.2 File và vai trò
+
+| Member / phần bàn giao | Thay đổi |
+| --- | --- |
+| M2 — `compiler/PdfSnapshot.java` | Metadata immutable cho kích thước trang và links; resolve named destination/GoTo; chuyển rectangle và tọa độ PDF sang hệ tọa độ crop box đã xoay; bỏ annotation hỏng/không hỗ trợ, không thực thi actions |
+| M1 — `ui/PdfPreviewPane.java` | Các khung trang liên tục; giữ hình dạng trang trước khi render; tính vùng nhìn, render tuần tự nền; overlay Hyperlink đúng vị trí; jump/Back, zoom/Fit và generation guard khi đổi PDF/reset |
+| M1 — theme | CSS trang trắng/bóng và vùng hover/focus nhẹ cho liên kết, không thay chữ/công thức trong ảnh PDF |
+| M5 — kiểm thử | Thêm 3 `PdfSnapshotTest`: crop/rotation, named links + bỏ URI action, link đích sai không làm hỏng export; `PdfContinuousUiSmoke` mới; chạy lại `PdfPreviewUiSmoke` với tài liệu thật |
+
+Phân công là trách nhiệm module cần bàn giao; không khẳng định từng member tự viết các thay đổi trong phiên AI này. Không đổi compiler command/protocol/database cho tính năng này.
+
+### 25.3 Bộ nhớ và giới hạn kỹ thuật
+
+- Tạo khung trang từ metadata, chỉ render trang đang thấy và các trang lân cận. Những ảnh xa vùng nhìn được bỏ để tránh giữ tất cả trang; một worker render, không tạo hàng đợi vô hạn khi cuộn nhanh.
+- Ngân sách lựa chọn ảnh khoảng **24 triệu pixel**, một trang vẫn bị giới hạn **12 triệu pixel** và scale tối đa 3 như trước. Đây là giới hạn ảnh trang được giữ, không phải tổng heap: PDF bytes, metadata, buffer render/chuyển ảnh còn cần thêm bộ nhớ. PDF vẫn giới hạn 128 MiB.
+- Khi nhảy nhanh, trang có thể hiện placeholder ngắn lúc chờ render. Kích thước khung không đổi khi ảnh tải xong nên tránh cuộn giật. Không tự kéo về đầu mỗi khi một trang render xong.
+- Generation guard bỏ kết quả render cũ sau reset/compile PDF mới. Render lỗi làm trạng thái thất bại và khóa export; một link hỏng được bỏ qua mà không chặn trang còn hợp lệ.
+
+### 25.4 Kiểm chứng
+
+- **120/120 JUnit chọn lọc đạt**, common 9 + server 21 + client 90, không failure/error/skip; log `target/workspace-files-tests.log`.
+- `PdfContinuousUiSmoke` dùng PDF **13 trang** từ ZIP người dùng ở mục 24: cuộn cập nhật trang, pixels đúng PDFBox, cuộn tới cuối và không giữ mọi ảnh; named link từ trang vật lý 3 đến trang 6, overlay khớp tọa độ, tiêu đề đích nằm đúng mép trên viewport, Back trở về; zoom/Fit, khóa xuất stale, export byte-identical và không nhận render cũ sau reset đều đạt. Log `target/pdf-continuous-ui.log`: `PDF_CONTINUOUS_UI_SMOKE_OK`.
+- Ảnh scene riêng đã xem: `target/pdf-continuous-ui-02/continuous-preview.png`, thấy cuối trang mục lục và đầu trang danh sách hình liên tiếp. Smoke gọi scroll/control thật và `Hyperlink.fire`, chưa dùng Robot bấm/kéo theo tọa độ hệ điều hành.
+- Chạy lại **`PdfPreviewUiSmoke` toàn luồng JavaFX app** với `target/vietnamese-fixed/main.tex` **7 trang**: compile thật, pixels các trang, export đúng bytes, sửa nguồn chặn xuất, compile lỗi vẫn giữ bản tốt, compile lại phục hồi và đổi dự án reset preview đều đạt. Log `target/pdf-continuous-regression.log`: `PDF_PREVIEW_UI_SMOKE_OK`; home riêng `target/pdf-continuous-regression-01`.
+- Chạy smoke mới: main `PdfContinuousUiSmoke <pdf-multi-page-có-hyperref> <output-folder-chưa-tồn-tại>` với JavaFX module path + client/test/common/server/PDFBox classpath. Fixture cần có link nội bộ đến heading ở phần trên trang; helper local `target/run-pdf-continuous-smoke.cmd` không được Git theo dõi.
+
+Đóng app cũ rồi chạy `.\scripts\run-client.bat`; mở dự án và Recompile để dùng preview mới.

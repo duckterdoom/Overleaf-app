@@ -35,6 +35,7 @@ public final class UiModal {
     private final Label error = new Label();
     private Node firstFocus;
     private Runnable onClose = () -> { };
+    private Button closeButton;
 
     private UiModal(StackPane host, String iconPath, Tone tone, String title, String subtitle) {
         this.host = host;
@@ -59,6 +60,7 @@ public final class UiModal {
         tile.setMaxSize(38, 38);
 
         Button close = new Button();
+        closeButton = close;
         close.setGraphic(UiSupport.iconBox(UiSupport.CLOSE, 13, Color.web("#8B8B85"), 16));
         close.getStyleClass().add("icon-button");
         close.setTooltip(UiSupport.tooltip("Close"));
@@ -238,6 +240,18 @@ public final class UiModal {
 
     public UiModal onClose(Runnable action) {
         this.onClose = action;
+        return this;
+    }
+
+    public UiModal localized(boolean vietnamese) {
+        closeButton.setTooltip(UiSupport.tooltip(vietnamese ? "Đóng" : "Close"));
+        return this;
+    }
+
+    /** Wide editor dialogs still fit inside a small application window. */
+    public UiModal width(double width) {
+        card.maxWidthProperty().bind(javafx.beans.binding.Bindings.min(width, host.widthProperty().subtract(40)));
+        card.prefWidthProperty().bind(card.maxWidthProperty());
         return this;
     }
 

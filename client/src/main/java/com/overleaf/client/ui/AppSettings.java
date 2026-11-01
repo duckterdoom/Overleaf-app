@@ -23,12 +23,24 @@ public final class AppSettings {
     public static final String AUTO_CLOSE = "autoClose";
     public static final String AUTO_SAVE = "autoSave";
     public static final String COMPILER = "compiler";
+    public static final String LATEXMK_PATH = "latexmkPath";
+    public static final String COMPILE_TIMEOUT = "compileTimeoutSeconds";
+    public static final String OUTLINE_SPLIT = "outlineSplit";
     public static final String LANGUAGE = "language";          // en | vi
 
     private static final String[][] DEFAULTS = {
             {MODE, "light"}, {THEME, "forest"}, {FONT_STYLE, "sans"}, {CONTENT_WIDTH, "standard"},
             {EDITOR_FONT_SIZE, "13"}, {EDITOR_FONT, "mono"}, {WORD_WRAP, "false"},
-            {AUTO_CLOSE, "true"}, {AUTO_SAVE, "false"}, {COMPILER, "pdfLaTeX"}, {LANGUAGE, "en"}};
+            {AUTO_CLOSE, "true"}, {AUTO_SAVE, "false"}, {COMPILER, "pdfLaTeX"}, {LANGUAGE, "en"},
+            {LATEXMK_PATH, ""}, {COMPILE_TIMEOUT, "120"}, {OUTLINE_SPLIT, "0.60"}};
+
+    public com.overleaf.client.compiler.LatexCompilerService.Options compileOptions() {
+        long timeout;
+        try { timeout = Long.parseLong(get(COMPILE_TIMEOUT)); }
+        catch (NumberFormatException invalid) { timeout = 120; }
+        return new com.overleaf.client.compiler.LatexCompilerService.Options(
+                com.overleaf.client.compiler.LatexToolchain.resolve(get(LATEXMK_PATH)), timeout);
+    }
 
     private final LocalBackend store;
     private final List<Consumer<String>> listeners = new ArrayList<>();
@@ -36,6 +48,7 @@ public final class AppSettings {
     public AppSettings(LocalBackend store) {
         this.store = store;
     }
+    public com.overleaf.client.ui.backend.ProjectGateway projects() { return store; }
 
     public String get(String key) {
         String fallback = "";

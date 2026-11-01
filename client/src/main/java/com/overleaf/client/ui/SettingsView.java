@@ -9,6 +9,9 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextArea;
+import javafx.concurrent.Task;
+import com.overleaf.client.compiler.ToolchainDiagnostics;
 import javafx.stage.FileChooser;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -80,6 +83,8 @@ public final class SettingsView extends BorderPane {
         addNav(nav, "profile", t("Profile", "Hồ sơ"), UiSupport.USERS);
         addNav(nav, "appearance", t("Appearance", "Giao diện"), UiSupport.SETTINGS);
         addNav(nav, "editor", t("Editor", "Trình soạn thảo"), UiSupport.EDIT);
+        addNav(nav, "compilation", t("Compilation", "Biên dịch"), UiSupport.PLAY);
+        addNav(nav, "projects", t("Projects", "Dự án"), UiSupport.FOLDER);
         addNav(nav, "about", t("About", "Giới thiệu"), UiSupport.INFO);
 
         scroll.getStyleClass().add("settings-scroll");
@@ -117,6 +122,8 @@ public final class SettingsView extends BorderPane {
         VBox page = switch (id) {
             case "profile" -> profilePage();
             case "editor" -> editorPage();
+            case "compilation" -> compilationPage();
+            case "projects" -> projectsPage();
             case "about" -> aboutPage();
             default -> appearancePage();
         };
@@ -389,18 +396,102 @@ public final class SettingsView extends BorderPane {
                         toggle(AppSettings.AUTO_SAVE), true));
         behaviourCard.getStyleClass().add("settings-card");
 
+        return new VBox(18, title,
+                sectionLabel(t("Text", "Văn bản")), textCard,
+                sectionLabel(t("Behaviour", "Hành vi")), behaviourCard);
+    }
+
+    private VBox compilationPage() {
+        Label error = new Label();
+        error.getStyleClass().add("modal-error");
+        error.setWrapText(true);
+        TextField path = new TextField(settings.get(AppSettings.LATEXMK_PATH));
+        path.setId("latexmk-path");
+        path.setPromptText(t("Automatic discovery", "Tự tìm toolchain"));
+        path.getStyleClass().add("modal-field");
+        path.setPrefWidth(280);
+        Button browse = new Button(t("Browse…", "Chọn…"));
+        browse.getStyleClass().add("btn-secondary");
+        browse.setOnAction(e -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle(t("Choose latexmk executable", "Chọn tệp thực thi latexmk"));
+            File selected = chooser.showOpenDialog(getScene().getWindow());
+            if (selected != null) path.setText(selected.getAbsolutePath());
+        });
+        TextField timeout = new TextField(settings.get(AppSettings.COMPILE_TIMEOUT));
+        timeout.setId("compile-timeout");
+        timeout.setPrefWidth(100);
+        timeout.getStyleClass().add("modal-field");
+        Button save = new Button(t("Save compiler settings", "Lưu cài đặt biên dịch"));
+        save.setId("save-compiler-settings");
+        save.getStyleClass().add("btn-primary");
+        save.setOnAction(e -> {
+            try {
+                long seconds = Long.parseLong(timeout.getText().strip());
+                new com.overleaf.client.compiler.LatexCompilerService.Options(path.getText(), seconds);
+                String executable = path.getText().strip();
+                if (!executable.isBlank() && !java.nio.file.Files.isRegularFile(java.nio.file.Path.of(executable))) {
+                    throw new IllegalArgumentException(t("Choose an existing latexmk executable, or leave it blank for PATH.",
+                            "Chọn tệp latexmk có thật, hoặc để trống để dùng PATH."));
+                }
+                if (!executable.isBlank()) executable = java.nio.file.Path.of(executable).toAbsolutePath().normalize().toString();
+                settings.set(AppSettings.LATEXMK_PATH, executable);
+                settings.set(AppSettings.COMPILE_TIMEOUT, Long.toString(seconds));
+                error.setText(t("Saved. Applies to the next build.", "Đã lưu. Áp dụng cho lần biên dịch tiếp theo."));
+            } catch (RuntimeException invalid) {
+                error.setText(t("Use an existing executable and a timeout of 0 or more seconds.",
+                        "Chọn tệp thực thi có thật và timeout từ 0 giây trở lên."));
+            }
+        });
+        TextArea diagnostic = new TextArea();
+        diagnostic.setId("compiler-diagnostics");
+        diagnostic.setEditable(false);
+        diagnostic.setWrapText(true);
+        diagnostic.setPrefRowCount(7);
+        diagnostic.getStyleClass().add("modal-field");
+        Button check = new Button(t("Check saved toolchain", "Kiểm tra toolchain đã lưu"));
+        check.setId("check-toolchain");
+        check.getStyleClass().add("btn-secondary");
+        check.setOnAction(e -> {
+            com.overleaf.client.compiler.LatexCompilerService.Options options;
+            try { options = settings.compileOptions(); }
+            catch (RuntimeException invalid) { error.setText(invalid.getMessage()); return; }
+            check.setDisable(true);
+            diagnostic.setText(t("Checking…", "Đang kiểm tra…"));
+            Task<List<ToolchainDiagnostics.Tool>> task = new Task<>() {
+                @Override protected List<ToolchainDiagnostics.Tool> call() { return ToolchainDiagnostics.inspect(options); }
+            };
+            task.setOnSucceeded(done -> {
+                StringBuilder report = new StringBuilder();
+                for (var tool : task.getValue()) {
+                    report.append(tool.available() ? "OK " : "MISSING ").append(tool.name()).append("\n")
+                            .append(tool.executable()).append("\n").append(tool.detail()).append("\n\n");
+                }
+                diagnostic.setText(report.toString());
+                check.setDisable(false);
+            });
+            task.setOnFailed(done -> { diagnostic.setText(task.getException().toString()); check.setDisable(false); });
+            Thread worker = new Thread(task, "toolchain-check");
+            worker.setDaemon(true);
+            worker.start();
+        });
         VBox compileCard = new VBox(
                 row(t("Default compiler", "Trình biên dịch mặc định"),
                         t("Engine used when you press Recompile.", "Bộ biên dịch dùng khi bấm Biên dịch lại."),
                         choice(AppSettings.COMPILER, List.of(
                                 new Option("pdfLaTeX", "pdfLaTeX"), new Option("XeLaTeX", "XeLaTeX"),
-                                new Option("LuaLaTeX", "LuaLaTeX")), null), true));
+                                new Option("LuaLaTeX", "LuaLaTeX")), null), false),
+                row("latexmk", t("Leave blank to find TeX on PATH or the local portable installation.",
+                        "Để trống để tự tìm TeX trên PATH hoặc bộ portable cục bộ."), new HBox(8, path, browse), false),
+                row(t("Timeout (seconds)", "Timeout (giây)"), t("0 means no time limit. Stop remains available.",
+                        "0 là không giới hạn thời gian. Vẫn có thể bấm Dừng."), timeout, true));
         compileCard.getStyleClass().add("settings-card");
 
-        return new VBox(18, title,
-                sectionLabel(t("Text", "Văn bản")), textCard,
-                sectionLabel(t("Behaviour", "Hành vi")), behaviourCard,
-                sectionLabel(t("Compilation", "Biên dịch")), compileCard);
+        Label help = new Label(t("Install TeX Live / MiKTeX with latexmk. No packages are downloaded by this check.",
+                "Cài TeX Live / MiKTeX có latexmk. Bước kiểm tra không tải gói TeX."));
+        help.setWrapText(true);
+        help.getStyleClass().add("setting-desc");
+        return new VBox(18, pageTitle(t("Compilation", "Biên dịch")), compileCard, save, error, help, check, diagnostic);
     }
 
     private VBox aboutPage() {
@@ -419,6 +510,39 @@ public final class SettingsView extends BorderPane {
                         reset, true));
         card.getStyleClass().add("settings-card");
         return new VBox(18, title, card);
+    }
+
+    private VBox projectsPage() {
+        TextField path = new TextField(settings.projects().projectsDirectory().toString());
+        path.setId("settings-project-directory");
+        path.getStyleClass().add("modal-field");
+        HBox.setHgrow(path, Priority.ALWAYS);
+        Button browse = new Button(t("Browse…", "Chọn…"));
+        browse.getStyleClass().add("btn-secondary");
+        browse.setOnAction(e -> {
+            javafx.stage.DirectoryChooser chooser = new javafx.stage.DirectoryChooser();
+            chooser.setTitle(t("Choose the default project folder", "Chọn thư mục dự án mặc định"));
+            File selected = chooser.showDialog(getScene().getWindow());
+            if (selected != null) path.setText(selected.getAbsolutePath());
+        });
+        Label result = new Label(); result.setWrapText(true); result.getStyleClass().add("setting-desc");
+        Button save = new Button(t("Save", "Lưu"));
+        save.setId("save-project-directory"); save.getStyleClass().add("btn-primary");
+        save.setOnAction(e -> {
+            String selected = path.getText();
+            if (selected.isBlank()) { result.setText(t("Choose a folder.", "Hãy chọn thư mục.")); return; }
+            save.setDisable(true);
+            Task<Void> task = new Task<>() {
+                @Override protected Void call() { settings.projects().setProjectsDirectory(java.nio.file.Path.of(selected)); return null; }
+            };
+            task.setOnSucceeded(done -> { save.setDisable(false); result.setText(t("Saved. Existing projects keep their locations.", "Đã lưu. Dự án cũ giữ nguyên vị trí.")); });
+            task.setOnFailed(done -> { save.setDisable(false); result.setText(com.overleaf.client.ui.backend.ProjectFailure.message(task.getException(), vi)); });
+            Thread worker = new Thread(task, "project-directory"); worker.setDaemon(true); worker.start();
+        });
+        Label hint = new Label(t("Used for new projects. Choose a different location in each creation dialog, or right-click an existing project to move it.",
+                "Dùng cho dự án mới. Bạn có thể chọn vị trí khác trong hộp thoại tạo dự án, hoặc nhấp phải dự án có sẵn để chuyển thư mục."));
+        hint.setWrapText(true); hint.getStyleClass().add("setting-desc");
+        return new VBox(18, pageTitle(t("Projects", "Dự án")), hint, new HBox(8, path, browse), save, result);
     }
 
     private static Label versionLabel() {

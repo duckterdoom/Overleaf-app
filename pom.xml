@@ -97,6 +97,8 @@
                 <version>3.11.0</version>
                 <configuration>
                     <release>${maven.compiler.release}</release>
+                    <!-- Isolate javac/file-manager state between Java 17 modules and the Java 21 client. -->
+                    <fork>true</fork>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>

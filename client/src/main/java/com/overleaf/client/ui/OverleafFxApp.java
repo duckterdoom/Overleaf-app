@@ -1,6 +1,8 @@
 package com.overleaf.client.ui;
 
 import com.overleaf.client.compiler.LatexCompilerService;
+import com.overleaf.client.compiler.PdfSnapshot;
+import com.overleaf.client.compiler.ProjectInputs;
 import com.overleaf.client.workspace.ProjectFileManager;
 import com.overleaf.client.workspace.WorkspaceWatcher;
 import com.overleaf.client.net.NetworkClient;
@@ -20,10 +22,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
-import javafx.scene.effect.DropShadow;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -31,8 +30,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontPosture;
-import javafx.scene.text.FontWeight;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.*;
@@ -48,8 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * OVERLEAF DESKTOP - GIAO DIỆN JAVAFX TỐI ƯU (M1) TÍCH HỢP M2 VÀ M4
  * =========================================================================
  *
- * - M1: Giao diện JavaFX hiện đại, Canvas xem trước PDF ĐỘNG (Dynamic LaTeX Renderer),
- *       tự động phân trang chuẩn A4, xử lý ngắt dòng mượt mà.
+ * - M1: Giao diện JavaFX, xem PDF thật từ compiler; xuất cùng snapshot PDF.
  * - M2: Tích hợp LatexCompilerService (ProcessBuilder nền) & WorkspaceWatcher (theo dõi I/O).
  * - M4: Tích hợp OfflineOperationQueue, CRDTOperation, Đồng hồ Lamport, chế độ
  *       soạn thảo Offline và Tự động Đồng bộ lại (RESYNC / CHECKPOINT).
@@ -62,6 +59,7 @@ public class OverleafFxApp extends Application {
     private TextArea codeEditor;              // Khung soạn thảo mã LaTeX (Monospace)
     private TextArea terminalLogArea;         // Terminal Console hiển thị log biên dịch
     private TreeView<String> projectTreeView; // Cây thư mục dự án
+    private MenuItem addFilesMenuItem;
     private TreeItem<String> rootTreeItem;    // Nút gốc cây thư mục
     private VBox roomMemberRows;              // Hàng thành viên trong phòng (People)
     private final List<String> roomMemberLabels = new ArrayList<>();
@@ -72,7 +70,9 @@ public class OverleafFxApp extends Application {
     private Label sideUserMetaLabel;
     private Label sideUserAvatarLabel;
     private Label sideProjectNameLabel;
-    private PdfCanvasPane pdfCanvasPane;      // Khung xem trước PDF động (Dynamic Canvas)
+    private PdfPreviewPane pdfPreviewPane;
+    private long pdfInputRevision;
+    private long workspaceGeneration;
     private Label statusLabel;                // Nhãn thông tin trạng thái bên trái
     private Label cursorLabel;                // Nhãn chỉ số dòng & cột của con trỏ
     private Label connectionBadge;            // Huy hiệu trạng thái kết nối phòng (Pill Badge)
@@ -138,6 +138,7 @@ public class OverleafFxApp extends Application {
         primaryStage.setMinWidth(1120);
         primaryStage.setMinHeight(720);
 
+        vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
         editorRoot = buildEditorRoot(primaryStage, "");
 
         screenHost = new StackPane();
@@ -281,6 +282,9 @@ public class OverleafFxApp extends Application {
             activeProjectName = after.name();
             Path newRoot = Path.of(after.folder()).toAbsolutePath().normalize();
             activeProjectRoot = newRoot;
+            workspaceGeneration++;
+            lastPdf = null;
+            if (pdfPreviewPane != null) pdfPreviewPane.reset();
             fileManager = new ProjectFileManager(newRoot.toString());
             startWorkspaceWatcher(newRoot);
             if (editorProjectLabel != null) editorProjectLabel.setText(activeProjectName);
@@ -320,7 +324,7 @@ public class OverleafFxApp extends Application {
         }
         activeProjectName = project.name();
         try {
-            backend.rememberProject(activeProjectName);
+            backend.rememberProject(root);
         } catch (RuntimeException e) {
             appendLog("[WARN] " + e.getMessage());
         }
@@ -345,8 +349,9 @@ public class OverleafFxApp extends Application {
             fileManager.writeTexFile(LocalBackend.MAIN_FILE, LocalBackend.template(root.getFileName().toString()));
         }
         activeProjectRoot = root;
-        lastPdf = Files.isRegularFile(fileManager.pdfPathFor(LocalBackend.MAIN_FILE))
-                ? fileManager.pdfPathFor(LocalBackend.MAIN_FILE) : null;
+        workspaceGeneration++;
+        lastPdf = null;
+        if (pdfPreviewPane != null) pdfPreviewPane.reset();
         appendLog("[FILE] Workspace: " + root);
         startWorkspaceWatcher(root);
     }
@@ -406,9 +411,6 @@ public class OverleafFxApp extends Application {
         if (editorTitleLabel != null) editorTitleLabel.setText(relativePath);
         if (editorPathLabel != null) editorPathLabel.setText(relativePath);
         if (editorPathLabel != null) editorPathLabel.setTooltip(UiSupport.tooltip(shortPath(activeProjectRoot.resolve(relativePath))));
-        if (isMainFile()) {
-            pdfCanvasPane.updatePreview(content);
-        }
         appendLog("[FILE] Opened " + relativePath);
         return true;
     }
@@ -477,6 +479,7 @@ public class OverleafFxApp extends Application {
         if (!deleted && files.isOwnWrite(name)) {
             return;
         }
+        invalidatePdf();
         refreshProjectTree();
         if (deleted) {
             appendLog("[WATCHER] Deleted on disk: " + name);
@@ -497,7 +500,7 @@ public class OverleafFxApp extends Application {
                         loadingDocument = false;
                     }
                     lastEditorContent = content;
-                    if (isMainFile()) pdfCanvasPane.updatePreview(content);
+                    if (isMainFile()) invalidatePdf();
                     statusLabel.setText("Reloaded " + name + " after it changed on disk.");
                 }
             } catch (IOException e) {
@@ -512,6 +515,7 @@ public class OverleafFxApp extends Application {
             disconnectRoom();
         }
         compilerService.shutdown();
+        if (pdfPreviewPane != null) pdfPreviewPane.close();
         if (workspaceWatcher != null) {
             workspaceWatcher.stopWatching();
         }
@@ -553,6 +557,7 @@ public class OverleafFxApp extends Application {
         compilerCombo = new ComboBox<>();
         compilerCombo.getItems().addAll("pdfLaTeX", "XeLaTeX", "LuaLaTeX");
         compilerCombo.setValue(settings.get(AppSettings.COMPILER));
+        compilerCombo.valueProperty().addListener((o, before, after) -> invalidatePdf());
         compilerCombo.getStyleClass().add("compiler-combo");
         compilerCombo.setPrefWidth(86);
         compilerCombo.setMinHeight(30);
@@ -576,7 +581,16 @@ public class OverleafFxApp extends Application {
         HBox statusGroup = new HBox(10, connectionBadge, compilerCombo);
         statusGroup.setAlignment(Pos.CENTER_LEFT);
 
-        HBox actionGroup = new HBox(4, btnRecompile, save, overflow);
+        Button stopCompile = new Button("Stop");
+        stopCompile.setId("stop-compile");
+        stopCompile.getStyleClass().add("btn-secondary");
+        stopCompile.visibleProperty().bind(btnRecompile.disabledProperty());
+        stopCompile.managedProperty().bind(stopCompile.visibleProperty());
+        stopCompile.setOnAction(e -> {
+            compilerService.cancelCompile();
+            statusLabel.setText("Stopping compiler…");
+        });
+        HBox actionGroup = new HBox(4, btnRecompile, stopCompile, save, overflow);
         actionGroup.setAlignment(Pos.CENTER_RIGHT);
 
         bar.getChildren().addAll(back, editorProjectLabel, separator, editorPathLabel, dirtyLabel,
@@ -595,7 +609,8 @@ public class OverleafFxApp extends Application {
         overflow.getStyleClass().add("overflow-button");
         overflow.setTooltip(UiSupport.tooltip("More actions"));
 
-        MenuItem newFile = new MenuItem("New file…");
+        MenuItem newFile = new MenuItem(vietnameseUi ? "Thêm tệp…" : "Add files…");
+        addFilesMenuItem = newFile;
         newFile.setOnAction(e -> showNewFileDialog(stage));
 
         MenuItem save = new MenuItem("Save");
@@ -606,6 +621,8 @@ public class OverleafFxApp extends Application {
 
         MenuItem openPdf = new MenuItem("Open compiled PDF");
         openPdf.setOnAction(e -> openCompiledPdf());
+        MenuItem exportPdf = new MenuItem("Export PDF…");
+        exportPdf.setOnAction(e -> exportCompiledPdf());
 
         MenuItem clean = new MenuItem("Clean temporary files");
         clean.setOnAction(e -> cleanBuildFiles());
@@ -637,7 +654,7 @@ public class OverleafFxApp extends Application {
         MenuItem signOutItem = new MenuItem("Sign out");
         signOutItem.setOnAction(e -> confirmSignOut());
 
-        overflow.getItems().addAll(newFile, save, compile, openPdf, clean, revealFolder, new SeparatorMenuItem(),
+        overflow.getItems().addAll(newFile, save, compile, openPdf, exportPdf, clean, revealFolder, new SeparatorMenuItem(),
                 connect, offline, reconnect, queue, disconnect, new SeparatorMenuItem(), about, signOutItem);
         return overflow;
     }
@@ -649,9 +666,9 @@ public class OverleafFxApp extends Application {
 
         VBox leftPane = createLeftPanel(stage);
         SplitPane centerSplit = createCenterEditorPanel(initialContent);
-        pdfCanvasPane = new PdfCanvasPane();
+        pdfPreviewPane = new PdfPreviewPane(this::exportCompiledPdf);
 
-        mainSplit.getItems().addAll(leftPane, centerSplit, pdfCanvasPane);
+        mainSplit.getItems().addAll(leftPane, centerSplit, pdfPreviewPane);
         mainSplit.setDividerPositions(0.18, 0.58);
 
         return mainSplit;
@@ -685,7 +702,8 @@ public class OverleafFxApp extends Application {
                     return;
                 }
                 TreeItem<String> treeItem = getTreeItem();
-                boolean folder = treeItem != null && !treeItem.isLeaf();
+                String path = treePaths.get(treeItem);
+                boolean folder = path != null && Files.isDirectory(activeProjectRoot.resolve(path));
                 String lower = item.toLowerCase(Locale.ROOT);
                 Color tint = folder ? Color.web("#9A9A94")
                         : lower.endsWith(".tex") ? Color.web("#23664A")
@@ -705,20 +723,25 @@ public class OverleafFxApp extends Application {
         projectTreeView.setOnContextMenuRequested(e -> {
             TreeItem<String> item = projectTreeView.getSelectionModel().getSelectedItem();
             String path = item == null ? null : treePaths.get(item);
-            if (path != null) {
-                fileActions(path).show(projectTreeView, e.getScreenX(), e.getScreenY());
-            }
+            if (path != null && !Files.isDirectory(activeProjectRoot.resolve(path))) fileActions(path).show(projectTreeView, e.getScreenX(), e.getScreenY());
+            else folderActions(path == null ? "" : path).show(projectTreeView, e.getScreenX(), e.getScreenY());
         });
         projectTreeView.setOnMouseClicked(e -> {
             if (e.getButton() != javafx.scene.input.MouseButton.PRIMARY) return;
             TreeItem<String> item = projectTreeView.getSelectionModel().getSelectedItem();
             if (item == null || !item.isLeaf()) return;
             String path = treePaths.get(item);
-            if (path == null) return;
+            if (path == null || Files.isDirectory(activeProjectRoot.resolve(path))) return;
             if (path.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
                 if (e.getClickCount() == 2) {
-                    getHostServices().showDocument(activeProjectRoot.resolve(path).toUri().toString());
+                    if (activeProjectRoot.resolve(path).normalize().equals(fileManager.pdfPathFor(LocalBackend.MAIN_FILE))) {
+                        openCompiledPdf();
+                    } else {
+                        getHostServices().showDocument(activeProjectRoot.resolve(path).toUri().toString());
+                    }
                 }
+            } else if (!isEditableSource(path)) {
+                if (e.getClickCount() == 2) getHostServices().showDocument(activeProjectRoot.resolve(path).toUri().toString());
             } else if (!path.equals(currentFile)) {
                 if (!openFile(path)) selectTreePath(currentFile);
             }
@@ -746,7 +769,12 @@ public class OverleafFxApp extends Application {
         treeBox.setPadding(new Insets(8, 0, 0, 0));
         VBox.setVgrow(projectTreeView, Priority.ALWAYS);
 
-        Button newFile = sideAction("New file", UiSupport.PLUS, () -> showNewFileDialog(stage));
+        Button newFile = sideAction(vietnameseUi ? "Thêm tệp" : "Add files", UiSupport.PLUS, () -> showNewFileDialog(stage));
+        newFile.setId("workspace-add-files");
+        Button newFolder = sideAction(vietnameseUi ? "Thư mục mới" : "New folder", UiSupport.FOLDER, () -> showAddFilesDialog(1, selectedDirectory()));
+        newFolder.setId("workspace-new-folder");
+        Button upload = sideAction(vietnameseUi ? "Tải lên" : "Upload", UiSupport.PLUS, () -> showAddFilesDialog(2, selectedDirectory()));
+        upload.setId("workspace-upload");
         Button refresh = sideAction("Refresh files", UiSupport.REFRESH, () -> {
             refreshProjectTree();
             appendLog("[FILE] Workspace tree refreshed.");
@@ -758,20 +786,39 @@ public class OverleafFxApp extends Application {
         outlineScroll.setFitToWidth(true);
         outlineScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         outlineScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        outlineScroll.setPrefHeight(180);
-        outlineScroll.setMinHeight(120);
-        outlineScroll.setMaxHeight(260);
+        outlineScroll.setMinHeight(0);
+        outlineScroll.setMaxHeight(Double.MAX_VALUE);
+        VBox.setVgrow(outlineScroll, Priority.ALWAYS);
 
         Label outlineTitle = new Label("OUTLINE");
         outlineTitle.getStyleClass().add("side-section");
-        VBox outlineBox = new VBox(4, outlineTitle, outlineScroll);
+        outlineTitle.setTooltip(UiSupport.tooltip(vietnameseUi
+                ? "Kéo thanh ngang phía trên để thay đổi chiều cao Outline."
+                : "Drag the divider above to resize the Outline."));
+        Label resizeHint = new Label("↕");
+        resizeHint.getStyleClass().add("pane-sub");
+        HBox outlineHeader = new HBox(outlineTitle, UiSupport.spacer(), resizeHint);
+        outlineHeader.setAlignment(Pos.CENTER_LEFT);
+        VBox outlineBox = new VBox(4, outlineHeader, outlineScroll);
         outlineBox.getStyleClass().add("outline-box");
-
-        Region sideDivider = new Region();
-        sideDivider.getStyleClass().add("side-divider");
-
-        VBox filesBox = new VBox(2, newFile, refresh, treeBox, sideDivider, outlineBox);
-        VBox.setVgrow(treeBox, Priority.ALWAYS);
+        outlineBox.setMinHeight(80);
+        treeBox.setMinHeight(100);
+        SplitPane fileOutlineSplit = new SplitPane(treeBox, outlineBox);
+        fileOutlineSplit.setOrientation(Orientation.VERTICAL);
+        fileOutlineSplit.setId("file-outline-split");
+        fileOutlineSplit.getStyleClass().add("sidebar-split");
+        double split = 0.60;
+        try { split = Double.parseDouble(settings.get(AppSettings.OUTLINE_SPLIT)); }
+        catch (NumberFormatException invalid) { /* Keep the initial position. */ }
+        if (!Double.isFinite(split)) split = 0.60;
+        fileOutlineSplit.setDividerPositions(Math.max(0.15, Math.min(0.85, split)));
+        fileOutlineSplit.addEventFilter(javafx.scene.input.MouseEvent.MOUSE_RELEASED, e -> {
+            if (!fileOutlineSplit.getDividers().isEmpty()) {
+                settings.set(AppSettings.OUTLINE_SPLIT, Double.toString(fileOutlineSplit.getDividerPositions()[0]));
+            }
+        });
+        VBox filesBox = new VBox(2, newFile, newFolder, upload, refresh, fileOutlineSplit);
+        VBox.setVgrow(fileOutlineSplit, Priority.ALWAYS);
 
         roomMemberRows = new VBox(2);
         VBox.setVgrow(roomMemberRows, Priority.ALWAYS);
@@ -877,6 +924,12 @@ public class OverleafFxApp extends Application {
         MenuItem open = new MenuItem(pdf ? "Open PDF" : "Open");
         open.setOnAction(e -> {
             if (pdf) {
+                if (activeProjectRoot.resolve(path).normalize().equals(fileManager.pdfPathFor(LocalBackend.MAIN_FILE))) {
+                    openCompiledPdf();
+                } else {
+                    getHostServices().showDocument(activeProjectRoot.resolve(path).toUri().toString());
+                }
+            } else if (!isEditableSource(path)) {
                 getHostServices().showDocument(activeProjectRoot.resolve(path).toUri().toString());
             } else if (!openFile(path)) {
                 selectTreePath(currentFile);
@@ -919,6 +972,7 @@ public class OverleafFxApp extends Application {
             if (wasOpen) saveIfDirty();
             try {
                 fileManager.renameFile(path, target);
+                invalidatePdf();
             } catch (IOException | RuntimeException e) {
                 modal.error(name, "Could not rename: " + e.getMessage());
                 return false;
@@ -943,6 +997,7 @@ public class OverleafFxApp extends Application {
                     try {
                         if (wasOpen) markSaved(); // don't write the file back while leaving it
                         fileManager.deleteFile(path);
+                        invalidatePdf();
                         appendLog("[FILE] Deleted " + path);
                     } catch (IOException | RuntimeException e) {
                         showAlert(Alert.AlertType.ERROR, "Could not delete", e.getMessage());
@@ -983,7 +1038,7 @@ public class OverleafFxApp extends Application {
         for (TreeItem<String> child : item.getChildren()) {
             String path = treePaths.get(child);
             if (child.isLeaf()) {
-                if (path != null && !path.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+                if (path != null && !Files.isDirectory(activeProjectRoot.resolve(path))) {
                     count++;
                 }
             } else {
@@ -1012,9 +1067,8 @@ public class OverleafFxApp extends Application {
                 TreeItem<String> folder = new TreeItem<>(entry.getName());
                 folder.setExpanded(depth == 0);
                 addWorkspaceFiles(folder, entry, path + "/", depth + 1);
-                if (!folder.getChildren().isEmpty()) {
-                    parent.getChildren().add(folder);
-                }
+                treePaths.put(folder, path);
+                parent.getChildren().add(folder);
             } else {
                 TreeItem<String> leaf = new TreeItem<>(entry.getName());
                 treePaths.put(leaf, path);
@@ -1024,15 +1078,16 @@ public class OverleafFxApp extends Application {
     }
 
     private boolean shouldShowInTree(File file, int depth) {
+        if (Files.isSymbolicLink(file.toPath())) return false;
         String name = file.getName();
         if (file.isDirectory()) {
-            if (depth >= 3) return false;
+            if (depth >= 32) return false;
             if (name.startsWith(".") || name.equals("target") || name.equals("node_modules")) return false;
-            // build/ only matters for the PDF it holds.
-            return containsLatexFiles(file, depth);
+            return true;
         }
         if (name.startsWith(".")) return false;
-        return isLatexFile(file);
+        if (file.toPath().startsWith(activeProjectRoot.resolve("build"))) return name.toLowerCase(Locale.ROOT).endsWith(".pdf");
+        return true;
     }
 
     private boolean containsLatexFiles(File dir, int depth) {
@@ -1224,7 +1279,11 @@ public class OverleafFxApp extends Application {
                 ThemeManager.apply(scene, settings);
                 if (codeOverlay != null) codeOverlay.repaint();
             }
-            case AppSettings.LANGUAGE -> vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
+            case AppSettings.LANGUAGE -> {
+                vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
+                updateWorkspaceLanguage();
+            }
+            case AppSettings.OUTLINE_SPLIT -> { /* A divider drag must not reset the editor/compiler selection. */ }
             default -> applyEditorSettings();
         }
     }
@@ -1657,7 +1716,7 @@ public class OverleafFxApp extends Application {
         termSub.getStyleClass().add("pane-sub");
         Button clearLog = new Button("Clear");
         clearLog.getStyleClass().add("btn-ghost");
-        clearLog.setStyle("-fx-font-size: 10.5px; -fx-padding: 2 8 2 8;");
+        clearLog.setStyle("-fx-font-size: 12px; -fx-padding: 2 8 2 8;");
         clearLog.setOnAction(e -> terminalLogArea.clear());
 
         terminalHeader.getChildren().addAll(termTitle, termSub, UiSupport.spacer(), clearLog);
@@ -1698,11 +1757,17 @@ public class OverleafFxApp extends Application {
     }
 
     private void markDirty() {
+        invalidatePdf();
         userDirty = true;
         if (dirtyLabel != null) {
             dirtyLabel.setVisible(true);
             dirtyLabel.setManaged(true);
         }
+    }
+
+    private void invalidatePdf() {
+        pdfInputRevision++;
+        if (pdfPreviewPane != null) pdfPreviewPane.markStale("Nguồn đã thay đổi — bấm Recompile để cập nhật PDF.");
     }
 
     private void markSaved() {
@@ -1732,8 +1797,8 @@ public class OverleafFxApp extends Application {
 
         if (operationQueue == null || !isMainFile()) {
             lastEditorContent = newText;
-            if (pdfCanvasPane != null && isMainFile()) {
-                pdfCanvasPane.updatePreview(newText);
+            if (pdfPreviewPane != null && isMainFile()) {
+                invalidatePdf();
             }
             return;
         }
@@ -1776,9 +1841,9 @@ public class OverleafFxApp extends Application {
         lastEditorContent = newText;
         updatePendingBadge();
 
-        // Cập nhật bản xem trước Canvas động ngay lập tức theo nội dung người dùng gõ
-        if (pdfCanvasPane != null) {
-            pdfCanvasPane.updatePreview(newText);
+        // Keep the last real PDF visible, clearly marked as stale until the next successful build.
+        if (pdfPreviewPane != null) {
+            invalidatePdf();
         }
     }
 
@@ -1841,7 +1906,7 @@ public class OverleafFxApp extends Application {
                     try {
                         codeEditor.setText(msg.getPayload());
                         lastEditorContent = msg.getPayload();
-                        pdfCanvasPane.updatePreview(lastEditorContent);
+                        invalidatePdf();
                         appendLog("[SYNC] Received full document (" + msg.getPayload().length() + " chars).");
                     } finally {
                         isApplyingRemoteEdit = false;
@@ -1924,7 +1989,7 @@ public class OverleafFxApp extends Application {
                 }
             }
             lastEditorContent = codeEditor.getText();
-            pdfCanvasPane.updatePreview(lastEditorContent);
+            invalidatePdf();
         } finally {
             isApplyingRemoteEdit = false;
         }
@@ -2187,7 +2252,7 @@ public class OverleafFxApp extends Application {
     }
 
     private void triggerRecompile() {
-        if (codeEditor == null || btnRecompile == null) {
+        if (codeEditor == null || btnRecompile == null || btnRecompile.isDisabled()) {
             return;
         }
         if (fileManager == null || activeProjectRoot == null) {
@@ -2203,35 +2268,60 @@ public class OverleafFxApp extends Application {
         if (!saveCurrentFile(false)) {
             return;
         }
+        LatexCompilerService.Options compileOptions;
+        try {
+            compileOptions = settings.compileOptions();
+            compilerService.configure(compileOptions);
+        } catch (RuntimeException invalid) {
+            appendLog("[BUILD] Invalid compiler settings: " + invalid.getMessage());
+            statusLabel.setText("Check Settings > Compilation.");
+            return;
+        }
         btnRecompile.setDisable(true);
         compileProgressBar.setVisible(true);
         compileProgressBar.setProgress(ProgressBar.INDETERMINATE_PROGRESS);
         statusLabel.setText("Compiling with " + selectedCompiler + "…");
+        pdfPreviewPane.compiling();
 
         appendLog("\n========================================================");
         appendLog("[BUILD] Started " + new SimpleDateFormat("HH:mm:ss").format(new Date()));
         appendLog("[BUILD] Engine: " + selectedCompiler + " | Source: " + LocalBackend.MAIN_FILE
                 + " | Folder: " + activeProjectRoot);
+        appendLog("[BUILD] latexmk: " + compileOptions.executable() + " | Timeout: "
+                + (compileOptions.timeoutSeconds() == 0 ? "unlimited" : compileOptions.timeoutSeconds() + " s"));
+        appendLog("[BUILD] Reusing files in build/ for incremental compilation.");
 
         Path compiledRoot = activeProjectRoot;
-        String previewSource = isMainFile() ? codeEditor.getText() : readQuietly(LocalBackend.MAIN_FILE);
+        long compiledWorkspace = workspaceGeneration;
+        long compiledRevision = pdfInputRevision;
         compilerService.compileAsync(compiledRoot.toString(), LocalBackend.MAIN_FILE, engine,
                 new LatexCompilerService.CompileCallback() {
             @Override
             public void onSuccess(LatexCompilerService.CompileResult result) {
+                PdfSnapshot pdf;
+                boolean inputsMatch;
+                try {
+                    pdf = PdfSnapshot.read(result.pdfPath(), result.inputFingerprint());
+                    inputsMatch = result.inputFingerprint().equals(ProjectInputs.fingerprint(compiledRoot));
+                } catch (IOException failure) {
+                    onError(1, "Cannot read/validate the compiled PDF: " + failure.getMessage());
+                    return;
+                }
                 Platform.runLater(() -> {
                     finishCompileUi();
-                    if (!compiledRoot.equals(activeProjectRoot)) return;
+                    if (!compiledRoot.equals(activeProjectRoot) || compiledWorkspace != workspaceGeneration) return;
                     lastPdf = result.pdfPath();
                     try {
                         backend.recordCompile();
                     } catch (RuntimeException e) {
                         appendLog("[WARN] " + e.getMessage());
                     }
-                    statusLabel.setText("Compiled in " + result.durationMillis() + " ms · open the PDF from ⋯ or the file tree.");
+                    boolean current = inputsMatch && compiledRevision == pdfInputRevision;
+                    statusLabel.setText(current ? "Compiled in " + result.durationMillis() + " ms · preview and export use the same PDF."
+                            : "Compiled an older version. Recompile before exporting.");
                     appendLog(result.log());
                     appendLog("[SUCCESS] PDF written to " + result.pdfPath());
-                    pdfCanvasPane.updatePreview(previewSource);
+                    pdfPreviewPane.show(pdf, current);
                     refreshProjectTree();
                 });
             }
@@ -2240,23 +2330,33 @@ public class OverleafFxApp extends Application {
             public void onError(int exitCode, String errorLog) {
                 Platform.runLater(() -> {
                     finishCompileUi();
-                    if (!compiledRoot.equals(activeProjectRoot)) return;
+                    if (!compiledRoot.equals(activeProjectRoot) || compiledWorkspace != workspaceGeneration) return;
                     appendLog(errorLog);
                     List<LatexCompilerService.LatexIssue> issues = LatexCompilerService.parseErrors(errorLog);
                     for (LatexCompilerService.LatexIssue issue : issues) {
-                        appendLog("[LATEX ERROR] " + issue.file() + ":" + issue.line() + " " + issue.message());
+                        String location = issue.file().isEmpty() ? "" : issue.file() + ":" + issue.line() + " ";
+                        appendLog("[LATEX ERROR] " + location + issue.message());
+                        appendExplanation(com.overleaf.client.LatexErrorExplainer.explain(issue.message(), vietnameseUi));
+                    }
+                    if (issues.isEmpty()) {
+                        appendExplanation(com.overleaf.client.LatexErrorExplainer.explainExit(exitCode, vietnameseUi));
                     }
                     if (exitCode == LatexCompilerService.EXIT_START_FAILED) {
                         statusLabel.setText("No LaTeX toolchain found. Install TeX Live / MacTeX / MiKTeX (latexmk).");
                     } else if (exitCode == LatexCompilerService.EXIT_TIMEOUT) {
-                        statusLabel.setText("Compile timed out. The preview shows the current source.");
+                        statusLabel.setText("Compile timed out. Change timeout in Settings > Compilation.");
+                    } else if (exitCode == LatexCompilerService.EXIT_INTERRUPTED) {
+                        statusLabel.setText("Compile stopped.");
+                    } else if (exitCode == LatexCompilerService.EXIT_MISSING_GLYPHS) {
+                        statusLabel.setText("PDF has missing characters. Fix font/engine settings before exporting.");
                     } else if (!issues.isEmpty()) {
                         LatexCompilerService.LatexIssue first = issues.get(0);
-                        statusLabel.setText(issues.size() + " LaTeX error(s) · first at " + first.file() + ":" + first.line());
+                        statusLabel.setText(issues.size() + " LaTeX error(s) · " + (first.file().isEmpty()
+                                ? first.message() : "first at " + first.file() + ":" + first.line()));
                     } else {
                         statusLabel.setText("Compile failed (exit " + exitCode + "). See Build output.");
                     }
-                    pdfCanvasPane.updatePreview(previewSource);
+                    pdfPreviewPane.failed();
                 });
             }
 
@@ -2272,6 +2372,12 @@ public class OverleafFxApp extends Application {
         compileProgressBar.setVisible(false);
     }
 
+    private void appendExplanation(com.overleaf.client.LatexErrorExplainer.Explanation explanation) {
+        appendLog("[EXPLAIN] " + explanation.title());
+        appendLog(explanation.why());
+        appendLog((vietnameseUi ? "Gợi ý: " : "Suggested fix: ") + explanation.fix());
+    }
+
     private String readQuietly(String relativePath) {
         try {
             return fileManager.readTexFile(relativePath);
@@ -2281,15 +2387,75 @@ public class OverleafFxApp extends Application {
     }
 
     private void openCompiledPdf() {
-        if (fileManager == null) return;
-        Path pdf = lastPdf != null ? lastPdf : fileManager.pdfPathFor(LocalBackend.MAIN_FILE);
-        if (!Files.isRegularFile(pdf)) {
-            showAlert(Alert.AlertType.INFORMATION, "No PDF yet",
-                    "Recompile first. The PDF is written to " + LocalBackend.MAIN_FILE.replace(".tex", ".pdf")
-                            + " in the project's build folder.");
+        if (!requireCurrentPdf()) return;
+        try {
+            Path copy = Files.createTempFile("overleaf-preview-", ".pdf");
+            copy.toFile().deleteOnExit();
+            exportVerifiedPdf(copy, true);
+        } catch (IOException failure) { showAlert(Alert.AlertType.ERROR, "PDF", failure.getMessage()); }
+    }
+
+    private boolean requireCurrentPdf() {
+        if (pdfPreviewPane != null && pdfPreviewPane.canExport()) return true;
+        showAlert(Alert.AlertType.INFORMATION, "Recompile required",
+                "Biên dịch thành công nội dung hiện tại trước khi mở hoặc xuất PDF. Xem trạng thái trên Preview.");
+        return false;
+    }
+
+    private void exportCompiledPdf() {
+        if (!requireCurrentPdf()) return;
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Export compiled PDF");
+        chooser.setInitialFileName("main.pdf");
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("PDF", "*.pdf"));
+        File selected = chooser.showSaveDialog(stage);
+        if (selected == null || !requireCurrentPdf()) return;
+        Path target = selected.toPath();
+        if (!target.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            showAlert(Alert.AlertType.INFORMATION, "PDF filename", "Chọn tên file kết thúc bằng .pdf.");
             return;
         }
-        getHostServices().showDocument(pdf.toUri().toString());
+        exportVerifiedPdf(target, false);
+    }
+
+    /** Runs hashing and file I/O off the FX thread, exporting only the snapshot shown in the viewer. */
+    private void exportVerifiedPdf(Path target, boolean openAfter) {
+        if (pdfPreviewPane == null || !pdfPreviewPane.canExport()) return;
+        PdfSnapshot pdf = pdfPreviewPane.snapshot();
+        Path root = activeProjectRoot;
+        long revision = pdfInputRevision;
+        Task<Void> export = new Task<>() {
+            @Override protected Void call() throws Exception {
+                if (!pdf.inputFingerprint().equals(ProjectInputs.fingerprint(root))) {
+                    throw new StalePdfException("Project files changed. Recompile before exporting PDF.");
+                }
+                java.util.concurrent.CompletableFuture<Boolean> current = new java.util.concurrent.CompletableFuture<>();
+                Platform.runLater(() -> current.complete(root.equals(activeProjectRoot) && revision == pdfInputRevision
+                        && pdfPreviewPane.canExport() && pdfPreviewPane.snapshot() == pdf));
+                if (!current.get(10, java.util.concurrent.TimeUnit.SECONDS)) {
+                    throw new StalePdfException("Source or project changed. Recompile before exporting PDF.");
+                }
+                pdf.exportTo(target);
+                return null;
+            }
+        };
+        export.setOnSucceeded(e -> {
+            appendLog("[PDF] Exported the preview PDF to " + target);
+            if (openAfter) getHostServices().showDocument(target.toUri().toString());
+            else statusLabel.setText("PDF exported: " + target);
+        });
+        export.setOnFailed(e -> {
+            if (export.getException() instanceof StalePdfException && root.equals(activeProjectRoot)
+                    && revision == pdfInputRevision) invalidatePdf();
+            showAlert(Alert.AlertType.ERROR, "Could not export PDF", export.getException().getMessage());
+        });
+        Thread worker = new Thread(export, "pdf-export");
+        worker.setDaemon(true);
+        worker.start();
+    }
+
+    private static final class StalePdfException extends IOException {
+        StalePdfException(String message) { super(message); }
     }
 
     private void cleanBuildFiles() {
@@ -2343,46 +2509,60 @@ public class OverleafFxApp extends Application {
     }
 
     private void showNewFileDialog(Stage parent) {
-        if (fileManager == null) {
-            return;
+        showAddFilesDialog(0, selectedDirectory());
+    }
+
+    private String selectedDirectory() {
+        if (projectTreeView == null || activeProjectRoot == null) return "";
+        String path = treePaths.get(projectTreeView.getSelectionModel().getSelectedItem());
+        if (path == null || path.equals("build") || path.startsWith("build/")) return "";
+        if (Files.isDirectory(activeProjectRoot.resolve(path))) return path;
+        int slash = path.lastIndexOf('/');
+        return slash < 0 ? "" : path.substring(0, slash);
+    }
+
+    private void updateWorkspaceLanguage() {
+        if (editorRoot == null) return;
+        String[][] labels = {{"workspace-add-files", "Add files", "Thêm tệp"},
+                {"workspace-new-folder", "New folder", "Thư mục mới"}, {"workspace-upload", "Upload", "Tải lên"}};
+        for (String[] label : labels) {
+            if (editorRoot.lookup("#" + label[0]) instanceof Button button) button.setText(label[vietnameseUi ? 2 : 1]);
         }
-        UiModal modal = UiModal.create(screenHost, UiSupport.FILE, UiModal.Tone.NEUTRAL,
-                "New file", "Add a LaTeX source or bibliography file to " + activeProjectName + ".");
-        TextField name = modal.field("File name", "chapter1.tex", "chapter1.tex or sections/intro.tex");
-        modal.actions("A name without an extension gets .tex", "Cancel", "Create file", UiModal.Tone.NEUTRAL, () -> {
-            String fileName = name.getText() == null ? "" : name.getText().trim();
-            if (!fileName.isEmpty() && !fileName.contains(".")) {
-                fileName = fileName + ".tex";
+        if (addFilesMenuItem != null) addFilesMenuItem.setText(vietnameseUi ? "Thêm tệp…" : "Add files…");
+    }
+
+    private ContextMenu folderActions(String directory) {
+        MenuItem file = new MenuItem(vietnameseUi ? "Tệp mới…" : "New file…");
+        file.setOnAction(e -> showAddFilesDialog(0, directory));
+        MenuItem folder = new MenuItem(vietnameseUi ? "Thư mục mới…" : "New folder…");
+        folder.setOnAction(e -> showAddFilesDialog(1, directory));
+        MenuItem upload = new MenuItem(vietnameseUi ? "Tải lên…" : "Upload…");
+        upload.setOnAction(e -> showAddFilesDialog(2, directory));
+        MenuItem reveal = new MenuItem(vietnameseUi ? "Mở thư mục" : "Show in folder");
+        reveal.setOnAction(e -> revealFolder(activeProjectRoot.resolve(directory)));
+        return new ContextMenu(file, folder, upload, new SeparatorMenuItem(), reveal);
+    }
+
+    private AddFilesDialog showAddFilesDialog(int page, String directory) {
+        if (fileManager == null) return null;
+        Path root = activeProjectRoot;
+        AddFilesDialog dialog = new AddFilesDialog(screenHost, root, backend, directory, vietnameseUi, added -> {
+            if (!root.equals(activeProjectRoot)) return;
+            invalidatePdf(); refreshProjectTree();
+            if (added.size() == 1) {
+                String path = added.get(0);
+                if (Files.isRegularFile(root.resolve(path)) && isEditableSource(path)) openFile(path);
+                selectTreePath(path);
             }
-            String problem = validateNewFileName(fileName);
-            if (problem != null) {
-                modal.error(name, problem);
-                return false;
-            }
-            if (Files.exists(activeProjectRoot.resolve(fileName))) {
-                modal.error(name, fileName + " is already in this project.");
-                return false;
-            }
-            try {
-                fileManager.createFile(fileName);
-            } catch (IOException | RuntimeException e) {
-                modal.error(name, "Could not create the file: " + e.getMessage());
-                return false;
-            }
-            appendLog("[FILE] Created " + fileName);
-            refreshProjectTree();
-            if (openFile(fileName)) {
-                selectTreePath(fileName);
-            }
-            if (fileName.endsWith(".tex")) {
-                statusLabel.setText("Created " + fileName + ". Add \\input{" + fileName.replaceAll("\\.tex$", "")
-                        + "} to main.tex to include it.");
-            } else {
-                statusLabel.setText("Created " + fileName + ".");
-            }
-            return true;
+            statusLabel.setText((vietnameseUi ? "Đã thêm " : "Added ") + added.size() + (vietnameseUi ? " mục vào dự án." : " entries to the project."));
         });
-        modal.show();
+        dialog.show(page);
+        return dialog;
+    }
+
+    private static boolean isEditableSource(String path) {
+        String lower = path.toLowerCase(Locale.ROOT);
+        return lower.matches(".*\\.(tex|bib|sty|cls|bst|bbx|cbx|def|cfg|txt|md|csv|dat|tikz|lua|json|yaml|yml|xml|svg)$");
     }
 
     private void saveFile() {
@@ -2437,635 +2617,4 @@ public class OverleafFxApp extends Application {
     // =========================================================================
     // LỚP KHUNG XEM TRƯỚC PDF ĐỘNG (DYNAMIC LATEX RENDERER CANVAS)
     // =========================================================================
-    public static class PdfCanvasPane extends VBox {
-        // One canvas per page: a single canvas for the whole document exceeds the GPU's
-        // 16384 px texture limit after about 16 pages and the preview goes blank.
-        private final VBox pagesBox = new VBox();
-        private final javafx.beans.property.DoubleProperty docWidth = new javafx.beans.property.SimpleDoubleProperty(580);
-        private final javafx.beans.property.DoubleProperty docHeight = new javafx.beans.property.SimpleDoubleProperty(840);
-        private final Label zoomLabel;
-        private static final int PREVIEW_PAUSE_MS = 250;
-        /** Beyond this the preview stops drawing pages; the compiled PDF has the rest. */
-        private static final int MAX_PREVIEW_PAGES = 50;
-        private long lastDrawMillis;
-        private final javafx.animation.PauseTransition redraw = new javafx.animation.PauseTransition(
-                javafx.util.Duration.millis(PREVIEW_PAUSE_MS));
-        private double zoomFactor = 1.0;
-        private boolean autoFit = true;
-        private String currentTexCode = "";
-
-        public PdfCanvasPane() {
-            getStyleClass().add("preview-pane");
-            VBox.setVgrow(this, Priority.ALWAYS);
-
-            HBox toolBar = new HBox(6);
-            toolBar.getStyleClass().add("preview-toolbar");
-            toolBar.setAlignment(Pos.CENTER_LEFT);
-
-            Label title = new Label("Preview");
-            title.getStyleClass().add("pane-title");
-            Label sub = new Label("A4");
-            sub.getStyleClass().add("pane-sub");
-
-            Region spacer = UiSupport.spacer();
-
-            Button btnZoomOut = new Button("−");
-            btnZoomOut.getStyleClass().add("zoom-button");
-            btnZoomOut.setTooltip(UiSupport.tooltip("Zoom out"));
-
-            zoomLabel = new Label("100%");
-            zoomLabel.getStyleClass().add("pane-sub");
-            zoomLabel.setPadding(new Insets(0, 4, 0, 4));
-
-            Button btnZoomIn = new Button("+");
-            btnZoomIn.getStyleClass().add("zoom-button");
-            btnZoomIn.setTooltip(UiSupport.tooltip("Zoom in"));
-
-            Button btnFit = new Button("Fit");
-            btnFit.getStyleClass().add("zoom-button");
-            btnFit.setTooltip(UiSupport.tooltip("Fit page to width"));
-
-            btnZoomIn.setOnAction(e -> {
-                autoFit = false;
-                if (zoomFactor < 1.6) {
-                    zoomFactor += 0.1;
-                    updateZoom();
-                }
-            });
-
-            btnZoomOut.setOnAction(e -> {
-                autoFit = false;
-                if (zoomFactor > 0.5) {
-                    zoomFactor -= 0.1;
-                    updateZoom();
-                }
-            });
-
-            btnFit.setOnAction(e -> {
-                autoFit = true;
-                fitToPane(getWidth(), getHeight());
-            });
-
-            toolBar.getChildren().addAll(title, sub, spacer, btnZoomOut, zoomLabel, btnZoomIn, btnFit);
-
-            pagesBox.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
-            pagesBox.setAlignment(Pos.TOP_CENTER);
-
-            StackPane canvasHolder = new StackPane(pagesBox);
-            canvasHolder.setPadding(new Insets(20));
-            canvasHolder.setAlignment(Pos.TOP_CENTER);
-            canvasHolder.getStyleClass().add("preview-holder");
-            canvasHolder.prefWidthProperty().bind(docWidth.add(40));
-            canvasHolder.prefHeightProperty().bind(docHeight.add(40));
-
-            ScrollPane scrollPane = new ScrollPane(canvasHolder);
-            scrollPane.getStyleClass().add("preview-scroll");
-            scrollPane.setFitToWidth(false);
-            scrollPane.setFitToHeight(false);
-            scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-            canvasHolder.minWidthProperty().bind(Bindings.createDoubleBinding(
-                    () -> Math.max(docWidth.get() + 40, scrollPane.getViewportBounds().getWidth()),
-                    docWidth, scrollPane.viewportBoundsProperty()));
-            canvasHolder.minHeightProperty().bind(Bindings.createDoubleBinding(
-                    () -> Math.max(docHeight.get() + 40, scrollPane.getViewportBounds().getHeight()),
-                    docHeight, scrollPane.viewportBoundsProperty()));
-            VBox.setVgrow(scrollPane, Priority.ALWAYS);
-
-            getChildren().addAll(toolBar, scrollPane);
-
-            widthProperty().addListener((obs, oldW, newW) -> {
-                if (autoFit && newW.doubleValue() > 0) {
-                    fitToPane(newW.doubleValue(), getHeight());
-                }
-            });
-            heightProperty().addListener((obs, oldH, newH) -> {
-                if (autoFit && newH.doubleValue() > 0) {
-                    fitToPane(getWidth(), newH.doubleValue());
-                }
-            });
-
-            redraw.setOnFinished(e -> {
-                lastDrawMillis = System.currentTimeMillis();
-                drawDynamicA4Paper(currentTexCode);
-            });
-            drawDynamicA4Paper("");
-        }
-
-        private void fitToPane(double paneWidth, double paneHeight) {
-            if (paneWidth <= 0) return;
-            double byWidth = (paneWidth - 92) / 520.0;
-            double byHeight = paneHeight > 0 ? (paneHeight - 77) / 740.0 : byWidth;
-            double scale = Math.min(byWidth, byHeight);
-            scale = Math.max(0.5, Math.min(1.0, scale));
-            scale = Math.floor(scale * 20) / 20.0;
-            if (Math.abs(scale - zoomFactor) > 0.001) {
-                zoomFactor = scale;
-                updateZoom();
-            } else {
-                zoomLabel.setText(String.format("%d%%", (int) Math.round(zoomFactor * 100)));
-            }
-        }
-
-        /** Redraws now if the preview has been idle, otherwise once typing pauses, so long files stay responsive. */
-        public void updatePreview(String texContent) {
-            this.currentTexCode = (texContent != null) ? texContent : "";
-            long now = System.currentTimeMillis();
-            if (now - lastDrawMillis >= PREVIEW_PAUSE_MS && redraw.getStatus() != javafx.animation.Animation.Status.RUNNING) {
-                lastDrawMillis = now;
-                drawDynamicA4Paper(this.currentTexCode);
-            } else {
-                redraw.playFromStart();
-            }
-        }
-
-        private void updateZoom() {
-            zoomLabel.setText(String.format("%d%%", (int) (zoomFactor * 100)));
-            drawDynamicA4Paper(this.currentTexCode);
-        }
-
-        // --- CẤU TRÚC PHẦN TỬ TÀI LIỆU LATEX ĐƯỢC PARSE ---
-        private static class ParsedDoc {
-            String title = "Overleaf Document";
-            String author = "";
-            String date = "";
-            String abstractText = "";
-            List<DocItem> items = new ArrayList<>();
-        }
-
-        private static class DocItem {
-            enum Type { SECTION, SUBSECTION, PARAGRAPH, EQUATION, BULLET }
-            Type type;
-            String text;
-            int number;
-
-            DocItem(Type type, String text) {
-                this.type = type;
-                this.text = text;
-            }
-
-            DocItem(Type type, String text, int number) {
-                this.type = type;
-                this.text = text;
-                this.number = number;
-            }
-        }
-
-        /**
-         * Bộ phân tích cú pháp LaTeX động (Dynamic LaTeX AST Parser)
-         */
-        private ParsedDoc parseLatex(String code) {
-            ParsedDoc doc = new ParsedDoc();
-            if (code == null || code.isBlank()) return doc;
-
-            // 1. Trích xuất \title{...}
-            String t = extractMacro(code, "\\title");
-            if (t != null && !t.isBlank()) {
-                doc.title = cleanLatex(t);
-            }
-
-            // 2. Trích xuất \author{...}
-            String a = extractMacro(code, "\\author");
-            if (a != null && !a.isBlank()) {
-                doc.author = cleanLatex(a);
-            }
-
-            // 3. Trích xuất \date{...}
-            String d = extractMacro(code, "\\date");
-            if (d != null && !d.isBlank()) {
-                String cleanD = cleanLatex(d);
-                if (cleanD.contains("\\today") || cleanD.isBlank()) {
-                    doc.date = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).format(new Date());
-                } else {
-                    doc.date = cleanD;
-                }
-            } else {
-                doc.date = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).format(new Date());
-            }
-
-            // 4. Trích xuất \begin{abstract}...\end{abstract}
-            int absStart = code.indexOf("\\begin{abstract}");
-            if (absStart != -1) {
-                int absEnd = code.indexOf("\\end{abstract}", absStart);
-                if (absEnd != -1) {
-                    doc.abstractText = cleanLatex(code.substring(absStart + 16, absEnd).trim());
-                }
-            }
-
-            // 5. Trích xuất thân bài giữa \begin{document} và \end{document}
-            int bodyStart = code.indexOf("\\begin{document}");
-            String body = (bodyStart != -1) ? code.substring(bodyStart + 16) : code;
-            int bodyEnd = body.indexOf("\\end{document}");
-            if (bodyEnd != -1) {
-                body = body.substring(0, bodyEnd);
-            }
-
-            String[] lines = body.split("\n");
-            StringBuilder pBuf = new StringBuilder();
-            int secNum = 0;
-            int subSecNum = 0;
-            int eqNum = 0;
-            boolean inEq = false;
-            boolean inAbstract = false;
-            StringBuilder eqBuf = new StringBuilder();
-
-            for (String raw : lines) {
-                String line = raw.trim();
-
-                if (line.startsWith("%") || line.equals("\\maketitle")) continue;
-                if (line.startsWith("\\begin{abstract}")) {
-                    inAbstract = true;
-                    continue;
-                }
-                if (line.startsWith("\\end{abstract}")) {
-                    inAbstract = false;
-                    continue;
-                }
-                if (inAbstract) continue;
-
-                // Khối công thức toán (Equation)
-                if (line.contains("\\begin{equation}") || line.contains("\\begin{align}") || line.equals("$$") || line.equals("\\[")) {
-                    if (pBuf.length() > 0) {
-                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-                        pBuf.setLength(0);
-                    }
-                    inEq = true;
-                    eqBuf.setLength(0);
-                    continue;
-                }
-                if (line.contains("\\end{equation}") || line.contains("\\end{align}") || line.equals("$$") || line.equals("\\]")) {
-                    inEq = false;
-                    eqNum++;
-                    String eqStr = cleanLatex(eqBuf.toString().trim());
-                    if (eqStr.isEmpty()) eqStr = "E = mc^2";
-                    doc.items.add(new DocItem(DocItem.Type.EQUATION, eqStr, eqNum));
-                    eqBuf.setLength(0);
-                    continue;
-                }
-                if (inEq) {
-                    eqBuf.append(line).append(" ");
-                    continue;
-                }
-
-                // Section
-                if (line.startsWith("\\section")) {
-                    if (pBuf.length() > 0) {
-                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-                        pBuf.setLength(0);
-                    }
-                    secNum++;
-                    subSecNum = 0;
-                    String sTitle = extractBraces(line);
-                    doc.items.add(new DocItem(DocItem.Type.SECTION, cleanLatex(sTitle), secNum));
-                    continue;
-                }
-
-                // Subsection
-                if (line.startsWith("\\subsection")) {
-                    if (pBuf.length() > 0) {
-                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-                        pBuf.setLength(0);
-                    }
-                    subSecNum++;
-                    String subTitle = extractBraces(line);
-                    doc.items.add(new DocItem(DocItem.Type.SUBSECTION, secNum + "." + subSecNum + " " + cleanLatex(subTitle), subSecNum));
-                    continue;
-                }
-
-                // Bullet Item
-                if (line.startsWith("\\item")) {
-                    if (pBuf.length() > 0) {
-                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-                        pBuf.setLength(0);
-                    }
-                    String itemStr = cleanLatex(line.substring(5).trim());
-                    doc.items.add(new DocItem(DocItem.Type.BULLET, itemStr));
-                    continue;
-                }
-
-                if (line.startsWith("\\begin{") || line.startsWith("\\end{")) {
-                    continue;
-                }
-
-                // Đoạn văn (Paragraph)
-                if (line.isEmpty()) {
-                    if (pBuf.length() > 0) {
-                        doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-                        pBuf.setLength(0);
-                    }
-                } else {
-                    if (pBuf.length() > 0) pBuf.append(" ");
-                    pBuf.append(cleanLatex(line));
-                }
-            }
-
-            if (pBuf.length() > 0) {
-                doc.items.add(new DocItem(DocItem.Type.PARAGRAPH, pBuf.toString().trim()));
-            }
-
-            return doc;
-        }
-
-        private String extractMacro(String text, String macroName) {
-            int idx = text.indexOf(macroName);
-            if (idx == -1) return null;
-            int braceStart = text.indexOf("{", idx);
-            if (braceStart == -1) return null;
-            int count = 1;
-            int i = braceStart + 1;
-            while (i < text.length() && count > 0) {
-                char c = text.charAt(i);
-                if (c == '{') count++;
-                else if (c == '}') count--;
-                i++;
-            }
-            if (count == 0) {
-                return text.substring(braceStart + 1, i - 1);
-            }
-            return null;
-        }
-
-        private String extractBraces(String line) {
-            int start = line.indexOf('{');
-            int end = line.lastIndexOf('}');
-            if (start != -1 && end != -1 && end > start) {
-                return line.substring(start + 1, end);
-            }
-            return line;
-        }
-
-        private String cleanLatex(String s) {
-            if (s == null) return "";
-            String r = s.replaceAll("\\\\\\\\", " ");
-            r = r.replaceAll("\\\\textbf\\{([^}]*)\\}", "$1");
-            r = r.replaceAll("\\\\textit\\{([^}]*)\\}", "$1");
-            r = r.replaceAll("\\\\emph\\{([^}]*)\\}", "$1");
-            r = r.replaceAll("\\\\underline\\{([^}]*)\\}", "$1");
-            r = r.replaceAll("\\\\[a-zA-Z]+\\*?(?:\\[[^\\]]*\\])?(?:\\{[^}]*\\})?", "");
-            r = r.replace("{", "").replace("}", "");
-            return r.trim();
-        }
-
-        private double computeTextWidth(Font font, String text) {
-            if (text == null || text.isEmpty()) return 0;
-            javafx.scene.text.Text t = new javafx.scene.text.Text(text);
-            t.setFont(font);
-            return t.getLayoutBounds().getWidth();
-        }
-
-        private List<String> wrapText(Font font, String text, double maxW) {
-            List<String> lines = new ArrayList<>();
-            if (text == null || text.isBlank()) return lines;
-            String[] words = text.split("\\s+");
-            StringBuilder sb = new StringBuilder();
-            for (String w : words) {
-                if (w.isEmpty()) continue;
-                String test = sb.length() == 0 ? w : sb + " " + w;
-                if (computeTextWidth(font, test) > maxW && sb.length() > 0) {
-                    lines.add(sb.toString());
-                    sb = new StringBuilder(w);
-                } else {
-                    sb = new StringBuilder(test);
-                }
-            }
-            if (sb.length() > 0) {
-                lines.add(sb.toString());
-            }
-            return lines;
-        }
-
-        // --- CẤU TRÚC KHỐI VẼ ĐỒ HỌA TRÊN TRANG (RenderBlock) ---
-        private static class RenderBlock {
-            enum Kind { TITLE, AUTHOR, DATE, RULE, ABSTRACT_TITLE, ABSTRACT_LINE, SECTION, SUBSECTION, PARAGRAPH_LINE, EQUATION, BULLET }
-            Kind kind;
-            String text;
-            Font font;
-            Color color;
-            double height;
-            double beforeSpacing;
-            int number;
-
-            RenderBlock(Kind kind, String text, Font font, Color color, double height, double beforeSpacing) {
-                this.kind = kind;
-                this.text = text;
-                this.font = font;
-                this.color = color;
-                this.height = height;
-                this.beforeSpacing = beforeSpacing;
-            }
-
-            RenderBlock(Kind kind, String text, Font font, Color color, double height, double beforeSpacing, int number) {
-                this.kind = kind;
-                this.text = text;
-                this.font = font;
-                this.color = color;
-                this.height = height;
-                this.beforeSpacing = beforeSpacing;
-                this.number = number;
-            }
-        }
-
-        /**
-         * Render trang giấy A4 ĐỘNG đa trang (Multi-page Dynamic A4 Engine)
-         */
-        private void drawDynamicA4Paper(String code) {
-            ParsedDoc doc = parseLatex(code);
-
-            double scale = zoomFactor;
-            double paperW = 520 * scale;
-            double pageH = 740 * scale;
-            double marginX = 40 * scale;
-            double maxTextW = paperW - 2 * marginX;
-            double contentTop = 45 * scale;
-            double contentBottom = pageH - 45 * scale;
-            double usableH = contentBottom - contentTop;
-
-            // 1. Chuyển đổi các phần tử thành danh sách RenderBlock
-            List<RenderBlock> blocks = new ArrayList<>();
-
-            // Tiêu đề bài báo
-            Font titleFont = Font.font("Serif", FontWeight.BOLD, 17 * scale);
-            List<String> titleLines = wrapText(titleFont, doc.title, maxTextW);
-            for (int i = 0; i < titleLines.size(); i++) {
-                blocks.add(new RenderBlock(RenderBlock.Kind.TITLE, titleLines.get(i), titleFont, Color.BLACK, 24 * scale, (i == 0 ? 0 : 4 * scale)));
-            }
-
-            // Tác giả
-            if (!doc.author.isEmpty()) {
-                Font authorFont = Font.font("Serif", FontWeight.NORMAL, 11 * scale);
-                blocks.add(new RenderBlock(RenderBlock.Kind.AUTHOR, doc.author, authorFont, Color.rgb(55, 65, 81), 18 * scale, 6 * scale));
-            }
-
-            // Ngày tháng
-            if (!doc.date.isEmpty()) {
-                Font dateFont = Font.font("Serif", FontPosture.ITALIC, 10 * scale);
-                blocks.add(new RenderBlock(RenderBlock.Kind.DATE, doc.date, dateFont, Color.rgb(75, 85, 99), 16 * scale, 2 * scale));
-            }
-
-            // Đường kẻ ngang mỏng
-            blocks.add(new RenderBlock(RenderBlock.Kind.RULE, "", null, Color.rgb(226, 232, 240), 12 * scale, 6 * scale));
-
-            // Phần Tóm tắt (Abstract)
-            if (!doc.abstractText.isEmpty()) {
-                Font absHeadFont = Font.font("Serif", FontWeight.BOLD, 11 * scale);
-                blocks.add(new RenderBlock(RenderBlock.Kind.ABSTRACT_TITLE, "Abstract", absHeadFont, Color.BLACK, 18 * scale, 8 * scale));
-
-                Font absFont = Font.font("Serif", FontPosture.ITALIC, 10.5 * scale);
-                List<String> absLines = wrapText(absFont, doc.abstractText, maxTextW - 40 * scale);
-                for (String l : absLines) {
-                    blocks.add(new RenderBlock(RenderBlock.Kind.ABSTRACT_LINE, l, absFont, Color.rgb(30, 41, 59), 15 * scale, 0));
-                }
-            }
-
-            // Các phần nội dung thân bài
-            Font secFont = Font.font("Serif", FontWeight.BOLD, 13 * scale);
-            Font subFont = Font.font("Serif", FontWeight.BOLD, 11.5 * scale);
-            Font pFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
-            Font eqFont = Font.font("Serif", FontWeight.BOLD, FontPosture.ITALIC, 14 * scale);
-            Font bulletFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
-
-            for (DocItem item : doc.items) {
-                switch (item.type) {
-                    case SECTION:
-                        blocks.add(new RenderBlock(RenderBlock.Kind.SECTION, item.number + ". " + item.text, secFont, Color.BLACK, 22 * scale, 18 * scale));
-                        break;
-                    case SUBSECTION:
-                        blocks.add(new RenderBlock(RenderBlock.Kind.SUBSECTION, item.text, subFont, Color.BLACK, 18 * scale, 12 * scale));
-                        break;
-                    case PARAGRAPH:
-                        List<String> pLines = wrapText(pFont, item.text, maxTextW);
-                        for (int i = 0; i < pLines.size(); i++) {
-                            blocks.add(new RenderBlock(RenderBlock.Kind.PARAGRAPH_LINE, pLines.get(i), pFont, Color.rgb(15, 23, 42), 15 * scale, (i == 0 ? 6 * scale : 0)));
-                        }
-                        break;
-                    case EQUATION:
-                        blocks.add(new RenderBlock(RenderBlock.Kind.EQUATION, item.text, eqFont, Color.BLACK, 26 * scale, 12 * scale, item.number));
-                        break;
-                    case BULLET:
-                        List<String> bLines = wrapText(bulletFont, item.text, maxTextW - 20 * scale);
-                        for (int i = 0; i < bLines.size(); i++) {
-                            blocks.add(new RenderBlock(RenderBlock.Kind.BULLET, (i == 0 ? "•  " : "   ") + bLines.get(i), bulletFont, Color.rgb(15, 23, 42), 15 * scale, (i == 0 ? 4 * scale : 0)));
-                        }
-                        break;
-                }
-            }
-
-            // 2. Thuật toán tự động phân trang (Auto-Pagination Engine)
-            List<List<RenderBlock>> pages = new ArrayList<>();
-            List<RenderBlock> curPage = new ArrayList<>();
-            double curY = 0;
-
-            for (RenderBlock b : blocks) {
-                double blockTotalH = b.beforeSpacing + b.height;
-                if (curY + blockTotalH > usableH && !curPage.isEmpty()) {
-                    pages.add(curPage);
-                    curPage = new ArrayList<>();
-                    curY = 0;
-                }
-                curPage.add(b);
-                curY += blockTotalH;
-            }
-            if (!curPage.isEmpty()) {
-                pages.add(curPage);
-            }
-
-            int totalPages = Math.max(1, pages.size());
-
-            // 3. Kích thước mỗi trang: một Canvas riêng cho từng trang, có lề cho bóng đổ
-            double pagePad = 20;
-            double canvasW = paperW + 40;
-            double paperX = (canvasW - paperW) / 2;
-            List<Canvas> pageCanvases = new ArrayList<>();
-
-            // 4. Vẽ từng trang A4 chân thực (tối đa MAX_PREVIEW_PAGES trang)
-            int drawnPages = Math.min(totalPages, MAX_PREVIEW_PAGES);
-            for (int pIdx = 0; pIdx < drawnPages; pIdx++) {
-                Canvas pageCanvas = new Canvas(canvasW, pageH + 2 * pagePad);
-                pageCanvases.add(pageCanvas);
-                GraphicsContext gc = pageCanvas.getGraphicsContext2D();
-                double pageY = pagePad;
-
-                // A. Bóng đổ trang giấy (Drop Shadow)
-                gc.save();
-                DropShadow shadow = new DropShadow();
-                shadow.setColor(Color.rgb(0, 0, 0, 0.28));
-                shadow.setRadius(16 * scale);
-                shadow.setOffsetY(4 * scale);
-                gc.setEffect(shadow);
-                gc.setFill(Color.WHITE);
-                gc.fillRect(paperX, pageY, paperW, pageH);
-                gc.restore();
-
-                // B. Đường viền mỏng
-                gc.setStroke(Color.rgb(203, 213, 225));
-                gc.setLineWidth(1);
-                gc.strokeRect(paperX, pageY, paperW, pageH);
-
-                // C. Vẽ các phần tử nội dung trên trang
-                double drawY = pageY + contentTop;
-                List<RenderBlock> pageBlocks = pages.get(pIdx);
-
-                for (RenderBlock b : pageBlocks) {
-                    drawY += b.beforeSpacing;
-                    gc.setFont(b.font);
-                    gc.setFill(b.color);
-
-                    switch (b.kind) {
-                        case TITLE:
-                        case AUTHOR:
-                        case DATE:
-                        case ABSTRACT_TITLE:
-                            double tw = computeTextWidth(b.font, b.text);
-                            gc.fillText(b.text, paperX + (paperW - tw) / 2, drawY + b.height - 4 * scale);
-                            break;
-                        case RULE:
-                            gc.setStroke(b.color);
-                            gc.setLineWidth(1);
-                            gc.strokeLine(paperX + marginX, drawY + 6 * scale, paperX + paperW - marginX, drawY + 6 * scale);
-                            break;
-                        case ABSTRACT_LINE:
-                            gc.fillText(b.text, paperX + marginX + 20 * scale, drawY + b.height - 4 * scale);
-                            break;
-                        case SECTION:
-                        case SUBSECTION:
-                        case PARAGRAPH_LINE:
-                            gc.fillText(b.text, paperX + marginX, drawY + b.height - 4 * scale);
-                            break;
-                        case EQUATION:
-                            double eqW = computeTextWidth(b.font, b.text);
-                            gc.fillText(b.text, paperX + (paperW - eqW) / 2, drawY + b.height - 6 * scale);
-                            Font numFont = Font.font("Serif", FontWeight.NORMAL, 10.5 * scale);
-                            gc.setFont(numFont);
-                            gc.fillText("(" + b.number + ")", paperX + paperW - marginX - 25 * scale, drawY + b.height - 6 * scale);
-                            break;
-                        case BULLET:
-                            gc.fillText(b.text, paperX + marginX + 10 * scale, drawY + b.height - 4 * scale);
-                            break;
-                    }
-                    drawY += b.height;
-                }
-
-                // D. Số trang chân trang (Footer)
-                gc.setFont(Font.font("Serif", FontWeight.NORMAL, 10 * scale));
-                gc.setFill(Color.GRAY);
-                gc.fillText("- " + (pIdx + 1) + " -", paperX + paperW / 2 - 10 * scale, pageY + pageH - 20 * scale);
-            }
-            pagesBox.getChildren().setAll(pageCanvases);
-            double noteHeight = 0;
-            if (drawnPages < totalPages) {
-                Label more = new Label("Preview shows the first " + drawnPages + " of " + totalPages
-                        + " pages. Recompile for the full PDF.");
-                more.getStyleClass().add("pane-sub");
-                more.setPadding(new Insets(4, 0, 12, 0));
-                pagesBox.getChildren().add(more);
-                noteHeight = 36;
-            }
-            docWidth.set(canvasW);
-            docHeight.set(drawnPages * (pageH + 2 * pagePad) + noteHeight);
-        }
-    }
-
-    public static void main(String[] args) {
-        launch(args);
-    }
 }

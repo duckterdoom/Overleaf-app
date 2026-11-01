@@ -36,7 +36,9 @@ public class WorkspaceWatcher {
     private static final Logger LOG = Logger.getLogger(WorkspaceWatcher.class.getName());
 
     private static final long DEBOUNCE_DELAY = 500;
-    private static final Set<String> WATCHED_EXTENSIONS = Set.of(".tex", ".bib", ".sty", ".cls");
+    private static final Set<String> WATCHED_EXTENSIONS = Set.of(".tex", ".bib", ".sty", ".cls", ".bst",
+            ".bbx", ".cbx", ".def", ".cfg", ".csv", ".dat", ".png", ".jpg", ".jpeg", ".pdf",
+            ".svg", ".eps", ".ttf", ".otf", ".lua", ".tikz");
 
     private final Path directory;
 

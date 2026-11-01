@@ -26,6 +26,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
@@ -64,6 +67,7 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     private final Path accountsFile;
     private final Path settingsFile;
     private final Path activityFile;
+    private final Path projectCatalog;
     private final SecureRandom random = new SecureRandom();
     private final Object lock = new Object();
 
@@ -78,6 +82,7 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
         this.accountsFile = appDir.resolve("accounts.properties");
         this.settingsFile = appDir.resolve("settings.properties");
         this.activityFile = appDir.resolve("activity.properties");
+        this.projectCatalog = appDir.resolve("projects.properties");
     }
 
     public static Path defaultHome() {
@@ -96,7 +101,48 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     }
 
     public Path projectsDir() {
-        return projectsDir;
+        return projectsDirectory();
+    }
+
+    @Override public Path projectsDirectory() {
+        String selected = preference("projectsDirectory", "");
+        return selected.isBlank() ? projectsDir : Path.of(selected).toAbsolutePath().normalize();
+    }
+
+    @Override public void setProjectsDirectory(Path directory) {
+        Path target = directory.toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(target);
+            if (!Files.isWritable(target)) throw new ProjectFailure(ProjectFailure.Code.DIRECTORY);
+            synchronized (lock) {
+                Properties catalog = load(projectCatalog);
+                for (ProjectSummary project : projects()) catalog.setProperty(project.folder(), "project");
+                store(projectCatalog, catalog, "Registered project locations");
+                setPreference("projectsDirectory", target.toString());
+            }
+        } catch (IOException invalid) { throw new ProjectFailure(ProjectFailure.Code.DIRECTORY, invalid); }
+    }
+
+    @Override public String affiliation() { return preference("affiliation", ""); }
+    @Override public void setAffiliation(String value) { setPreference("affiliation", value == null ? "" : value.strip()); }
+
+    private void registerProject(Path directory, Path previous) {
+        synchronized (lock) {
+            Properties catalog = load(projectCatalog);
+            if (previous != null) catalog.remove(previous.toAbsolutePath().normalize().toString());
+            catalog.setProperty(directory.toAbsolutePath().normalize().toString(), "project");
+            store(projectCatalog, catalog, "Registered project locations");
+            if (previous != null && previous.toString().equals(lastProjectFolder())) rememberProject(directory);
+        }
+    }
+
+    public String lastProjectFolder() { return load(settingsFile).getProperty("last.project.folder"); }
+    @Override public String preferredProjectFolder() { return lastProjectFolder(); }
+    public void rememberProject(Path folder) {
+        updateSettings(settings -> {
+            settings.setProperty("last.project.folder", folder.toAbsolutePath().normalize().toString());
+            settings.setProperty("last.project", folder.getFileName().toString());
+        });
     }
 
     // ------------------------------------------------------------------ auth
@@ -377,21 +423,25 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     @Override
     public List<ProjectSummary> projects() {
         List<ProjectSummary> result = new ArrayList<>();
-        if (!Files.isDirectory(projectsDir)) {
-            return result;
-        }
         record Entry(ProjectSummary summary, Instant modified) {
         }
         List<Entry> entries = new ArrayList<>();
-        try (Stream<Path> dirs = Files.list(projectsDir)) {
-            for (Path dir : (Iterable<Path>) dirs::iterator) {
-                if (Files.isDirectory(dir) && !dir.getFileName().toString().startsWith(".")) {
-                    Instant modified = lastModified(dir);
-                    entries.add(new Entry(summarize(dir, modified), modified));
-                }
+        Set<Path> candidates = new LinkedHashSet<>();
+        Properties registered = load(projectCatalog);
+        Path parent = projectsDirectory();
+        if (Files.isDirectory(parent)) {
+            try (Stream<Path> dirs = Files.list(parent)) { dirs.filter(Files::isDirectory).forEach(candidates::add); }
+            catch (IOException ignored) { }
+        }
+        for (String folder : registered.stringPropertyNames()) {
+            try { candidates.add(Path.of(folder).toAbsolutePath().normalize()); } catch (RuntimeException ignored) { }
+        }
+        for (Path dir : candidates) {
+            if (Files.isDirectory(dir) && !dir.getFileName().toString().startsWith(".")
+                    && (Files.isRegularFile(dir.resolve(MAIN_FILE)) || registered.containsKey(dir.toString()))) {
+                Instant modified = lastModified(dir);
+                entries.add(new Entry(summarize(dir, modified), modified));
             }
-        } catch (IOException e) {
-            return result;
         }
         entries.sort(Comparator.comparing(Entry::modified).reversed());
         for (Entry entry : entries) {
@@ -402,15 +452,30 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
 
     @Override
     public ProjectSummary create(String name, String icon, String color) {
+        return createPrepared(name, icon, color, projectsDirectory(), dir ->
+                Files.writeString(dir.resolve(MAIN_FILE), template(folderName(name)), StandardCharsets.UTF_8));
+    }
+
+    @Override public ProjectSummary create(NewProjectRequest request) {
+        return createPrepared(request.name(), request.icon(), request.color(),
+                request.parent() == null ? projectsDirectory() : request.parent(),
+                dir -> new ProjectImports().populate(dir, request, affiliation()));
+    }
+
+    @FunctionalInterface interface Initializer { void initialize(Path staging) throws IOException; }
+
+    ProjectSummary createPrepared(String name, String icon, String color, Path parent, Initializer initializer) {
         String folderName = folderName(name);
+        Path staging = null;
         try {
-            Files.createDirectories(projectsDir);
-            Path dir = projectsDir.resolve(folderName);
+            Path root = parent.toAbsolutePath().normalize();
+            Files.createDirectories(root);
+            Path dir = root.resolve(folderName);
             for (int n = 2; Files.exists(dir); n++) {
-                dir = projectsDir.resolve(folderName + " (" + n + ")");
+                dir = root.resolve(folderName + " (" + n + ")");
             }
-            Files.createDirectories(dir);
-            Files.writeString(dir.resolve(MAIN_FILE), template(dir.getFileName().toString()), StandardCharsets.UTF_8);
+            staging = Files.createDirectory(root.resolve(".overleaf-staging-" + UUID.randomUUID()));
+            initializer.initialize(staging);
             Properties look = new Properties();
             if (icon != null && icon.matches("[a-z0-9-]{1,24}")) {
                 look.setProperty("icon", icon);
@@ -419,32 +484,37 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
                 look.setProperty("color", color);
             }
             if (!look.isEmpty()) {
-                store(dir.resolve(LOOK_FILE), look, "Overleaf Desktop project appearance");
+                store(staging.resolve(LOOK_FILE), look, "Overleaf Desktop project appearance");
             }
+            ProjectFiles.checkCancelled();
+            Files.move(staging, dir);
+            registerProject(dir, null);
             return summarize(dir, Instant.now());
         } catch (IOException e) {
-            throw new IllegalStateException("Could not create the project folder: " + e.getMessage(), e);
-        }
+            throw new ProjectFailure(ProjectFailure.Code.IO, e);
+        } finally { if (staging != null) ProjectFiles.removeStaging(staging); }
     }
 
     @Override
     public ProjectSummary rename(ProjectSummary project, String newName) {
         Path dir = folderOf(project);
         String folderName = folderName(newName);
-        Path target = projectsDir.resolve(folderName);
+        Path target = dir.getParent().resolve(folderName);
         if (target.equals(dir)) {
             return summarize(dir, lastModified(dir));
         }
         if (Files.exists(target)) {
-            throw new IllegalStateException("A project called \"" + folderName + "\" already exists.");
+            throw new ProjectFailure(ProjectFailure.Code.EXISTS);
         }
         try {
             Files.move(dir, target);
+            registerProject(target, dir);
         } catch (IOException e) {
             throw new IllegalStateException("Could not rename the project: " + e.getMessage(), e);
         }
         updateSettings(settings -> {
-            if (project.name().equals(settings.getProperty("last.project"))) {
+            if (target.toString().equals(settings.getProperty("last.project.folder"))
+                    || (settings.getProperty("last.project.folder") == null && project.name().equals(settings.getProperty("last.project")))) {
                 settings.setProperty("last.project", folderName);
             }
         });
@@ -456,10 +526,16 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     public void delete(ProjectSummary project) {
         Path dir = folderOf(project);
         try {
-            Path trash = home.resolve(".trash");
+            Path trash = Files.getFileStore(dir).equals(Files.getFileStore(home))
+                    ? home.resolve(".trash") : dir.getParent().resolve(".overleaf-trash");
             Files.createDirectories(trash);
             String stamp = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now());
             Files.move(dir, trash.resolve(dir.getFileName() + " " + stamp));
+            synchronized (lock) {
+                Properties catalog = load(projectCatalog);
+                catalog.remove(dir.toString());
+                store(projectCatalog, catalog, "Registered project locations");
+            }
         } catch (IOException e) {
             throw new IllegalStateException("Could not delete the project: " + e.getMessage(), e);
         }
@@ -471,7 +547,7 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
 
     private Path folderOf(ProjectSummary project) {
         Path dir = Path.of(project.folder()).toAbsolutePath().normalize();
-        if (!dir.getParent().equals(projectsDir) || !Files.isDirectory(dir)) {
+        if ((!dir.getParent().equals(projectsDirectory()) && !load(projectCatalog).containsKey(dir.toString())) || !Files.isDirectory(dir)) {
             throw new IllegalStateException("That project folder no longer exists.");
         }
         return dir;
@@ -490,7 +566,7 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
 
     @Override
     public String locationFor(String name) {
-        String shown = projectsDir.resolve(name == null || name.isBlank() ? "…" : name.trim()).toString();
+        String shown = projectsDirectory().resolve(name == null || name.isBlank() ? "…" : name.trim()).toString();
         String userHome = System.getProperty("user.home");
         return userHome != null && shown.startsWith(userHome) ? "~" + shown.substring(userHome.length()) : shown;
     }
@@ -513,6 +589,29 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
         updateSettings(settings -> settings.setProperty("last.project", name));
     }
 
+    @Override public ProjectSummary move(ProjectSummary project, Path newParent) {
+        Path source = folderOf(project);
+        Path parent = newParent.toAbsolutePath().normalize();
+        if (parent.equals(source.getParent())) return project;
+        if (parent.startsWith(source)) throw new ProjectFailure(ProjectFailure.Code.DIRECTORY);
+        Path destination = parent.resolve(source.getFileName());
+        if (Files.exists(destination)) throw new ProjectFailure(ProjectFailure.Code.EXISTS);
+        Path staging = null;
+        try {
+            Files.createDirectories(parent);
+            if (parent.toRealPath().startsWith(source.toRealPath())) throw new ProjectFailure(ProjectFailure.Code.DIRECTORY);
+            staging = Files.createDirectory(parent.resolve(".overleaf-staging-" + UUID.randomUUID()));
+            ProjectFiles.copy(source, staging);
+            ProjectFiles.checkCancelled();
+            Files.move(staging, destination);
+            Path backupRoot = Files.createDirectories(source.getParent().resolve(".overleaf-moved-backups"));
+            Files.move(source, backupRoot.resolve(source.getFileName() + "-" + UUID.randomUUID()));
+            registerProject(destination, source);
+            return summarize(destination, Instant.now());
+        } catch (IOException failure) { throw new ProjectFailure(ProjectFailure.Code.MOVE, failure); }
+        finally { if (staging != null) ProjectFiles.removeStaging(staging); }
+    }
+
     /** Creates a starter project the first time the app runs, so Home is never empty. */
     public void ensureStarterProject() {
         if (projects().isEmpty()) {
@@ -530,6 +629,8 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
                 + "  \\usepackage[utf8]{inputenc}\n"
                 + "\\else\n"
                 + "  \\usepackage{fontspec}\n"
+                + "  \\setmainfont[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,"
+                + "BoldItalicFont=lmroman10-bolditalic.otf]{lmroman10-regular.otf}\n"
                 + "\\fi\n"
                 + "\\usepackage[vietnamese,english]{babel}\n"
                 + "\\usepackage{amsmath}\n\n"

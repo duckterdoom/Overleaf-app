@@ -32,6 +32,22 @@ public final class LatexErrorExplainer {
 
     private static final List<Rule> RULES = List.of(
 
+            rule("command failed with exit code (\\d+)",
+                    "latexmk could not finish the build",
+                    "Exit code {1} is a launcher summary, not the original LaTeX error.",
+                    "Find the first LaTeX or package error above this message. Check for missing packages, fonts or input files before changing document syntax.",
+                    "latexmk chưa hoàn tất biên dịch",
+                    "Mã {1} là thông báo tổng kết, chưa phải nguyên nhân lỗi LaTeX.",
+                    "Tìm lỗi LaTeX hoặc gói đầu tiên ở phía trên. Kiểm tra gói, font và tệp đầu vào bị thiếu trước khi sửa cú pháp tài liệu."),
+
+            rule("(?:can't|cannot) write on file [`']([^']+)'",
+                    "Cannot write an auxiliary file",
+                    "TeX could not write {1}. The output subfolder may be missing or unwritable.",
+                    "Create the corresponding subfolder under build, check permissions and compile main.tex again.",
+                    "Không ghi được tệp phụ trợ",
+                    "TeX không ghi được {1}. Thư mục con đầu ra có thể chưa có hoặc không có quyền ghi.",
+                    "Tạo thư mục con tương ứng trong build, kiểm tra quyền ghi rồi biên dịch lại main.tex."),
+
             rule("Undefined control sequence",
                     "Unknown command",
                     "LaTeX does not recognise the command {cmd}. This is usually a typo, or the package that defines it has not been loaded.",
@@ -48,12 +64,12 @@ public final class LatexErrorExplainer {
                     "Một ký hiệu chỉ dùng được trong chế độ toán (như _ hoặc ^) xuất hiện ở đoạn văn thường.",
                     "Đặt công thức giữa hai dấu $, hoặc gõ \\_ nếu chỉ muốn in dấu gạch dưới."),
 
-            rule("(?:File|find file) [`'\u2018]([^'\u2019]+)['\u2019]",
+            rule("(?:File [`'\u2018]([^'\u2019]+)['\u2019] (?:not found|does not exist)|(?:can't|cannot) find file [`'\u2018]([^'\u2019]+)['\u2019])",
                     "File not found",
-                    "LaTeX could not find the file {1}.",
+                    "LaTeX could not find the file {file}.",
                     "If it is a package (.sty or .cls), install it with your TeX distribution's package manager. If it is your own file, check the name, the folder and the extension in the \\input or \\includegraphics line.",
                     "Không tìm thấy tệp",
-                    "LaTeX không tìm thấy tệp {1}.",
+                    "LaTeX không tìm thấy tệp {file}.",
                     "Nếu đó là một gói (.sty hoặc .cls), hãy cài nó bằng trình quản lý gói của bản TeX đang dùng. Nếu là tệp của bạn, hãy kiểm tra tên, thư mục và phần mở rộng trong dòng \\input hoặc \\includegraphics."),
 
             rule("Missing \\\\begin\\{document\\}",
@@ -283,6 +299,15 @@ public final class LatexErrorExplainer {
      * of the compiler service (see the {@code EXIT_*} constants of {@link LatexCompilerService}).
      */
     public static Explanation explainExit(int exitCode, boolean vi) {
+        if (exitCode == LatexCompilerService.EXIT_MISSING_GLYPHS) {
+            return vi
+                    ? new Explanation("PDF bị thiếu ký tự",
+                            "TeX đã tạo PDF nhưng font đang dùng không có một số ký tự. Với tiếng Việt, nguyên nhân thường là dùng khai báo T5 của pdfLaTeX khi chạy XeLaTeX/LuaLaTeX.",
+                            "Dùng iftex: pdfLaTeX dùng inputenc + fontenc T5; XeLaTeX/LuaLaTeX dùng fontspec và font Unicode có tiếng Việt. Xem các dòng Missing character trong Build output.", true)
+                    : new Explanation("PDF contains missing characters",
+                            "TeX generated a PDF, but the selected font cannot display some characters.",
+                            "Use iftex: inputenc and T5 fontenc for pdfLaTeX; fontspec and a Unicode font with the required glyphs for XeLaTeX/LuaLaTeX. Check Missing character in Build output.", true);
+        }
         if (exitCode == LatexCompilerService.EXIT_START_FAILED) {
             return vi
                     ? new Explanation("Không chạy được LaTeX",
@@ -341,6 +366,9 @@ public final class LatexErrorExplainer {
 
     private static String fill(String template, Matcher m, String raw, String ctx, boolean vi) {
         String out = template;
+        if (out.contains("{file}")) {
+            out = out.replace("{file}", m.group(1) != null ? m.group(1) : m.group(2));
+        }
         if (out.contains("{cmd}")) {
             String cmd = findCommand(raw, ctx);
             String fallback = vi ? "được dùng ở dòng này" : "it found on this line";

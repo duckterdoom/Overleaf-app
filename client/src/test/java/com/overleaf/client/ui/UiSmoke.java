@@ -138,6 +138,7 @@ public final class UiSmoke {
         // 2. New project via the modal.
         fx(() -> {
             button(host, "New project").fire();
+            chooseBlankProject(host);
             return null;
         });
         waitFor("new project modal", () -> fx(() -> host.getChildren().size() == 2));
@@ -359,8 +360,8 @@ public final class UiSmoke {
         snap("06b-new-file-modal");
         fx(() -> {
             Node modal = host.getChildren().get(1);
-            ((TextField) modal.lookup(".modal-field")).setText("notes");
-            button(modal, "Create file").fire();
+            ((TextField) modal.lookup("#add-files-name")).setText("notes");
+            button(modal, "Create").fire();
             return null;
         });
         check("new file created as notes.tex", Files.isRegularFile(project.resolve("notes.tex")));
@@ -743,6 +744,7 @@ public final class UiSmoke {
         // 9. Vietnamese: project name, typing every diacritic form, saving, rendering.
         fx(() -> {
             button(host, "New project").fire();
+            chooseBlankProject(host);
             return null;
         });
         waitFor("new project modal (vi)", () -> fx(() -> host.getChildren().size() == 2));
@@ -916,6 +918,12 @@ public final class UiSmoke {
             }
         }
         throw new NoSuchMethodException(name);
+    }
+
+    private static void chooseBlankProject(javafx.scene.layout.StackPane host) throws Exception {
+        var menu = (javafx.scene.control.ContextMenu) field(host.getChildren().get(0), "newProjectMenu");
+        menu.hide();
+        menu.getItems().stream().filter(i -> "new-project-blank".equals(i.getId())).findFirst().orElseThrow().fire();
     }
 
     private UiSmoke() {

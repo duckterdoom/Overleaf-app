@@ -1,6 +1,7 @@
 package com.overleaf.client.ui.backend;
 
 import java.util.List;
+import java.nio.file.Path;
 
 /**
  * UI seam for the project list shown on the home dashboard.
@@ -33,4 +34,12 @@ public interface ProjectGateway {
 
     /** Folder a new project with this name would be created in, for display. */
     String locationFor(String name);
+
+    Path projectsDirectory();
+    void setProjectsDirectory(Path directory);
+    ProjectSummary create(NewProjectRequest request);
+    ProjectSummary move(ProjectSummary project, Path newParent);
+    String affiliation();
+    void setAffiliation(String value);
+    default String preferredProjectFolder() { return null; }
 }

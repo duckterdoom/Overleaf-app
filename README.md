@@ -59,14 +59,41 @@ scripts\run-client.bat      # Windows
 
 Lần đầu: **tạo tài khoản → mở dự án → viết**. Dữ liệu lưu ở `~/OverleafDesktop`.
 
+**Windows:** `scripts\run-client.bat` tự tìm JDK trong `JAVA_HOME` hoặc các thư mục cài đặt thường gặp (`~/.jdks`, Program Files), và tìm Maven trên PATH hoặc Maven đi kèm IntelliJ IDEA. Không cần đổi cấu hình hệ thống nếu máy đã có JDK 21+ và IntelliJ. Có thể kiểm tra chỉ build bằng `scripts\run-client.bat -BuildOnly`; nếu chạy bình thường bị lỗi, cửa sổ giữ thông báo để đọc nguyên nhân.
+
+Nếu thấy file `.class` thay vì source: trên nhánh `Network`, mở code trong `client/src/main/java`, `common/src/main/java`, `server/src/main/java`, `persistence/src/main/java`. `.class` trong `target/classes` là output compiler, không phải source bị đổi đuôi; không đổi tên chúng thành `.java`. Các folder tên cũ như `overleaf-client/` chỉ còn output từ nhánh trước, đã chuyển vào `target/legacy-build-output-20261101-095848/` để giữ bản sao. Lệnh chạy ở các phiên hướng dẫn trước dùng tên module cũ không áp dụng cho nhánh này.
+
 | Thao tác | Cách làm |
 | --- | --- |
 | Lưu / Compile | `Ctrl+S` / `F5` hoặc `Ctrl+Enter` |
 | Tạo file, mở PDF, vào phòng | Menu `⋯` góc trên bên phải |
 | Đổi tên / xóa file, dự án | Chuột phải vào file hoặc dự án |
 | Đổi ảnh đại diện | Bấm vào avatar |
+| Chỉnh chiều cao Outline | Kéo thanh ngang giữa cây file và Outline lên/xuống; tỷ lệ được nhớ sau khi thả chuột |
+| Tạo / nhập dự án | **Dự án mới** → dự án trống, ZIP, Word `.docx`, Markdown, kho GitHub, dự án ví dụ hoặc 9 nhóm template |
+| Chọn nơi lưu dự án mới | Trong hộp thoại tạo/nhập, sửa ô thư mục lưu hoặc bấm **Chọn…**; app tạo thư mục con mang tên dự án |
+| Đổi nơi lưu mặc định | **Cài đặt → Dự án** hoặc **Dự án mới → Thư mục dự án mặc định…**; dự án cũ vẫn giữ nguyên vị trí và được liệt kê |
+| Chuyển dự án có sẵn | Trang chủ → nhấp phải dự án → **Đổi thư mục lưu…**; chọn thư mục cha mới |
+| Thêm thư mục / tệp trong workspace | **Thư mục mới**, **Thêm tệp**, hoặc nhấp phải thư mục; thư mục đang chọn được dùng làm đích |
+| Upload tài nguyên | **Tải lên** → chọn nhiều tệp/thư mục, kéo thả hoặc dán tệp/ảnh; kiểm tra danh sách rồi bấm **Tải lên** |
+| Lấy tệp từ nơi khác | **Thêm tệp → Từ dự án khác** (có tùy chọn tệp đầu ra), **Từ URL bên ngoài** hoặc **Thư viện tài liệu (.bib)** |
+| Xem / xuất PDF | F5 → chờ preview xanh → cuộn liên tục qua các trang, bấm liên kết mục lục/tham chiếu để tới mục; `↶` quay lại, vẫn có `‹`/`›`, zoom/Fit; **Export PDF…** lưu đúng PDF đang xem |
+
+Preview hiển thị **PDF thật do compiler tạo** bằng PDFBox. Sửa nguồn hoặc compile lỗi sẽ báo rõ bản cũ và khóa xuất; chỉ xuất khi đã compile thành công nội dung hiện tại. File Export giữ nguyên PDF, gồm font, công thức, bảng và hình. Xem chi tiết ở [AI_Handoff.md §19](AI_Handoff.md#19-preview-đúng-pdf-và-export-cùng-kết-quả-compiler).
+
+**Cài đặt compile:** Settings → **Compilation / Biên dịch** cho phép chọn tệp `latexmk`, timeout (mặc định 120 giây, **0 = không giới hạn**) và kiểm tra phiên bản ba engine. Để trống đường dẫn để tự tìm trên PATH, bộ portable `target/TinyTeX` hoặc nơi cài phổ biến; đường dẫn bạn chọn luôn được ưu tiên. Bấm **Save compiler settings** để lưu; nút **Stop** xuất hiện khi compile. Lỗi có giải thích offline trong Build output bằng tiếng Việt/Anh. Kết quả PDF/cache/TikZ/tiếng Việt đã kiểm chứng và cách dùng TinyTeX portable trên máy hiện tại: [AI_Handoff.md §17](AI_Handoff.md#17-cải-thiện-tiêu-chí-1--compile-local-và-kiểm-chứng-pdf-thật). Sau cập nhật code phải đóng/mở lại app; tiến trình đang chạy vẫn dùng class cũ.
 
 Gõ tiếng Việt (Telex/VNI) dùng được bình thường.
+
+Menu tạo dự án, nhóm template, hộp thoại chọn nơi lưu và lỗi nhập dự án có cả tiếng Anh/Việt theo ngôn ngữ giao diện. Có các mẫu bài báo, sách, thư, bài tập, poster, thuyết trình, báo cáo, CV và luận văn. **Thêm đơn vị…** lưu tên trường/cơ quan để điền tác giả vào template mới.
+
+Nhập Word/Markdown cần **Pandoc** trên PATH, biến `OVERLEAF_PANDOC` trỏ tới executable hoặc bản portable `target/pandoc/pandoc.exe`. Máy hiện tại có bản portable 3.13; thư mục `target/` không được Git theo dõi nên máy khác cần cài riêng. Bản nguồn được giữ trong `source/`; Word chỉ hỗ trợ `.docx` và định dạng phức tạp cần kiểm tra sau chuyển đổi ([Pandoc Manual](https://pandoc.org/MANUAL.html)). GitHub cần Git trên PATH và URL HTTPS kho công khai dạng `https://github.com/owner/repo`; chưa có luồng đăng nhập kho riêng. ZIP/kho Git cần `main.tex` ở gốc hoặc một file `.tex` gốc chứa `\documentclass` để app tạo bản `main.tex`.
+
+Chuyển dự án sao chép và đối chiếu nội dung trước khi đổi vị trí, giữ bản cũ trong `.overleaf-moved-backups/` bên cạnh thư mục cũ. Không tự xóa các bản phục hồi này. Danh sách vị trí được lưu trong `~/OverleafDesktop/.app/projects.properties`; nên chuyển qua ứng dụng để danh sách cập nhật. Xem [AI_Handoff.md §22](AI_Handoff.md#22-menu-tạo-dự-án-nhập-tài-liệu-và-thư-mục-lưu-tùy-chọn).
+
+**Workspace:** hộp thoại thêm tệp có ô chọn/sửa thư mục đích; để trống để thêm ở gốc. Tạo tệp không có đuôi tự thêm `.tex`; có thể dùng `chapters/intro.tex` để tạo đường dẫn con. Upload thư mục giữ cả cấu trúc và thư mục rỗng, ảnh/PDF/font được chép nguyên bytes; ảnh từ clipboard được lưu PNG. Tệp trùng tên bị từ chối, không ghi đè. Giới hạn mỗi lô 10.000 mục / 500 MiB; URL cần HTTPS trực tiếp, tối đa 100 MiB. Nút **Hủy** hủy tác vụ nền; đọc URL đang chờ có thể cần tối đa 15 giây để hết timeout.
+
+Tệp từ dự án khác là bản sao độc lập. Với Zotero/Mendeley/ReadCube, hãy xuất `.bib` rồi nhập qua **Thư viện tài liệu (.bib)**; chưa kết nối tài khoản dịch vụ. Các tài nguyên workspace lưu trên máy; phòng cộng tác hiện chỉ đồng bộ `main.tex`. Xem [AI_Handoff.md §23](AI_Handoff.md#23-workspace-thêm-thư-mục-tệp-upload-và-lấy-tệp-từ-nguồn-khác).
 
 ### Làm việc nhóm (tùy chọn)
 
@@ -84,10 +111,14 @@ Phòng đồng bộ `main.tex` của dự án đang mở. Nối từ máy khác 
 ### Chạy test
 
 ```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,LocalBackendTest' -Dsurefire.failIfNoSpecifiedTests=false
+mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest' -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-52 test, không cần MongoDB. Test GUI tự động (`UiSmoke`) và chi tiết khác: xem [AI_Handoff.md](AI_Handoff.md) §15.
+120 test chọn lọc, không cần MongoDB hoặc TeX thật (compiler unit test dùng process fixture). Smoke với TeX thật (`CompilerSmoke`, `CompilerUiSmoke`, `PdfPreviewUiSmoke`, `VietnamesePdfSmoke`): xem [AI_Handoff.md](AI_Handoff.md) §17–20; Outline có `OutlineUiSmoke` (§21); tạo/nhập/chuyển dự án có `ProjectImportSmoke`, `NewProjectUiSmoke` (§22); thêm/upload tệp có `WorkspaceFilesUiSmoke` (§23); ZIP nhiều chương + Biber có `ImportedZipCompileSmoke` (§24); PDF cuộn/liên kết có `PdfContinuousUiSmoke` (§25). Test GUI đầy đủ (`UiSmoke`): §15.
+
+Preview PDF xếp các trang liên tiếp và chỉ render vùng đang xem cùng các trang gần đó. Các liên kết nội bộ cần được tạo sẵn trong PDF, thường bằng gói `hyperref`; màu chữ xanh tự nó không tạo liên kết. Chưa mở liên kết website hoặc chạy action/script PDF trong preview. Xem [AI_Handoff.md §25](AI_Handoff.md#25-preview-pdf-cuộn-liên-tục-và-liên-kết-nội-bộ).
+
+Dự án dùng `\include{chapters/...}` được tự tạo thư mục phụ trợ tương ứng trong `build/`. Nếu thiếu gói TeX, Build output ưu tiên lỗi gốc như `File 'csquotes.sty' not found`, thay vì báo `runscript.tlu ... exit code 12` là lỗi cú pháp. Máy kiểm thử đã bổ sung csquotes, titlesec, siunitx, biblatex, Biber, cleveref vào TinyTeX portable; máy khác phải cài các phụ thuộc mà tài liệu của mình yêu cầu. Kiểm chứng ZIP người dùng: [AI_Handoff.md §24](AI_Handoff.md#24-sửa-biên-dịch-zip-nhiều-chương-và-thông-báo-exit-code-12).
 
 ## 4. Cấu hình server
 

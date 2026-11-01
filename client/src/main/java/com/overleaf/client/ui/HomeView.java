@@ -17,6 +17,16 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Menu;
+import javafx.scene.control.CustomMenuItem;
+import javafx.concurrent.Task;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
+import com.overleaf.client.ui.backend.NewProjectRequest;
+import com.overleaf.client.ui.backend.ProjectTemplates;
+import com.overleaf.client.ui.backend.ProjectFailure;
+import java.nio.file.Path;
+import java.io.File;
 import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
@@ -84,6 +94,7 @@ public class HomeView extends BorderPane {
     private final Map<LocalDate, Integer> activityData;
 
     private List<ProjectSummary> projects = new ArrayList<>();
+    private ContextMenu newProjectMenu;
 
     public HomeView(ProjectGateway projectGateway,
                     ProfileGateway profileGateway,
@@ -145,7 +156,7 @@ public class HomeView extends BorderPane {
         newProject.setGraphic(UiSupport.iconBox(UiSupport.PLUS, 13, Color.WHITE, 14));
         newProject.getStyleClass().add("btn-primary");
         newProject.setMaxWidth(Double.MAX_VALUE);
-        newProject.setOnAction(e -> newProjectDialog());
+        newProject.setOnAction(e -> showNewProjectMenu(newProject));
 
         Label section = new Label(t("WORKSPACES", "KHÔNG GIAN"));
         section.getStyleClass().add("rail-section");
@@ -270,7 +281,7 @@ public class HomeView extends BorderPane {
         Button add = new Button(t("New project", "Dự án mới"));
         add.setGraphic(UiSupport.iconBox(UiSupport.PLUS, 11, Color.web("#2B2B28"), 12));
         add.getStyleClass().add("btn-secondary");
-        add.setOnAction(e -> newProjectDialog());
+        add.setOnAction(e -> showNewProjectMenu(add));
 
         HBox head = new HBox(9, title, projectCount, UiSupport.spacer(), add);
         head.setAlignment(Pos.CENTER_LEFT);
@@ -657,13 +668,16 @@ public class HomeView extends BorderPane {
         MenuItem delete = new MenuItem(t("Delete…", "Xóa…"));
         delete.getStyleClass().add("menu-danger");
         delete.setOnAction(e -> deleteProjectDialog(project));
-        return new ContextMenu(open, rename, reveal, new SeparatorMenuItem(), delete);
+        MenuItem move = new MenuItem(t("Change folder…", "Đổi thư mục lưu…"));
+        move.setOnAction(e -> moveProjectDialog(project));
+        return new ContextMenu(open, rename, move, reveal, new SeparatorMenuItem(), delete);
     }
 
     private void renameProjectDialog(ProjectSummary project) {
         UiModal modal = UiModal.create(host, UiSupport.EDIT, UiModal.Tone.NEUTRAL,
                 t("Rename project", "Đổi tên dự án"),
-                t("The project folder is renamed on disk.", "Thư mục dự án trên ổ đĩa sẽ được đổi tên."));
+                t("The project folder is renamed on disk.", "Thư mục dự án trên ổ đĩa sẽ được đổi tên.")).localized(vi);
+        boolean wasActive = activeProject() != null && activeProject().folder().equals(project.folder());
         TextField name = modal.field(t("Project name", "Tên dự án"), project.name(), "");
         modal.actions(null, t("Cancel", "Hủy"), t("Rename", "Đổi tên"), UiModal.Tone.NEUTRAL, () -> {
             String value = name.getText() == null ? "" : name.getText().trim();
@@ -673,10 +687,10 @@ public class HomeView extends BorderPane {
             }
             try {
                 ProjectSummary renamed = projectGateway.rename(project, value);
-                if (project.name().equals(activeProjectName)) activeProjectName = renamed.name();
+                if (wasActive) activeProjectName = renamed.name();
                 onProjectChanged.accept(project, renamed);
             } catch (RuntimeException failure) {
-                modal.error(name, failure.getMessage());
+                modal.error(name, ProjectFailure.message(failure, vi));
                 return false;
             }
             refreshProjects();
@@ -686,20 +700,23 @@ public class HomeView extends BorderPane {
     }
 
     private void deleteProjectDialog(ProjectSummary project) {
-        UiModal.confirm(host, UiModal.Tone.DANGER,
+        UiModal modal = UiModal.create(host, UiSupport.TRASH, UiModal.Tone.DANGER,
                 t("Delete \"" + project.name() + "\"?", "Xóa \"" + project.name() + "\"?"),
-                t("The folder and every file in it move to the app's .trash folder, so you can still recover them by hand.",
-                        "Thư mục và mọi tệp bên trong được chuyển vào thư mục .trash của ứng dụng để có thể khôi phục thủ công."),
-                t("Delete project", "Xóa dự án"),
+                null).localized(vi);
+        modal.text(t("Files move to a recoverable trash folder.", "Tệp được chuyển vào thư mục thùng rác để có thể khôi phục."));
+        modal.actions(null, t("Cancel", "Hủy"), t("Delete project", "Xóa dự án"), UiModal.Tone.DANGER,
                 () -> {
                     try {
                         projectGateway.delete(project);
                         onProjectChanged.accept(project, null);
                     } catch (RuntimeException failure) {
-                        UiModal.notice(host, UiModal.Tone.DANGER, t("Could not delete", "Không xóa được"), failure.getMessage());
+                        modal.error(null, ProjectFailure.message(failure, vi));
+                        return false;
                     }
                     refreshProjects();
+                    return true;
                 });
+        modal.show();
     }
 
     private HBox buildNewProjectRow() {
@@ -716,7 +733,7 @@ public class HomeView extends BorderPane {
         HBox row = new HBox(10, icon, text);
         row.setAlignment(Pos.CENTER_LEFT);
         row.getStyleClass().add("new-project-row");
-        row.setOnMouseClicked(e -> newProjectDialog());
+        row.setOnMouseClicked(e -> showNewProjectMenu(row));
         return row;
     }
 
@@ -729,20 +746,182 @@ public class HomeView extends BorderPane {
         }
         menu.getItems().add(new SeparatorMenuItem());
         MenuItem create = new MenuItem(t("New project…", "Dự án mới…"));
-        create.setOnAction(e -> newProjectDialog());
+        create.setOnAction(e -> showNewProjectMenu(anchor));
         menu.getItems().add(create);
         menu.show(anchor, Side.BOTTOM, 0, 6);
     }
 
     private void newProjectDialog() {
+        newProjectDialog(NewProjectRequest.Kind.BLANK, null);
+    }
+
+    private void showNewProjectMenu(Node anchor) {
+        if (newProjectMenu != null) newProjectMenu.hide();
+        newProjectMenu = new ContextMenu();
+        newProjectMenu.setId("new-project-menu");
+        newProjectMenu.getStyleClass().add("new-project-menu");
+        MenuItem blank = projectItem(t("Blank project", "Dự án trống"), "new-project-blank", NewProjectRequest.Kind.BLANK);
+        MenuItem zip = projectItem(t("Existing project (.zip)", "Dự án có sẵn (.zip)"), "import-zip", NewProjectRequest.Kind.ZIP);
+        MenuItem word = projectItem(t("Word document (.docx)", "Tài liệu Word (.docx)"), "import-word", NewProjectRequest.Kind.WORD);
+        MenuItem markdown = projectItem(t("Markdown document", "Tài liệu Markdown"), "import-markdown", NewProjectRequest.Kind.MARKDOWN);
+        MenuItem github = projectItem(t("GitHub repo", "Kho mã GitHub"), "import-github", NewProjectRequest.Kind.GITHUB);
+        MenuItem example = projectItem(t("Example project", "Dự án mẫu"), "new-project-example", NewProjectRequest.Kind.EXAMPLE);
+        Menu more = new Menu(t("More templates", "Thêm mẫu dự án"));
+        more.setId("project-templates");
+        for (var template : ProjectTemplates.all()) {
+            MenuItem item = new MenuItem(template.title(vi));
+            item.setId("template-" + template.id());
+            item.setOnAction(e -> newProjectDialog(NewProjectRequest.Kind.TEMPLATE, template.id()));
+            more.getItems().add(item);
+        }
+        MenuItem all = new MenuItem(t("View all", "Xem tất cả"));
+        all.setOnAction(e -> templateGallery());
+        more.getItems().addAll(new SeparatorMenuItem(), all);
+        MenuItem storage = new MenuItem(t("Default project folder…", "Thư mục dự án mặc định…"));
+        storage.setId("default-project-folder");
+        storage.setOnAction(e -> projectStorageDialog());
+        MenuItem affiliation = new MenuItem(t("Add affiliation…", "Thêm đơn vị…"));
+        affiliation.setOnAction(e -> affiliationDialog());
+        newProjectMenu.getItems().addAll(blank, new SeparatorMenuItem(), menuHeading(t("Import", "Nhập tài liệu")),
+                zip, word, markdown, github, new SeparatorMenuItem(), menuHeading(t("Templates", "Mẫu dự án")),
+                example, more, new SeparatorMenuItem(), storage, affiliation);
+        newProjectMenu.show(anchor, Side.BOTTOM, 0, 4);
+    }
+
+    private MenuItem projectItem(String text, String id, NewProjectRequest.Kind kind) {
+        MenuItem item = new MenuItem(text);
+        item.setId(id);
+        item.setOnAction(e -> newProjectDialog(kind, null));
+        return item;
+    }
+
+    private CustomMenuItem menuHeading(String text) {
+        Label title = new Label(text);
+        title.getStyleClass().add("project-menu-heading");
+        CustomMenuItem item = new CustomMenuItem(title, false);
+        item.setDisable(true);
+        return item;
+    }
+
+    private void templateGallery() {
+        UiModal modal = UiModal.create(host, UiSupport.FILE, UiModal.Tone.NEUTRAL,
+                t("Project templates", "Mẫu dự án"), t("Choose a category to create an editable LaTeX project.",
+                        "Chọn một nhóm để tạo dự án LaTeX có thể chỉnh sửa.")).localized(vi);
+        VBox templates = new VBox(6);
+        for (var template : ProjectTemplates.all()) {
+            Button item = new Button(template.title(vi));
+            item.getStyleClass().add("btn-secondary");
+            item.setMaxWidth(Double.MAX_VALUE);
+            item.setOnAction(e -> { modal.close(); newProjectDialog(NewProjectRequest.Kind.TEMPLATE, template.id()); });
+            templates.getChildren().add(item);
+        }
+        ScrollPane scroll = new ScrollPane(templates);
+        scroll.setFitToWidth(true); scroll.setPrefViewportHeight(320);
+        modal.node(scroll);
+        modal.actions(null, null, t("Close", "Đóng"), UiModal.Tone.NEUTRAL, () -> true);
+        modal.show();
+    }
+
+    private void chooseDirectory(TextField field) {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(t("Choose a project folder", "Chọn thư mục lưu dự án"));
+        try {
+            File current = Path.of(field.getText()).toFile();
+            if (current.isDirectory()) chooser.setInitialDirectory(current);
+        } catch (RuntimeException ignored) { }
+        File folder = chooser.showDialog(getScene().getWindow());
+        if (folder != null) field.setText(folder.getAbsolutePath());
+    }
+
+    private void projectStorageDialog() {
+        UiModal modal = UiModal.create(host, UiSupport.FOLDER, UiModal.Tone.NEUTRAL,
+                t("Default project folder", "Thư mục dự án mặc định"),
+                t("New projects use this folder. Existing projects remain listed at their current locations.",
+                        "Dự án mới được lưu tại đây. Dự án cũ vẫn xuất hiện trong danh sách và giữ nguyên vị trí.")).localized(vi);
+        TextField folder = modal.field(t("Folder", "Thư mục"), projectGateway.projectsDirectory().toString(), "");
+        folder.setId("default-project-directory");
+        Button browse = new Button(t("Browse…", "Chọn…"));
+        browse.getStyleClass().add("btn-secondary");
+        browse.setOnAction(e -> chooseDirectory(folder)); modal.node(browse);
+        Button[] save = new Button[1];
+        save[0] = modal.actions(null, t("Cancel", "Hủy"), t("Save", "Lưu"), UiModal.Tone.NEUTRAL, () -> {
+            String selected = folder.getText();
+            if (selected.isBlank()) { modal.error(folder, t("Choose a folder.", "Hãy chọn thư mục.")); return false; }
+            runProjectOperation(modal, save[0], () -> { projectGateway.setProjectsDirectory(Path.of(selected)); return null; }, p -> refreshProjects());
+            return false;
+        });
+        modal.show();
+    }
+
+    private void moveProjectDialog(ProjectSummary project) {
+        UiModal modal = UiModal.create(host, UiSupport.FOLDER, UiModal.Tone.NEUTRAL,
+                t("Change project folder", "Đổi thư mục lưu dự án"),
+                t("The entire project is copied to the new location. A recoverable backup is kept at the old location.",
+                        "Toàn bộ dự án được chuyển sang vị trí mới. Bản sao khôi phục được giữ tại vị trí cũ.")).localized(vi);
+        modal.path(project.folder());
+        TextField folder = modal.field(t("New parent folder", "Thư mục cha mới"), Path.of(project.folder()).getParent().toString(), "");
+        folder.setId("move-project-directory");
+        Button browse = new Button(t("Browse…", "Chọn…"));
+        browse.getStyleClass().add("btn-secondary");
+        browse.setOnAction(e -> chooseDirectory(folder)); modal.node(browse);
+        Button[] move = new Button[1];
+        move[0] = modal.actions(null, t("Cancel", "Hủy"), t("Move project", "Chuyển dự án"), UiModal.Tone.NEUTRAL, () -> {
+            String selected = folder.getText();
+            if (selected.isBlank()) { modal.error(folder, t("Choose a folder.", "Hãy chọn thư mục.")); return false; }
+            runProjectOperation(modal, move[0], () -> projectGateway.move(project, Path.of(selected)), moved -> {
+                onProjectChanged.accept(project, moved); refreshProjects();
+            });
+            return false;
+        });
+        modal.show();
+    }
+
+    private void affiliationDialog() {
+        UiModal modal = UiModal.create(host, UiSupport.USERS, UiModal.Tone.NEUTRAL,
+                t("Affiliation", "Đơn vị công tác / trường học"),
+                t("Used in the author field of new bundled templates.", "Dùng trong thông tin tác giả của các mẫu dự án mới.")).localized(vi);
+        TextField value = modal.field(t("Institution or organization", "Trường học hoặc cơ quan"), projectGateway.affiliation(), "");
+        modal.actions(null, t("Cancel", "Hủy"), t("Save", "Lưu"), UiModal.Tone.NEUTRAL, () -> {
+            try { projectGateway.setAffiliation(value.getText()); return true; }
+            catch (RuntimeException failure) { modal.error(value, ProjectFailure.message(failure, vi)); return false; }
+        });
+        modal.show();
+    }
+
+    private void runProjectOperation(UiModal modal, Button button, java.util.concurrent.Callable<ProjectSummary> action,
+                                     Consumer<ProjectSummary> success) {
+        if (button.isDisabled()) return;
+        String caption = button.getText();
+        button.setDisable(true); button.setText(t("Working…", "Đang xử lý…"));
+        Task<ProjectSummary> task = new Task<>() {
+            @Override protected ProjectSummary call() throws Exception { return action.call(); }
+        };
+        modal.onClose(() -> { if (!task.isDone()) task.cancel(true); });
+        task.setOnSucceeded(e -> { modal.close(); success.accept(task.getValue()); });
+        task.setOnFailed(e -> {
+            button.setDisable(false); button.setText(caption);
+            modal.error(null, ProjectFailure.message(task.getException(), vi));
+        });
+        Thread worker = new Thread(task, "project-storage"); worker.setDaemon(true); worker.start();
+    }
+
+    private void newProjectDialog(NewProjectRequest.Kind kind, String templateId) {
         if (host == null) {
             return;
         }
 
         Label title = new Label(t("New project", "Dự án mới"));
         title.getStyleClass().add("modal-title");
-        Label sub = new Label(t("Start a local LaTeX workspace.",
-                "Bắt đầu không gian LaTeX cục bộ."));
+        Label sub = new Label(switch (kind) {
+            case ZIP -> t("Import a LaTeX project from a ZIP archive.", "Nhập dự án LaTeX từ tệp ZIP.");
+            case WORD -> t("Convert a Word .docx file to LaTeX. Review complex formatting after import.", "Chuyển tệp Word .docx sang LaTeX. Hãy kiểm tra lại định dạng phức tạp sau khi nhập.");
+            case MARKDOWN -> t("Convert UTF-8 Markdown to an editable LaTeX project.", "Chuyển Markdown UTF-8 thành dự án LaTeX có thể chỉnh sửa.");
+            case GITHUB -> t("Clone a public GitHub repository containing a root LaTeX document.", "Sao chép kho GitHub công khai có tài liệu LaTeX gốc.");
+            case EXAMPLE -> t("A working example with sections, mathematics and bibliography.", "Dự án mẫu có các phần, công thức và tài liệu tham khảo.");
+            case TEMPLATE -> t("Create an editable project from a bundled template.", "Tạo dự án có thể chỉnh sửa từ mẫu có sẵn.");
+            default -> t("Start a local LaTeX workspace.", "Bắt đầu không gian LaTeX cục bộ.");
+        });
+        sub.setWrapText(true);
         sub.getStyleClass().add("modal-sub");
         VBox copy = new VBox(2, title, sub);
 
@@ -763,7 +942,12 @@ public class HomeView extends BorderPane {
 
         Label nameLabel = new Label(t("PROJECT NAME", "TÊN DỰ ÁN"));
         nameLabel.getStyleClass().add("field-label");
-        TextField nameField = new TextField(t("Untitled project", "Dự án chưa đặt tên"));
+        String suggestedName = kind == NewProjectRequest.Kind.EXAMPLE ? t("Example project", "Dự án mẫu")
+                : kind == NewProjectRequest.Kind.TEMPLATE ? ProjectTemplates.all().stream().filter(item -> item.id().equals(templateId))
+                        .map(item -> item.title(vi)).findFirst().orElse(t("Untitled project", "Dự án chưa đặt tên"))
+                : t("Untitled project", "Dự án chưa đặt tên");
+        TextField nameField = new TextField(suggestedName);
+        nameField.setId("new-project-name");
         nameField.getStyleClass().add("modal-field");
         Label error = new Label();
         error.getStyleClass().add("modal-error");
@@ -818,7 +1002,44 @@ public class HomeView extends BorderPane {
         Label path = new Label();
         path.getStyleClass().add("modal-path");
         path.setMaxWidth(Double.MAX_VALUE);
-        VBox pathBlock = new VBox(6, pathLabel, path);
+        TextField directoryField = new TextField(projectGateway.projectsDirectory().toString());
+        directoryField.setId("new-project-directory");
+        directoryField.getStyleClass().add("modal-field");
+        HBox.setHgrow(directoryField, Priority.ALWAYS);
+        Button chooseDirectory = new Button(t("Browse…", "Chọn…"));
+        chooseDirectory.getStyleClass().add("btn-secondary");
+        chooseDirectory.setOnAction(e -> chooseDirectory(directoryField));
+        VBox pathBlock = new VBox(6, pathLabel, new HBox(8, directoryField, chooseDirectory), path);
+
+        boolean imported = kind == NewProjectRequest.Kind.ZIP || kind == NewProjectRequest.Kind.WORD
+                || kind == NewProjectRequest.Kind.MARKDOWN || kind == NewProjectRequest.Kind.GITHUB;
+        TextField sourceField = new TextField();
+        sourceField.setId("new-project-source");
+        sourceField.getStyleClass().add("modal-field");
+        sourceField.setPromptText(kind == NewProjectRequest.Kind.GITHUB ? "https://github.com/owner/repository"
+                : t("Choose a source file", "Chọn tệp nguồn"));
+        HBox.setHgrow(sourceField, Priority.ALWAYS);
+        Button sourceBrowse = new Button(t("Browse…", "Chọn…"));
+        sourceBrowse.getStyleClass().add("btn-secondary");
+        sourceBrowse.setVisible(kind != NewProjectRequest.Kind.GITHUB);
+        sourceBrowse.setManaged(sourceBrowse.isVisible());
+        sourceBrowse.setOnAction(e -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle(t("Choose a document to import", "Chọn tài liệu để nhập"));
+            String[] extensions = kind == NewProjectRequest.Kind.ZIP ? new String[]{"*.zip"}
+                    : kind == NewProjectRequest.Kind.WORD ? new String[]{"*.docx"} : new String[]{"*.md", "*.markdown"};
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(t("Supported documents", "Tài liệu được hỗ trợ"), extensions));
+            File file = chooser.showOpenDialog(getScene().getWindow());
+            if (file != null) {
+                sourceField.setText(file.getAbsolutePath());
+                if (nameField.getText().equals(suggestedName)) nameField.setText(file.getName().replaceFirst("\\.[^.]+$", ""));
+            }
+        });
+        Label sourceCaption = new Label(kind == NewProjectRequest.Kind.GITHUB ? t("GITHUB REPOSITORY", "KHO GITHUB") : t("SOURCE FILE", "TỆP NGUỒN"));
+        sourceCaption.getStyleClass().add("field-label");
+        VBox sourceBlock = new VBox(6, sourceCaption, new HBox(8, sourceField, sourceBrowse));
+        sourceBlock.setVisible(imported);
+        sourceBlock.setManaged(imported);
 
         Label hint = new Label(t("Files stay on this machine", "Tệp được lưu trên máy này"));
         hint.getStyleClass().add("modal-hint");
@@ -834,20 +1055,32 @@ public class HomeView extends BorderPane {
         HBox footer = new HBox(8, hint, UiSupport.spacer(), cancel, create);
         footer.setAlignment(Pos.CENTER_LEFT);
 
-        VBox card = new VBox(16, head, nameBlock, iconBlock, colorBlock, pathBlock, footer);
+        VBox card = new VBox(16, head, nameBlock, sourceBlock, iconBlock, colorBlock, pathBlock, footer);
         card.getStyleClass().add("modal-card");
         card.setMaxWidth(520);
         card.setPrefWidth(520);
         card.setMaxHeight(Region.USE_PREF_SIZE);
 
-        StackPane scrim = new StackPane(card);
+        ScrollPane cardScroll = new ScrollPane(card);
+        cardScroll.setFitToWidth(true);
+        cardScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        cardScroll.setMaxWidth(540);
+        cardScroll.maxHeightProperty().bind(host.heightProperty().subtract(40));
+        cardScroll.getStyleClass().add("project-dialog-scroll");
+        StackPane scrim = new StackPane(cardScroll);
         scrim.getStyleClass().add("modal-scrim");
         StackPane.setAlignment(card, Pos.CENTER);
 
-        Runnable dismiss = () -> host.getChildren().remove(scrim);
+        java.util.concurrent.atomic.AtomicReference<Task<ProjectSummary>> running = new java.util.concurrent.atomic.AtomicReference<>();
+        Runnable dismiss = () -> {
+            Task<ProjectSummary> task = running.get();
+            if (task != null && !task.isDone()) task.cancel(true);
+            host.getChildren().remove(scrim);
+        };
         Runnable updatePath = () -> {
             String raw = nameField.getText() == null ? "" : nameField.getText().trim();
-            path.setText(projectGateway.locationFor(raw));
+            try { path.setText(Path.of(directoryField.getText()).resolve(raw.isBlank() ? "…" : raw).toString()); }
+            catch (RuntimeException invalid) { path.setText(t("Choose a valid folder", "Hãy chọn thư mục hợp lệ")); }
         };
         Runnable submit = () -> {
             String name = nameField.getText() == null ? "" : nameField.getText().trim();
@@ -861,16 +1094,36 @@ public class HomeView extends BorderPane {
                         t("Use a name without slashes.", "Tên dự án không được chứa dấu /."));
                 return;
             }
-            ProjectSummary created;
-            try {
-                created = projectGateway.create(name, pickedIcon[0], pickedColor[0]);
-            } catch (RuntimeException failure) {
-                showFieldError(nameField, error, failure.getMessage());
+            if (imported && sourceField.getText().isBlank()) {
+                showFieldError(sourceField, error, t("Choose a source file or enter a repository URL.", "Chọn tệp nguồn hoặc nhập URL kho mã."));
                 return;
             }
-            dismiss.run();
-            refreshProjects();
-            onOpen.accept(created);
+            NewProjectRequest request;
+            try {
+                if (directoryField.getText().isBlank()) throw new IllegalArgumentException("Empty folder");
+                request = new NewProjectRequest(name, pickedIcon[0], pickedColor[0], Path.of(directoryField.getText()).toAbsolutePath(), kind,
+                        imported && kind != NewProjectRequest.Kind.GITHUB ? Path.of(sourceField.getText()).toAbsolutePath() : null,
+                        kind == NewProjectRequest.Kind.GITHUB ? sourceField.getText() : null, templateId, vi);
+            } catch (RuntimeException failure) {
+                showFieldError(directoryField, error, t("Choose a valid folder.", "Hãy chọn thư mục hợp lệ."));
+                return;
+            }
+            if (create.isDisabled()) return;
+            create.setDisable(true);
+            create.setText(t("Creating…", "Đang tạo…"));
+            Task<ProjectSummary> task = new Task<>() {
+                @Override protected ProjectSummary call() { return projectGateway.create(request); }
+            };
+            running.set(task);
+            task.setOnSucceeded(e -> {
+                if (!host.getChildren().contains(scrim)) return;
+                dismiss.run(); refreshProjects(); onOpen.accept(task.getValue());
+            });
+            task.setOnFailed(e -> {
+                create.setDisable(false); create.setText(t("Create project", "Tạo dự án"));
+                showFieldError(nameField, error, ProjectFailure.message(task.getException(), vi));
+            });
+            Thread worker = new Thread(task, "project-import"); worker.setDaemon(true); worker.start();
         };
 
         nameField.textProperty().addListener((obs, oldText, newText) -> {
@@ -879,6 +1132,7 @@ public class HomeView extends BorderPane {
             error.setManaged(false);
             updatePath.run();
         });
+        directoryField.textProperty().addListener((obs, oldText, newText) -> updatePath.run());
         nameField.setOnAction(e -> submit.run());
         close.setOnAction(e -> dismiss.run());
         cancel.setOnAction(e -> dismiss.run());
@@ -957,6 +1211,12 @@ public class HomeView extends BorderPane {
     }
 
     private ProjectSummary activeProject() {
+        String preferred = projectGateway.preferredProjectFolder();
+        if (preferred != null) {
+            for (ProjectSummary project : projects) {
+                if (project.name().equals(activeProjectName) && project.folder().equals(preferred)) return project;
+            }
+        }
         for (ProjectSummary project : projects) {
             if (project.name().equals(activeProjectName)) {
                 return project;
