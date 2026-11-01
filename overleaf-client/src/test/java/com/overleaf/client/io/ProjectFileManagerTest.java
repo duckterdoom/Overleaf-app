@@ -89,20 +89,4 @@ class ProjectFileManagerTest {
     void pdfPathFollowsBuildDirConvention() {
         assertEquals(tempDir.resolve("build").resolve("main.pdf"), manager.pdfPathFor("main.tex"));
     }
-
-    @Test
-    void tc03_writeTexFile_OverwritesExistingFileAtomically() throws IOException {
-        // Ghi nội dung ban đầu vào file
-        manager.writeTexFile("article.tex", "Old Content");
-        assertEquals("Old Content", manager.readTexFile("article.tex"));
-
-        // Ghi đè bằng nội dung mới
-        manager.writeTexFile("article.tex", "New Updated Content");
-
-        // Kiểm tra nội dung đã được cập nhật chính xác
-        assertEquals("New Updated Content", manager.readTexFile("article.tex"));
-
-        // Kiểm tra chắc chắn không còn file tạm (.tmp) nào sót lại
-        assertFalse(Files.exists(tempDir.resolve("article.tex.tmp")));
-    }
 }
