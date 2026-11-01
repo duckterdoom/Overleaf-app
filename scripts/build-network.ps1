@@ -6,7 +6,7 @@ $archiver = if ($JavaHome) { Join-Path $JavaHome 'bin\jar.exe' } else { 'jar' }
 $output = Join-Path $root 'target\network-classes'
 $distribution = [IO.Path]::GetFullPath($OutputDirectory)
 New-Item -ItemType Directory -Path $output, $distribution -Force | Out-Null
-$sources = foreach ($relative in @('common\src\main\java', 'server\src\main\java', 'client\src\main\java\com\overleaf\client\net')) {
+$sources = foreach ($relative in @('modules\common\src\main\java', 'modules\server\src\main\java', 'modules\client\src\main\java\com\overleaf\client\net')) {
     Get-ChildItem -LiteralPath (Join-Path $root $relative) -Recurse -Filter '*.java'
 }
 & $compiler --release 17 -encoding UTF-8 -d $output @($sources.FullName)

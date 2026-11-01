@@ -20,7 +20,7 @@ echo Maven: %MVN_CMD%
 call "%MVN_CMD%" -B "-Dmaven.repo.local=%CD%\target\maven-cache" -DskipTests install
 if errorlevel 1 goto failed
 if /i "%~1"=="-BuildOnly" exit /b 0
-call "%MVN_CMD%" -B "-Dmaven.repo.local=%CD%\target\maven-cache" -pl client javafx:run
+call "%MVN_CMD%" -B "-Dmaven.repo.local=%CD%\target\maven-cache" -pl modules/client javafx:run
 if errorlevel 1 goto failed
 exit /b 0
 :missing_jdk
