@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class OverleafFxApp extends Application {
 
     // --- CÁC THÀNH PHẦN GIAO DIỆN CHÍNH (UI COMPONENTS) ---
+    private LineNumberGutter lineGutter;
     private CodeOverlay codeOverlay;          // Syntax-colored layer drawn behind the editor
     private TextArea codeEditor;              // Khung soạn thảo mã LaTeX (Monospace)
     private TextArea terminalLogArea;         // Terminal Console hiển thị log biên dịch
@@ -1230,6 +1231,7 @@ public class OverleafFxApp extends Application {
 
     /** Pushes font, wrapping, default compiler and auto-save from the settings onto the live editor. */
     private void applyEditorSettings() {
+
         if (codeEditor == null) return;
         // One concrete installed family for both layers, so the colored text lines up with the caret.
         String family = monoFamily(settings.get(AppSettings.EDITOR_FONT));
@@ -1237,6 +1239,10 @@ public class OverleafFxApp extends Application {
         codeEditor.setStyle("-fx-font-size: " + size + "px; -fx-font-family: \"" + family + "\";");
         codeOverlay.setFont(Font.font(family, size));
         codeOverlay.setWrap(settings.bool(AppSettings.WORD_WRAP));
+        if (lineGutter != null) {
+        lineGutter.setFont(Font.font(family, size));
+        lineGutter.setWrap(settings.bool(AppSettings.WORD_WRAP));
+    }
         codeEditor.setWrapText(settings.bool(AppSettings.WORD_WRAP));
         if (compilerCombo != null && !settings.get(AppSettings.COMPILER).equals(compilerCombo.getValue())) {
             compilerCombo.setValue(settings.get(AppSettings.COMPILER));
@@ -1632,8 +1638,11 @@ public class OverleafFxApp extends Application {
         });
 
         codeOverlay = new CodeOverlay(codeEditor);
-        VBox.setVgrow(codeOverlay.node(), Priority.ALWAYS);
-        editorBox.getChildren().addAll(editorHeader, buildCodeToolbar(), codeOverlay.node());
+        lineGutter = new LineNumberGutter(codeEditor);
+        HBox.setHgrow(codeOverlay.node(), Priority.ALWAYS);
+        HBox editorArea = new HBox(lineGutter, codeOverlay.node());
+        VBox.setVgrow(editorArea, Priority.ALWAYS);
+        editorBox.getChildren().addAll(editorHeader, buildCodeToolbar(), editorArea);
         installEditorBehaviours();
         applyEditorSettings();
 
