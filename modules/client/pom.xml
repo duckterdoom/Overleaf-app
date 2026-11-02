@@ -25,6 +25,12 @@
     </properties>
 
     <dependencies>
+        <!-- Small catalog parser; no general JSON dependency existed in the client. -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.13.2</version>
+        </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>pdfbox</artifactId>

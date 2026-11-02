@@ -408,6 +408,19 @@ public class OverleafFxApp extends Application {
             }
             activeProjectName = project.name();
             openFile(LocalBackend.MAIN_FILE);
+            Path templateDefaults = root.resolve(".overleaf-template.properties");
+            if (Files.isRegularFile(templateDefaults)) {
+                try (var input = Files.newInputStream(templateDefaults)) {
+                    java.util.Properties defaults = new java.util.Properties();
+                    defaults.load(input);
+                    String engine = defaults.getProperty("engine", "pdflatex");
+                    compilerCombo.setValue(
+                            engine.equals("xelatex")
+                                    ? "XeLaTeX"
+                                    : engine.equals("lualatex") ? "LuaLaTeX" : "pdfLaTeX");
+                } catch (IOException ignored) {
+                }
+            }
         }
         activeProjectName = project.name();
         try {

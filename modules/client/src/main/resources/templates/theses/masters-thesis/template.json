@@ -1,0 +1,56 @@
+{
+  "id": "masters-thesis",
+  "category": "theses",
+  "title": {
+    "en": "Masters thesis",
+    "vi": "Luận văn thạc sĩ"
+  },
+  "description": {
+    "en": "A research-oriented thesis with methodology, experiments and limitations.",
+    "vi": "Luận văn nghiên cứu có phương pháp, thực nghiệm và giới hạn."
+  },
+  "tags": [
+    "thesis",
+    "research",
+    "biblatex"
+  ],
+  "engine": "xelatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry",
+    "biblatex",
+    "csquotes"
+  ],
+  "needsBiber": true,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "chapters/04-content.tex",
+    "chapters/05-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "frontmatter/abbreviations.tex",
+    "frontmatter/abstract.tex",
+    "frontmatter/acknowledgements.tex",
+    "frontmatter/title.tex",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

@@ -31,14 +31,8 @@ public final class ProjectImports {
                                 : request.kind() == NewProjectRequest.Kind.BLANK
                                         ? "blank"
                                         : request.template();
-                for (var file :
-                        ProjectTemplates.files(
-                                        template, request.name(), request.vietnamese(), affiliation)
-                                .entrySet()) {
-                    Path path = directory.resolve(file.getKey());
-                    Files.createDirectories(path.getParent());
-                    Files.writeString(path, file.getValue(), StandardCharsets.UTF_8);
-                }
+                ProjectTemplates.materialize(
+                        directory, template, request.name(), request.vietnamese(), affiliation);
             }
             case ZIP -> {
                 extract(request.source(), directory);

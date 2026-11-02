@@ -1,0 +1,43 @@
+{
+  "id": "cover-letter",
+  "category": "letters",
+  "title": {
+    "en": "Cover letter",
+    "vi": "Thư ứng tuyển"
+  },
+  "description": {
+    "en": "A tailored application letter describing skills and evidence.",
+    "vi": "Thư ứng tuyển trình bày năng lực và dẫn chứng phù hợp vị trí."
+  },
+  "tags": [
+    "career",
+    "letter"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/request.tex"
+  ],
+  "sharedPreamble": true
+}

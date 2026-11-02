@@ -713,33 +713,12 @@ public class LocalBackend implements AuthGateway, ProjectGateway, ActivityGatewa
     }
 
     public static String template(String title) {
-        // Vietnamese works with every engine in the toolbar: T5 fonts for pdfLaTeX,
-        // Unicode fonts (fontspec) for XeLaTeX/LuaLaTeX.
-        return "\\documentclass{article}\n"
-                + "\\usepackage{iftex}\n"
-                + "\\ifPDFTeX\n"
-                + "  \\usepackage[T5]{fontenc}\n"
-                + "  \\usepackage[utf8]{inputenc}\n"
-                + "\\else\n"
-                + "  \\usepackage{fontspec}\n"
-                + "  \\setmainfont[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,"
-                + "BoldItalicFont=lmroman10-bolditalic.otf]{lmroman10-regular.otf}\n"
-                + "\\fi\n"
-                + "\\usepackage[vietnamese,english]{babel}\n"
-                + "\\usepackage{amsmath}\n\n"
-                + "\\title{"
-                + title.replaceAll("([#$%&_{}])", "\\\\$1")
-                + "}\n"
-                + "\\author{}\n"
-                + "\\date{\\today}\n\n"
-                + "\\begin{document}\n\n"
-                + "\\maketitle\n\n"
-                + "\\section{Introduction}\n"
-                + "Start writing here.\n\n"
-                + "\\begin{equation}\n"
-                + "    E = mc^2\n"
-                + "\\end{equation}\n\n"
-                + "\\end{document}\n";
+        return ProjectTemplates.standaloneBlank(title);
+    }
+
+    @Override
+    public String templateLatexmk() {
+        return preference("latexmkPath", "");
     }
 
     private ProjectSummary summarize(Path dir, Instant modified) {

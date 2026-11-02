@@ -1554,3 +1554,4 @@
 .history-view .list-cell { -fx-padding: 6; }
 .history-view .list-cell:filled:selected { -fx-background-color: #dcebe2; -fx-text-fill: #193e2b; }
 .compile-mode-button { -fx-padding: 4 7; -fx-min-height: 30; }
+.template-gallery-card { -fx-background-color: #f5f7f5; -fx-border-color: #d5dfd8; -fx-border-radius: 8; -fx-background-radius: 8; }

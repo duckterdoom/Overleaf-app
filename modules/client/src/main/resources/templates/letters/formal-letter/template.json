@@ -1,0 +1,43 @@
+{
+  "id": "formal-letter",
+  "category": "letters",
+  "title": {
+    "en": "Formal letter",
+    "vi": "Thư trang trọng"
+  },
+  "description": {
+    "en": "Professional correspondence with a clear request and contact details.",
+    "vi": "Thư công việc có mục đích, nội dung đề nghị và thông tin liên hệ."
+  },
+  "tags": [
+    "letter",
+    "business"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/request.tex"
+  ],
+  "sharedPreamble": true
+}

@@ -13,6 +13,18 @@ class CompileWorkspaceTest {
     @TempDir Path root;
 
     @Test
+    void publishedPdfHasItsFinalTexLogAvailableBeforeClosingStaging() throws Exception {
+        Path project = Files.createDirectories(root.resolve("Nhật ký/build")).getParent();
+        Files.writeString(project.resolve("main.tex"), "source");
+        try (var workspace = CompileWorkspace.prepare(project)) {
+            Files.writeString(workspace.directory().resolve("build/main.pdf"), "PDF bytes");
+            Files.writeString(workspace.directory().resolve("build/main.log"), "final diagnostics");
+            workspace.publishPdf("main.pdf");
+            assertEquals("final diagnostics", Files.readString(project.resolve("build/main.log")));
+        }
+    }
+
+    @Test
     void includeAuxiliaryFoldersAreCreatedWithoutRecursingIntoBuildOrHiddenFolders()
             throws Exception {
         Path project =

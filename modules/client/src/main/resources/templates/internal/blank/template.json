@@ -1,0 +1,36 @@
+{
+  "id": "blank",
+  "category": "internal",
+  "title": {
+    "en": "Blank project",
+    "vi": "Dự án trống"
+  },
+  "description": {
+    "en": "Starter project",
+    "vi": "Dự án khởi đầu"
+  },
+  "tags": [],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "main.tex"
+  ],
+  "sharedPreamble": true
+}

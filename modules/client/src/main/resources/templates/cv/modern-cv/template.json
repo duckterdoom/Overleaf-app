@@ -1,0 +1,45 @@
+{
+  "id": "modern-cv",
+  "category": "cv",
+  "title": {
+    "en": "Modern one-column CV",
+    "vi": "CV hiện đại một cột"
+  },
+  "description": {
+    "en": "A concise resume with quantified achievements.",
+    "vi": "CV ngắn gọn có thành tích định lượng và kỹ năng."
+  },
+  "tags": [
+    "career",
+    "one-page"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/experience.tex",
+    "sections/profile.tex"
+  ],
+  "sharedPreamble": true
+}

@@ -1,0 +1,47 @@
+{
+  "id": "team-project",
+  "category": "reports",
+  "title": {
+    "en": "Team project report",
+    "vi": "Báo cáo dự án nhóm"
+  },
+  "description": {
+    "en": "Roles, architecture, milestones and test evidence.",
+    "vi": "Phân công, kiến trúc, mốc tiến độ và bằng chứng kiểm thử."
+  },
+  "tags": [
+    "team",
+    "engineering"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

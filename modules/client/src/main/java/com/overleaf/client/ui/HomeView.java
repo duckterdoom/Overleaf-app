@@ -873,10 +873,15 @@ public class HomeView extends BorderPane {
                         NewProjectRequest.Kind.EXAMPLE);
         Menu more = new Menu(t("More templates", "Thêm mẫu dự án"));
         more.setId("project-templates");
-        for (var template : ProjectTemplates.all()) {
+        for (var template : ProjectTemplates.categories()) {
             MenuItem item = new MenuItem(template.title(vi));
             item.setId("template-" + template.id());
-            item.setOnAction(e -> newProjectDialog(NewProjectRequest.Kind.TEMPLATE, template.id()));
+            item.setOnAction(e ->
+                    TemplateGallery.show(
+                            host,
+                            vi,
+                            template.id(),
+                            id -> newProjectDialog(NewProjectRequest.Kind.TEMPLATE, id)));
             more.getItems().add(item);
         }
         MenuItem all = new MenuItem(t("View all", "Xem tất cả"));
@@ -923,33 +928,8 @@ public class HomeView extends BorderPane {
     }
 
     private void templateGallery() {
-        UiModal modal =
-                UiModal.create(
-                                host,
-                                UiSupport.FILE,
-                                UiModal.Tone.NEUTRAL,
-                                t("Project templates", "Mẫu dự án"),
-                                t(
-                                        "Choose a category to create an editable LaTeX project.",
-                                        "Chọn một nhóm để tạo dự án LaTeX có thể chỉnh sửa."))
-                        .localized(vi);
-        VBox templates = new VBox(6);
-        for (var template : ProjectTemplates.all()) {
-            Button item = new Button(template.title(vi));
-            item.getStyleClass().add("btn-secondary");
-            item.setMaxWidth(Double.MAX_VALUE);
-            item.setOnAction(e -> {
-                modal.close();
-                newProjectDialog(NewProjectRequest.Kind.TEMPLATE, template.id());
-            });
-            templates.getChildren().add(item);
-        }
-        ScrollPane scroll = new ScrollPane(templates);
-        scroll.setFitToWidth(true);
-        scroll.setPrefViewportHeight(320);
-        modal.node(scroll);
-        modal.actions(null, null, t("Close", "Đóng"), UiModal.Tone.NEUTRAL, () -> true);
-        modal.show();
+        TemplateGallery.show(
+                host, vi, null, id -> newProjectDialog(NewProjectRequest.Kind.TEMPLATE, id));
     }
 
     private void chooseDirectory(TextField field) {
@@ -1426,7 +1406,20 @@ public class HomeView extends BorderPane {
                     Task<ProjectSummary> task =
                             new Task<>() {
                                 @Override
-                                protected ProjectSummary call() {
+                                protected ProjectSummary call() throws Exception {
+                                    if (request.kind() == NewProjectRequest.Kind.TEMPLATE) {
+                                        var report =
+                                                new com.overleaf.client.ui.backend
+                                                                .TemplatePrerequisites(
+                                                                projectGateway.templateLatexmk())
+                                                        .inspect(
+                                                                ProjectTemplates.get(
+                                                                        request.template()));
+                                        if (!report.ready())
+                                            throw new com.overleaf.client.ui.backend
+                                                    .TemplatePrerequisites.MissingDependencies(
+                                                    report);
+                                    }
                                     return projectGateway.create(request);
                                 }
                             };
@@ -1442,6 +1435,20 @@ public class HomeView extends BorderPane {
                         create.setText(t("Create project", "Tạo dự án"));
                         showFieldError(
                                 nameField, error, ProjectFailure.message(task.getException(), vi));
+                        if (task.getException()
+                                        instanceof
+                                        com.overleaf.client.ui.backend.TemplatePrerequisites
+                                                        .MissingDependencies
+                                                missing
+                                && missing.report().bundled()) {
+                            TemplateInstallDialog.show(
+                                    host,
+                                    new com.overleaf.client.ui.backend.TemplatePrerequisites(
+                                            projectGateway.templateLatexmk()),
+                                    missing.report(),
+                                    vi,
+                                    create::fire);
+                        }
                     });
                     Thread worker = new Thread(task, "project-import");
                     worker.setDaemon(true);

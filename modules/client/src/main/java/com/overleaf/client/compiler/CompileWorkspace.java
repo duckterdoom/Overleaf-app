@@ -101,6 +101,15 @@ final class CompileWorkspace implements AutoCloseable {
         Path pdf = working.resolve("build").resolve(name);
         Path target = original.resolve("build").resolve(name);
         if (!working.equals(original)) {
+            try (var logs = Files.list(working.resolve("build"))) {
+                for (Path log :
+                        logs.filter(p -> p.getFileName().toString().endsWith(".log")).toList()) {
+                    Files.copy(
+                            log,
+                            original.resolve("build").resolve(log.getFileName()),
+                            StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
             Path temp = Files.createTempFile(target.getParent(), ".pdf-", ".tmp");
             try {
                 Files.copy(pdf, temp, StandardCopyOption.REPLACE_EXISTING);

@@ -1,0 +1,45 @@
+{
+  "id": "vietnamese-resume",
+  "category": "cv",
+  "title": {
+    "en": "Personal resume",
+    "vi": "Sơ yếu lý lịch tiếng Việt"
+  },
+  "description": {
+    "en": "A personal profile, education timeline and signed declaration.",
+    "vi": "Thông tin cá nhân, quá trình học tập và cam kết có chữ ký."
+  },
+  "tags": [
+    "vietnamese",
+    "career"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/experience.tex",
+    "sections/profile.tex"
+  ],
+  "sharedPreamble": true
+}

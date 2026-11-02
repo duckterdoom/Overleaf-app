@@ -1,0 +1,46 @@
+{
+  "id": "conference-paper",
+  "category": "journal",
+  "title": {
+    "en": "Two-column conference paper",
+    "vi": "Bài báo hội nghị hai cột"
+  },
+  "description": {
+    "en": "A self-contained two-column conference manuscript.",
+    "vi": "Bản thảo hội nghị hai cột với hình, bảng và trích dẫn."
+  },
+  "tags": [
+    "conference",
+    "two-column"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

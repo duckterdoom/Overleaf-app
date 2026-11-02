@@ -1,0 +1,44 @@
+{
+  "id": "poster-a3",
+  "category": "posters",
+  "title": {
+    "en": "A3 landscape poster",
+    "vi": "Poster A3 ngang"
+  },
+  "description": {
+    "en": "A lightweight three-column poster using standard LaTeX minipages.",
+    "vi": "Poster ba cột dùng minipage chuẩn, không cần gói poster nặng."
+  },
+  "tags": [
+    "poster",
+    "landscape"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "panels/content.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

@@ -1,0 +1,47 @@
+{
+  "id": "internship-report",
+  "category": "reports",
+  "title": {
+    "en": "Internship report",
+    "vi": "Báo cáo thực tập"
+  },
+  "description": {
+    "en": "Organization, weekly work log, deliverables and lessons learned.",
+    "vi": "Đơn vị thực tập, nhật ký công việc, sản phẩm và bài học."
+  },
+  "tags": [
+    "internship",
+    "career"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

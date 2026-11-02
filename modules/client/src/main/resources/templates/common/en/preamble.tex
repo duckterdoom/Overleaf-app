@@ -1,0 +1,18 @@
+% Shared engine-safe preamble for original bundled templates.
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[utf8]{inputenc}
+  \usepackage[T5]{fontenc}
+  \usepackage{lmodern}
+\else
+  \usepackage{fontspec}
+  \setmainfont[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,BoldItalicFont=lmroman10-bolditalic.otf]{lmroman10-regular.otf}
+  \setsansfont[BoldFont=lmsans10-bold.otf,ItalicFont=lmsans10-oblique.otf,BoldItalicFont=lmsans10-boldoblique.otf]{lmsans10-regular.otf}
+  \setmonofont{lmmono10-regular.otf}
+\fi
+\usepackage[vietnamese,english]{babel}
+\usepackage{amsmath,amssymb,amsthm,graphicx,xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=teal,urlcolor=blue}
+\newtheorem{demotheorem}{Theorem}
+\newtheorem{demoexample}{Example}

@@ -86,6 +86,8 @@ History lưu phiên bản văn bản local trong `.overleaf-history/` của từ
 
 ### Nhập và di chuyển dự án
 
+**Thư viện mẫu:** Dự án mới → Thêm mẫu dự án → chọn một trong 9 nhóm hoặc Xem tất cả. Có **29 mẫu nhiều tệp, Anh/Việt**, tìm kiếm có/không dấu, lọc nhóm/tag, mô tả và engine mặc định. Gồm bài báo, sách, đơn hành chính, bài tập, poster, Beamer, báo cáo thực tập, CV và hai mẫu luận văn đủ 5 chương/BibLaTeX. Kiểm package/Biber trước khi tạo; chỉ cài gói vào TinyTeX đi kèm sau xác nhận, không tự sửa TeX hệ thống. Xem [danh mục và cách thêm mẫu](docs/TEMPLATE_LIBRARY.md), [giấy phép](LICENSE-TEMPLATES.md).
+
 - Word/Markdown cần Pandoc; GitHub cần Git và URL HTTPS của repository công khai.
 - ZIP hoặc repository cần có `main.tex`, hoặc một file `.tex` chứa `\documentclass` để app tạo file chính.
 - Nên di chuyển dự án bằng menu **Đổi thư mục lưu…** để app cập nhật danh sách dự án và giữ bản khôi phục.
@@ -118,10 +120,10 @@ Hiện phòng cộng tác đồng bộ `main.tex`. Server lưu trạng thái ph�
 ## Chạy test
 
 ```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
+mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,ProjectTemplatesTest,TemplatePrerequisitesTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-Bộ test chọn lọc gồm **137 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test cho GUI, compiler và PDF nằm trong [AI_Handoff.md](docs/AI_Handoff.md); toolbar có `EditorToolbarUiSmoke` (§26), history/auto compile/layout có `HistoryLayoutUiSmoke` (§27), gồm biên dịch LaTeX thật.
+Bộ test chọn lọc gồm **143 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test nằm trong [AI_Handoff.md](docs/AI_Handoff.md); thư viện mẫu có ma trận **174 build thật** và smoke UI mở rộng (§28), bên cạnh toolbar/history/layout (§26–27).
 
 ## Server và triển khai
 

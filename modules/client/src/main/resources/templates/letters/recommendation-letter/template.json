@@ -1,0 +1,43 @@
+{
+  "id": "recommendation-letter",
+  "category": "letters",
+  "title": {
+    "en": "Recommendation letter",
+    "vi": "Thư giới thiệu"
+  },
+  "description": {
+    "en": "An evidence-based academic or professional recommendation.",
+    "vi": "Thư giới thiệu học tập hoặc công việc dựa trên dẫn chứng."
+  },
+  "tags": [
+    "academic",
+    "letter"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/request.tex"
+  ],
+  "sharedPreamble": true
+}

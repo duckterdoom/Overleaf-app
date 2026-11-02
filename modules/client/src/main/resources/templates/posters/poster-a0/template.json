@@ -1,0 +1,44 @@
+{
+  "id": "poster-a0",
+  "category": "posters",
+  "title": {
+    "en": "A0 portrait research poster",
+    "vi": "Poster nghiên cứu A0 dọc"
+  },
+  "description": {
+    "en": "Large-format portrait poster with three focused panels.",
+    "vi": "Poster khổ lớn dọc với ba vùng nội dung rõ ràng."
+  },
+  "tags": [
+    "poster",
+    "a0"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "panels/content.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

@@ -1,0 +1,47 @@
+{
+  "id": "lecture-notes",
+  "category": "books",
+  "title": {
+    "en": "Lecture notes",
+    "vi": "Giáo trình và bài giảng"
+  },
+  "description": {
+    "en": "Theorems, worked examples and exercises for a short course.",
+    "vi": "Định lý, ví dụ có lời giải và bài tập cho một học phần."
+  },
+  "tags": [
+    "education",
+    "theorems"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

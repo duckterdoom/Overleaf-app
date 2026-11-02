@@ -1,0 +1,46 @@
+{
+  "id": "research-article",
+  "category": "journal",
+  "title": {
+    "en": "Research article",
+    "vi": "Bài báo nghiên cứu"
+  },
+  "description": {
+    "en": "A complete research paper with abstract, methods, results and references.",
+    "vi": "Bài nghiên cứu có tóm tắt, phương pháp, kết quả và tài liệu tham khảo."
+  },
+  "tags": [
+    "research",
+    "citations"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

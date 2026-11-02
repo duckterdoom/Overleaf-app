@@ -1,0 +1,38 @@
+{
+  "id": "example",
+  "category": "internal",
+  "title": {
+    "en": "Example project",
+    "vi": "Dự án mẫu"
+  },
+  "description": {
+    "en": "Starter project",
+    "vi": "Dự án khởi đầu"
+  },
+  "tags": [],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "main.tex",
+    "sections/introduction.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

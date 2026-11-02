@@ -69,6 +69,58 @@ public final class NewProjectUiSmoke {
                 UiSmoke.invoke(app, "showHome");
                 return null;
             });
+            UiSmoke.fx(() -> {
+                HomeView view = UiSmoke.field(app, "homeView");
+                UiSmoke.invoke(
+                        view,
+                        "showNewProjectMenu",
+                        buttons(stage.getScene().getRoot(), "Dự án mới"));
+                ContextMenu menu = UiSmoke.field(view, "newProjectMenu");
+                Menu templates =
+                        (Menu)
+                                menu.getItems().stream()
+                                        .filter(i -> "project-templates".equals(i.getId()))
+                                        .findFirst()
+                                        .orElseThrow();
+                menu.hide();
+                templates.getItems().stream()
+                        .filter(i -> "template-theses".equals(i.getId()))
+                        .findFirst()
+                        .orElseThrow()
+                        .fire();
+                if (!"theses"
+                        .equals(
+                                ((javafx.scene.control.ComboBox<?>)
+                                                stage.getScene().lookup("#template-category"))
+                                        .getValue()))
+                    throw new AssertionError("Category was not selected");
+                ((javafx.scene.control.ComboBox<String>)
+                                stage.getScene().lookup("#template-category"))
+                        .setValue("");
+                text(stage, "template-search").setText("luận văn");
+                if (stage.getScene().lookup("#create-template-masters-thesis") == null)
+                    throw new AssertionError("Vietnamese thesis search missing");
+                ((Button) stage.getScene().lookup("#create-template-masters-thesis")).fire();
+                text(stage, "new-project-name").setText("Luận văn thư viện UI");
+                text(stage, "new-project-directory").setText(custom.toString());
+                buttons(stage.getScene().getRoot(), "Tạo dự án").fire();
+                return null;
+            });
+            Path thesis = custom.resolve("Luận văn thư viện UI");
+            await(() -> Files.isRegularFile(thesis.resolve("chapters/05-content.tex")));
+            await(() -> UiSmoke.fx(() -> stage.getScene().lookup("#new-project-name") == null));
+            UiSmoke.fx(() -> {
+                if (!"main.tex".equals(UiSmoke.field(app, "currentFile")))
+                    throw new AssertionError("Template main file not opened");
+                if (!"XeLaTeX"
+                        .equals(
+                                ((javafx.scene.control.ComboBox<?>)
+                                                UiSmoke.field(app, "compilerCombo"))
+                                        .getValue()))
+                    throw new AssertionError("Template engine not applied");
+                UiSmoke.invoke(app, "showHome");
+                return null;
+            });
             Path next = home.resolve("Default mới");
             UiSmoke.fx(() -> {
                 UiSmoke.invoke(UiSmoke.field(app, "homeView"), "projectStorageDialog");
@@ -131,10 +183,86 @@ public final class NewProjectUiSmoke {
                 if (menu.getItems().stream().noneMatch(i -> "Blank project".equals(i.getText())))
                     throw new AssertionError("English menu missing");
                 menu.hide();
+                UiSmoke.invoke(view, "templateGallery");
+                text(stage, "template-search").setText("thesis");
+                if (stage.getScene().lookup("#create-template-masters-thesis") == null
+                        || stage.getScene().lookup("#create-template-graduation-project") == null)
+                    throw new AssertionError("English thesis search missing");
+                ((javafx.scene.control.ComboBox<String>) stage.getScene().lookup("#template-tag"))
+                        .setValue("engineering");
+                if (stage.getScene().lookup("#create-template-masters-thesis") != null)
+                    throw new AssertionError("Tag filter did not apply");
+                ((javafx.scene.control.ComboBox<String>) stage.getScene().lookup("#template-tag"))
+                        .setValue("biblatex");
+                if (stage.getScene().lookup("#create-template-masters-thesis") == null)
+                    throw new AssertionError("Tag filter removed matching template");
+                screenshot(stage, home.resolve("template-gallery.png"));
                 return null;
             });
             System.out.println(
-                    "NEW_PROJECT_UI_SMOKE_OK vi/en menu, create custom folder, change default, move existing project, Settings storage");
+                    "TEMPLATE_GALLERY_UI_OK bilingual categories, search and multi-file creation");
+            UiSmoke.fx(() -> {
+                buttons(stage.getScene().getRoot(), "Close").fire();
+                return null;
+            });
+            Path fixture = home.resolve("package-fixture");
+            Path fakeBin = Files.createDirectories(fixture.resolve("target/TinyTeX/bin/windows"));
+            Files.createDirectories(fixture.resolve("target/TinyTeX/texmf-dist"));
+            Files.createFile(fakeBin.resolve("tlmgr.bat"));
+            java.util.concurrent.atomic.AtomicInteger installs =
+                    new java.util.concurrent.atomic.AtomicInteger();
+            java.util.concurrent.atomic.AtomicBoolean retried =
+                    new java.util.concurrent.atomic.AtomicBoolean();
+            var service =
+                    new com.overleaf.client.ui.backend.TemplatePrerequisites(
+                            fakeBin,
+                            fixture,
+                            true,
+                            (command, time) -> {
+                                if (command.contains("install")) {
+                                    installs.incrementAndGet();
+                                    return new com.overleaf.client.ui.backend.TemplatePrerequisites
+                                            .Result(0, "installed");
+                                }
+                                return new com.overleaf.client.ui.backend.TemplatePrerequisites
+                                        .Result(
+                                        command.getLast().equals("lmodern.sty")
+                                                        && installs.get() == 0
+                                                ? 1
+                                                : 0,
+                                        "found");
+                            });
+            var report =
+                    service.inspect(
+                            com.overleaf.client.ui.backend.ProjectTemplates.get(
+                                    "research-article"));
+            UiSmoke.fx(() -> {
+                TemplateInstallDialog.show(
+                        (javafx.scene.layout.StackPane) UiSmoke.field(app, "screenHost"),
+                        service,
+                        report,
+                        false,
+                        () -> retried.set(true));
+                if (installs.get() != 0) throw new AssertionError("Installed before confirmation");
+                buttons(stage.getScene().getRoot(), "Cancel").fire();
+                if (installs.get() != 0) throw new AssertionError("Installed after cancellation");
+                TemplateInstallDialog.show(
+                        (javafx.scene.layout.StackPane) UiSmoke.field(app, "screenHost"),
+                        service,
+                        report,
+                        false,
+                        () -> retried.set(true));
+                ((Button) stage.getScene().lookup("#template-install-confirm")).fire();
+                return null;
+            });
+            await(retried::get);
+            if (installs.get() != 1
+                    || !service.inspect(
+                                    com.overleaf.client.ui.backend.ProjectTemplates.get(
+                                            "research-article"))
+                            .ready()) throw new AssertionError("Bundled install/recheck failed");
+            System.out.println(
+                    "NEW_PROJECT_UI_SMOKE_OK vi/en categories and search, create multi-file thesis with engine, custom folder, default storage and move");
         } finally {
             UiSmoke.fx(() -> {
                 UiSmoke.invoke(app, "cleanupOnExit");
@@ -149,6 +277,28 @@ public final class NewProjectUiSmoke {
         stage.getScene().getRoot().applyCss();
         stage.getScene().getRoot().layout();
         return (TextField) stage.getScene().lookup("#" + id);
+    }
+
+    private static void screenshot(Stage stage, Path path) throws Exception {
+        stage.getScene().getRoot().applyCss();
+        stage.getScene().getRoot().layout();
+        var image = stage.getScene().snapshot(null);
+        int w = (int) image.getWidth(), h = (int) image.getHeight();
+        int[] pixels = new int[w * h];
+        image.getPixelReader()
+                .getPixels(
+                        0,
+                        0,
+                        w,
+                        h,
+                        javafx.scene.image.PixelFormat.getIntArgbInstance(),
+                        pixels,
+                        0,
+                        w);
+        var out =
+                new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+        out.setRGB(0, 0, w, h, pixels, 0, w);
+        javax.imageio.ImageIO.write(out, "png", path.toFile());
     }
 
     private static Button buttons(Parent root, String label) {

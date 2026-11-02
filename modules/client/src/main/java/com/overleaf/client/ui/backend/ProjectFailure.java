@@ -70,6 +70,8 @@ public final class ProjectFailure extends IllegalStateException {
         while ((failure instanceof java.util.concurrent.CompletionException
                         || failure instanceof java.util.concurrent.ExecutionException)
                 && failure.getCause() != null) failure = failure.getCause();
+        if (failure instanceof TemplatePrerequisites.MissingDependencies missing)
+            return missing.report().message(vi);
         return failure instanceof ProjectFailure known
                 ? known.localized(vi)
                 : vi ? Code.IO.vi : Code.IO.en;

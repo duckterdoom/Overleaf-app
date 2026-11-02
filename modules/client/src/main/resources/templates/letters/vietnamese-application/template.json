@@ -1,0 +1,43 @@
+{
+  "id": "vietnamese-application",
+  "category": "letters",
+  "title": {
+    "en": "Administrative application",
+    "vi": "Đơn xin việc hoặc xin phép"
+  },
+  "description": {
+    "en": "A bilingual administrative application with a Vietnamese national heading.",
+    "vi": "Đơn hành chính có quốc hiệu, tiêu ngữ, nội dung đề nghị và chữ ký."
+  },
+  "tags": [
+    "vietnamese",
+    "administrative"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/request.tex"
+  ],
+  "sharedPreamble": true
+}

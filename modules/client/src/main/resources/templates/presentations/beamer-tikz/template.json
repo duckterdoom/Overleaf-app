@@ -1,0 +1,46 @@
+{
+  "id": "beamer-tikz",
+  "category": "presentations",
+  "title": {
+    "en": "Beamer with a TikZ workflow",
+    "vi": "Thuyết trình tiếng Việt có TikZ"
+  },
+  "description": {
+    "en": "A visual workflow, experiment and closing message.",
+    "vi": "Luồng xử lý trực quan, thí nghiệm và thông điệp kết thúc."
+  },
+  "tags": [
+    "slides",
+    "tikz",
+    "vietnamese"
+  ],
+  "engine": "xelatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "beamer",
+    "tikz"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "slides/content.tex"
+  ],
+  "sharedPreamble": true
+}

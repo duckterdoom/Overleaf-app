@@ -19,22 +19,7 @@ public final class ProjectImportSmoke {
         LatexCompilerService compiler = new LatexCompilerService();
         compiler.configure(new LatexCompilerService.Options(LatexToolchain.resolve(""), 120));
         try {
-            for (var template : ProjectTemplates.all()) {
-                var created =
-                        backend.create(
-                                new NewProjectRequest(
-                                        "Mẫu " + template.title(true),
-                                        null,
-                                        null,
-                                        null,
-                                        NewProjectRequest.Kind.TEMPLATE,
-                                        null,
-                                        null,
-                                        template.id(),
-                                        true));
-                compile(compiler, created);
-                System.out.println("TEMPLATE_PDF_OK " + template.id());
-            }
+            TemplateCatalogSmoke.verify(root.resolve("template-matrix"), true);
             var example =
                     backend.create(
                             new NewProjectRequest(

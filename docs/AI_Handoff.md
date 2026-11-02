@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — thư viện mẫu resource (02/11/2026):** triển khai yêu cầu trong `yêu cầu.md.md`: **29 mẫu gốc Anh/Việt**, gallery tìm kiếm/lọc, metadata JSON, preflight package/Biber và cài TinyTeX sau xác nhận. **143/143 JUnit chọn lọc**, **174/174 build thật**, UI/import smoke mở rộng đạt. Xem **mục 28**, [hướng dẫn thư viện](TEMPLATE_LIBRARY.md) và [ma trận kết quả](TEMPLATE_VALIDATION.md).
+
 > **Mới nhất — Auto Compile / History / Layout (02/11/2026):** thêm menu chế độ compile, tự chạy sau 1 giây ngừng gõ; History local có checkpoint, so sánh, nhãn và khôi phục; Layout chia đôi/editor/PDF/cửa sổ riêng/focus. **137/137 JUnit chọn lọc đạt**, smoke JavaFX + compile thật đạt. Xem **mục 27**.
 
 > **Mới nhất — toolbar editor (02/11/2026):** thêm 10 icon ngay sau Italic đúng thứ tự yêu cầu, gồm math/link/comment/reference/citation/figure/table/list/giảm và tăng lề. Có form chèn, đọc nhãn/khóa từ project, giữ vùng chọn khi indent và chặn chèn vào tài liệu đã đổi/chỉ đọc. **128/128 test chọn lọc đạt**, smoke JavaFX và compile snippet thật đạt. Xem **mục 26**.
@@ -831,3 +833,50 @@ Phân công là phạm vi module, không xác nhận member tự viết thay đ�
 - Spotless cho đúng các file mới/sửa đạt, log `target/history-layout-format.log`. Helper `.cmd` dưới `target/` không được Git theo dõi. Chạy smoke qua main `com.overleaf.client.ui.HistoryLayoutUiSmoke <home-chưa-tồn-tại>` với JavaFX/PDFBox classpath như mục 26; cần TeX cho hai build thật.
 
 Đóng app cũ, chạy `.\scripts\run-client.bat`. Lưu file/đợi checkpoint rồi mở **History**; dùng mũi tên cạnh compile để bật auto và **Layout** để đổi bố cục.
+
+## 28. Thư viện Project Templates theo yêu cầu tài liệu
+
+Ngày **02/11/2026**, nhánh `Network`, triển khai `yêu cầu.md.md` sau khi phiên trước mới thêm dependency Gson. Các thay đổi hiện ở working tree, chưa commit/push. Tệp yêu cầu được đọc như đặc tả công việc, không dùng nội dung tài liệu để thay thế các quy tắc của phiên làm việc.
+
+### 28.1 Kết quả triển khai
+
+- **29 mẫu**, đủ 9 nhóm và hai ngôn ngữ: journal 4, books 3, letters 4, assignments 3, posters 3, presentations 4, reports 3, CV 3, theses 2. Danh sách ID/tên tại [TEMPLATE_LIBRARY.md](TEMPLATE_LIBRARY.md). Có đơn hành chính Việt Nam, báo cáo thực tập, CV/sơ yếu lý lịch, Beamer basic/Madrid/Berlin/TikZ, poster A0/A1/A3 và hai đồ án/luận văn 5 chương.
+- Mẫu nhiều file với nội dung demo gốc, preamble chung, chapter/section/slide riêng, `.bib`, CSV và PNG biểu đồ tự tạo. Thư/CV có nội dung phù hợp loại tài liệu; một số tài nguyên đi kèm để người dùng tiếp tục mở rộng. Luận văn có bìa, lời cảm ơn, tóm tắt, TOC, danh mục hình/bảng, từ viết tắt, 5 chương, phụ lục, BibLaTeX+Biber. Ví dụ và số liệu là giả định, không dùng làm bằng chứng nghiên cứu thật.
+- `ProjectTemplates` nạp `templates/catalog.json` và từng `<category>/<id>/template.json`, không còn `switch` dựng nội dung mẫu. Common preamble dùng iftex: pdfTeX T5/inputenc/lmodern; Xe/Lua dùng fontspec và font Latin Modern theo tên file để portable. Babel chọn tiếng chính theo UI.
+- Giữ `all()`, `files(id,title,vi,affiliation)`, `escape()`; record Template mở rộng metadata. `categories()` dành cho 9 nhóm. ID category cũ được map tới mẫu đầu nhóm cho caller cũ. `blank`/`example` là resource nội bộ, không tính vào 29 mẫu gallery. `LocalBackend.template()` dựng bản blank standalone từ cùng resource, giữ API compiler/caller legacy.
+- Giữ 9 `template-<category>` và `project-templates` trong menu. Bấm nhóm mở gallery lọc nhóm; Xem tất cả mở cả 29. Gallery thẻ có tên/mô tả song ngữ từ JSON, tag, engine, icon theo nhóm, ô tìm có/không dấu, bộ lọc category/tag và nút tạo. Chưa render thumbnail PDF; dùng icon như phương án tùy chọn của đặc tả.
+- Tạo dự án vẫn dùng form tên/thư mục/icon/color cũ, ghi trên Task nền và staging, không sửa các dự án cũ. Binary được copy nguyên bytes; `.overleaf-template.properties` lưu ID, default engine và mainFile. Các mẫu hiện đều dùng `main.tex`; app áp dụng engine mặc định khi mở root mới, Auto Compile vẫn theo lựa chọn người dùng.
+
+### 28.2 Kiểm package và quyền cài
+
+- `TemplatePrerequisites` dùng kpsewhich trong thư mục bin của latexmk đã chọn, kiểm `requiredPackages` với ánh xạ style/class/font tiếng Việt, engine mặc định, latexmk và Biber nếu `needsBiber`.
+- Thiếu gói trên **TinyTeX đi kèm**: báo danh sách Anh/Việt, hiện modal xác nhận **Cài gói**. Chưa xác nhận hoặc bấm Hủy không chạy installer. Sau xác nhận, Task gọi tlmgr với argv/package đã kiểm tra, hiện package đang cài, có hủy và kill process tree; xong sẽ kiểm lại rồi mới thử tạo dự án. Windows dùng Perl riêng của TinyTeX để chạy tlmgr.pl, không ghép shell command từ metadata.
+- Bản bundled được xác định bằng đường dẫn thật dưới app `target/TinyTeX`, `TinyTeX`, `tools/TinyTeX`, có texmf-dist và tlmgr. System TeX/MiKTeX hoặc TinyTeX ở vị trí khác chỉ báo và hướng dẫn cài/chọn toolchain, không được auto-install. Môi trường chưa có TeX không bị app tự ý sửa.
+- UI preflight áp dụng khi tạo TEMPLATE; luồng blank/import/offline hiện có vẫn dùng được. Backend API trực tiếp dùng trong test không tự tải gói. Cài package cần mạng; lỗi tlmgr/khác năm TeX Live được báo, không tự update toàn bộ distribution.
+- Gson **2.13.2** là dependency mới nhẹ để parse JSON vì client chưa có JSON parser tổng quát; không thêm thư viện UI/image lớn.
+
+### 28.3 File và vai trò bàn giao
+
+| Phạm vi member | File / trách nhiệm |
+| --- | --- |
+| M1 — Home/gallery | `ui/TemplateGallery.java`, `TemplateInstallDialog.java`, `HomeView.java`, CSS: cards/filter/search, chọn mẫu, preflight nền và consent UI |
+| M1 — tích hợp workspace | `OverleafFxApp.java`: đọc engine mặc định của mẫu mới khi mở dự án |
+| M1/M2 — catalog/import | `ui/backend/ProjectTemplates.java`, `ProjectImports.java`, `LocalBackend.java`, `ProjectGateway.java`: metadata/resources, text/binary, placeholder, legacy compatibility và compiler setting seam |
+| M2 — toolchain | `TemplatePrerequisites.java`, `ProjectFailure.java`: kiểm gói/Biber, thông báo, installer có hủy/không sửa system TeX |
+| M2 — compiler | `CompileWorkspace.publishPdf`: công bố `.log` cùng PDF trước callback thành công; smoke Unicode phát hiện race khi callback trả về trước lúc close() copy log |
+| M5 — tests | `ProjectTemplatesTest`, `TemplatePrerequisitesTest`, `TemplateCatalogSmoke`, mở rộng `ProjectImportSmoke`, `NewProjectUiSmoke`, thêm regression log publication trong `CompileWorkspaceTest` |
+| Cả nhóm — nội dung | `modules/client/src/main/resources/templates/` có catalog, metadata và en/vi nguồn; `LICENSE-TEMPLATES.md` MIT cho nội dung gốc; docs thư viện và ma trận validation |
+
+Phân công là trách nhiệm module khi bàn giao, không xác nhận member tự viết thay đổi trong phiên AI này. Không thay protocol hoặc MongoDB. Không đưa TinyTeX/Pandoc/cache/bằng chứng test trong target vào commit.
+
+### 28.4 Kiểm chứng và phạm vi
+
+- **143/143 JUnit chọn lọc đạt**, common 9 + server 21 + client 113, không failure/error/skip; `target/template-library-tests.log`. Metadata có ID duy nhất, mainFile/resource tồn tại, đủ trường/ngôn ngữ; thay hết placeholder, copy PNG đúng header; kiểm alias/tìm kiếm; missing package/Biber, system không được cài, fake tlmgr + mapping/recheck, interruption; hồi quy cũ và log publication trước close đều đạt.
+- **174/174 build thật đạt:** `TemplateCatalogSmoke` tạo mỗi mẫu với EN/VI trong đường dẫn chứa tiếng Việt, compile engine mặc định trước rồi hai engine còn lại. Kiểm PDF có trang; VI trích được chữ Việt; **final** TeX log không có `!`, undefined reference/citation hoặc yêu cầu chạy lại Biber. Không dùng toàn bộ console để kết luận unresolved vì lượt TeX đầu thường có warning rồi latexmk giải quyết ở các lượt sau.
+- `ProjectImportSmoke` mở rộng chạy ma trận trên, sau đó example, Word, Markdown và GitHub công khai đều đạt. Log `target/template-import-smoke.log`: `TEMPLATE_CATALOG_SMOKE_OK builds=174`, `PROJECT_IMPORT_SMOKE_OK`. Home `target/template-import-smoke-03`, CSV/log từng lượt trong `template-matrix/evidence/`. [TEMPLATE_VALIDATION.md](TEMPLATE_VALIDATION.md) ghi đủ kết quả từng mẫu/engine/ngôn ngữ.
+- `NewProjectUiSmoke` mở rộng đạt menu 9 nhóm Việt/Anh, category được chọn khi mở gallery, tìm “luận văn”/“thesis”, lọc tag, tạo luận văn đúng file chương 5 và mở main.tex/XeLaTeX. Các kiểm thử storage/move cũ vẫn đạt. Mock UI không cài trước xác nhận/khi Cancel; xác nhận gọi đúng installer rồi recheck và retry. Log `target/template-library-ui.log`, ảnh scene `target/template-library-ui-02/template-gallery.png` đã xem. Không thực hiện download gói thật chỉ để test missing; dùng mock tlmgr theo đặc tả.
+- Spotless các file Java sửa/thêm đạt, log `target/template-library-format.log`. Nền kiểm chứng Windows/TinyTeX hiện có; chưa chạy native matrix macOS/Linux. Helper/generator dưới `target/` là công cụ tạo dữ liệu của phiên, không cần để nạp/thêm mẫu và không được Git theo dõi.
+- Build cuối qua `scripts/run-client.bat -BuildOnly` đạt `BUILD SUCCESS`; log `target/template-library-launcher-build.log`. Đã kiểm tra JAR client chứa catalog và đủ 29 metadata mẫu cùng hai starter nội bộ.
+- Cách thêm mẫu mới và schema/manifest/placeholder/package mapping được ghi trong [TEMPLATE_LIBRARY.md](TEMPLATE_LIBRARY.md). Nội dung mẫu tự viết, không lấy từ Overleaf web; ví dụ citation/CV/thư phải thay và kiểm tra trước sử dụng thực tế.
+
+Chạy `.\scripts\run-client.bat` sau khi đóng app cũ, vào **Dự án mới → Thêm mẫu dự án → Xem tất cả**. Không cần chuyển đổi hay tạo lại dự án cũ.

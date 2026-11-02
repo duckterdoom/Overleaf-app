@@ -1,0 +1,47 @@
+{
+  "id": "technical-report",
+  "category": "reports",
+  "title": {
+    "en": "Technical report",
+    "vi": "Báo cáo kỹ thuật"
+  },
+  "description": {
+    "en": "Requirements, design, evaluation and maintenance notes.",
+    "vi": "Yêu cầu, thiết kế, đánh giá và hướng dẫn bảo trì."
+  },
+  "tags": [
+    "engineering",
+    "multi-file"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

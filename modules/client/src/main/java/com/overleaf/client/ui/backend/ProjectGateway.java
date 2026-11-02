@@ -62,4 +62,8 @@ public interface ProjectGateway {
     default String preferredProjectFolder() {
         return null;
     }
+
+    default String templateLatexmk() {
+        return "";
+    }
 }
