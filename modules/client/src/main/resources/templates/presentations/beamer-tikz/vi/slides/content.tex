@@ -1,0 +1,24 @@
+\section{Mục tiêu}
+\begin{frame}{Dự án có thể tái lập}
+\begin{itemize}
+\item Nêu một câu hỏi và kết quả đo được.
+\item Tách bằng chứng khỏi giả định.
+\item Giữ dữ liệu và công cụ cùng báo cáo.
+\end{itemize}
+\end{frame}
+\section{Ví dụ}
+\begin{frame}{Kết quả tổng quan}
+\centering\includegraphics[width=.65\linewidth,height=.55\textheight,keepaspectratio]{figures/results.png}
+\par Bốn lượt chạy; các số đo tăng tuyến tính.
+\end{frame}
+\begin{frame}{Luồng xử lý}
+\centering\begin{tikzpicture}
+\node[draw,rounded corners] (a) at (0,0) {Đầu vào};
+\node[draw,rounded corners] (b) at (3,0) {Kiểm tra};
+\node[draw,rounded corners] (c) at (6,0) {Đầu ra};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);\end{tikzpicture}
+\end{frame}
+\begin{frame}{Kết luận}
+Ví dụ minh họa cấu trúc, không phải khẳng định hiệu năng. Hãy thay dữ liệu mẫu, sau đó báo cáo sai số và giới hạn.
+\[T(n)=4n\]
+\end{frame}

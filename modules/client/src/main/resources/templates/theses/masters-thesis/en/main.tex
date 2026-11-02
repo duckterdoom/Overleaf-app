@@ -1,0 +1,29 @@
+% !TeX program = xelatex
+\documentclass{report}
+\input{preamble}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{csquotes}
+\usepackage[backend=biber,style=numeric]{biblatex}
+\addbibresource{references.bib}
+\title{{{TITLE}}}
+\author{{{AUTHOR}} \\ {{AFFILIATION}}}
+\date{{{DATE}}}
+\begin{document}
+\input{frontmatter/title}
+\pagenumbering{roman}
+\input{frontmatter/acknowledgements}
+\input{frontmatter/abstract}
+\tableofcontents
+\listoffigures
+\listoftables
+\input{frontmatter/abbreviations}
+\clearpage\pagenumbering{arabic}
+\include{chapters/01-content}
+\include{chapters/02-content}
+\include{chapters/03-content}
+\include{chapters/04-content}
+\include{chapters/05-content}
+\appendix
+\include{appendix/checklist}
+\printbibliography[heading=bibintoc,title={References}]
+\end{document}

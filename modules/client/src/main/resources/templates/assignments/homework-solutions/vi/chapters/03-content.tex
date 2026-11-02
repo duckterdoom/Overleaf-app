@@ -1,0 +1,27 @@
+\section{Kiểm tra và mở rộng}
+
+
+\label{sec:chapter3}
+Phần này triển khai mục tiêu tài liệu bằng ví dụ được mô tả rõ. Dữ liệu minh họa là dữ liệu giả lập, dùng để kiểm tra cấu trúc tài liệu.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.65\linewidth]{figures/results.png}
+\caption{Bốn số đo minh họa trong một lượt chạy có kiểm soát.}\label{fig:results}
+\end{figure}
+\begin{table}[htbp]
+\centering
+\caption{Các số đo minh họa}\label{tab:measurements}
+\begin{tabular}{|c|r|r|}
+\hline
+Lượt & Đầu vào & Thời gian (ms) \\
+\hline
+1 & 10 & 40 \\
+2 & 20 & 80 \\
+3 & 30 & 120 \\
+4 & 40 & 160 \\
+\hline
+\end{tabular}
+\end{table}
+Hình~\ref{fig:results} và Bảng~\ref{tab:measurements} trình bày cùng xu hướng minh họa. Tệp CSV gốc được lưu trong thư mục data.
+Ví dụ không chứng minh ưu thế tổng quát về tốc độ hoặc độ chính xác. Hướng phát triển là mở rộng dữ liệu, đo sai số và lặp lại quy trình trong môi trường được ghi nhận.

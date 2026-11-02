@@ -1,188 +1,179 @@
-# Overleaf Desktop — Pure Java
+# Overleaf Desktop
 
-Trình soạn thảo LaTeX desktop cộng tác thời gian thực: client JavaFX compile LaTeX trên máy người dùng, server Java TCP/TLS đồng bộ nội dung giữa nhiều người, module MongoDB riêng cho dữ liệu. Đồ án môn **Java Software Development**, 5 member, 4 Maven module.
+Trình soạn thảo LaTeX desktop bằng Java, hỗ trợ compile PDF trên máy và cộng tác trực tuyến qua server TCP/TLS.
 
-Trạng thái, quyết định kỹ thuật, giới hạn và việc còn lại: xem [AI_Handoff.md](AI_Handoff.md).
+Đồ án môn **Java Software Development**, gồm 5 thành viên và 4 Maven module. Chi tiết kỹ thuật và trạng thái phát triển nằm trong [AI_Handoff.md](docs/AI_Handoff.md).
 
-## 1. Phân công
+## Tính năng chính
 
-| Member | Vai trò | Phụ trách chính |
-| --- | --- | --- |
-| **M1** | GUI & Client | `client/.../ui/`, `ClientApp`, theme JavaFX |
-| **M2** | Compiler & I/O | `client/.../compiler/`, `client/.../workspace/` |
-| **M3** | Networking | `server/.../net/`, `ServerApp`, `client/.../net/`, `common/.../protocol/`, `common/.../security/`, `deploy/`, `scripts/` |
-| **M4** | Collaboration | `server/.../collab/`, `common/.../model/`, `common/.../sync/` |
-| **M5** | Database & Testing | `persistence/` |
+- Soạn thảo LaTeX, quản lý file và xem PDF trực tiếp trong ứng dụng.
+- Tạo dự án từ template hoặc nhập từ ZIP, Word, Markdown và GitHub.
+- Lưu dự án trên máy, hỗ trợ tiếng Việt và giao diện Anh/Việt.
+- Cộng tác qua phòng online, có reconnect và đồng bộ thao tác chưa gửi.
 
-## 2. Cấu trúc
-
-Maven multi-module; package gốc `com.overleaf`, mỗi module một package con cùng tên.
+## Cấu trúc dự án
 
 ```text
 Overleaf-app/
-├── pom.xml              # Maven parent: Java 17 (client 21), JavaFX 23.0.2, MongoDB 4.11.1, JUnit 5.10.1
-├── common/              # Dùng chung client/server — com.overleaf.common
-│   ├── protocol/        #   MessageType, SyncMessage, MessageCodec (wire v2), ResyncTransfer
-│   ├── model/           #   CRDTOperation, DocumentState, CollaboratorInfo, CursorPosition
-│   ├── sync/            #   OperationCodec, OfflineOperationQueue
-│   └── security/        #   TlsContexts
-├── server/              # Backend — com.overleaf.server (ServerApp)
-│   ├── net/             #   OverleafServer, ServerSession, ServerConfig (M3)
-│   └── collab/          #   DocumentSyncManager, CRDTEngine, OperationHistory, SyncBroadcaster, CollaborationThreadPool (M4)
-├── client/              # Desktop — com.overleaf.client (ClientApp)
-│   ├── ui/              #   OverleafFxApp, LoginView, HomeView, UiModal + styles/overleaf-theme.css (M1)
-│   │   └── backend/     #   AuthGateway/ProjectGateway/ActivityGateway + LocalBackend (lưu trên máy)
-│   ├── compiler/        #   LatexCompilerService (M2)
-│   ├── workspace/       #   ProjectFileManager, WorkspaceWatcher (M2)
-│   └── net/             #   NetworkClient, ConnectionScope, NetworkDemo (M3)
-├── persistence/         # MongoDB — com.overleaf.persistence: config/, model/, repository/(impl/), service/ (M5)
-├── scripts/             # run-client.sh|.bat, build-network.sh|.ps1, run-server.bat, run-network-demo.bat
-├── deploy/              # Mẫu systemd + env cho VPS
-└── main.tex             # Tài liệu mẫu; client mở/ghi main.tex ở thư mục chạy
+├── modules/
+│   ├── client/        # JavaFX, compiler, workspace và network client
+│   ├── common/        # Model, protocol và sync dùng chung
+│   ├── server/        # TCP/TLS server và collaboration engine
+│   └── persistence/   # MongoDB và repository
+├── docs/              # Tài liệu kỹ thuật và đánh giá
+├── examples/          # Tài liệu LaTeX mẫu
+├── scripts/           # Script chạy và build
+└── deploy/            # Mẫu cấu hình VPS
 ```
 
-Test nằm cùng package với code được test, trong `src/test/java` của từng module.
+Source code nằm trong `modules/*/src/main/java`. Các thư mục `target/` và `dist/` là output build, không phải source.
 
-## 3. Chạy
+## Bắt đầu nhanh
 
-### Cần cài
+### 1. Cài đặt
 
-- **JDK 21+** và **Maven**
-- *(Tùy chọn)* TeX Live / MacTeX / MiKTeX để compile ra PDF thật
+- **JDK 21+** và **Maven**.
+- **TeX Live**, **MacTeX** hoặc **MiKTeX** nếu muốn compile PDF.
+- **Pandoc** nếu muốn nhập Word hoặc Markdown.
 
-### Mở ứng dụng
+### 2. Mở ứng dụng
+
+macOS / Linux:
 
 ```bash
-./scripts/run-client.sh     # macOS / Linux
-scripts\run-client.bat      # Windows
+./scripts/run-client.sh
 ```
 
-Lần đầu: **tạo tài khoản → mở dự án → viết**. Dữ liệu lưu ở `~/OverleafDesktop`.
+Windows:
 
-| Thao tác | Cách làm |
+```bat
+scripts\run-client.bat
+```
+
+Sau khi mở app: **tạo tài khoản → tạo hoặc mở dự án → bắt đầu viết**. Dữ liệu local được lưu trong `~/OverleafDesktop`.
+
+Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt thông dụng. Để chỉ kiểm tra build, chạy `scripts\run-client.bat -BuildOnly`.
+
+## Sử dụng
+
+| Thao tác | Cách thực hiện |
 | --- | --- |
-| Lưu / Compile | `Ctrl+S` / `F5` hoặc `Ctrl+Enter` |
-| Tạo file, mở PDF, vào phòng | Menu `⋯` góc trên bên phải |
-| Đổi tên / xóa file, dự án | Chuột phải vào file hoặc dự án |
-| Đổi ảnh đại diện | Bấm vào avatar |
+| Lưu file | `Ctrl+S` |
+| Compile PDF | `F5` hoặc `Ctrl+Enter` |
+| Auto Compile | Mũi tên cạnh Recompile → **Tự động biên dịch**; chờ 1 giây ngừng gõ rồi compile. Chọn **Biên dịch thủ công** để tắt |
+| Lịch sử sửa | **Lịch sử / History** → chọn tệp và phiên bản, so sánh với hiện tại, gắn nhãn hoặc khôi phục |
+| Đổi bố cục | **Bố cục / Layout** → chia đôi, chỉ editor, chỉ PDF, PDF cửa sổ riêng hoặc chế độ tập trung (`Ctrl+Shift+M`) |
+| Tạo hoặc nhập dự án | Chọn **Dự án mới**, sau đó chọn template hoặc nguồn nhập |
+| Thêm file hoặc thư mục | Dùng **Thêm tệp**, **Thư mục mới** hoặc menu chuột phải |
+| Upload tài nguyên | Chọn **Tải lên**, kéo thả hoặc dán file/ảnh |
+| Xem và xuất PDF | Compile, xem preview, sau đó chọn **Export PDF…** |
+| Đổi tên hoặc xóa | Nhấp chuột phải vào file hoặc dự án |
+| Kết nối phòng | Menu `⋯` → **Connect room…** |
 
-Gõ tiếng Việt (Telex/VNI) dùng được bình thường.
+Toolbar editor có dãy icon ngay sau **Italic**, theo thứ tự: **Math → Link → Comment → Cross reference → Citation → Figure → Table → List → Decrease indent → Increase indent**. Di chuột lên icon để xem chú thích Việt/Anh; nếu editor hẹp, cuộn ngang toolbar để thấy các nút còn lại.
 
-### Làm việc nhóm (tùy chọn)
+Math và List mở menu chọn dạng chèn. Comment bật/tắt chú thích LaTeX `%` cho dòng đang chọn, không phải luồng nhận xét review. Tham chiếu đọc `\label` từ tệp `.tex`, citation đọc khóa từ `.bib`; ảnh chọn từ các PNG/JPG/PDF đã upload. Thụt lề dùng 2 dấu cách, giảm lề xử lý cả tab. Link cần `hyperref`, Figure cần `graphicx`; hộp thoại có hướng dẫn package, không tự sửa preamble. Xem [AI_Handoff §26](docs/AI_Handoff.md#26-toolbar-editor-chèn-latex-và-thụt-lề).
 
-1. Chạy server:
+### Compile và PDF
 
-   ```bash
-   sh scripts/build-network.sh && java -jar dist/overleaf-server.jar 8080   # macOS / Linux
-   scripts\run-server.bat 8080                                              # Windows (tự build)
-   ```
+Preview hiển thị PDF thật do compiler tạo. Sau khi sửa source, cần compile thành công trước khi xem hoặc xuất bản mới.
 
-2. Trong app: `⋯` → **Connect room…** → host `127.0.0.1`, port `8080`, cùng một tên phòng.
+Trong **Settings → Compilation / Biên dịch**, bạn có thể chọn `latexmk`, đổi timeout và kiểm tra toolchain. Để trống đường dẫn nếu muốn app tự tìm compiler.
 
-Phòng đồng bộ `main.tex` của dự án đang mở. Nối từ máy khác (VPS, SSH tunnel): xem [§6](#6-triển-khai-lên-vps).
+Auto Compile mặc định tắt, nhớ lựa chọn cho lần mở sau; vẫn có thể bấm nút compile ngay. Khi một lượt đang chạy, thay đổi tiếp theo được gộp để compile sau đó; **Stop** dừng lượt hiện tại và lượt tự động đang chờ.
 
-### Chạy test
+History lưu phiên bản văn bản local trong `.overleaf-history/` của từng dự án khi mở/lưu tệp và sau 3 giây ngừng gõ. Các checkpoint chưa Save không ghi đè tệp làm việc. Chỉ có lịch sử từ khi bật bản ứng dụng này; đây là lịch sử trên máy, chưa đồng bộ qua server. Khôi phục một tệp có xác nhận và giữ nội dung cũ trước khi thay thế; cần rời phòng cộng tác để khôi phục. Giới hạn 2 MiB/phiên bản, 1.024 phiên bản/128 MiB mỗi dự án; chạm giới hạn sẽ dừng ghi thêm history, không xóa các mốc cũ và vẫn cho lưu source. Xem [AI_Handoff §27](docs/AI_Handoff.md#27-auto-compile-history-và-layout-workspace).
+
+### Nhập và di chuyển dự án
+
+**Thư viện mẫu:** Dự án mới → Thêm mẫu dự án → chọn một trong 9 nhóm hoặc Xem tất cả. Có **29 mẫu nhiều tệp, Anh/Việt**, tìm kiếm có/không dấu, lọc nhóm/tag, mô tả và engine mặc định. Gồm bài báo, sách, đơn hành chính, bài tập, poster, Beamer, báo cáo thực tập, CV và hai mẫu luận văn đủ 5 chương/BibLaTeX. Kiểm package/Biber trước khi tạo; chỉ cài gói vào TinyTeX đi kèm sau xác nhận, không tự sửa TeX hệ thống. Xem [danh mục và cách thêm mẫu](docs/TEMPLATE_LIBRARY.md), [giấy phép](LICENSE-TEMPLATES.md).
+
+- Word/Markdown cần Pandoc; GitHub cần Git và URL HTTPS của repository công khai.
+- ZIP hoặc repository cần có `main.tex`, hoặc một file `.tex` chứa `\documentclass` để app tạo file chính.
+- Nên di chuyển dự án bằng menu **Đổi thư mục lưu…** để app cập nhật danh sách dự án và giữ bản khôi phục.
+
+Các giới hạn import, upload và workspace được ghi trong [AI_Handoff.md §22–23](docs/AI_Handoff.md#22-menu-tạo-dự-án-nhập-tài-liệu-và-thư-mục-lưu-tùy-chọn).
+
+## Cộng tác trực tuyến
+
+Khởi động server trên macOS / Linux:
 
 ```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,LocalBackendTest' -Dsurefire.failIfNoSpecifiedTests=false
+sh scripts/build-network.sh
+java -jar dist/overleaf-server.jar 8080
 ```
 
-52 test, không cần MongoDB. Test GUI tự động (`UiSmoke`) và chi tiết khác: xem [AI_Handoff.md](AI_Handoff.md) §15.
+Trên Windows:
 
-## 4. Cấu hình server
+```bat
+scripts\run-server.bat 8080
+```
 
-Biến môi trường; tham số dòng lệnh duy nhất là port.
+Sau đó, trong app chọn **Connect room…** và nhập:
 
-| Biến | Mặc định | Ý nghĩa |
+- Host: `127.0.0.1`
+- Port: `8080`
+- Room ID phải giống nhau giữa các thành viên
+
+Hiện phòng cộng tác đồng bộ `main.tex`. Server lưu trạng thái phòng trong RAM, vì vậy cần lưu project trước khi restart server.
+
+## Chạy test
+
+```bash
+mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,ProjectTemplatesTest,TemplatePrerequisitesTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+Bộ test chọn lọc gồm **143 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test nằm trong [AI_Handoff.md](docs/AI_Handoff.md); thư viện mẫu có ma trận **174 build thật** và smoke UI mở rộng (§28), bên cạnh toolbar/history/layout (§26–27).
+
+## Server và triển khai
+
+Cấu hình thường dùng:
+
+| Biến môi trường | Mặc định | Mục đích |
 | --- | --- | --- |
-| `OVERLEAF_HOST` | `127.0.0.1` | Địa chỉ bind. Bind ngoài loopback bắt buộc TLS + token ≥ 24 ký tự |
-| `OVERLEAF_PORT` | `8080` | Port |
-| `OVERLEAF_MAX_CLIENTS` | `64` | Số kết nối tối đa |
-| `OVERLEAF_IDLE_TIMEOUT_MS` | `60000` | Đóng kết nối im lặng (client heartbeat mỗi 15 s) |
-| `OVERLEAF_TOKEN` | rỗng | Token chung cho AUTH |
+| `OVERLEAF_HOST` | `127.0.0.1` | Địa chỉ server |
+| `OVERLEAF_PORT` | `8080` | Port server |
+| `OVERLEAF_TOKEN` | rỗng | Token dùng chung khi bật xác thực |
 | `OVERLEAF_TLS` | `false` | Bật TLS |
-| `OVERLEAF_KEYSTORE`, `OVERLEAF_KEYSTORE_PASSWORD` | — | PKCS12 của server khi bật TLS |
-| `OVERLEAF_QUEUE_CAPACITY` | `32` | Hàng đợi frame gửi mỗi session |
-| `OVERLEAF_MAX_DOCUMENT_CHARS` | `100000` | Giới hạn kích thước tài liệu (UTF-16 code units) |
 
-Client (demo/GUI) đọc `OVERLEAF_TLS`, `OVERLEAF_TOKEN`, `OVERLEAF_TRUSTSTORE`, `OVERLEAF_TRUSTSTORE_PASSWORD`. GUI có ô token và checkbox TLS; truststore lấy từ môi trường lúc khởi chạy.
+Các cấu hình đầy đủ có trong `deploy/overleaf.env.example` và `deploy/overleaf-public.env.example`.
 
-## 5. Giao thức wire v2
+Cách triển khai đơn giản qua SSH tunnel:
 
-Frame big-endian `[int32 bodyLength][body]`, body tối đa 1 MiB:
-
-```text
-int32  version = 2
-string messageType        # tên enum MessageType
-string roomId
-string senderId
-string senderName
-string payload
-int64  timestamp          # thời gian thực, ms
-int64  lamportTimestamp   # clock logic của server
-```
-
-String = `[int32 số byte UTF-8][bytes]`. Codec đọc được v1 (clock = 0) nhưng luôn ghi v2, nên **client và server phải cùng phiên bản**. Không dùng `ObjectInputStream`/`ObjectOutputStream`. Frame sai (cắt, sai version/type, UTF-8 lỗi, byte dư) → đóng session; lỗi nghiệp vụ → `ERROR` với tiền tố `INVALID_REQUEST:`.
-
-```text
--> AUTH(token)                 <- ACK(AUTHENTICATED)
--> JOIN_ROOM(room, user, name) <- FULL_SYNC + CHECKPOINT + USER_LIST_UPDATE
--> TEXT_EDIT(OperationCodec JSON)
-   server kiểm tra membership/identity/giới hạn -> M4 áp dụng vào RAM
-<- ACK(operationId) cho người gửi, TEXT_EDIT cho người khác cùng phòng
-```
-
-- **Lamport:** client đặt `local = max(local, msg.lamportTimestamp)` trước khi xử lý; tạo operation thì tăng clock rồi gắn vào. Payload `FULL_SYNC` là nguyên văn, `CHECKPOINT` là operation ID.
-- **Reconnect:** kết nối mới → AUTH → gửi **RESYNC trực tiếp** (không JOIN) gồm điểm đã thấy + thao tác chưa ACK. Phòng không còn (server restart) → `ERROR` với payload đúng `ROOM_UNKNOWN`; client giữ pending và văn bản local.
-- **RESYNC lớn:** `NetworkClient` tự chia payload > 64 Ki ký tự thành `RESYNC_BEGIN` (tổng byte) → `RESYNC_PART`… (không cắt surrogate pair) → `RESYNC_END`, gửi liền như một khối FIFO. Server chỉ giao cho M4 khi ghép đủ. Giới hạn 4 MiB, 128 phần, 30.000 operation.
-- **ACK_BATCH:** RESYNC > 64 operation được xác nhận bằng `ACK_BATCH` (ID cách nhau bởi newline, ≤ 2048 ID/message).
-- **Định danh:** sau JOIN, server lấy sender từ session; mỗi user ID chỉ một session trong một phòng. Token là khóa chung, chưa phải tài khoản.
-- **GUI:** mỗi kết nối/đổi phòng có generation trong `ConnectionScope`; callback cũ bị bỏ khi chạy trên FX thread.
-
-## 6. Triển khai lên VPS
-
-Chỉ cần copy `dist/overleaf-server.jar`; JAR không chứa cấu hình MongoDB hay credential. VPS cần Java runtime 17+.
-
-**Cách 1 — SSH tunnel (khuyên dùng):** server bind loopback, mỗi người mở tunnel.
-
-```sh
+```bash
 scp dist/overleaf-server.jar user@server:~/
 ssh user@server 'java -jar ~/overleaf-server.jar 8080'
-ssh -N -L 8080:127.0.0.1:8080 user@server   # trên máy mỗi người; client kết nối 127.0.0.1:8080
+ssh -N -L 8080:127.0.0.1:8080 user@server
 ```
 
-**Chạy nền bằng systemd** (mẫu trong `deploy/`, bind loopback):
+`deploy/` cũng có mẫu systemd để chạy server nền. Khi mở server ra public network, bắt buộc dùng TLS và token ít nhất 24 ký tự; không tắt hostname verification.
 
-```sh
-sudo useradd --system --home /opt/overleaf --shell /usr/sbin/nologin overleaf
-sudo install -d -o root -g overleaf -m 750 /opt/overleaf /etc/overleaf
-sudo install -o root -g overleaf -m 640 ~/overleaf-server.jar /opt/overleaf/overleaf-server.jar
-sudo install -o root -g root -m 600 deploy/overleaf.env.example /etc/overleaf/overleaf.env
-sudo install -o root -g root -m 644 deploy/overleaf.service /etc/systemd/system/overleaf.service
-sudo systemctl daemon-reload && sudo systemctl enable --now overleaf
-sudo journalctl -u overleaf -f
+Giao thức wire v2 và các giới hạn networking được mô tả trong [AI_Handoff.md §5](docs/AI_Handoff.md#5-giao-thức-wire-v2).
+
+## Phát triển
+
+Format Java trước khi tạo pull request:
+
+```bash
+mvn spotless:apply
+mvn spotless:check
 ```
 
-**Cách 2 — TLS public:** cần DNS trỏ về VPS và PKCS12 đúng tên miền.
+Quy ước chung:
 
-```sh
-keytool -genkeypair -alias overleaf -keyalg RSA -keysize 3072 -validity 365 \
-  -dname "CN=latex.example.com" -ext "SAN=dns:latex.example.com" -keystore server.p12 -storetype PKCS12
-keytool -exportcert -rfc -alias overleaf -keystore server.p12 -file server.crt
-```
+- Dùng nhánh `feat/`, `fix/` hoặc `docs/`; không commit trực tiếp vào `main`.
+- Chạy test trước khi mở pull request.
+- Không commit `config.properties`, `.env`, `*.p12` hoặc `*.jks`.
+- Giữ UTF-8 và newline theo `.editorconfig` / `.gitattributes`.
 
-Đặt `server.p12` ở `/etc/overleaf/` (`root:overleaf`, mode 640), dùng `deploy/overleaf-public.env.example` làm `/etc/overleaf/overleaf.env` với token ngẫu nhiên ≥ 24 ký tự, mở TCP 8080 rồi restart service. Với certificate tự ký, mỗi client import **certificate công khai** sau khi đối chiếu fingerprint:
+## Phân công
 
-```sh
-keytool -importcert -alias overleaf -file server.crt -keystore client-trust.p12 -storetype PKCS12
-# rồi đặt OVERLEAF_TLS=true, OVERLEAF_TOKEN, OVERLEAF_TRUSTSTORE, OVERLEAF_TRUSTSTORE_PASSWORD
-```
+| Member | Phạm vi chính |
+| --- | --- |
+| **M1** | JavaFX UI và client |
+| **M2** | Compiler và workspace I/O |
+| **M3** | Networking, scripts và deployment |
+| **M4** | Collaboration và sync |
+| **M5** | MongoDB, persistence và testing |
 
-Không tắt hostname verification để vượt lỗi certificate; sửa DNS/SAN/truststore. Server chưa lưu bền vững: restart là mất phòng, nên lưu file ở client trước khi bảo trì.
-
-## 7. Quy ước
-
-- Nhánh `feat/`, `fix/`, `docs/`; không commit thẳng vào `main`; chạy test ở mục 3 trước khi mở PR.
-- Không commit `config.properties`, `.env`, `*.p12`, `*.jks`.
-- Định dạng: `.editorconfig` (UTF-8, LF, 4 dấu cách) và `.gitattributes` (LF trong repo, CRLF cho `.bat`/`.ps1`).
-- Remote: `https://github.com/duckterdoom/Overleaf-app.git`
+Repository: <https://github.com/duckterdoom/Overleaf-app.git>

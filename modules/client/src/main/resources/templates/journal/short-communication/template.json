@@ -1,0 +1,46 @@
+{
+  "id": "short-communication",
+  "category": "journal",
+  "title": {
+    "en": "Short communication",
+    "vi": "Bài báo ngắn"
+  },
+  "description": {
+    "en": "A concise finding with a reproducible worked example.",
+    "vi": "Trình bày phát hiện ngắn gọn cùng ví dụ có thể tái lập."
+  },
+  "tags": [
+    "short",
+    "research"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

@@ -1,0 +1,44 @@
+{
+  "id": "beamer-basic",
+  "category": "presentations",
+  "title": {
+    "en": "Basic Beamer talk",
+    "vi": "Beamer cơ bản"
+  },
+  "description": {
+    "en": "A short talk with an agenda, example and conclusions.",
+    "vi": "Bài trình bày có mục tiêu, ví dụ và kết luận."
+  },
+  "tags": [
+    "slides",
+    "beamer"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "beamer"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "slides/content.tex"
+  ],
+  "sharedPreamble": true
+}

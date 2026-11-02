@@ -1,0 +1,46 @@
+{
+  "id": "lab-report",
+  "category": "assignments",
+  "title": {
+    "en": "Laboratory report",
+    "vi": "Báo cáo thí nghiệm"
+  },
+  "description": {
+    "en": "Procedure, measurements, uncertainty and discussion.",
+    "vi": "Quy trình, số đo, sai số và thảo luận kết quả."
+  },
+  "tags": [
+    "experiment",
+    "data"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

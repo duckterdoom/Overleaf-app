@@ -1,0 +1,46 @@
+{
+  "id": "exam-paper",
+  "category": "assignments",
+  "title": {
+    "en": "Examination paper",
+    "vi": "Đề kiểm tra"
+  },
+  "description": {
+    "en": "An exam with instructions, point values and an answer guide.",
+    "vi": "Đề kiểm tra có hướng dẫn, thang điểm và đáp án tham khảo."
+  },
+  "tags": [
+    "exam",
+    "education"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

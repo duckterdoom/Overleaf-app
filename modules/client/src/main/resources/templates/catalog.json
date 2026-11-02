@@ -1,0 +1,82 @@
+{
+  "categories": [
+    {
+      "id": "journal",
+      "en": "Journal articles",
+      "vi": "Bài báo khoa học"
+    },
+    {
+      "id": "books",
+      "en": "Books",
+      "vi": "Sách"
+    },
+    {
+      "id": "letters",
+      "en": "Formal letters",
+      "vi": "Thư trang trọng"
+    },
+    {
+      "id": "assignments",
+      "en": "Assignments",
+      "vi": "Bài tập"
+    },
+    {
+      "id": "posters",
+      "en": "Posters",
+      "vi": "Áp phích"
+    },
+    {
+      "id": "presentations",
+      "en": "Presentations",
+      "vi": "Bài thuyết trình"
+    },
+    {
+      "id": "reports",
+      "en": "Reports",
+      "vi": "Báo cáo"
+    },
+    {
+      "id": "cv",
+      "en": "CVs and résumés",
+      "vi": "CV và sơ yếu lý lịch"
+    },
+    {
+      "id": "theses",
+      "en": "Theses",
+      "vi": "Luận văn"
+    }
+  ],
+  "templates": [
+    "journal/research-article",
+    "journal/conference-paper",
+    "journal/review-article",
+    "journal/short-communication",
+    "books/structured-book",
+    "books/lecture-notes",
+    "books/photo-book",
+    "letters/formal-letter",
+    "letters/cover-letter",
+    "letters/recommendation-letter",
+    "letters/vietnamese-application",
+    "assignments/homework-solutions",
+    "assignments/exam-paper",
+    "assignments/lab-report",
+    "posters/poster-a0",
+    "posters/poster-a1",
+    "posters/poster-a3",
+    "presentations/beamer-basic",
+    "presentations/beamer-madrid",
+    "presentations/beamer-berlin",
+    "presentations/beamer-tikz",
+    "reports/technical-report",
+    "reports/internship-report",
+    "reports/team-project",
+    "cv/modern-cv",
+    "cv/academic-cv",
+    "cv/vietnamese-resume",
+    "theses/graduation-project",
+    "theses/masters-thesis",
+    "internal/blank",
+    "internal/example"
+  ]
+}

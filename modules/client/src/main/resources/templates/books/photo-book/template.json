@@ -1,0 +1,47 @@
+{
+  "id": "photo-book",
+  "category": "books",
+  "title": {
+    "en": "Illustrated field notes",
+    "vi": "Sách ảnh và tư liệu"
+  },
+  "description": {
+    "en": "An illustrated notebook with captions and an observation log.",
+    "vi": "Sổ tư liệu có ảnh, chú thích và nhật ký quan sát."
+  },
+  "tags": [
+    "images",
+    "book"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

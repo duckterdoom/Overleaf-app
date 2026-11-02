@@ -3,4 +3,4 @@
 set -eu
 cd "$(dirname "$0")/.."
 mvn -q -DskipTests install
-mvn -q -pl client javafx:run
+mvn -q -pl modules/client javafx:run

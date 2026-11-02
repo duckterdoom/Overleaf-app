@@ -1,0 +1,46 @@
+{
+  "id": "review-article",
+  "category": "journal",
+  "title": {
+    "en": "Literature review",
+    "vi": "Bài tổng quan"
+  },
+  "description": {
+    "en": "Organize evidence, compare approaches and identify research gaps.",
+    "vi": "Tổng hợp bằng chứng, so sánh phương pháp và chỉ ra khoảng trống nghiên cứu."
+  },
+  "tags": [
+    "review",
+    "citations"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

@@ -1,0 +1,45 @@
+{
+  "id": "academic-cv",
+  "category": "cv",
+  "title": {
+    "en": "Academic CV",
+    "vi": "CV học thuật"
+  },
+  "description": {
+    "en": "Education, research, teaching and selected publications.",
+    "vi": "Học vấn, nghiên cứu, giảng dạy và công bố chọn lọc."
+  },
+  "tags": [
+    "career",
+    "academic"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "sections/experience.tex",
+    "sections/profile.tex"
+  ],
+  "sharedPreamble": true
+}

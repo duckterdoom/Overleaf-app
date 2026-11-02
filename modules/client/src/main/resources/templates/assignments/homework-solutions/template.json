@@ -1,0 +1,46 @@
+{
+  "id": "homework-solutions",
+  "category": "assignments",
+  "title": {
+    "en": "Homework with solutions",
+    "vi": "Bài tập và lời giải"
+  },
+  "description": {
+    "en": "Questions, reasoning and checked answers.",
+    "vi": "Đề bài, lập luận và đáp án đã kiểm tra."
+  },
+  "tags": [
+    "education",
+    "mathematics"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

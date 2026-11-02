@@ -1,0 +1,47 @@
+{
+  "id": "structured-book",
+  "category": "books",
+  "title": {
+    "en": "Book with parts and chapters",
+    "vi": "Sách chia phần và chương"
+  },
+  "description": {
+    "en": "A book with front matter, parts, chapters and an appendix.",
+    "vi": "Sách có phần đầu, phần lớn, chương và phụ lục."
+  },
+  "tags": [
+    "book",
+    "multi-file"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "appendix/checklist.tex",
+    "chapters/01-content.tex",
+    "chapters/02-content.tex",
+    "chapters/03-content.tex",
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

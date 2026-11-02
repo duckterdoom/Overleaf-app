@@ -1,0 +1,44 @@
+{
+  "id": "beamer-madrid",
+  "category": "presentations",
+  "title": {
+    "en": "Beamer Madrid",
+    "vi": "Beamer theme Madrid"
+  },
+  "description": {
+    "en": "A structured talk using the Madrid theme.",
+    "vi": "Bài trình bày mạch lạc dùng theme Madrid."
+  },
+  "tags": [
+    "slides",
+    "madrid"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "beamer"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "slides/content.tex"
+  ],
+  "sharedPreamble": true
+}

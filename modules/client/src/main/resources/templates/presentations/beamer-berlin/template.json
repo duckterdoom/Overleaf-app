@@ -1,0 +1,44 @@
+{
+  "id": "beamer-berlin",
+  "category": "presentations",
+  "title": {
+    "en": "Beamer Berlin",
+    "vi": "Beamer theme Berlin"
+  },
+  "description": {
+    "en": "A section-oriented talk using the Berlin theme.",
+    "vi": "Bài trình bày theo các phần dùng theme Berlin."
+  },
+  "tags": [
+    "slides",
+    "berlin"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "beamer"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "references.bib",
+    "slides/content.tex"
+  ],
+  "sharedPreamble": true
+}

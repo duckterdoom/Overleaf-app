@@ -1,0 +1,44 @@
+{
+  "id": "poster-a1",
+  "category": "posters",
+  "title": {
+    "en": "A1 portrait poster",
+    "vi": "Poster A1 dọc"
+  },
+  "description": {
+    "en": "A compact exhibition poster with results and a figure.",
+    "vi": "Poster triển lãm có kết quả, hình minh họa và kết luận."
+  },
+  "tags": [
+    "poster",
+    "a1"
+  ],
+  "engine": "pdflatex",
+  "mainFile": "main.tex",
+  "requiredPackages": [
+    "iftex",
+    "inputenc",
+    "fontenc",
+    "lmodern",
+    "fontspec",
+    "babel",
+    "babel-vietnamese",
+    "vntex",
+    "amsmath",
+    "amssymb",
+    "amsthm",
+    "graphicx",
+    "xcolor",
+    "hyperref",
+    "geometry"
+  ],
+  "needsBiber": false,
+  "files": [
+    "data/results.csv",
+    "figures/results.png",
+    "main.tex",
+    "panels/content.tex",
+    "references.bib"
+  ],
+  "sharedPreamble": true
+}

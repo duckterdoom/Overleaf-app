@@ -1,0 +1,24 @@
+\section{Purpose}
+\begin{frame}{A reproducible project}
+\begin{itemize}
+\item State one question and a measurable outcome.
+\item Separate evidence from assumptions.
+\item Keep the data and scripts with the report.
+\end{itemize}
+\end{frame}
+\section{Example}
+\begin{frame}{Results at a glance}
+\centering\includegraphics[width=.65\linewidth,height=.55\textheight,keepaspectratio]{figures/results.png}
+\par Four runs; the measurements increase linearly.
+\end{frame}
+\begin{frame}{Workflow}
+\centering\begin{tikzpicture}
+\node[draw,rounded corners] (a) at (0,0) {Input};
+\node[draw,rounded corners] (b) at (3,0) {Validate};
+\node[draw,rounded corners] (c) at (6,0) {Output};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);\end{tikzpicture}
+\end{frame}
+\begin{frame}{Conclusion}
+The example demonstrates structure rather than a performance claim. Replace the sample data, then report uncertainty and limitations.
+\[T(n)=4n\]
+\end{frame}
