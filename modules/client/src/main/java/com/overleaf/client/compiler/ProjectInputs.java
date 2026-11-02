@@ -21,7 +21,8 @@ public final class ProjectInputs {
                         paths.filter(Files::isRegularFile)
                                 .filter(p ->
                                         !p.startsWith(root.resolve("build"))
-                                                && !p.startsWith(root.resolve(".git")))
+                                                && !p.startsWith(root.resolve(".git"))
+                                                && !p.startsWith(root.resolve(".overleaf-history")))
                                 .sorted()
                                 .toList()) {
                     digest.update(

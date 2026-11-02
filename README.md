@@ -60,6 +60,9 @@ Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt
 | --- | --- |
 | Lưu file | `Ctrl+S` |
 | Compile PDF | `F5` hoặc `Ctrl+Enter` |
+| Auto Compile | Mũi tên cạnh Recompile → **Tự động biên dịch**; chờ 1 giây ngừng gõ rồi compile. Chọn **Biên dịch thủ công** để tắt |
+| Lịch sử sửa | **Lịch sử / History** → chọn tệp và phiên bản, so sánh với hiện tại, gắn nhãn hoặc khôi phục |
+| Đổi bố cục | **Bố cục / Layout** → chia đôi, chỉ editor, chỉ PDF, PDF cửa sổ riêng hoặc chế độ tập trung (`Ctrl+Shift+M`) |
 | Tạo hoặc nhập dự án | Chọn **Dự án mới**, sau đó chọn template hoặc nguồn nhập |
 | Thêm file hoặc thư mục | Dùng **Thêm tệp**, **Thư mục mới** hoặc menu chuột phải |
 | Upload tài nguyên | Chọn **Tải lên**, kéo thả hoặc dán file/ảnh |
@@ -67,11 +70,19 @@ Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt
 | Đổi tên hoặc xóa | Nhấp chuột phải vào file hoặc dự án |
 | Kết nối phòng | Menu `⋯` → **Connect room…** |
 
+Toolbar editor có dãy icon ngay sau **Italic**, theo thứ tự: **Math → Link → Comment → Cross reference → Citation → Figure → Table → List → Decrease indent → Increase indent**. Di chuột lên icon để xem chú thích Việt/Anh; nếu editor hẹp, cuộn ngang toolbar để thấy các nút còn lại.
+
+Math và List mở menu chọn dạng chèn. Comment bật/tắt chú thích LaTeX `%` cho dòng đang chọn, không phải luồng nhận xét review. Tham chiếu đọc `\label` từ tệp `.tex`, citation đọc khóa từ `.bib`; ảnh chọn từ các PNG/JPG/PDF đã upload. Thụt lề dùng 2 dấu cách, giảm lề xử lý cả tab. Link cần `hyperref`, Figure cần `graphicx`; hộp thoại có hướng dẫn package, không tự sửa preamble. Xem [AI_Handoff §26](docs/AI_Handoff.md#26-toolbar-editor-chèn-latex-và-thụt-lề).
+
 ### Compile và PDF
 
 Preview hiển thị PDF thật do compiler tạo. Sau khi sửa source, cần compile thành công trước khi xem hoặc xuất bản mới.
 
 Trong **Settings → Compilation / Biên dịch**, bạn có thể chọn `latexmk`, đổi timeout và kiểm tra toolchain. Để trống đường dẫn nếu muốn app tự tìm compiler.
+
+Auto Compile mặc định tắt, nhớ lựa chọn cho lần mở sau; vẫn có thể bấm nút compile ngay. Khi một lượt đang chạy, thay đổi tiếp theo được gộp để compile sau đó; **Stop** dừng lượt hiện tại và lượt tự động đang chờ.
+
+History lưu phiên bản văn bản local trong `.overleaf-history/` của từng dự án khi mở/lưu tệp và sau 3 giây ngừng gõ. Các checkpoint chưa Save không ghi đè tệp làm việc. Chỉ có lịch sử từ khi bật bản ứng dụng này; đây là lịch sử trên máy, chưa đồng bộ qua server. Khôi phục một tệp có xác nhận và giữ nội dung cũ trước khi thay thế; cần rời phòng cộng tác để khôi phục. Giới hạn 2 MiB/phiên bản, 1.024 phiên bản/128 MiB mỗi dự án; chạm giới hạn sẽ dừng ghi thêm history, không xóa các mốc cũ và vẫn cho lưu source. Xem [AI_Handoff §27](docs/AI_Handoff.md#27-auto-compile-history-và-layout-workspace).
 
 ### Nhập và di chuyển dự án
 
@@ -107,10 +118,10 @@ Hiện phòng cộng tác đồng bộ `main.tex`. Server lưu trạng thái ph�
 ## Chạy test
 
 ```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest' -Dsurefire.failIfNoSpecifiedTests=false
+mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-Bộ test chọn lọc gồm **120 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test cho GUI, compiler và PDF nằm trong [AI_Handoff.md](docs/AI_Handoff.md).
+Bộ test chọn lọc gồm **137 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test cho GUI, compiler và PDF nằm trong [AI_Handoff.md](docs/AI_Handoff.md); toolbar có `EditorToolbarUiSmoke` (§26), history/auto compile/layout có `HistoryLayoutUiSmoke` (§27), gồm biên dịch LaTeX thật.
 
 ## Server và triển khai
 

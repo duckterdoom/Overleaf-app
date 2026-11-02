@@ -1,5 +1,9 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Auto Compile / History / Layout (02/11/2026):** thêm menu chế độ compile, tự chạy sau 1 giây ngừng gõ; History local có checkpoint, so sánh, nhãn và khôi phục; Layout chia đôi/editor/PDF/cửa sổ riêng/focus. **137/137 JUnit chọn lọc đạt**, smoke JavaFX + compile thật đạt. Xem **mục 27**.
+
+> **Mới nhất — toolbar editor (02/11/2026):** thêm 10 icon ngay sau Italic đúng thứ tự yêu cầu, gồm math/link/comment/reference/citation/figure/table/list/giảm và tăng lề. Có form chèn, đọc nhãn/khóa từ project, giữ vùng chọn khi indent và chặn chèn vào tài liệu đã đổi/chỉ đọc. **128/128 test chọn lọc đạt**, smoke JavaFX và compile snippet thật đạt. Xem **mục 26**.
+
 > **Bố cục hiện tại (02/11/2026):** bốn Maven module nằm trong `modules/`, tài liệu trong `docs/`, và LaTeX mẫu trong `examples/`. Các đường dẫn module cũ trong những phần lịch sử dưới đây được giữ nguyên theo ngữ cảnh lịch sử.
 
 > **Mới nhất — PDF cuộn và liên kết (02/11/2026):** preview xếp trang liên tiếp, cuộn qua các trang, bấm liên kết nội bộ đến tiêu đề và quay lại bằng `↶`. Render theo vùng xem với ngân sách ảnh, giữ nguyên export PDF thật. **120/120 JUnit chọn lọc đạt**, smoke PDF 13 trang và regression compile/export 7 trang đạt. Xem **mục 25**; mô tả viewer một trang ở mục 19 là lịch sử.
@@ -742,3 +746,88 @@ Phân công là trách nhiệm module cần bàn giao; không khẳng định t�
 - Chạy smoke mới: main `PdfContinuousUiSmoke <pdf-multi-page-có-hyperref> <output-folder-chưa-tồn-tại>` với JavaFX module path + client/test/common/server/PDFBox classpath. Fixture cần có link nội bộ đến heading ở phần trên trang; helper local `target/run-pdf-continuous-smoke.cmd` không được Git theo dõi.
 
 Đóng app cũ rồi chạy `.\scripts\run-client.bat`; mở dự án và Recompile để dùng preview mới.
+
+## 26. Toolbar editor: chèn LaTeX và thụt lề
+
+Ngày **02/11/2026**, nhánh `Network`, nền **`e9424cf`** với cấu trúc `modules/` và `docs/`. Các thay đổi của mục này ở working tree, chưa commit/push. Không sửa các commit đã đẩy trước đó.
+
+### 26.1 Dãy icon và chức năng
+
+Ngay sau **Italic**: **Insert math → Insert link → Add comment → Insert cross reference → Insert citation → Insert figure → Insert table → Insert list → Decrease indent → Increase indent**. Icon dùng SVGPath của hệ icon hiện có, tooltip có Việt/Anh, không cần ảnh bitmap hay thư viện icon ngoài. Toolbar cuộn ngang khi vùng editor hẹp, không ép chiều rộng workspace.
+
+| Nút | Hành vi |
+| --- | --- |
+| Math | Menu công thức trong dòng `$...$`, riêng dòng `\[...\]` hoặc `equation` đánh số; bọc đoạn đang chọn, hoặc đặt con trỏ vào giữa |
+| Link | Form URL và chữ hiển thị, chèn `\href`; hỗ trợ http/https/mailto, escape ký tự LaTeX trong URL/chữ; cần `hyperref` |
+| Comment | Dùng lại thao tác bật/tắt `%` trên các dòng được chọn, giữ shortcut Ctrl/Cmd+/; không phải comment thread/review annotation |
+| Cross reference | Gợi ý nhãn từ `.tex`, kể cả nội dung chưa lưu của file hiện tại; chọn `ref`, `eqref`, `pageref`, `autoref` hoặc tự nhập nhãn |
+| Citation | Gợi ý khóa từ `.bib`, bỏ entry comment/string/preamble; cho nhập nhiều khóa cách nhau dấu phẩy, chèn `\cite`; không tự cấu hình bibliography |
+| Figure | Chọn PNG/JPG/PDF đã có trong project, độ rộng 0.05–1 lần linewidth, caption và label; tạo figure/centering/includegraphics/caption/label; cần `graphicx` |
+| Table | Số dòng dữ liệu 1–50, cột 1–20, căn lề l/c/r, caption/label; sinh table + tabular + hline, không cần booktabs |
+| List | Dùng lại menu itemize/enumerate; chuyển các dòng đang chọn thành item hoặc tạo mẫu tại con trỏ |
+| Giảm / tăng lề | Áp dụng cho các dòng chứa vùng chọn, bỏ qua dòng tiếp theo nếu vùng chọn kết thúc đúng đầu dòng; thêm 2 space, giảm tối đa 2 space hoặc 1 tab; giữ hướng selection/caret |
+
+Các nút sửa nội dung bị disable khi editor chỉ đọc. Các hàm chèn trực tiếp cũng kiểm tra editability. Form chụp file/project/text/range lúc mở và từ chối chèn nếu tài liệu đổi trong lúc form đang mở; tránh dùng sai vị trí khi nhận cập nhật từ người khác.
+
+### 26.2 File và trách nhiệm
+
+- **M1 — `modules/client/.../ui/OverleafFxApp.java`:** lắp dãy icon, menu math/list, dùng lại wrapSelection/toggleComment/insertList, dispatch form và indent; toolbar ScrollPane. Thay đổi qua TextArea thông thường để vẫn kích hoạt dirty/undo/sync/PDF stale như các thao tác gõ.
+- **M1 — `ui/UiSupport.java`, CSS:** bổ sung path icon vector math/comment/reference/citation/figure/table/list/indent, style vùng cuộn phù hợp toolbar tối.
+- **M1/M2 — `ui/EditorInsertDialog.java`:** form song ngữ, kiểm tra nguồn chưa đổi, quét nhãn/khóa và chọn ảnh. Quét regex có bỏ comment `%`, đọc tối đa 2 MiB/file; đây là gợi ý nhanh, không phải parser TeX/BibTeX đầy đủ, có thể nhập khóa thủ công. Không tự sửa file preamble hoặc tải tài nguyên.
+- **M1 — `ui/EditorInsertions.java`:** snippet LaTeX, escape text/URL, kiểm khóa/path/width/kích thước bảng; phép chỉnh lề thuần Java trả về replacement và selection mới. Width được chuẩn hóa số thập phân để tránh sinh cú pháp dimension sai khi nhập dạng `8e-1`.
+- **M5 — kiểm thử:** `EditorInsertionsTest` (8 JUnit), `EditorToolbarUiSmoke` (explicit JavaFX + TeX). Đây là phạm vi bàn giao theo module, không xác nhận các member tự viết thay đổi trong phiên AI.
+
+### 26.3 Kiểm chứng và sử dụng
+
+- **128/128 JUnit chọn lọc đạt**, common 9 + server 21 + client 98, không failure/error/skip; log `target/editor-tools-tests.log`. Test mới kiểm key/citation, URL/escape, figure width/path, table syntax và các biên selection/caret/tab/indent.
+- **JavaFX thật:** `EditorToolbarUiSmoke` xác nhận thứ tự icon, các thao tác math/link/comment/reference/citation/figure/table/list/indent, đọc nhãn chưa lưu và khóa BibTeX, khóa thao tác chỉ đọc, từ chối form có văn bản đã đổi. Ghép snippet vừa chèn thành tài liệu có hyperref/graphicx/amsmath + ảnh có dấu cách trong tên + BibTeX, compile qua app và xác nhận preview cho phép export. Log `target/editor-tools-ui.log`: `EDITOR_TOOLBAR_UI_SMOKE_OK`.
+- Home thử nghiệm cô lập `target/editor-tools-ui-02`, ảnh scene `insert-table.png` và `editor-toolbar.png`; đã kiểm tra layout form và toolbar. Smoke dùng control/event JavaFX, chưa phải Robot theo tọa độ màn hình.
+- **Spotless theo cấu hình repo đạt** cho sáu file Java sửa/thêm, log `target/editor-tools-format.log`; không format lại các file ngoài phạm vi. Helper `.cmd` dưới `target/` là công cụ local, không được Git theo dõi.
+- Chạy smoke main `com.overleaf.client.ui.EditorToolbarUiSmoke <home-chưa-tồn-tại>` với classpath `modules/client/target/classes`, test-classes, common/server và PDFBox; module path JavaFX như các smoke trước, cần TeX thật để chạy phần compile.
+
+Đóng app cũ và chạy `.\scripts\run-client.bat`. Ảnh cần upload trước khi chèn Figure; cấu hình `hyperref`, `graphicx`, bibliography trong tài liệu theo hướng dẫn của form. Các thao tác chèn không tự compile hay sửa package của dự án.
+
+## 27. Auto Compile, History và Layout workspace
+
+Ngày **02/11/2026**, nhánh `Network`, nền `e9424cf` cùng các thay đổi toolbar mục 26 đang ở working tree. Chưa commit/push các thay đổi mới này.
+
+### 27.1 Chế độ biên dịch
+
+- Mũi tên cạnh nút compile mở radio menu **Biên dịch thủ công / Recompile manually** và **Tự động biên dịch / Auto Compile**. Mặc định thủ công; `AppSettings.AUTO_COMPILE` lưu lựa chọn local. Chọn auto làm nút chính hiển thị Auto Compile; nút chính/F5/Ctrl+Enter vẫn chạy ngay.
+- Auto dùng PauseTransition **1 giây** ngừng chỉnh sửa, save nội dung hiện tại rồi dùng compiler service cũ. Khi đang build, chỉ giữ cờ cần chạy tiếp, không tạo một process cho mỗi phím. Có thể tự compile khi source/tài nguyên hoặc engine thay đổi; không tự retry vô hạn nếu build lỗi mà nguồn không thay đổi.
+- **Stop** bỏ timer/pending và hủy process hiện tại. Rời editor, vào History, đổi dự án hoặc thoát sẽ hủy lịch tự động; quay lại editor trong chế độ auto sẽ đặt lịch lại. Không tự biên dịch khi editor đang chỉ đọc.
+
+### 27.2 History: lưu và giao diện
+
+- Nút **History / Lịch sử** mở màn hình ba cột: trái danh sách tệp; giữa source của revision (có số dòng) và tab so sánh hai bên với file hiện tại; phải timeline thời gian, file, tác giả local/lý do và nhãn. Có **Tất cả lịch sử / Nhãn**, thêm/sửa nhãn, refresh và Back to editor. Phần khác nhau trong hai văn bản được chọn từ điểm khác đầu đến điểm khác cuối; đây không phải diff từng hunk kiểu Git.
+- **`workspace/ProjectHistory.java`** lưu trong `<project>/.overleaf-history/<UUID>/`, metadata properties + nội dung UTF-8. SHA-256 kiểm tra nội dung trước khi đọc/khôi phục; staging trước khi công bố; bỏ qua metadata hỏng/đang ghi, không cho path traversal hay symlink trong history. History đi theo project khi app di chuyển thư mục.
+- **`ProjectFileManager`** lưu preimage trước khi ghi và revision sau khi ghi thành công. App capture bản khi mở, thay đổi bên ngoài được watcher đọc, và checkpoint **3 giây ngừng gõ** kể cả chưa Save. Checkpoint không ghi đè tệp source đang làm việc. Các snapshot giống nhau không tạo bản ghi lặp; preimage đã có không làm timeline xuất hiện rollback giả khi Save sau checkpoint.
+- Lịch sử bắt đầu từ phiên bản app này; không tái tạo sửa đổi trước đó. Đây là **local text history**, không phải lịch sử Git hoặc audit đầy đủ của mọi cộng tác viên. Snapshot do networking/ghi chung có thể có tác giả “Local capture”; không cam kết danh tính người sửa từ server.
+- Chọn revision → **Khôi phục tệp này** → xác nhận. Tệp hiện tại được capture trước khi thay, sau đó viết bản cũ qua FileManager và đánh dấu PDF stale. Chỉ thay một tệp, không phục hồi ảnh/thư mục hoặc cả project. Khi đang có kết nối/phòng cộng tác, khôi phục bị khóa; cần rời phòng trước.
+- Giới hạn **2 MiB/revision**, **1.024 revisions hoặc 128 MiB/project**; không tự xóa mốc cũ. Vượt giới hạn/quyền ghi history lỗi không chặn lưu source; cảnh báo `[HISTORY]` được ghi ra log. Chưa có UI dọn/đổi quota history. Crash trước checkpoint/Save vẫn có thể mất phần chưa được ghi.
+- `ProjectInputs` loại `.overleaf-history` khỏi fingerprint, `CompileWorkspace` không copy nó sang workspace compile tạm; label/checkpoint không làm thay nội dung PDF cần export. Watcher/tree đã bỏ qua thư mục ẩn.
+
+### 27.3 Layout theo ảnh
+
+- **Split view / Chia đôi:** cây file + editor/build output + PDF, giữ divider của split trước đó.
+- **Editor only / Chỉ editor:** cây file và editor, giữ nguyên source/selection.
+- **PDF only / Chỉ PDF:** toàn vùng workspace cho PDF.
+- **Open PDF in separate window:** viewer thật được chuyển sang Stage riêng, vẫn cập nhật khi compile; không tạo một bản preview khác. Đóng cửa sổ sẽ gắn lại PDF và về split. Vào Home/History hoặc đổi project cũng đóng/detach an toàn. Đây là cửa sổ desktop, không phải tab trình duyệt.
+- **Focus mode:** ẩn cây file và build output, giữ các pane theo mode; topbar còn menu để thoát. Shortcut **Ctrl/Cmd+Shift+M**. Focus không lưu qua lần mở app; `AppSettings.LAYOUT` lưu split/editor/pdf. Menu, nút History/Layout và History có nhãn Việt/Anh.
+
+### 27.4 File, vai trò và kiểm chứng
+
+| Phụ trách bàn giao | File / nội dung |
+| --- | --- |
+| M1 — UI | `modules/client/.../ui/OverleafFxApp.java`: debounce compile/checkpoint, menu/topbar, layout/detach, vào/ra history và restore; `HistoryView.java`: browser read-only, label/filter/compare/confirm; `AppSettings.java`, theme CSS |
+| M2 — workspace/compiler | `workspace/ProjectHistory.java`, `ProjectFileManager.java`: lưu text revisions; `compiler/ProjectInputs.java`, `CompileWorkspace.java`: loại history khỏi inputs/build tạm |
+| M5 — kiểm thử | `ProjectHistoryTest` 9 JUnit; `HistoryLayoutUiSmoke` JavaFX thật và TeX thật |
+
+Phân công là phạm vi module, không xác nhận member tự viết thay đổi trong phiên AI. Không thay giao thức hay MongoDB.
+
+- **137/137 JUnit chọn lọc đạt**, common 9 + server 21 + client 107, không failure/error/skip; `target/history-layout-tests.log`. Kiểm Unicode/restart, preimage, dedup/các file, nhãn/fingerprint, checksum, path/ID xấu, giới hạn size, đổi vị trí project và ghi source thất bại, checkpoint/Save không sinh rollback giả.
+- **`HistoryLayoutUiSmoke` đạt**: bật auto + gõ nhanh chỉ một build và lưu bản mới nhất; manual không tự chạy; checkpoint lưu Version D khi tệp disk vẫn là Version C; compile bằng nút thủ công; chọn mốc gốc, gắn nhãn và lọc nhãn; thay file disk rồi restore giữ backup nội dung ngoài; thử editor-only/PDF-only/split/focus và detach/reattach viewer; preference còn sau đọc lại backend. Log `target/history-layout-ui.log`: `HISTORY_LAYOUT_UI_SMOKE_OK`.
+- Home riêng `target/history-layout-ui-02`, ảnh scene `history.png`, `layout.png`; đã kiểm layout ba cột, nút topbar, viewer stale sau restore. Smoke dùng control/event, không Robot theo tọa độ.
+- Spotless cho đúng các file mới/sửa đạt, log `target/history-layout-format.log`. Helper `.cmd` dưới `target/` không được Git theo dõi. Chạy smoke qua main `com.overleaf.client.ui.HistoryLayoutUiSmoke <home-chưa-tồn-tại>` với JavaFX/PDFBox classpath như mục 26; cần TeX cho hai build thật.
+
+Đóng app cũ, chạy `.\scripts\run-client.bat`. Lưu file/đợi checkpoint rồi mở **History**; dùng mũi tên cạnh compile để bật auto và **Layout** để đổi bố cục.

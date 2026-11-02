@@ -1549,3 +1549,8 @@
 .pdf-continuous-sheet { -fx-background-color: white; -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.20), 9, 0.05, 0, 2); }
 .pdf-internal-link { -fx-background-color: transparent; -fx-border-width: 0; -fx-padding: 0; -fx-text-fill: transparent; }
 .pdf-internal-link:hover, .pdf-internal-link:focused { -fx-background-color: rgba(50,110,210,0.13); }
+.editor-toolbar-scroll, .editor-toolbar-scroll > .viewport { -fx-background-color: #212a37; -fx-padding: 0; -fx-border-width: 0; }
+.history-view { -fx-background-color: #f4f5f3; }
+.history-view .list-cell { -fx-padding: 6; }
+.history-view .list-cell:filled:selected { -fx-background-color: #dcebe2; -fx-text-fill: #193e2b; }
+.compile-mode-button { -fx-padding: 4 7; -fx-min-height: 30; }

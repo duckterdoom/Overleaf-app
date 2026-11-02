@@ -24,6 +24,7 @@ public class ProjectFileManager {
     public static final String BUILD_DIR = "build";
 
     private final Path projectRoot;
+    private String historyWarning = "";
 
     /** Nội dung cuối cùng do chính ứng dụng ghi, theo tên file (dùng để chống echo từ watcher). */
     private final Map<String, String> lastOwnWrite = new ConcurrentHashMap<>();
@@ -54,8 +55,21 @@ public class ProjectFileManager {
      * <p>để watcher/latexmk không bao giờ thấy file ghi dở.
      */
     public void writeTexFile(String fileName, String content) throws IOException {
+        writeTexFile(fileName, content, "Local capture", "Edited");
+    }
+
+    public void writeTexFile(String fileName, String content, String author, String reason)
+            throws IOException {
 
         Path filePath = resolveSafe(fileName);
+
+        if (Files.isRegularFile(filePath) && Files.size(filePath) <= 2 * 1024 * 1024) {
+            captureHistory(
+                    fileName,
+                    Files.readString(filePath, StandardCharsets.UTF_8),
+                    "Local capture",
+                    "Before edit");
+        }
 
         Path parent = filePath.getParent();
 
@@ -86,6 +100,21 @@ public class ProjectFileManager {
 
             Files.move(tmp, filePath, StandardCopyOption.REPLACE_EXISTING);
         }
+        captureHistory(fileName, content, author, reason);
+    }
+
+    public void captureHistory(String name, String content, String author, String reason) {
+        try {
+            new ProjectHistory(projectRoot).capture(normalizeName(name), content, author, reason);
+            historyWarning = "";
+        } catch (IOException failure) {
+            historyWarning = failure.getMessage();
+            System.err.println("[HISTORY] " + failure.getMessage());
+        }
+    }
+
+    public String historyWarning() {
+        return historyWarning;
     }
 
     /**

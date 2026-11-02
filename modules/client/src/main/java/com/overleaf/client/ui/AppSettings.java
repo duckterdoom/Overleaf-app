@@ -21,6 +21,8 @@ public final class AppSettings {
     public static final String WORD_WRAP = "wordWrap";
     public static final String AUTO_CLOSE = "autoClose";
     public static final String AUTO_SAVE = "autoSave";
+    public static final String AUTO_COMPILE = "autoCompile";
+    public static final String LAYOUT = "workspaceLayout";
     public static final String COMPILER = "compiler";
     public static final String LATEXMK_PATH = "latexmkPath";
     public static final String COMPILE_TIMEOUT = "compileTimeoutSeconds";
@@ -37,6 +39,8 @@ public final class AppSettings {
         {WORD_WRAP, "false"},
         {AUTO_CLOSE, "true"},
         {AUTO_SAVE, "false"},
+        {AUTO_COMPILE, "false"},
+        {LAYOUT, "split"},
         {COMPILER, "pdfLaTeX"},
         {LANGUAGE, "en"},
         {LATEXMK_PATH, ""},

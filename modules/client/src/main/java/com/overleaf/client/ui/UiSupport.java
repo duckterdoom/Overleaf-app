@@ -32,6 +32,16 @@ public final class UiSupport {
     public static final String REDO = "M15 14l5-5-5-5M20 9H9.5a5.5 5.5 0 000 11H13";
     public static final String BOLD = "M6 4h8a4 4 0 010 8H6zM6 12h9a4 4 0 010 8H6z";
     public static final String ITALIC = "M19 4h-9M14 20H5M15 4L9 20";
+    public static final String MATH = "M20 4H5l8 8-8 8h15M17 9h5M17 15h5";
+    public static final String COMMENT = "M21 4H3v13h5l4 4v-4h9zM8 10h8M12 6v8";
+    public static final String CROSS_REFERENCE = "M13 3h7v7l-8 8-8-8 7-7zM16 7h.01M3 15v6h6";
+    public static final String CITATION =
+            "M3 4h7v15H3zM14 4h7v15h-7zM6 8h1M6 12h1M17 8h1M17 12h1M5 22h14";
+    public static final String FIGURE = "M3 3h18v18H3zM3 17l6-6 4 4 3-3 5 5M15 7h.01";
+    public static final String TABLE = "M3 4h18v16H3zM3 9h18M9 9v11M15 9v11M3 14h18";
+    public static final String LIST = "M9 5h12M9 12h12M9 19h12M3 5h.01M3 12h.01M3 19h.01";
+    public static final String INDENT_DECREASE = "M3 4h18M10 9h11M10 15h11M3 20h18M7 8l-4 4 4 4";
+    public static final String INDENT_INCREASE = "M3 4h18M10 9h11M10 15h11M3 20h18M3 8l4 4-4 4";
     public static final String SEARCH = "M11 3a8 8 0 100 16 8 8 0 000-16zM21 21l-4.35-4.35";
     public static final String ARROW_UP = "M12 19V5M5 12l7-7 7 7";
     public static final String ARROW_DOWN = "M12 5v14M19 12l-7 7-7-7";

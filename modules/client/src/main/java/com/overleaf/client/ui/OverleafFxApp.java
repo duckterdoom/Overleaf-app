@@ -40,6 +40,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.IndexRange;
@@ -48,6 +49,7 @@ import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.RadioMenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
@@ -122,6 +124,17 @@ public class OverleafFxApp extends Application {
     private final LocalBackend backend = new LocalBackend();
     private final AppSettings settings = new AppSettings(backend);
     private javafx.animation.Timeline autoSaveTimer;
+    private final javafx.animation.PauseTransition autoCompileTimer =
+            new javafx.animation.PauseTransition(javafx.util.Duration.seconds(1));
+    private final javafx.animation.PauseTransition historyTimer =
+            new javafx.animation.PauseTransition(javafx.util.Duration.seconds(3));
+    private boolean autoCompilePending, focusMode;
+    private SplitPane workspaceSplit, editorVerticalSplit;
+    private VBox workspaceFilesPane, workspaceEditorBox, workspaceTerminalBox;
+    private SplitPane workspaceEditorPane;
+    private Stage detachedPdfStage;
+    private HistoryView historyView;
+    private double[] splitPositions = {.18, .58};
     private AuthGateway.Session session;
     private boolean vietnameseUi = false;
     private String activeProjectName = "";
@@ -227,6 +240,16 @@ public class OverleafFxApp extends Application {
     private void installAccelerators(Scene scene) {
         scene.getAccelerators()
                 .put(
+                        new KeyCodeCombination(
+                                KeyCode.M, KeyCombination.SHORTCUT_DOWN, KeyCombination.SHIFT_DOWN),
+                        () -> {
+                            if (editorVisible()) {
+                                focusMode = !focusMode;
+                                applyWorkspaceLayout();
+                            }
+                        });
+        scene.getAccelerators()
+                .put(
                         new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_DOWN),
                         () -> {
                             if (editorVisible()) saveFile();
@@ -287,6 +310,10 @@ public class OverleafFxApp extends Application {
     }
 
     private void showHome() {
+        historyTimer.stop();
+        stopAutoCompile();
+        closeDetachedPdf();
+        closeHistory();
         if (session == null) {
             showLogin();
             return;
@@ -392,6 +419,8 @@ public class OverleafFxApp extends Application {
         if (sideProjectNameLabel != null) sideProjectNameLabel.setText(activeProjectName);
         refreshProjectTree();
         screenHost.getChildren().setAll(editorRoot);
+        applyWorkspaceLayout();
+        scheduleAutoCompile();
         if (stage != null) stage.setTitle("Overleaf Desktop — " + activeProjectName);
         statusLabel.setText("Editing " + activeProjectName + " · files stay on this machine.");
         Platform.runLater(codeEditor::requestFocus);
@@ -399,6 +428,10 @@ public class OverleafFxApp extends Application {
 
     /** Points the file manager, watcher, tree and compiler at another project folder. */
     private void switchWorkspace(Path root) throws IOException {
+        historyTimer.stop();
+        stopAutoCompile();
+        closeDetachedPdf();
+        closeHistory();
         Files.createDirectories(root);
         if (workspaceWatcher != null) {
             workspaceWatcher.stopWatching();
@@ -476,6 +509,8 @@ public class OverleafFxApp extends Application {
         }
         lastEditorContent = content;
         currentFile = relativePath;
+        historyTimer.stop();
+        fileManager.captureHistory(relativePath, content, currentUserName, "Opened");
         markSaved();
         refreshOutline();
         updateCursorPosition();
@@ -570,6 +605,13 @@ public class OverleafFxApp extends Application {
         if (!deleted && files.isOwnWrite(name)) {
             return;
         }
+        if (!deleted && isEditableSource(name)) {
+            try {
+                files.captureHistory(
+                        name, files.readTexFile(name), "Local capture", "External edit");
+            } catch (IOException ignored) {
+            }
+        }
         invalidatePdf();
         refreshProjectTree();
         if (deleted) {
@@ -602,6 +644,11 @@ public class OverleafFxApp extends Application {
     }
 
     private void cleanupOnExit() {
+        historyTimer.stop();
+        stopAutoCompile();
+        closeDetachedPdf();
+        closeHistory();
+        if (autoSaveTimer != null) autoSaveTimer.stop();
         saveIfDirty();
         if (isConnected) {
             disconnectRoom();
@@ -656,11 +703,43 @@ public class OverleafFxApp extends Application {
         compilerCombo.setPrefHeight(30);
 
         btnRecompile = new Button("Recompile");
+        btnRecompile.setText(
+                settings.bool(AppSettings.AUTO_COMPILE) ? "Auto Compile" : "Recompile");
         btnRecompile.setGraphic(UiSupport.iconBox(UiSupport.PLAY, 10, Color.WHITE, 11));
         btnRecompile.setGraphicTextGap(6);
         btnRecompile.getStyleClass().addAll("btn-primary", "toolbar-primary");
         btnRecompile.setMinHeight(30);
         btnRecompile.setOnAction(e -> triggerRecompile());
+        btnRecompile.setId("recompile-now");
+        MenuButton compileMode = new MenuButton();
+        compileMode.setId("compile-mode");
+        compileMode.getStyleClass().addAll("btn-primary", "compile-mode-button");
+        compileMode.setTooltip(UiSupport.tooltip("Recompile / Auto Compile"));
+        compileMode.setOnShowing(e -> {
+            ToggleGroup modes = new ToggleGroup();
+            RadioMenuItem manual =
+                    new RadioMenuItem(uiText("Recompile manually", "Biên dịch thủ công"));
+            RadioMenuItem automatic =
+                    new RadioMenuItem(uiText("Auto Compile", "Tự động biên dịch"));
+            manual.setId("compile-manual");
+            automatic.setId("compile-auto");
+            manual.setToggleGroup(modes);
+            automatic.setToggleGroup(modes);
+            manual.setSelected(!settings.bool(AppSettings.AUTO_COMPILE));
+            automatic.setSelected(settings.bool(AppSettings.AUTO_COMPILE));
+            manual.setOnAction(a -> settings.set(AppSettings.AUTO_COMPILE, false));
+            automatic.setOnAction(a -> settings.set(AppSettings.AUTO_COMPILE, true));
+            compileMode.getItems().setAll(manual, automatic);
+        });
+        Button history = new Button(uiText("History", "Lịch sử"));
+        history.setId("workspace-history");
+        history.setGraphic(UiSupport.iconBox(UiSupport.UNDO, 14, Color.web("#5B5B56"), 16));
+        history.getStyleClass().add("btn-ghost");
+        history.setOnAction(e -> showHistory());
+        MenuButton layout = new MenuButton(uiText("Layout", "Bố cục"));
+        layout.setId("workspace-layout");
+        layout.getStyleClass().add("btn-secondary");
+        layout.setOnShowing(e -> populateLayoutMenu(layout));
 
         Button save = new Button();
         save.setGraphic(UiSupport.iconBox(UiSupport.SAVE, 14, Color.web("#5B5B56"), 16));
@@ -679,10 +758,13 @@ public class OverleafFxApp extends Application {
         stopCompile.visibleProperty().bind(btnRecompile.disabledProperty());
         stopCompile.managedProperty().bind(stopCompile.visibleProperty());
         stopCompile.setOnAction(e -> {
+            stopAutoCompile();
             compilerService.cancelCompile();
             statusLabel.setText("Stopping compiler…");
         });
-        HBox actionGroup = new HBox(4, btnRecompile, stopCompile, save, overflow);
+        HBox actionGroup =
+                new HBox(
+                        4, btnRecompile, compileMode, stopCompile, history, layout, save, overflow);
         actionGroup.setAlignment(Pos.CENTER_RIGHT);
 
         bar.getChildren()
@@ -780,11 +862,15 @@ public class OverleafFxApp extends Application {
 
     private SplitPane createMainWorkspace(Stage stage, String initialContent) {
         SplitPane mainSplit = new SplitPane();
+        workspaceSplit = mainSplit;
+        mainSplit.setId("workspace-split");
         mainSplit.setOrientation(Orientation.HORIZONTAL);
         mainSplit.getStyleClass().add("editor-split");
 
         VBox leftPane = createLeftPanel(stage);
         SplitPane centerSplit = createCenterEditorPanel(initialContent);
+        workspaceFilesPane = leftPane;
+        workspaceEditorPane = centerSplit;
         pdfPreviewPane = new PdfPreviewPane(this::exportCompiledPdf);
 
         mainSplit.getItems().addAll(leftPane, centerSplit, pdfPreviewPane);
@@ -1517,6 +1603,13 @@ public class OverleafFxApp extends Application {
             case AppSettings.OUTLINE_SPLIT -> {
                 /* A divider drag must not reset the editor/compiler selection. */
             }
+            case AppSettings.AUTO_COMPILE -> {
+                btnRecompile.setText(
+                        settings.bool(AppSettings.AUTO_COMPILE) ? "Auto Compile" : "Recompile");
+                if (settings.bool(AppSettings.AUTO_COMPILE)) scheduleAutoCompile();
+                else stopAutoCompile();
+            }
+            case AppSettings.LAYOUT -> applyWorkspaceLayout();
             default -> applyEditorSettings();
         }
     }
@@ -1680,6 +1773,88 @@ public class OverleafFxApp extends Application {
                         "Italic (Ctrl/Cmd+I)",
                         glyph,
                         () -> wrapSelection("\\textit{", "}"));
+        italic.setId("editor-italic");
+        Button math = toolButton(UiSupport.MATH, "Insert math / Chèn công thức", glyph, () -> {});
+        math.setId("editor-insert-math");
+        ContextMenu mathMenu =
+                new ContextMenu(
+                        menuItem(
+                                "Inline math / Công thức trong dòng",
+                                () -> wrapSelection("$", "$")),
+                        menuItem(
+                                "Display math / Công thức riêng dòng",
+                                () -> wrapSelection("\\[\n", "\n\\]")),
+                        menuItem(
+                                "Numbered equation / Công thức đánh số",
+                                () -> wrapSelection("\\begin{equation}\n", "\n\\end{equation}")));
+        math.setOnAction(e -> mathMenu.show(math, javafx.geometry.Side.BOTTOM, 0, 4));
+        Button link =
+                insertTool(
+                        "editor-insert-link",
+                        UiSupport.LINK,
+                        "Insert link / Chèn liên kết",
+                        glyph,
+                        EditorInsertDialog.Kind.LINK);
+        Button comment =
+                toolButton(
+                        UiSupport.COMMENT,
+                        "Comment / uncomment lines — Chú thích dòng (Ctrl/Cmd+/)",
+                        glyph,
+                        this::toggleComment);
+        comment.setId("editor-add-comment");
+        Button reference =
+                insertTool(
+                        "editor-insert-reference",
+                        UiSupport.CROSS_REFERENCE,
+                        "Insert cross reference / Chèn tham chiếu chéo",
+                        glyph,
+                        EditorInsertDialog.Kind.REFERENCE);
+        Button citation =
+                insertTool(
+                        "editor-insert-citation",
+                        UiSupport.CITATION,
+                        "Insert citation / Chèn trích dẫn",
+                        glyph,
+                        EditorInsertDialog.Kind.CITATION);
+        Button figure =
+                insertTool(
+                        "editor-insert-figure",
+                        UiSupport.FIGURE,
+                        "Insert figure / Chèn hình",
+                        glyph,
+                        EditorInsertDialog.Kind.FIGURE);
+        Button table =
+                insertTool(
+                        "editor-insert-table",
+                        UiSupport.TABLE,
+                        "Insert table / Chèn bảng",
+                        glyph,
+                        EditorInsertDialog.Kind.TABLE);
+        Button list = toolButton(UiSupport.LIST, "Insert list / Chèn danh sách", glyph, () -> {});
+        list.setId("editor-insert-list");
+        ContextMenu listMenu =
+                new ContextMenu(
+                        menuItem(
+                                "Bulleted list / Danh sách dấu đầu dòng",
+                                () -> insertList("itemize")),
+                        menuItem(
+                                "Numbered list / Danh sách đánh số",
+                                () -> insertList("enumerate")));
+        list.setOnAction(e -> listMenu.show(list, javafx.geometry.Side.BOTTOM, 0, 4));
+        Button decrease =
+                toolButton(
+                        UiSupport.INDENT_DECREASE,
+                        "Decrease indent / Giảm thụt lề",
+                        glyph,
+                        () -> changeIndent(false));
+        decrease.setId("editor-decrease-indent");
+        Button increase =
+                toolButton(
+                        UiSupport.INDENT_INCREASE,
+                        "Increase indent / Tăng thụt lề",
+                        glyph,
+                        () -> changeIndent(true));
+        increase.setId("editor-increase-indent");
 
         HBox dots = new HBox(3);
         dots.setAlignment(Pos.CENTER);
@@ -1715,6 +1890,16 @@ public class OverleafFxApp extends Application {
                         toolSeparator(),
                         bold,
                         italic,
+                        math,
+                        link,
+                        comment,
+                        reference,
+                        citation,
+                        figure,
+                        table,
+                        list,
+                        decrease,
+                        increase,
                         toolSeparator(),
                         more,
                         UiSupport.spacer(),
@@ -1723,7 +1908,10 @@ public class OverleafFxApp extends Application {
         bar.setAlignment(Pos.CENTER_LEFT);
 
         // Editing controls follow the editor: they go dark while a room join holds it read-only.
-        for (Button edit : List.of(undo, redo, style, bold, italic, more)) {
+        for (Button edit :
+                List.of(
+                        undo, redo, style, bold, italic, math, link, comment, reference, citation,
+                        figure, table, list, decrease, increase, more)) {
             edit.disableProperty().bind(codeEditor.editableProperty().not());
         }
 
@@ -1749,7 +1937,55 @@ public class OverleafFxApp extends Application {
                     e.consume();
                 });
 
-        return new VBox(bar, buildFindBar());
+        bar.setMinWidth(Region.USE_PREF_SIZE);
+        ScrollPane toolbarScroll = new ScrollPane(bar);
+        toolbarScroll.setId("editor-toolbar-scroll");
+        toolbarScroll.getStyleClass().add("editor-toolbar-scroll");
+        toolbarScroll.setFitToWidth(true);
+        toolbarScroll.setFitToHeight(true);
+        toolbarScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        toolbarScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        toolbarScroll.setPrefViewportHeight(37);
+        toolbarScroll.setMinWidth(0);
+        toolbarScroll.setMaxHeight(56);
+        return new VBox(toolbarScroll, buildFindBar());
+    }
+
+    private Button insertTool(
+            String id, String icon, String tooltip, Color glyph, EditorInsertDialog.Kind kind) {
+        Button button = toolButton(icon, tooltip, glyph, () -> showEditorInsert(kind));
+        button.setId(id);
+        return button;
+    }
+
+    private void showEditorInsert(EditorInsertDialog.Kind kind) {
+        if (!codeEditor.isEditable()) return;
+        Path root = activeProjectRoot;
+        String file = currentFile;
+        new EditorInsertDialog(
+                        screenHost,
+                        codeEditor,
+                        root,
+                        file,
+                        () ->
+                                java.util.Objects.equals(root, activeProjectRoot)
+                                        && java.util.Objects.equals(file, currentFile),
+                        vietnameseUi,
+                        kind)
+                .show();
+    }
+
+    private void changeIndent(boolean increase) {
+        if (!codeEditor.isEditable()) return;
+        EditorInsertions.Edit edit =
+                EditorInsertions.indent(
+                        codeEditor.getText(),
+                        codeEditor.getAnchor(),
+                        codeEditor.getCaretPosition(),
+                        increase);
+        codeEditor.replaceText(edit.start(), edit.end(), edit.replacement());
+        codeEditor.selectRange(edit.anchor(), edit.caret());
+        codeEditor.requestFocus();
     }
 
     private Button toolButton(String iconPath, String tip, Color glyph, Runnable action) {
@@ -1780,6 +2016,7 @@ public class OverleafFxApp extends Application {
 
     /** Wraps the selection (or drops the caret between the pair when nothing is selected). */
     private void wrapSelection(String before, String after) {
+        if (!codeEditor.isEditable()) return;
         IndexRange range = codeEditor.getSelection();
         String selected = codeEditor.getSelectedText();
         int start = range.getStart();
@@ -1820,6 +2057,7 @@ public class OverleafFxApp extends Application {
      * is inserted.
      */
     private void insertList(String environment) {
+        if (!codeEditor.isEditable()) return;
         IndexRange range = codeEditor.getSelection();
         String selected = codeEditor.getSelectedText();
         StringBuilder body = new StringBuilder();
@@ -1847,6 +2085,7 @@ public class OverleafFxApp extends Application {
      * commented.
      */
     private void toggleComment() {
+        if (!codeEditor.isEditable()) return;
         String text = codeEditor.getText();
         IndexRange range = codeEditor.getSelection();
         int from = range.getStart();
@@ -1979,10 +2218,12 @@ public class OverleafFxApp extends Application {
 
     private SplitPane createCenterEditorPanel(String initialContent) {
         SplitPane editorSplit = new SplitPane();
+        editorVerticalSplit = editorSplit;
         editorSplit.setOrientation(Orientation.VERTICAL);
         editorSplit.getStyleClass().addAll("editor-split", "code-stack");
 
         VBox editorBox = new VBox();
+        workspaceEditorBox = editorBox;
 
         HBox editorHeader = new HBox(8);
         editorHeader.getStyleClass().addAll("pane-header", "code-header");
@@ -2030,6 +2271,7 @@ public class OverleafFxApp extends Application {
         applyEditorSettings();
 
         VBox terminalBox = new VBox();
+        workspaceTerminalBox = terminalBox;
 
         HBox terminalHeader = new HBox(8);
         terminalHeader.getStyleClass().addAll("pane-header", "terminal-header");
@@ -2080,9 +2322,206 @@ public class OverleafFxApp extends Application {
         return statusBar;
     }
 
+    private String uiText(String english, String vietnamese) {
+        return vietnameseUi ? vietnamese : english;
+    }
+
+    private void scheduleAutoCompile() {
+        if (!settings.bool(AppSettings.AUTO_COMPILE)
+                || activeProjectRoot == null
+                || !editorVisible()
+                || codeEditor == null
+                || !codeEditor.isEditable()) return;
+        autoCompileTimer.stop();
+        autoCompileTimer.setOnFinished(e -> {
+            if (!settings.bool(AppSettings.AUTO_COMPILE)
+                    || !editorVisible()
+                    || activeProjectRoot == null
+                    || !codeEditor.isEditable()) return;
+            if (btnRecompile.isDisabled()) autoCompilePending = true;
+            else triggerRecompile();
+        });
+        autoCompileTimer.playFromStart();
+    }
+
+    private void stopAutoCompile() {
+        autoCompileTimer.stop();
+        autoCompilePending = false;
+    }
+
+    private void populateLayoutMenu(MenuButton menu) {
+        ToggleGroup group = new ToggleGroup();
+        RadioMenuItem split = layoutItem("split", "Split view", "Chia đôi", group);
+        RadioMenuItem editor = layoutItem("editor", "Editor only", "Chỉ editor", group);
+        RadioMenuItem pdf = layoutItem("pdf", "PDF only", "Chỉ PDF", group);
+        MenuItem separate =
+                new MenuItem(uiText("Open PDF in separate window", "Mở PDF trong cửa sổ riêng"));
+        separate.setId("layout-separate");
+        separate.setOnAction(e -> openDetachedPdf());
+        CheckMenuItem focus =
+                new CheckMenuItem(
+                        uiText("Focus mode (Ctrl+Shift+M)", "Chế độ tập trung (Ctrl+Shift+M)"));
+        focus.setId("layout-focus");
+        focus.setSelected(focusMode);
+        focus.setOnAction(e -> {
+            focusMode = focus.isSelected();
+            applyWorkspaceLayout();
+        });
+        menu.getItems().setAll(split, editor, pdf, separate, new SeparatorMenuItem(), focus);
+    }
+
+    private RadioMenuItem layoutItem(
+            String id, String english, String vietnamese, ToggleGroup group) {
+        RadioMenuItem item = new RadioMenuItem(uiText(english, vietnamese));
+        item.setId("layout-" + id);
+        item.setToggleGroup(group);
+        item.setSelected(id.equals(settings.get(AppSettings.LAYOUT)));
+        item.setOnAction(e -> {
+            closeDetachedPdf();
+            settings.set(AppSettings.LAYOUT, id);
+            applyWorkspaceLayout();
+        });
+        return item;
+    }
+
+    private void applyWorkspaceLayout() {
+        if (workspaceSplit == null || workspaceEditorPane == null || pdfPreviewPane == null) return;
+        if (workspaceSplit.getItems().size() == 3)
+            splitPositions = workspaceSplit.getDividerPositions();
+        workspaceSplit.getItems().clear();
+        String layout = settings.get(AppSettings.LAYOUT);
+        if (!java.util.List.of("split", "editor", "pdf").contains(layout)) layout = "split";
+        if (!layout.equals("pdf")) {
+            if (!focusMode) workspaceSplit.getItems().add(workspaceFilesPane);
+            workspaceSplit.getItems().add(workspaceEditorPane);
+        }
+        if (!layout.equals("editor") && detachedPdfStage == null)
+            workspaceSplit.getItems().add(pdfPreviewPane);
+        if (workspaceSplit.getItems().isEmpty()) workspaceSplit.getItems().add(workspaceEditorPane);
+        if (workspaceSplit.getItems().size() == 3)
+            workspaceSplit.setDividerPositions(splitPositions);
+        else if (workspaceSplit.getItems().size() == 2)
+            workspaceSplit.setDividerPositions(focusMode ? .5 : .22);
+        editorVerticalSplit.getItems().setAll(workspaceEditorBox);
+        if (!focusMode) {
+            editorVerticalSplit.getItems().add(workspaceTerminalBox);
+            editorVerticalSplit.setDividerPositions(.74);
+        }
+    }
+
+    private void openDetachedPdf() {
+        if (detachedPdfStage != null) {
+            detachedPdfStage.toFront();
+            return;
+        }
+        workspaceSplit.getItems().remove(pdfPreviewPane);
+        Stage window = new Stage();
+        detachedPdfStage = window;
+        window.initOwner(stage);
+        BorderPane root = new BorderPane(pdfPreviewPane);
+        Scene scene = new Scene(root, 800, 900);
+        ThemeManager.apply(scene, settings);
+        window.setScene(scene);
+        window.setTitle("PDF — " + activeProjectName);
+        window.setOnCloseRequest(e -> {
+            root.setCenter(null);
+            detachedPdfStage = null;
+            settings.set(AppSettings.LAYOUT, "split");
+            applyWorkspaceLayout();
+        });
+        settings.set(AppSettings.LAYOUT, "editor");
+        applyWorkspaceLayout();
+        window.show();
+    }
+
+    private void closeDetachedPdf() {
+        if (detachedPdfStage == null) return;
+        Stage window = detachedPdfStage;
+        detachedPdfStage = null;
+        ((BorderPane) window.getScene().getRoot()).setCenter(null);
+        window.setOnCloseRequest(null);
+        window.close();
+        settings.set(AppSettings.LAYOUT, "split");
+    }
+
+    private void closeHistory() {
+        if (historyView != null) {
+            historyView.close();
+            historyView = null;
+        }
+    }
+
+    private void returnFromHistory() {
+        closeHistory();
+        screenHost.getChildren().setAll(editorRoot);
+        applyWorkspaceLayout();
+        scheduleAutoCompile();
+    }
+
+    private void showHistory() {
+        historyTimer.stop();
+        if (activeProjectRoot == null || !saveCurrentFile(false)) return;
+        stopAutoCompile();
+        closeDetachedPdf();
+        closeHistory();
+        Path root = activeProjectRoot;
+        historyView =
+                new HistoryView(
+                        screenHost,
+                        root,
+                        activeProjectName,
+                        vietnameseUi,
+                        this::returnFromHistory,
+                        () -> codeEditor.isEditable() && !isConnected && networkClient == null,
+                        (revision, text) -> {
+                            if (!root.equals(activeProjectRoot)
+                                    || !codeEditor.isEditable()
+                                    || isConnected
+                                    || networkClient != null) return;
+                            try {
+                                com.overleaf.client.workspace.ProjectHistory history =
+                                        new com.overleaf.client.workspace.ProjectHistory(root);
+                                Path destination = history.filePath(revision.file());
+                                if (Files.isRegularFile(destination)) {
+                                    if (Files.size(destination) > 2 * 1024 * 1024)
+                                        throw new IOException("File exceeds history backup limit");
+                                    history.capture(
+                                            revision.file(),
+                                            Files.readString(destination),
+                                            currentUserName,
+                                            "Before edit");
+                                }
+                                if (!openFile(revision.file())) return;
+                                codeEditor.setText(text);
+                                fileManager.writeTexFile(
+                                        revision.file(), text, currentUserName, "Restored");
+                                markSaved();
+                                invalidatePdf();
+                                refreshProjectTree();
+                                returnFromHistory();
+                            } catch (IOException failure) {
+                                showAlert(
+                                        Alert.AlertType.ERROR,
+                                        uiText("Restore failed", "Không khôi phục được"),
+                                        failure.getMessage());
+                            }
+                        });
+        screenHost.getChildren().setAll(historyView);
+    }
+
     private void markDirty() {
         invalidatePdf();
         userDirty = true;
+        if (fileManager != null && activeProjectRoot != null && codeEditor.isEditable()) {
+            historyTimer.setOnFinished(e -> {
+                if (fileManager == null || activeProjectRoot == null || !editorVisible()) return;
+                fileManager.captureHistory(
+                        currentFile, codeEditor.getText(), currentUserName, "Edited");
+                if (!fileManager.historyWarning().isBlank())
+                    appendLog("[HISTORY] " + fileManager.historyWarning());
+            });
+            historyTimer.playFromStart();
+        }
         if (dirtyLabel != null) {
             dirtyLabel.setVisible(true);
             dirtyLabel.setManaged(true);
@@ -2093,6 +2532,7 @@ public class OverleafFxApp extends Application {
         pdfInputRevision++;
         if (pdfPreviewPane != null)
             pdfPreviewPane.markStale("Nguồn đã thay đổi — bấm Recompile để cập nhật PDF.");
+        scheduleAutoCompile();
     }
 
     private void markSaved() {
@@ -2654,6 +3094,8 @@ public class OverleafFxApp extends Application {
             statusLabel.setText("Open a project before compiling.");
             return;
         }
+        autoCompileTimer.stop();
+        autoCompilePending = false;
         String selectedCompiler =
                 compilerCombo.getValue() == null ? "pdfLaTeX" : compilerCombo.getValue();
         LatexCompilerService.Engine engine =
@@ -2811,6 +3253,10 @@ public class OverleafFxApp extends Application {
     private void finishCompileUi() {
         btnRecompile.setDisable(false);
         compileProgressBar.setVisible(false);
+        if (autoCompilePending) {
+            autoCompilePending = false;
+            scheduleAutoCompile();
+        }
     }
 
     private void appendExplanation(LatexErrorExplainer.Explanation explanation) {
@@ -2988,7 +3434,8 @@ public class OverleafFxApp extends Application {
         String[][] labels = {
             {"workspace-add-files", "Add files", "Thêm tệp"},
             {"workspace-new-folder", "New folder", "Thư mục mới"},
-            {"workspace-upload", "Upload", "Tải lên"}
+            {"workspace-upload", "Upload", "Tải lên"},
+            {"workspace-history", "History", "Lịch sử"}
         };
         for (String[] label : labels) {
             if (editorRoot.lookup("#" + label[0]) instanceof Button button)
@@ -2996,6 +3443,8 @@ public class OverleafFxApp extends Application {
         }
         if (addFilesMenuItem != null)
             addFilesMenuItem.setText(vietnameseUi ? "Thêm tệp…" : "Add files…");
+        if (editorRoot.lookup("#workspace-layout") instanceof MenuButton layout)
+            layout.setText(uiText("Layout", "Bố cục"));
     }
 
     private ContextMenu folderActions(String directory) {
@@ -3074,7 +3523,9 @@ public class OverleafFxApp extends Application {
         }
         boolean hadChanges = userDirty;
         try {
-            fileManager.writeTexFile(currentFile, codeEditor.getText());
+            fileManager.writeTexFile(currentFile, codeEditor.getText(), currentUserName, "Edited");
+            if (!fileManager.historyWarning().isBlank())
+                appendLog("[HISTORY] " + fileManager.historyWarning());
             markSaved();
             appendLog(
                     "[SAVE] Saved "

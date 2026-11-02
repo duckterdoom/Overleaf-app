@@ -70,7 +70,8 @@ final class CompileWorkspace implements AutoCloseable {
                         public FileVisitResult preVisitDirectory(
                                 Path dir, BasicFileAttributes attrs) throws IOException {
                             if (dir.equals(root.resolve("build"))
-                                    || dir.equals(root.resolve(".git")))
+                                    || dir.equals(root.resolve(".git"))
+                                    || dir.equals(root.resolve(".overleaf-history")))
                                 return FileVisitResult.SKIP_SUBTREE;
                             Files.createDirectories(staging.resolve(root.relativize(dir)));
                             return FileVisitResult.CONTINUE;
