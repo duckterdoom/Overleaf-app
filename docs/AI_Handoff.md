@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Python + Next.js desktop (03/11/2026):** đã dựng bản đầu chạy thật bằng pywebview/FastAPI/Next.js, có editor/template/compile/PDF. **Chưa port đủ history, SyncTeX, import và cộng tác**. Xem **mục 32** và [PYTHON_NEXTJS_MIGRATION.md](PYTHON_NEXTJS_MIGRATION.md). Bản Java được giữ nguyên để đối chiếu.
+
 > **Mới nhất — chạy trên Mac (03/11/2026):** bổ sung launcher kiểm JDK 21/Maven, tự tìm Homebrew JDK/MacTeX, `--check`/`--build-only`, file nhấp đúp `.command`. Xem **mục 31** và [MACOS.md](MACOS.md). Chưa xác nhận native trên máy Mac.
 
 > **Mới nhất — PDF/hiệu năng (02/11/2026):** SyncTeX hai chiều, renderer tái sử dụng document, benchmark **248 trang**; **148/148 JUnit**, 6 native SyncTeX build và smoke UI/hồi quy PDF đạt. Xem **mục 30** và [PDF_PERFORMANCE.md](PDF_PERFORMANCE.md).
@@ -945,3 +947,90 @@ Ngày **03/11/2026**, theo yêu cầu cài/chạy trên Mac. Không có máy Mac
 - **Kiểm tra đạt:** POSIX sh -n cho hai entry point và mock Darwin/arm64, Homebrew JDK, đường dẫn project/JDK có dấu cách, check/build/run, JDK 17, thiếu Maven, flag sai. Helper target/check-macos-launcher.sh; evidence target/macos-launcher.Cn8NhF (các lượt sau tạo thư mục mới), kết quả MACOS_LAUNCHER_MOCK_OK. Không chạy Homebrew thật hoặc cài phần mềm hệ thống.
 - .gitattributes hiện đã buộc LF mặc định nên shell/.command giữ newline phù hợp; Git mode launcher 100644, dùng sh hoặc chmod theo docs.
 - Không thay runtime Java ở lượt này; không lặp lại 148 JUnit của §30 chỉ vì thay launcher/docs. Cần nghiệm thu trực tiếp trên Mac bằng --check, mở app, bộ gõ Việt, ba engine/PDF/export/SyncTeX. Không commit/push.
+
+## 32. Bắt đầu chuyển sang Python + Next.js desktop
+
+Ngày **03/11/2026**. Người dùng muốn bỏ Java và đã chọn **ứng dụng desktop có cửa sổ riêng**. Đã tạo bản đầu trong apps/desktop và apps/frontend; **chưa hoàn tất chuyển toàn bộ tính năng**. Bản Java và launcher cũ vẫn giữ để đối chiếu, không xóa dự án/tài khoản thật. Xem [kiến trúc và trạng thái](PYTHON_NEXTJS_MIGRATION.md).
+
+### 32.1 Stack và phạm vi đã làm
+
+- Python 3.12+ / FastAPI / Uvicorn xử lý local project/file/template/compile; pywebview mở cửa sổ desktop. Frontend Next.js 16.4.4 + React/TypeScript + Tailwind, CodeMirror và PDF.js. Next static export được Python phục vụ trên loopback/cổng ngẫu nhiên; không chạy Java hoặc Node server khi UI đã build.
+- apps/desktop/src/overleaf_desktop: store.py (metadata JSON, template, file/fingerprint), compiler.py (async subprocess, log stream/Stop/timeout, PDF snapshot), api.py (Authorization/Origin/Host, route/static), main.py (cửa sổ và dialog export).
+- apps/frontend: dashboard tìm/tạo dự án, gallery 29 mẫu/9 nhóm/nguồn en-vi, file tree, tạo folder/file, chỉnh sửa/lưu Cmd/Ctrl+S, outline và toolbar cơ bản; compile engine chọn được, log stream, PDF thật/scroll/link/zoom/export và stale/error guard.
+- Source template/assets dùng lại dưới dạng dữ liệu từ modules/client/src/main/resources/templates; không gọi Java. Chưa copy tài nguyên vào gói phát hành độc lập. .tex/.bib/PNG vẫn cùng định dạng, metadata/account/history Java chưa tự chuyển.
+- Mặc định dữ liệu mới **~/OverleafDesktopPython**, có OVERLEAF_PYTHON_HOME hoặc --home khi chạy module. Không chạm ~/OverleafDesktop. Metadata mới .project.json/ID UUID, không đọc account Java.
+- scripts/run-python-desktop.bat/.sh tạo venv/cài desktop dependencies nếu thiếu, build frontend khi chưa có out (hoặc --build), sau đó mở cửa sổ. Lệnh Java cũ vẫn chạy Java; không đổi mặc định ngầm.
+- Dependency có package-lock.json và uv.lock; uv sync --frozen cho đúng Python lock. Launcher pip có thể resolve trong dải pyproject. Binary/.venv/node_modules/out/.next/cache/worker/evidence bị Git ignore.
+- Host loopback và token theo phiên không thay thế auth/ACL của server nhiều người. Chưa có WebSocket cộng tác hoặc tương thích TCP Java. Không triển khai API local này như server multiuser chưa bổ sung các lớp cần thiết.
+- M1 bàn giao frontend/window; M2 compiler/PDF/store; M3 API/session và giao thức cộng tác tiếp theo; M4 engine đồng bộ chưa port; M5 dữ liệu/test/installer. Đây là phạm vi trách nhiệm, không xác nhận member tự viết code trong phiên AI.
+
+### 32.2 Kiểm chứng
+
+- **71 pytest đạt**, 29 mẫu × vi/en materialize, assets/escape, save/reopen/fingerprint/path, auth/origin/host, stale PDF, native export mock kiểm bytes và source đổi khi save dialog mở. Có deprecation warning TestClient/httpx, không failure. target/python-next-tests.log.
+- **Next static export + TypeScript đạt**; launcher --build đạt, target/python-next-build.log và target/python-launcher-build.log.
+- **6 PDF build thật đạt** qua Python: 3 engine × root ASCII/tiếng Việt, research article nhiều file. Chưa chạy lại toàn bộ 174 build bằng backend mới. target/python-native-02, log target/python-native.log.
+- **Native Stop/timeout/recovery đạt**, TeX loop bị dừng rồi compile lại thành công; target/python-cancel-01, log target/python-cancel.log.
+- **Cửa sổ pywebview/WebView2 thật** ở chế độ ẩn đã load UI và API thành công; target/python-desktop-ui-02, log target/python-desktop-ui.log. Launcher --smoke cũng đạt với home riêng target/python-launcher-ui-01, log target/python-launcher-ui.log.
+- **UI regression Edge headless đạt**: tạo dự án, sửa/lưu, folder, compile, PDF 3 trang/link, export byte-identical, source stale/compile lỗi vẫn giữ bản PDF trước và khóa export. target/python-web-ui-01, log target/python-web-ui.log; đã xem dashboard.png/workspace.png. Browser test dùng download fallback; dialog hệ điều hành chưa được tự bấm, native export kiểm qua unit mock.
+- Ruff format/check F,E9 đạt; POSIX shell syntax đạt. Máy hiện tại Windows, chưa native Mac/Linux hoặc build installer. Test Java/số đo 248 trang không phải test coverage/benchmark của Python mới.
+
+### 32.3 Việc cần tiếp tục để thay hoàn toàn Java
+
+History/Auto Compile/settings/i18n và toàn bộ toolbar; SyncTeX; upload/ZIP/Word/Markdown/GitHub/storage/import dự án cũ; TeX preflight và Error Explainer; server/cộng tác/queue bền vững/quyền; tài khoản/database; benchmark Python/PDF.js lớn; đóng gói/sign/notarize .exe/.app/.dmg. Chi tiết ở bảng trạng thái migration. Bản đầu chưa có tính năng thì không tạo nút giả hoặc tuyên bố đã port xong.
+
+Chạy Windows: scripts/run-python-desktop.bat. Mac: sh scripts/run-python-desktop.sh sau khi có Python 3.12+/Node để build/MacTeX và native pywebview dependencies. UI đã build không cần Node server; bộ TeX vẫn là dependency riêng. Không commit/push trong lượt này.
+
+## 33. Đồng bộ chức năng Java sang Python + Next.js desktop
+
+Cập nhật theo yêu cầu chuyển **đầy đủ các tính năng Java thực sự có trong dự án**. Mục 32 là lịch sử bản scaffold; các phần “chưa có history/SyncTeX/import/account/network” của mục đó đã được triển khai ở lượt này. Xem [bảng đối chiếu](JAVA_PYTHON_PARITY.md), [hướng dẫn chạy/bằng chứng](PYTHON_NEXTJS_MIGRATION.md).
+
+### 33.1 Đã code và nối UI
+
+- **Account/profile/settings/activity:** state.py lưu PBKDF2-SHA256, remember/offline/logout, name/email/password, avatar crop/remove, theme/font/word wrap/autoclose/autosave/Auto Compile/lang/compiler/timeout/storage/reset. AuthView, ProfilePanel, SettingsPanel và heatmap dùng dữ liệu thật.
+- **Project/file/import:** store.py + files.py quản lý location catalog, custom parent/default storage, rename/icon/color/trash, move kiểm bytes/giữ backup; tạo file/folder/nested target, context menu, binary open, staged upload/drag/drop/paste/empty folder/queue/cancel/rollback, copy project/build, HTTPS và .bib. ZIP/folder/Pandoc DOCX/Markdown/GitHub public HTTPS có staging và dừng process tree khi hủy.
+- **Java migration:** đọc đúng Java properties, cả catalog dùng **đường dẫn làm key**, projects ở default/custom parent, .overleaf-project icon/color, account hash/settings/avatar/activity, .overleaf-history metadata/checksum. Tạo bản sao và ledger chống nhập trùng, không sửa project gốc. 438 asset/template đã vào package Python, không phụ thuộc thư mục Java lúc chạy.
+- **Editor/workspace:** CodeMirror và toolbar đầy đủ theo thứ tự Math/Link/Comment/Reference/Citation/Figure/Table/List/Decrease/Increase indent; dialog quét label/.bib/images, chống stale insertion, escaping/snippet validation. Outline cuộn/resize, editor/PDF divider, layout split/editor/PDF/detach/focus, keyboard save/compile, watcher, save-on-switch/close.
+- **History:** history.py preimage/checkpoint/dedup/label/filter/diff/restore/checksum/quota; HistoryPanel ba cột. Restore bị khóa trong phòng; giữ nội dung hiện tại trước khi ghi đè.
+- **Compile/TeX:** compiler.py stream log, 3 engines, timeout tùy chọn/0 unlimited, Stop process tree, clean cache, Unicode ASCII staging, missing-glyph guard. toolchain.py diagnostics/package/Biber preflight, cài bundled TinyTeX sau consent, cancel/shutdown cleanup.
+- **Error Explainer:** chuyển **đủ 28 rule gốc Java** thành resources/error-rules.json; explainer.py thay placeholder lệnh/tệp/context, why/fix Việt/Anh và exit/start/timeout/stop/glyph. Wrapper “exit code 12” không thay cho chẩn đoán lỗi gốc.
+- **PDF/SyncTeX:** PDF.js thật, canvas quanh viewport, scroll/link/Back/zoom, immutable bytes và source fingerprint/dirty/export guard; native save dialog kiểm trước/sau. synctex.py giữ index theo snapshot, forward/inverse cho tệp con/Unicode; pdfGeometry.ts dùng MediaBox/CropBox/rotation/zoom. Closing callback dùng staged buffer trong Python, không gọi evaluate_js để tránh WebView2 deadlock.
+- **Networking M3/M4:** network.py port TCP/TLS wire v1/v2, AUTH/identity/limits/bounded outbox/heartbeat, room presence/cursor, OT/Lamport/history, ACK/ACK_BATCH, offline pending/reconnect/atomic chunk RESYNC/rebase/ROOM_UNKNOWN. NetworkPanel và useParity nối vào editor; main.tex-only, shared token và RAM queue đúng phạm vi Java.
+- **M5:** persistence.py port User/Project/Document repositories và DatabaseService bằng pymongo tùy chọn; giữ trạng thái prototype chưa gắn UI/room, không tạo kết nối DB giả. Có test mongomock.
+- **Launcher/deploy:** run-python-desktop/server/console .bat/.sh; thêm Overleaf Python Desktop.command. deploy/python có Dockerfile/Compose/hướng dẫn env/TLS PEM. API HTTP local không dùng làm server đa người.
+
+### 33.2 Vai trò bàn giao
+
+| Vai trò | Folder/file Python/Next.js tiếp quản |
+| --- | --- |
+| M1 GUI/client | apps/frontend/app, components, lib/useParity, desktop/main.py native window/dialogs |
+| M2 compile/PDF | compiler.py, toolchain.py, explainer.py, synctex.py, PdfViewer/pdfGeometry |
+| M3 networking | network.py framing/TCP/TLS/session/client, api/parity_api, scripts server/console, deploy/python |
+| M4 synchronization | network.py operation/transform/history/ACK/pending/RESYNC/presence/cursor |
+| M5 data/test | store.py, state.py, files.py, history.py, persistence.py, packaged resources, tests |
+
+Đây là phân công tiếp quản chức năng; không khẳng định từng thành viên tự viết các thay đổi trong phiên AI này.
+
+### 33.3 Kiểm chứng và giới hạn
+
+- 122 pytest đạt; gồm data/API/history/upload/import/protocol/TCP/TLS và native bridge, M5 mock. Có một deprecation warning TestClient/httpx.
+- 186 build PDF thật đạt: 31 cấu hình (29 gallery + blank/example) × vi/en × 3 engines, target/python-parity-matrix-01/matrix.json. Script matrix ban đầu phát hiện fixture benchmark 496 trang; đã sửa fixture và chạy benchmark riêng đúng 248 trang.
+- 6 native SyncTeX forward/inverse vào tệp con ở ASCII/Unicode đạt; 12 PDF.js geometry combinations crop/media offset/rotation/zoom đạt.
+- Pandoc DOCX/Markdown và HTTPS thật đạt; Python clients tương tác Java server thật qua AUTH/UTF16/ACK/offline/RESYNC đạt.
+- UI Edge headless: account/remember/profile, toolbar/history label/diff/upload/nested file/outline/layout/F5/Auto Compile/settings/English/activity đạt; PDF 3 trang/link/byte export/stale/error đạt. Evidence target/python-parity-features-05 và python-parity-ui-03.
+- Fixture 248 trang: native cold 1766 ms/warm 594 ms; viewer lần kiểm song song ~1619 ms đến trang đầu, tối đa 3 canvas/~4 MB pixels. Report target/python-parity-large-01. Không so sánh tốc độ với Overleaf web hoặc suy rộng sang sách nhiều hình/TikZ.
+- Native WebView2 window load/close đạt; dialog export/migration/upload được kiểm unit và logic backend, chưa tự bấm mọi hộp thoại OS. Mac/Linux chưa native nghiệm thu; chưa installer signed/notarized, Docker Compose chưa chạy trên máy hiện tại, Mongo Atlas chưa kiểm thật.
+- Room vẫn main.tex-only, shared token, OT đơn giản, room/pending RAM; không tuyên bố full CRDT/multi-file ACL/bền vững khi restart. Unicode root compile đúng nhưng cache staging chưa tối ưu bằng ASCII root. Các giới hạn này được ghi rõ, không thay bằng nút giả.
+
+Windows build/chạy: `scripts\run-python-desktop.bat --build`, rồi `scripts\run-python-desktop.bat`. Mac/Linux: `sh scripts/run-python-desktop.sh --build`, rồi `sh scripts/run-python-desktop.sh`. Dữ liệu mặc định ~/OverleafDesktopPython; Java giữ nguyên để đối chiếu. Không commit/push trong lượt này.
+
+Bổ sung nghiệm thu mục 33: UI Chromium tại target/python-parity-features-10 đạt cả rename tệp còn chưa lưu, system dark và đúng template example. Đã thêm trạng thái tải ban đầu để static HTML không render heatmap theo ngày build; heatmap có streak/ngày hoạt động như Java. Hai lần Edge bổ sung kẹt ở startup đã được dọn đúng process; không tính là test đạt. Wheel backend kiểm đủ 438 asset và 28 error rule. Build/TypeScript và 122 pytest vẫn đạt; không tạo installer hoặc commit/push.
+
+## 34. Sửa compile ZIP LTJournalArticle: thiếu package/font và cache lỗi
+
+Đã tái hiện ZIP `_Article__Hands_on_Training_for_Mitigating_vulnerabilites__Toan_.zip` trên Python. TinyTeX đi kèm thiếu `footmisc`, `abstract`, `titling`; class dùng mathpazo còn cần font `palatino`, `mathpazo` (tlmgr tự cài dependency `fpl`). Đã cài vào **target/TinyTeX**, không đổi TeX hệ thống hoặc nội dung nguồn của bài. Các package cài local không vào Git; máy khác dùng cùng class cần chuẩn bị các package này.
+
+Ngoài dependency, latexmk giữ lần chạy lỗi trong .fdb_latexmk nên cài package xong vẫn có thể trả lại lỗi cũ dù source không đổi. compiler.py dùng marker `build/.overleaf-build-failed` và log fatal để thêm `-g` cho lượt phục hồi, xóa marker chỉ sau khi xác minh PDF thành công. Warm build bình thường giữ cache. Cách dùng `-g`: [latexmk manual](https://tug.ctan.org/support/latexmk/latexmk.pdf).
+
+Error Explainer phân biệt thiếu TFM (`ppl*` → palatino, `zpl*` → mathpazo) với chọn sai engine; không hướng dẫn đổi fontspec trong trường hợp thiếu metric. UI không in `:0` khi lỗi chưa xác định file/dòng. Log bài còn cảnh báo fancyhdr headheight nhỏ và biblatex không có driver cho kiểu `masterthesis`; đây là cảnh báo định dạng nguồn, không chặn build. Chưa sửa class/bibliography của tác giả.
+
+Kiểm chứng: 124 pytest đạt, có regression cache qua restart/legacy fatal/warm và font metrics; Next.js build/TypeScript đạt. Native trên bản nhập cô lập thành công 6 trang. Đã biên dịch cả project người dùng hiện có: 6 trang, 1.051.412 bytes; lượt phục hồi 7.985 ms, lượt warm 297 ms, cùng SHA-256 `792c8fd916e2b9fb579f4b5d46a0098dec1faefa747dfdeae9183cd6f59f4ca2`. Fingerprint source trước/sau không đổi. PDF xác minh: target/article-zip-repro-01/verified-article.pdf; report user-project-verification.json. Không sửa ZIP gốc, không commit/push.

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "overleaf-desktop-python"
+version = "0.1.0"
+description = "Local LaTeX desktop with a Python backend and exported Next.js UI"
+requires-python = ">=3.12"
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "Pillow>=11,<13", "pypdf>=5,<7"]
+
+[project.optional-dependencies]
+desktop = ["pywebview>=6,<7"]
+mongo = ["pymongo>=4.10,<5"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "mongomock>=4.3,<5"]
+
+[project.scripts]
+overleaf-python = "overleaf_desktop.main:main"
+overleaf-server-python = "overleaf_desktop.network:server_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+overleaf_desktop = ["resources/templates/**/*", "resources/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

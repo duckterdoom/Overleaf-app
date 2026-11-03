@@ -7,6 +7,19 @@ dist/
 .env
 *.p12
 *.jks
+deploy/python/certs/
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+apps/frontend/out/
+apps/desktop/build/
+apps/frontend/public/pdf.worker.min.mjs
+*.tsbuildinfo
 
 # Package Files
 *.jar

@@ -1,185 +1,153 @@
-# Overleaf Desktop
+# Overleaf Desktop — Python + Next.js
 
-Trình soạn thảo LaTeX desktop bằng Java, hỗ trợ compile PDF trên máy và cộng tác trực tuyến qua server TCP/TLS.
+Ứng dụng desktop soạn thảo LaTeX, biên dịch và xem PDF trên máy, có cộng tác qua TCP/TLS. Giao diện Next.js được build thành file tĩnh và mở trong cửa sổ **pywebview**; backend **Python/FastAPI** chạy local. Bản hiện tại không cần JVM, JavaFX hoặc Maven để chạy.
 
-Đồ án môn **Java Software Development**, gồm 5 thành viên và 4 Maven module. Chi tiết kỹ thuật và trạng thái phát triển nằm trong [AI_Handoff.md](docs/AI_Handoff.md).
+## Công nghệ và luồng hoạt động
 
-## Tính năng chính
+| Thành phần | Công nghệ / vai trò |
+| --- | --- |
+| Cửa sổ desktop | Python 3.12+, pywebview, hộp thoại file/thư mục native |
+| Giao diện | Next.js static export, React, TypeScript, Tailwind CSS, Lucide icons |
+| Editor | CodeMirror: highlight, folding, tìm/thay thế, chèn LaTeX |
+| Backend local | FastAPI/Uvicorn, API loopback có token phiên |
+| Compile | latexmk với pdfLaTeX, XeLaTeX hoặc LuaLaTeX; TeX cài trên máy hoặc TinyTeX đi kèm môi trường local |
+| PDF | PDF.js, pypdf và SyncTeX; PDF thật, export cùng bytes với preview |
+| Cộng tác | Server Python riêng: TCP/TLS, wire v1/v2, OT/Lamport, ACK và RESYNC |
+| Dữ liệu | File local, JSON, history; MongoDB/pymongo là module tùy chọn chưa nối UI/room |
 
-- Soạn thảo LaTeX, quản lý file và xem PDF trực tiếp trong ứng dụng.
-- Tạo dự án từ template hoặc nhập từ ZIP, Word, Markdown và GitHub.
-- Lưu dự án trên máy, hỗ trợ tiếng Việt và giao diện Anh/Việt.
-- Cộng tác qua phòng online, có reconnect và đồng bộ thao tác chưa gửi.
+Luồng chạy: **pywebview → UI tĩnh → API Python local → file/TeX/PDF**. Khi bật cộng tác, client kết nối thêm server TCP/TLS. Sau khi build UI, không cần chạy Next.js server; Node.js dùng cho build/phát triển.
 
-## Cấu trúc dự án
+## Chạy từ source
+
+Chuẩn bị Python **3.12+**, Node.js **22.13+** để build, native WebView và bộ TeX có `latexmk`. Windows dùng WebView2; macOS dùng WebKit; Linux cần GTK/WebKit hoặc Qt phù hợp với pywebview. Mac/Linux chưa được kiểm thử native trong lần nghiệm thu Windows hiện tại.
+
+Windows, chạy tại root repository:
+
+```bat
+scripts\run-python-desktop.bat --build
+scripts\run-python-desktop.bat
+```
+
+macOS/Linux:
+
+```sh
+sh scripts/run-python-desktop.sh --build
+sh scripts/run-python-desktop.sh
+```
+
+`--build` chuẩn bị dependency và build UI rồi thoát; lệnh tiếp theo mở ứng dụng. Launcher tự tạo `apps/desktop/.venv` nếu thiếu. Sau khi sửa frontend, chạy lại `--build`. macOS cũng có launcher `Overleaf Python Desktop.command`.
+
+Compile cần TeX Live/MacTeX/MiKTeX hoặc TinyTeX phù hợp hệ điều hành. Windows hiện có thể dùng `target/TinyTeX/bin/windows/latexmk.exe`; thư mục này là công cụ local, **không được Git đóng gói sẵn cho máy khác**. Chọn `latexmk` trong **Cài đặt → Biên dịch** nếu app chưa tìm thấy. Không chép TinyTeX Windows hay `.venv` Windows sang macOS.
+
+Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải dependency/package/import online cần mạng; soạn thảo và compile local hoạt động offline khi đã chuẩn bị đủ công cụ và gói TeX. Đây là bản chạy từ source, chưa có bộ cài độc lập `.exe`/`.app`/`.dmg` đã ký.
+
+## Chức năng hiện có
+
+- Tài khoản local, đăng nhập/remember/offline, hồ sơ/avatar, cài đặt Anh/Việt, theme và hoạt động sử dụng.
+- Quản lý dự án: tìm kiếm, icon/màu, đổi tên/thùng rác, thư mục lưu tùy chọn và chuyển vị trí có backup; 29 template gallery cùng blank/example, nguồn Anh/Việt.
+- Import ZIP/thư mục/Word/Markdown/GitHub public HTTPS; tạo file/thư mục lồng nhau, upload nhiều file/thư mục, kéo thả/dán ảnh, copy từ dự án khác hoặc build output, tải từ HTTPS và nhập `.bib`.
+- Editor có outline kéo đổi chiều cao, toolbar Math/Link/Comment/Reference/Citation/Figure/Table/List/Indent, autosave, lịch sử phiên bản/nhãn/so sánh/khôi phục và bố cục split/editor/PDF/focus.
+- Compile thủ công hoặc Auto Compile, Stop, timeout tùy chỉnh, log và Error Explainer Anh/Việt; kiểm tra toolchain/package. Cài package trong app chỉ áp dụng cho TinyTeX đi kèm và cần người dùng xác nhận.
+- Preview PDF cuộn nhiều trang, mục lục/link, zoom, cửa sổ PDF riêng và SyncTeX hai chiều. Export dùng đúng snapshot bytes đang preview; nguồn thay đổi hoặc compile lỗi sẽ chặn export cho đến khi compile thành công.
+- Cộng tác `main.tex`: TCP/TLS, presence/cursor, offline queue, reconnect và RESYNC. Chưa đồng bộ toàn bộ cây file; room/queue nằm trong RAM, chưa có CRDT đầy đủ hoặc phân quyền theo tài khoản.
+
+Nút Comment chèn chú thích LaTeX `%`, chưa phải luồng review. Zotero/Mendeley/ReadCube dùng nhập `.bib`, chưa có OAuth. GitHub import chưa phải Git branch/merge.
+
+## Cấu trúc source
 
 ```text
 Overleaf-app/
-├── modules/
-│   ├── client/        # JavaFX, compiler, workspace và network client
-│   ├── common/        # Model, protocol và sync dùng chung
-│   ├── server/        # TCP/TLS server và collaboration engine
-│   └── persistence/   # MongoDB và repository
-├── docs/              # Tài liệu kỹ thuật và đánh giá
-├── examples/          # Tài liệu LaTeX mẫu
-├── scripts/           # Script chạy và build
-└── deploy/            # Mẫu cấu hình VPS
+├── apps/
+│   ├── desktop/
+│   │   ├── pyproject.toml / uv.lock     # dependency Python và lock
+│   │   ├── src/overleaf_desktop/        # backend và cửa sổ desktop
+│   │   │   └── resources/              # template và rule giải thích lỗi độc lập Java
+│   │   └── tests/                      # unit/integration test và native smoke helpers
+│   └── frontend/
+│       ├── app/                        # trang dashboard/workspace, layout, CSS
+│       ├── components/                 # editor, PDF, history, settings, upload...
+│       ├── lib/                        # API client, state, i18n, snippet, PDF geometry
+│       ├── public/                     # tài nguyên tĩnh, PDF worker khi build
+│       ├── scripts/                    # bundle worker và test trình duyệt
+│       ├── package.json / package-lock.json
+│       └── next.config.ts              # static export → out/
+├── scripts/run-python-*                # launcher desktop/server/console .bat và .sh
+├── deploy/python/                      # Docker/Compose mẫu và hướng dẫn TLS
+├── docs/                               # bàn giao, đối chiếu, kế hoạch dọn Java
+├── examples/                           # nguồn LaTeX mẫu dùng chung
+├── LICENSE-TEMPLATES.md                 # giấy phép template cần giữ
+└── modules/, pom.xml, launcher Java     # mã cũ chờ dọn theo kế hoạch riêng
 ```
 
-Source code nằm trong `modules/*/src/main/java`. Các thư mục `target/` và `dist/` là output build, không phải source.
+Các file backend chính:
 
-## Bắt đầu nhanh
+| File trong `apps/desktop/src/overleaf_desktop/` | Chức năng |
+| --- | --- |
+| `main.py` | Cửa sổ pywebview, native dialogs, export, lưu buffer khi đóng |
+| `api.py`, `parity_api.py` | API local, phiên, route thao tác, upload, theo dõi thay đổi |
+| `store.py` | Project/catalog, đường dẫn, template, fingerprint nguồn |
+| `state.py` | Account/profile/avatar/settings/activity, đọc dữ liệu Java cũ |
+| `files.py` | Import/upload/copy/HTTPS, staging/rollback, nhập dữ liệu Java |
+| `history.py` | Revision, nhãn, checksum, quota và restore có backup |
+| `compiler.py` | Tiến trình TeX, timeout/Stop, cache, snapshot PDF và chặn stale |
+| `toolchain.py` | Tìm công cụ, preflight package/Biber và cài TinyTeX package |
+| `explainer.py` | Phân tích lỗi gốc, ngữ cảnh và hướng sửa Anh/Việt |
+| `synctex.py` | Điều hướng source ↔ PDF theo snapshot |
+| `network.py`, `console.py` | Protocol, server/client TCP/TLS, OT/RESYNC, console demo |
+| `persistence.py` | Repository/service MongoDB tùy chọn |
 
-### 1. Cài đặt
+`apps/frontend/.next`, `out`, `node_modules`, `.venv` và `target` là output/công cụ local, không phải source. Riêng `target` hiện chứa cả TinyTeX, runtime và bằng chứng kiểm thử: không xóa toàn bộ để dọn Java.
 
-- **JDK 21+** và **Maven**.
-- **TeX Live**, **MacTeX** hoặc **MiKTeX** nếu muốn compile PDF.
-- **Pandoc** nếu muốn nhập Word hoặc Markdown.
+## Dữ liệu và chuyển từ Java
 
-### 2. Mở ứng dụng
+Home mặc định mới: `~/OverleafDesktopPython` (`C:\Users\<user>\OverleafDesktopPython` trên Windows). Có thể đổi bằng `OVERLEAF_PYTHON_HOME` hoặc tùy chọn `--home` khi chạy module. Dự án cũng có thể nằm ở thư mục ngoài do người dùng chọn.
 
-macOS / Linux:
+Trong **Cài đặt → Dự án → Nhập dữ liệu từ bản Java**, chọn home cũ `~/OverleafDesktop`. App sao chép dự án, history và dữ liệu tài khoản/cài đặt hỗ trợ; giữ bản gốc và ghi ledger tránh nhập trùng. Không cần Java runtime để đọc dữ liệu này. Kiểm tra đường dẫn lưu mặc định sau nhập.
 
-```bash
-sh scripts/run-client.sh
-```
+Không commit tài khoản, mật khẩu, `.env`, token, chứng chỉ/private key hoặc dữ liệu dự án cá nhân. Xem [kế hoạch dọn Java](docs/JAVA_CLEANUP_PLAN.md) trước khi xóa mã cũ.
 
-Windows:
+## Server cộng tác
+
+Sau khi chuẩn bị venv/dependency bằng launcher desktop, chạy server local:
 
 ```bat
-scripts\run-client.bat
+scripts\run-python-server.bat --host 127.0.0.1 --port 8080
+scripts\run-python-console.bat --host 127.0.0.1 --port 8080 --room DEMO
 ```
 
-Sau khi mở app: **tạo tài khoản → tạo hoặc mở dự án → bắt đầu viết**. Dữ liệu local được lưu trong `~/OverleafDesktop`.
+macOS/Linux dùng các file `.sh` cùng tên qua `sh`. Client mở **Cộng tác**, nhập host/port/room; các thành viên dùng cùng room. Server độc lập không cần frontend, pywebview hoặc TeX; có thể cài riêng package Python backend.
 
-Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt thông dụng. Để chỉ kiểm tra build, chạy `scripts\run-client.bat -BuildOnly`.
+Kết nối ngoài localhost yêu cầu TLS và token ít nhất 24 ký tự; client xác minh CA/hostname. Hướng dẫn biến môi trường, PEM và Compose tại [deploy/python/README.md](deploy/python/README.md). Compose là mẫu chưa được chạy Docker trong lần nghiệm thu này.
 
-Trên **macOS**, xem [hướng dẫn cài và chạy](docs/MACOS.md). Launcher hỗ trợ `sh scripts/run-client.sh --check` để kiểm môi trường và `--build-only` để chỉ build. Sau khi chuẩn bị JDK/Maven/MacTeX, có thể cấp quyền rồi nhấp đúp **Overleaf Desktop.command**. Đây là chạy từ source, chưa phải bộ cài `.dmg`/`.app` độc lập.
+## Kiểm thử và phát triển
 
-## Sử dụng
+Cài môi trường có test (từ root, nếu đã cài uv):
 
-| Thao tác | Cách thực hiện |
-| --- | --- |
-| Lưu file | `Ctrl+S` |
-| Compile PDF | `F5` hoặc `Ctrl+Enter` |
-| Auto Compile | Mũi tên cạnh Recompile → **Tự động biên dịch**; chờ 1 giây ngừng gõ rồi compile. Chọn **Biên dịch thủ công** để tắt |
-| Lịch sử sửa | **Lịch sử / History** → chọn tệp và phiên bản, so sánh với hiện tại, gắn nhãn hoặc khôi phục |
-| Đổi bố cục | **Bố cục / Layout** → chia đôi, chỉ editor, chỉ PDF, PDF cửa sổ riêng hoặc chế độ tập trung (`Ctrl+Shift+M`) |
-| Tạo hoặc nhập dự án | Chọn **Dự án mới**, sau đó chọn template hoặc nguồn nhập |
-| Thêm file hoặc thư mục | Dùng **Thêm tệp**, **Thư mục mới** hoặc menu chuột phải |
-| Upload tài nguyên | Chọn **Tải lên**, kéo thả hoặc dán file/ảnh |
-| Xem và xuất PDF | Compile, xem preview, sau đó chọn **Export PDF…** |
-| Mã nguồn → PDF | Đặt con trỏ rồi bấm **Đến PDF / Show in PDF**; vị trí được tô vàng |
-| PDF → mã nguồn | Nhấp đúp đoạn văn trong PDF để mở đúng file và dòng nguồn |
-| Đổi tên hoặc xóa | Nhấp chuột phải vào file hoặc dự án |
-| Kết nối phòng | Menu `⋯` → **Connect room…** |
-
-Toolbar editor có dãy icon ngay sau **Italic**, theo thứ tự: **Math → Link → Comment → Cross reference → Citation → Figure → Table → List → Decrease indent → Increase indent**. Di chuột lên icon để xem chú thích Việt/Anh; nếu editor hẹp, cuộn ngang toolbar để thấy các nút còn lại.
-
-Math và List mở menu chọn dạng chèn. Comment bật/tắt chú thích LaTeX `%` cho dòng đang chọn, không phải luồng nhận xét review. Tham chiếu đọc `\label` từ tệp `.tex`, citation đọc khóa từ `.bib`; ảnh chọn từ các PNG/JPG/PDF đã upload. Thụt lề dùng 2 dấu cách, giảm lề xử lý cả tab. Link cần `hyperref`, Figure cần `graphicx`; hộp thoại có hướng dẫn package, không tự sửa preamble. Xem [AI_Handoff §26](docs/AI_Handoff.md#26-toolbar-editor-chèn-latex-và-thụt-lề).
-
-### Compile và PDF
-
-Preview hiển thị PDF thật do compiler tạo. Sau khi sửa source, cần compile thành công trước khi xem hoặc xuất bản mới.
-
-SyncTeX hai chiều hỗ trợ file chương và đường dẫn dự án tiếng Việt; cần compile lại bằng bản app mới và có công cụ `synctex` cạnh `latexmk` trong bộ TeX đã chọn. Nguồn stale/compile lỗi sẽ khóa đồng bộ. Viewer tái sử dụng PDF document/renderer trên luồng nền và chỉ giữ ảnh quanh trang đang xem. Cách dùng, giới hạn và benchmark tài liệu lớn tại [PDF_PERFORMANCE.md](docs/PDF_PERFORMANCE.md).
-
-Trong **Settings → Compilation / Biên dịch**, bạn có thể chọn `latexmk`, đổi timeout và kiểm tra toolchain. Để trống đường dẫn nếu muốn app tự tìm compiler.
-
-Auto Compile mặc định tắt, nhớ lựa chọn cho lần mở sau; vẫn có thể bấm nút compile ngay. Khi một lượt đang chạy, thay đổi tiếp theo được gộp để compile sau đó; **Stop** dừng lượt hiện tại và lượt tự động đang chờ.
-
-History lưu phiên bản văn bản local trong `.overleaf-history/` của từng dự án khi mở/lưu tệp và sau 3 giây ngừng gõ. Các checkpoint chưa Save không ghi đè tệp làm việc. Chỉ có lịch sử từ khi bật bản ứng dụng này; đây là lịch sử trên máy, chưa đồng bộ qua server. Khôi phục một tệp có xác nhận và giữ nội dung cũ trước khi thay thế; cần rời phòng cộng tác để khôi phục. Giới hạn 2 MiB/phiên bản, 1.024 phiên bản/128 MiB mỗi dự án; chạm giới hạn sẽ dừng ghi thêm history, không xóa các mốc cũ và vẫn cho lưu source. Xem [AI_Handoff §27](docs/AI_Handoff.md#27-auto-compile-history-và-layout-workspace).
-
-### Nhập và di chuyển dự án
-
-**Thư viện mẫu:** Dự án mới → Thêm mẫu dự án → chọn một trong 9 nhóm hoặc Xem tất cả. Có **29 mẫu nhiều tệp, Anh/Việt**, tìm kiếm có/không dấu, lọc nhóm/tag, mô tả và engine mặc định. Gồm bài báo, sách, đơn hành chính, bài tập, poster, Beamer, báo cáo thực tập, CV và hai mẫu luận văn đủ 5 chương/BibLaTeX. Kiểm package/Biber trước khi tạo; chỉ cài gói vào TinyTeX đi kèm sau xác nhận, không tự sửa TeX hệ thống. Xem [danh mục và cách thêm mẫu](docs/TEMPLATE_LIBRARY.md), [giấy phép](LICENSE-TEMPLATES.md).
-
-- Word/Markdown cần Pandoc; GitHub cần Git và URL HTTPS của repository công khai.
-- ZIP hoặc repository cần có `main.tex`, hoặc một file `.tex` chứa `\documentclass` để app tạo file chính.
-- Nên di chuyển dự án bằng menu **Đổi thư mục lưu…** để app cập nhật danh sách dự án và giữ bản khôi phục.
-
-Các giới hạn import, upload và workspace được ghi trong [AI_Handoff.md §22–23](docs/AI_Handoff.md#22-menu-tạo-dự-án-nhập-tài-liệu-và-thư-mục-lưu-tùy-chọn).
-
-## Cộng tác trực tuyến
-
-Khởi động server trên macOS / Linux:
-
-```bash
-sh scripts/build-network.sh
-java -jar dist/overleaf-server.jar 8080
+```sh
+uv sync --project apps/desktop --extra desktop --extra dev --extra mongo --frozen
+uv run --project apps/desktop --no-sync python -m pytest apps/desktop/tests -q
 ```
 
-Trên Windows:
+Hoặc dùng Python trong venv để cài `pip install -e "apps/desktop[desktop,dev,mongo]"` rồi chạy pytest bằng chính Python đó. MongoDB là optional; test repository sử dụng mongomock.
 
-```bat
-scripts\run-server.bat 8080
+Kiểm frontend:
+
+```sh
+cd apps/frontend
+npm ci
+npm run build
+npm run typecheck
+node scripts/test-snippets.mjs
+node scripts/test-pdf-geometry.mjs
 ```
 
-Sau đó, trong app chọn **Connect room…** và nhập:
+Test trình duyệt/native cần thêm công cụ tương ứng và home test riêng; xem [hướng dẫn migration](docs/PYTHON_NEXTJS_MIGRATION.md). Kết quả đã ghi nhận: **124 pytest**, 186 build template PDF thật, kiểm SyncTeX/preview/export và benchmark fixture 248 trang trên Windows. Đây là kết quả các lần kiểm trước, không phải kiểm thử được chạy lại chỉ vì cập nhật README; không suy rộng thành nhanh hơn Overleaf web trên mọi tài liệu.
 
-- Host: `127.0.0.1`
-- Port: `8080`
-- Room ID phải giống nhau giữa các thành viên
+## Tài liệu và trách nhiệm
 
-Hiện phòng cộng tác đồng bộ `main.tex`. Server lưu trạng thái phòng trong RAM, vì vậy cần lưu project trước khi restart server.
+- [AI_Handoff.md](docs/AI_Handoff.md): lịch sử bàn giao; §33 là triển khai Python/Next.js, §34 là sửa ZIP thiếu package/font và cache lỗi.
+- [PYTHON_NEXTJS_MIGRATION.md](docs/PYTHON_NEXTJS_MIGRATION.md): chạy, migration, kiểm chứng và giới hạn.
+- [JAVA_PYTHON_PARITY.md](docs/JAVA_PYTHON_PARITY.md): đối chiếu tính năng hai nền tảng.
+- [JAVA_CLEANUP_PLAN.md](docs/JAVA_CLEANUP_PLAN.md): danh sách chuẩn bị xóa Java, điều kiện và tài nguyên phải giữ.
 
-## Chạy test
-
-```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,ProjectTemplatesTest,TemplatePrerequisitesTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,SyncTexServiceTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
-```
-
-Bộ test chọn lọc gồm **148 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test nằm trong [AI_Handoff.md](docs/AI_Handoff.md); thư viện mẫu có ma trận **174 build thật** và smoke UI mở rộng (§28), bên cạnh toolbar/history/layout (§26–27) và SyncTeX/benchmark PDF (§30).
-
-## Server và triển khai
-
-Cấu hình thường dùng:
-
-| Biến môi trường | Mặc định | Mục đích |
-| --- | --- | --- |
-| `OVERLEAF_HOST` | `127.0.0.1` | Địa chỉ server |
-| `OVERLEAF_PORT` | `8080` | Port server |
-| `OVERLEAF_TOKEN` | rỗng | Token dùng chung khi bật xác thực |
-| `OVERLEAF_TLS` | `false` | Bật TLS |
-
-Các cấu hình đầy đủ có trong `deploy/overleaf.env.example` và `deploy/overleaf-public.env.example`.
-
-Cách triển khai đơn giản qua SSH tunnel:
-
-```bash
-scp dist/overleaf-server.jar user@server:~/
-ssh user@server 'java -jar ~/overleaf-server.jar 8080'
-ssh -N -L 8080:127.0.0.1:8080 user@server
-```
-
-`deploy/` cũng có mẫu systemd để chạy server nền. Khi mở server ra public network, bắt buộc dùng TLS và token ít nhất 24 ký tự; không tắt hostname verification.
-
-Giao thức wire v2 và các giới hạn networking được mô tả trong [AI_Handoff.md §5](docs/AI_Handoff.md#5-giao-thức-wire-v2).
-
-## Phát triển
-
-Format Java trước khi tạo pull request:
-
-```bash
-mvn spotless:apply
-mvn spotless:check
-```
-
-Quy ước chung:
-
-- Dùng nhánh `feat/`, `fix/` hoặc `docs/`; không commit trực tiếp vào `main`.
-- Chạy test trước khi mở pull request.
-- Không commit `config.properties`, `.env`, `*.p12` hoặc `*.jks`.
-- Giữ UTF-8 và newline theo `.editorconfig` / `.gitattributes`.
-
-## Phân công
-
-| Member | Phạm vi chính |
-| --- | --- |
-| **M1** | JavaFX UI và client |
-| **M2** | Compiler và workspace I/O |
-| **M3** | Networking, scripts và deployment |
-| **M4** | Collaboration và sync |
-| **M5** | MongoDB, persistence và testing |
-
-Repository: <https://github.com/duckterdoom/Overleaf-app.git>
+Phân chia trách nhiệm để nhóm tiếp tục phát triển: **M1** UI/editor/window; **M2** compile/TeX/PDF/SyncTeX; **M3** TCP/TLS/protocol/deploy; **M4** OT/ACK/RESYNC/offline; **M5** account/local data/history/migration/Mongo và kiểm thử. Đây là phạm vi phụ trách, không khẳng định tác giả từng thay đổi.
