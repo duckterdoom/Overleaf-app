@@ -100,6 +100,7 @@ final class CompileWorkspace implements AutoCloseable {
     Path publishPdf(String name) throws IOException {
         Path pdf = working.resolve("build").resolve(name);
         Path target = original.resolve("build").resolve(name);
+        publishSyncTex(name);
         if (!working.equals(original)) {
             try (var logs = Files.list(working.resolve("build"))) {
                 for (Path log :
@@ -127,6 +128,63 @@ final class CompileWorkspace implements AutoCloseable {
             }
         }
         return target;
+    }
+
+    private void publishSyncTex(String pdfName) throws IOException {
+        String name = pdfName.replaceFirst("\\.pdf$", ".synctex.gz");
+        Path source = working.resolve("build").resolve(name);
+        Path target = original.resolve("build").resolve(name);
+        if (!Files.isRegularFile(source)) {
+            Files.deleteIfExists(target);
+            return;
+        }
+        // Keep source names relative: Windows Unicode builds use disposable ASCII staging.
+        Path temp = Files.createTempFile(target.getParent(), ".synctex-", ".tmp");
+        try {
+            try (var reader =
+                            new java.io.BufferedReader(
+                                    new java.io.InputStreamReader(
+                                            new java.util.zip.GZIPInputStream(
+                                                    Files.newInputStream(source)),
+                                            java.nio.charset.StandardCharsets.UTF_8));
+                    var writer =
+                            new java.io.BufferedWriter(
+                                    new java.io.OutputStreamWriter(
+                                            new java.util.zip.GZIPOutputStream(
+                                                    Files.newOutputStream(temp)),
+                                            java.nio.charset.StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.startsWith("Input:")) {
+                        int colon = line.indexOf(':', 6);
+                        if (colon > 0) {
+                            String input = line.substring(colon + 1);
+                            if (input.startsWith("\"") && input.endsWith("\""))
+                                input = input.substring(1, input.length() - 1);
+                            try {
+                                Path path = Path.of(input);
+                                if (!path.isAbsolute()) path = working.resolve(path);
+                                path = path.normalize();
+                                if (path.startsWith(working))
+                                    line =
+                                            line.substring(0, colon + 1)
+                                                    + "./"
+                                                    + working.relativize(path)
+                                                            .toString()
+                                                            .replace('\\', '/');
+                            } catch (RuntimeException invalidPath) {
+                                // System package inputs are not workspace source files.
+                            }
+                        }
+                    }
+                    writer.write(line);
+                    writer.write('\n');
+                }
+            }
+            Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(temp);
+        }
     }
 
     @Override

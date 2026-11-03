@@ -55,6 +55,13 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
     private double zoom = 1, contentHeight;
     private boolean fit = true, current, disposed, busy, layingOut, resizePending;
     private long generation;
+    private Runnable forwardSearch;
+    private java.util.function.Consumer<PdfSnapshot.Destination> inverseSearch;
+    private final Button sync = new Button("Đến PDF / Show in PDF");
+    private PdfSnapshot renderingSnapshot;
+    private PdfSnapshot.RenderSession renderSession;
+    private volatile long renderedPages, renderNanos;
+    private volatile int rendererOpens;
 
     private record Location(int page, double y) {}
 
@@ -63,6 +70,8 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
         final ImageView image = new ImageView();
         final Pane links = new Pane();
         final Label placeholder;
+        final javafx.scene.shape.Rectangle marker = new javafx.scene.shape.Rectangle();
+        double markerX, markerY;
         double top, width, height;
 
         PageView(int index) {
@@ -77,7 +86,28 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
             placeholder.setMouseTransparent(true);
             StackPane.setAlignment(placeholder, Pos.CENTER);
             links.setPickOnBounds(false);
-            getChildren().addAll(placeholder, image, links);
+            marker.setFill(javafx.scene.paint.Color.web("#ffc107", .35));
+            marker.setStroke(javafx.scene.paint.Color.web("#d99b00"));
+            marker.setMouseTransparent(true);
+            marker.setVisible(false);
+            getChildren().addAll(placeholder, image, links, marker);
+            setOnMouseClicked(event -> {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY
+                        && event.getClickCount() == 2
+                        && canExport()
+                        && inverseSearch != null) {
+                    for (javafx.scene.Node node = event.getPickResult().getIntersectedNode();
+                            node != null && node != this;
+                            node = node.getParent()) if (node instanceof Hyperlink) return;
+                    var p = sceneToLocal(event.getSceneX(), event.getSceneY());
+                    inverseSearch.accept(
+                            new PdfSnapshot.Destination(
+                                    index,
+                                    Math.clamp(p.getX() / width, 0, 1),
+                                    Math.clamp(p.getY() / height, 0, 1)));
+                    event.consume();
+                }
+            });
         }
 
         void resizePage(double w, double h, double y) {
@@ -93,6 +123,15 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
             links.setPrefSize(w, h);
             links.setMaxSize(w, h);
             layoutLinks();
+            layoutMarker();
+        }
+
+        void layoutMarker() {
+            marker.setManaged(false);
+            marker.setX(Math.clamp(markerX * width - 4, 0, Math.max(0, width - 80)));
+            marker.setY(Math.max(0, markerY * height - 12));
+            marker.setWidth(Math.min(160, width));
+            marker.setHeight(18);
         }
 
         void layoutLinks() {
@@ -196,7 +235,15 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
                         fitButton);
         toolbar.setAlignment(Pos.CENTER_LEFT);
         toolbar.setStyle("-fx-padding: 8;");
-        HBox actions = new HBox(export);
+        sync.setId("pdf-sync-forward");
+        sync.getStyleClass().add("btn-secondary");
+        sync.setTooltip(
+                new Tooltip(
+                        "Đặt con trỏ trong mã nguồn rồi bấm. Nhấp đúp PDF để về nguồn. / Select source, then click. Double-click PDF to show source."));
+        sync.setOnAction(e -> {
+            if (canExport() && forwardSearch != null) forwardSearch.run();
+        });
+        javafx.scene.layout.FlowPane actions = new javafx.scene.layout.FlowPane(8, 8, export, sync);
         actions.setStyle("-fx-padding: 0 8 8 8;");
         getChildren().addAll(toolbar, actions, status, scroll);
         scroll.vvalueProperty()
@@ -220,6 +267,8 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
     }
 
     public void reset() {
+        if (disposed) return;
+        renderer.execute(this::closeRenderSession);
         generation++;
         wanted.clear();
         failedPages.clear();
@@ -295,6 +344,42 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
         return snapshot;
     }
 
+    public void setSyncActions(
+            Runnable forward, java.util.function.Consumer<PdfSnapshot.Destination> inverse) {
+        forwardSearch = forward;
+        inverseSearch = inverse;
+        updateControls();
+    }
+
+    public void reveal(PdfSnapshot.Destination destination) {
+        if (!canExport() || destination.page() < 0 || destination.page() >= views.size()) return;
+        history.push(position());
+        if (history.size() > 100) history.removeLast();
+        views.forEach(view -> view.marker.setVisible(false));
+        PageView view = views.get(destination.page());
+        view.markerX = destination.x();
+        view.markerY = destination.y();
+        view.layoutMarker();
+        view.marker.setVisible(true);
+        navigate(destination.page(), Math.max(0, destination.y() - .15));
+    }
+
+    public record RenderStats(
+            long pages, long nanos, int documentOpens, int retainedImages, long retainedPixels) {}
+
+    public RenderStats renderStats() {
+        int images = 0;
+        long pixels = 0;
+        for (PageView view : views)
+            if (view.image.getImage() != null) {
+                images++;
+                pixels +=
+                        (long) view.image.getImage().getWidth()
+                                * (long) view.image.getImage().getHeight();
+            }
+        return new RenderStats(renderedPages, renderNanos, rendererOpens, images, pixels);
+    }
+
     public int pageIndex() {
         return page;
     }
@@ -349,6 +434,7 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
         back.setDisable(snapshot == null || history.isEmpty());
         pageLabel.setText(snapshot == null ? "0 / 0" : (page + 1) + " / " + snapshot.pages());
         export.setDisable(!canExport());
+        sync.setDisable(!canExport() || forwardSearch == null);
         for (PageView view : views)
             view.image.setId(
                     view.index == page ? "pdf-page-image" : "pdf-page-image-" + view.index);
@@ -464,7 +550,17 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
                 new Task<>() {
                     @Override
                     protected PdfSnapshot.PageImage call() throws Exception {
-                        return pdf.renderPage(index, scale);
+                        if (renderingSnapshot != pdf) {
+                            closeRenderSession();
+                            renderSession = pdf.openRenderer();
+                            renderingSnapshot = pdf;
+                            rendererOpens++;
+                        }
+                        long start = System.nanoTime();
+                        var result = renderSession.renderPage(index, scale);
+                        renderNanos += System.nanoTime() - start;
+                        renderedPages++;
+                        return result;
                     }
                 };
         task.setOnSucceeded(e -> {
@@ -518,10 +614,22 @@ public final class PdfPreviewPane extends VBox implements AutoCloseable {
 
     @Override
     public void close() {
+        if (disposed) return;
         disposed = true;
         generation++;
         wanted.clear();
-        renderer.shutdownNow();
+        renderer.execute(this::closeRenderSession);
+        renderer.shutdown();
         views.forEach(PageView::clearImage);
+    }
+
+    private void closeRenderSession() {
+        if (renderSession != null)
+            try {
+                renderSession.close();
+            } catch (java.io.IOException ignored) {
+            }
+        renderSession = null;
+        renderingSnapshot = null;
     }
 }

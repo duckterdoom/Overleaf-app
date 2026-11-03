@@ -4,6 +4,7 @@ import com.overleaf.client.compiler.LatexCompilerService;
 import com.overleaf.client.compiler.LatexErrorExplainer;
 import com.overleaf.client.compiler.PdfSnapshot;
 import com.overleaf.client.compiler.ProjectInputs;
+import com.overleaf.client.compiler.SyncTexService;
 import com.overleaf.client.net.ConnectionScope;
 import com.overleaf.client.net.NetworkClient;
 import com.overleaf.client.ui.backend.AuthGateway;
@@ -154,6 +155,13 @@ public class OverleafFxApp extends Application {
 
     // --- TÍCH HỢP M2 (COMPILER & WORKSPACE WATCHER) ---
     private final LatexCompilerService compilerService = new LatexCompilerService();
+    private SyncTexService syncTex;
+    private final java.util.concurrent.ExecutorService syncQueries =
+            java.util.concurrent.Executors.newSingleThreadExecutor(work -> {
+                Thread thread = new Thread(work, "synctex-query");
+                thread.setDaemon(true);
+                return thread;
+            });
     private ProjectFileManager fileManager;
     private WorkspaceWatcher workspaceWatcher;
 
@@ -667,6 +675,7 @@ public class OverleafFxApp extends Application {
             disconnectRoom();
         }
         compilerService.shutdown();
+        syncQueries.shutdownNow();
         if (pdfPreviewPane != null) pdfPreviewPane.close();
         if (workspaceWatcher != null) {
             workspaceWatcher.stopWatching();
@@ -885,6 +894,7 @@ public class OverleafFxApp extends Application {
         workspaceFilesPane = leftPane;
         workspaceEditorPane = centerSplit;
         pdfPreviewPane = new PdfPreviewPane(this::exportCompiledPdf);
+        pdfPreviewPane.setSyncActions(this::showSourceInPdf, this::showPdfInSource);
 
         mainSplit.getItems().addAll(leftPane, centerSplit, pdfPreviewPane);
         mainSplit.setDividerPositions(0.18, 0.58);
@@ -3177,11 +3187,14 @@ public class OverleafFxApp extends Application {
                                             + failure.getMessage());
                             return;
                         }
+                        SyncTexService syncIndex =
+                                readSyncIndex(result.pdfPath(), compileOptions.executable());
                         Platform.runLater(() -> {
                             finishCompileUi();
                             if (!compiledRoot.equals(activeProjectRoot)
                                     || compiledWorkspace != workspaceGeneration) return;
                             lastPdf = result.pdfPath();
+                            syncTex = syncIndex;
                             try {
                                 backend.recordCompile();
                             } catch (RuntimeException e) {
@@ -3287,6 +3300,116 @@ public class OverleafFxApp extends Application {
         } catch (IOException failure) {
             showAlert(Alert.AlertType.ERROR, "PDF", failure.getMessage());
         }
+    }
+
+    private static SyncTexService readSyncIndex(Path pdf, String latexmk) {
+        try {
+            return SyncTexService.load(pdf, latexmk);
+        } catch (IOException | RuntimeException unavailable) {
+            return null;
+        }
+    }
+
+    private void showSourceInPdf() {
+        if (!canSyncPdf()) return;
+        SyncTexService index = syncTex;
+        PdfSnapshot pdf = pdfPreviewPane.snapshot();
+        String file = currentFile, text = codeEditor.getText();
+        int caret = codeEditor.getCaretPosition();
+        int line = 1;
+        for (int i = 0; i < caret; i++) if (text.charAt(i) == '\n') line++;
+        int sourceLine = line, column = caret - text.lastIndexOf('\n', Math.max(-1, caret - 1)) - 1;
+        querySync(
+                () -> pdf.syncDestination(index.forward(file, sourceLine, column)),
+                destination -> {
+                    pdfPreviewPane.reveal(destination);
+                    statusLabel.setText(
+                            vietnameseUi
+                                    ? "Đã đến vị trí tương ứng trong PDF."
+                                    : "Showing source location in PDF.");
+                });
+    }
+
+    private void showPdfInSource(PdfSnapshot.Destination location) {
+        if (!canSyncPdf()) return;
+        SyncTexService index = syncTex;
+        var point =
+                pdfPreviewPane.snapshot().syncPoint(location.page(), location.x(), location.y());
+        querySync(
+                () -> index.inverse(point.page(), point.x(), point.y()),
+                source -> {
+                    if (!source.file().equals(currentFile) && !openFile(source.file())) return;
+                    if ("pdf".equals(settings.get(AppSettings.LAYOUT)))
+                        settings.set(AppSettings.LAYOUT, "split");
+                    stage.toFront();
+                    selectTreePath(source.file());
+                    String text = codeEditor.getText();
+                    int offset = 0;
+                    for (int line = 1; line < source.line(); line++) {
+                        int next = text.indexOf('\n', offset);
+                        if (next < 0) {
+                            offset = text.length();
+                            break;
+                        }
+                        offset = next + 1;
+                    }
+                    int end = text.indexOf('\n', offset);
+                    if (end < 0) end = text.length();
+                    codeEditor.positionCaret(Math.min(end, offset + source.column()));
+                    codeEditor.setScrollTop(
+                            Math.max(
+                                    0,
+                                    (source.line() - 1) * codeEditor.getFont().getSize() * 1.4
+                                            - codeEditor.getHeight() / 3));
+                    codeEditor.requestFocus();
+                    statusLabel.setText(source.file() + ":" + source.line() + " · SyncTeX");
+                });
+    }
+
+    private boolean canSyncPdf() {
+        if (pdfPreviewPane == null || !pdfPreviewPane.canExport()) return false;
+        if (syncTex != null) return true;
+        statusLabel.setText(
+                vietnameseUi
+                        ? "Chưa có SyncTeX. Biên dịch lại; kiểm tra công cụ synctex cạnh latexmk trong bản TeX đã chọn."
+                        : "SyncTeX unavailable. Recompile and check for synctex beside your selected latexmk.");
+        return false;
+    }
+
+    private <T> void querySync(
+            java.util.concurrent.Callable<T> query, java.util.function.Consumer<T> result) {
+        Path root = activeProjectRoot;
+        PdfSnapshot pdf = pdfPreviewPane.snapshot();
+        String file = currentFile;
+        long workspace = workspaceGeneration, revision = pdfInputRevision;
+        Task<T> task =
+                new Task<>() {
+                    @Override
+                    protected T call() throws Exception {
+                        if (!pdf.inputFingerprint().equals(ProjectInputs.fingerprint(root)))
+                            throw new IOException(
+                                    "Source changed. Recompile before SyncTeX / Nguồn đã đổi, cần biên dịch lại.");
+                        return query.call();
+                    }
+                };
+        java.util.function.BooleanSupplier valid =
+                () ->
+                        root.equals(activeProjectRoot)
+                                && workspace == workspaceGeneration
+                                && revision == pdfInputRevision
+                                && file.equals(currentFile)
+                                && pdfPreviewPane.snapshot() == pdf
+                                && pdfPreviewPane.canExport();
+        task.setOnSucceeded(e -> {
+            if (valid.getAsBoolean()) result.accept(task.getValue());
+        });
+        task.setOnFailed(e -> {
+            if (valid.getAsBoolean()) {
+                statusLabel.setText(task.getException().getMessage());
+                appendLog("[SYNCTEX] " + task.getException().getMessage());
+            }
+        });
+        syncQueries.execute(task);
     }
 
     private boolean requireCurrentPdf() {

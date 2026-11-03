@@ -217,6 +217,7 @@ public class LatexCompilerService {
                             req.engine.flag(),
                             "-interaction=nonstopmode",
                             "-file-line-error",
+                            "-synctex=1",
                             "-outdir=" + OUT_DIR,
                             req.mainTexFile);
             Path previousLog =

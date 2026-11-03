@@ -13,6 +13,50 @@ class CompileWorkspaceTest {
     @TempDir Path root;
 
     @Test
+    void syncIndexSurvivesUnicodeStagingWithRelativeSourcesAndUnixNewlines() throws Exception {
+        Path project = Files.createDirectories(root.resolve("Đồng bộ/build")).getParent();
+        Files.writeString(project.resolve("main.tex"), "source");
+        try (var workspace = CompileWorkspace.prepare(project)) {
+            Files.createDirectories(workspace.directory().resolve("chapters"));
+            Files.writeString(workspace.directory().resolve("build/main.pdf"), "PDF");
+            try (var gzip =
+                    new java.util.zip.GZIPOutputStream(
+                            Files.newOutputStream(
+                                    workspace.directory().resolve("build/main.synctex.gz")))) {
+                gzip.write(
+                        ("SyncTeX Version:1\nInput:1:"
+                                        + workspace.directory().resolve("main.tex")
+                                        + "\nInput:2:\""
+                                        + workspace.directory().resolve("chapters/part one.tex")
+                                        + "\"\nContent:\n")
+                                .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            workspace.publishPdf("main.pdf");
+        }
+        try (var gzip =
+                new java.util.zip.GZIPInputStream(
+                        Files.newInputStream(project.resolve("build/main.synctex.gz")))) {
+            String index = new String(gzip.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(index.contains("Input:1:./main.tex\n"));
+            assertTrue(index.contains("Input:2:./chapters/part one.tex\n"));
+            assertFalse(index.contains("\r"));
+        }
+    }
+
+    @Test
+    void successfulBuildWithoutSyncDataDropsPreviousIndex() throws Exception {
+        Path project = Files.createDirectories(root.resolve("No index/build")).getParent();
+        Files.writeString(project.resolve("main.tex"), "source");
+        try (var workspace = CompileWorkspace.prepare(project)) {
+            Files.writeString(project.resolve("build/main.synctex.gz"), "old index");
+            Files.deleteIfExists(workspace.directory().resolve("build/main.synctex.gz"));
+            Files.writeString(workspace.directory().resolve("build/main.pdf"), "PDF");
+            workspace.publishPdf("main.pdf");
+            assertFalse(Files.exists(project.resolve("build/main.synctex.gz")));
+        }
+    }
+
+    @Test
     void publishedPdfHasItsFinalTexLogAvailableBeforeClosingStaging() throws Exception {
         Path project = Files.createDirectories(root.resolve("Nhật ký/build")).getParent();
         Files.writeString(project.resolve("main.tex"), "source");

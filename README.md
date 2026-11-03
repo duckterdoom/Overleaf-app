@@ -41,7 +41,7 @@ Source code nằm trong `modules/*/src/main/java`. Các thư mục `target/` và
 macOS / Linux:
 
 ```bash
-./scripts/run-client.sh
+sh scripts/run-client.sh
 ```
 
 Windows:
@@ -53,6 +53,8 @@ scripts\run-client.bat
 Sau khi mở app: **tạo tài khoản → tạo hoặc mở dự án → bắt đầu viết**. Dữ liệu local được lưu trong `~/OverleafDesktop`.
 
 Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt thông dụng. Để chỉ kiểm tra build, chạy `scripts\run-client.bat -BuildOnly`.
+
+Trên **macOS**, xem [hướng dẫn cài và chạy](docs/MACOS.md). Launcher hỗ trợ `sh scripts/run-client.sh --check` để kiểm môi trường và `--build-only` để chỉ build. Sau khi chuẩn bị JDK/Maven/MacTeX, có thể cấp quyền rồi nhấp đúp **Overleaf Desktop.command**. Đây là chạy từ source, chưa phải bộ cài `.dmg`/`.app` độc lập.
 
 ## Sử dụng
 
@@ -67,6 +69,8 @@ Trên Windows, launcher tự tìm JDK và Maven trong các vị trí cài đặt
 | Thêm file hoặc thư mục | Dùng **Thêm tệp**, **Thư mục mới** hoặc menu chuột phải |
 | Upload tài nguyên | Chọn **Tải lên**, kéo thả hoặc dán file/ảnh |
 | Xem và xuất PDF | Compile, xem preview, sau đó chọn **Export PDF…** |
+| Mã nguồn → PDF | Đặt con trỏ rồi bấm **Đến PDF / Show in PDF**; vị trí được tô vàng |
+| PDF → mã nguồn | Nhấp đúp đoạn văn trong PDF để mở đúng file và dòng nguồn |
 | Đổi tên hoặc xóa | Nhấp chuột phải vào file hoặc dự án |
 | Kết nối phòng | Menu `⋯` → **Connect room…** |
 
@@ -77,6 +81,8 @@ Math và List mở menu chọn dạng chèn. Comment bật/tắt chú thích LaT
 ### Compile và PDF
 
 Preview hiển thị PDF thật do compiler tạo. Sau khi sửa source, cần compile thành công trước khi xem hoặc xuất bản mới.
+
+SyncTeX hai chiều hỗ trợ file chương và đường dẫn dự án tiếng Việt; cần compile lại bằng bản app mới và có công cụ `synctex` cạnh `latexmk` trong bộ TeX đã chọn. Nguồn stale/compile lỗi sẽ khóa đồng bộ. Viewer tái sử dụng PDF document/renderer trên luồng nền và chỉ giữ ảnh quanh trang đang xem. Cách dùng, giới hạn và benchmark tài liệu lớn tại [PDF_PERFORMANCE.md](docs/PDF_PERFORMANCE.md).
 
 Trong **Settings → Compilation / Biên dịch**, bạn có thể chọn `latexmk`, đổi timeout và kiểm tra toolchain. Để trống đường dẫn nếu muốn app tự tìm compiler.
 
@@ -120,10 +126,10 @@ Hiện phòng cộng tác đồng bộ `main.tex`. Server lưu trạng thái ph�
 ## Chạy test
 
 ```bash
-mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,ProjectTemplatesTest,TemplatePrerequisitesTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
+mvn test -Dtest='MessageCodecTest,ResyncTransferTest,ConnectionScopeTest,NetworkingTest,NetworkClientTest,M4CollaborationTest,OfflineResyncTest,ProjectFileManagerTest,ProjectHistoryTest,WorkspaceFilesTest,LocalBackendTest,ProjectWorkflowTest,ProjectTemplatesTest,TemplatePrerequisitesTest,CompileWorkspaceTest,LatexCompilerServiceTest,LatexToolchainTest,LatexErrorExplainerTest,PdfSnapshotTest,SyncTexServiceTest,EditorInsertionsTest' -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
-Bộ test chọn lọc gồm **143 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test nằm trong [AI_Handoff.md](docs/AI_Handoff.md); thư viện mẫu có ma trận **174 build thật** và smoke UI mở rộng (§28), bên cạnh toolbar/history/layout (§26–27).
+Bộ test chọn lọc gồm **148 test**, không cần MongoDB hoặc TeX thật. Hướng dẫn smoke test nằm trong [AI_Handoff.md](docs/AI_Handoff.md); thư viện mẫu có ma trận **174 build thật** và smoke UI mở rộng (§28), bên cạnh toolbar/history/layout (§26–27) và SyncTeX/benchmark PDF (§30).
 
 ## Server và triển khai
 

@@ -1,5 +1,9 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — chạy trên Mac (03/11/2026):** bổ sung launcher kiểm JDK 21/Maven, tự tìm Homebrew JDK/MacTeX, `--check`/`--build-only`, file nhấp đúp `.command`. Xem **mục 31** và [MACOS.md](MACOS.md). Chưa xác nhận native trên máy Mac.
+
+> **Mới nhất — PDF/hiệu năng (02/11/2026):** SyncTeX hai chiều, renderer tái sử dụng document, benchmark **248 trang**; **148/148 JUnit**, 6 native SyncTeX build và smoke UI/hồi quy PDF đạt. Xem **mục 30** và [PDF_PERFORMANCE.md](PDF_PERFORMANCE.md).
+
 > **Mới nhất — thư viện mẫu resource (02/11/2026):** triển khai yêu cầu trong `yêu cầu.md.md`: **29 mẫu gốc Anh/Việt**, gallery tìm kiếm/lọc, metadata JSON, preflight package/Biber và cài TinyTeX sau xác nhận. **143/143 JUnit chọn lọc**, **174/174 build thật**, UI/import smoke mở rộng đạt. Xem **mục 28**, [hướng dẫn thư viện](TEMPLATE_LIBRARY.md) và [ma trận kết quả](TEMPLATE_VALIDATION.md).
 
 > **Mới nhất — Auto Compile / History / Layout (02/11/2026):** thêm menu chế độ compile, tự chạy sau 1 giây ngừng gõ; History local có checkpoint, so sánh, nhãn và khôi phục; Layout chia đôi/editor/PDF/cửa sổ riêng/focus. **137/137 JUnit chọn lọc đạt**, smoke JavaFX + compile thật đạt. Xem **mục 27**.
@@ -880,3 +884,64 @@ Phân công là trách nhiệm module khi bàn giao, không xác nhận member t
 - Cách thêm mẫu mới và schema/manifest/placeholder/package mapping được ghi trong [TEMPLATE_LIBRARY.md](TEMPLATE_LIBRARY.md). Nội dung mẫu tự viết, không lấy từ Overleaf web; ví dụ citation/CV/thư phải thay và kiểm tra trước sử dụng thực tế.
 
 Chạy `.\scripts\run-client.bat` sau khi đóng app cũ, vào **Dự án mới → Thêm mẫu dự án → Xem tất cả**. Không cần chuyển đổi hay tạo lại dự án cũ.
+
+## 29. Kiểm thử lại và đối chiếu 8 tiêu chí với Overleaf web
+
+Ngày **02/11/2026**, nhánh Network, HEAD runtime **2310f6c**. Đây là lượt review/test và cập nhật tài liệu; không sửa runtime hay dự án thật. Báo cáo cũ ngày 01/11 đã được thay bằng [đánh giá hiện tại](DANH_GIA_SO_SANH_OVERLEAF.md), đủ 8 tiêu chí, nguồn chính thức, giới hạn và việc cần làm tiếp.
+
+- Chạy lại **143/143 JUnit chọn lọc đạt**, 0 failure/error/skip; common 9, server 21, client 113. Không chạy integration MongoDB. Log target/template-library-tests.log.
+- Chạy lại **15 build native** trên ba engine: first/unchanged/edit/TikZ/template. Cache reuse được assert từ log, không chỉ dựa vào thời gian. Kết quả first/unchanged/edit (ms): pdfLaTeX **526/199/403**, XeLaTeX **915/239/461**, LuaLaTeX **2340/277/1075**. Một lượt/tình huống, tài liệu nhỏ, không phải benchmark đối chứng Overleaf.
+- Năm smoke UI chạy lại đều đạt: **history/layout/auto**, **PDF liên tục + hyperlink**, **preview/export**, **toolbar**, **gallery/tạo dự án**. Log target/comparison-20261102-{history,pdf,export,editor,gallery}.log; home riêng cùng prefix. Preview/export PDF 7 trang khớp bytes, stale/error chặn export; PDF link dùng tài liệu 13 trang.
+- Ma trận **174/174 compile mẫu** và import Word/Markdown/GitHub là bằng chứng đã chạy cùng ngày ở §28; không tuyên bố đã rerun toàn bộ trong lượt này.
+- Đối chiếu website chính thức: timeout **10s Free / 240s Premium**; web có cache, compiler/TeX Live selection, Vim/Emacs, project search, SyncTeX và Error Assist. Free có 1 collaborator và basic AI allowance; history Free 24 giờ cùng bản có label. URL hỗ trợ từng nhận định ở báo cáo.
+- Lợi thế đã có: chủ động toolchain/timeout, luồng dữ liệu local, giải thích lỗi Việt bằng rule offline, history local không paywall trong code, mẫu Việt/Anh dùng offline khi package đã sẵn. PDF thật/toolbar/gallery/layout là cải thiện so với app trước; không tự động chứng minh vượt web.
+- Khoảng thiếu: SyncTeX/texlab/plugin/multi-cursor/Git branch-merge; cộng tác mới main.tex, pending queue/server room còn RAM; chưa ACL account/project đầy đủ; file/history chưa mã hóa trên ổ đĩa. History giới hạn **1.024 revision / 128 MiB/project**, mỗi bản text 2 MiB. Server mặc định 64 kết nối không phải đã stress-test 64 người.
+- Chưa ngắt internet toàn máy, benchmark app-vs-web, thử máy sạch hoặc native macOS/Linux. TLS có test token/hostname nhưng chưa security audit. Không suy diễn Maven offline là máy không mạng. Installer missing-package dùng mock, không download để thử.
+- Helper chạy lại nằm target/comparison-{compile,history,pdf,export,editor,gallery}.cmd, đều Git ignore. Không commit/push ở lượt này.
+
+## 30. Cải thiện tiêu chí 4: SyncTeX hai chiều và PDF lớn
+
+Ngày **02/11/2026**, theo yêu cầu cải thiện PDF/hiệu năng. Thay đổi đang ở working tree; không commit/push. Bản trước đã có PDF thật/scroll/link/export cùng bytes; phiên này bổ sung đồng bộ nguồn/PDF và tối ưu renderer, không thay giao thức hay MongoDB.
+
+### 30.1 Chức năng và file bàn giao
+
+- **M1 — giao diện workspace:** OverleafFxApp nối nút **Đến PDF / Show in PDF** và nhấp đúp PDF. Forward lấy file/dòng/cột ở con trỏ, inverse mở đúng file chương/dòng; PDF only tự về split, cửa sổ editor được đưa lên trước. Task chạy nền và kiểm project/file/revision/snapshot trước callback; fingerprint nguồn trên đĩa được kiểm trước query. Giữ guard stale/error/export.
+- **M1 — viewer:** PdfPreviewPane hiển thị vị trí bằng marker vàng; Back quay lại; link một lần vẫn riêng. Actions dùng FlowPane để có thể xuống hàng. Sync bị khóa khi PDF không current; thiếu tool/index chỉ báo cần recompile/kiểm toolchain, không phá preview/export.
+- **M2 — compiler:** LatexCompilerService thêm -synctex=1. CompileWorkspace publish .synctex.gz trước callback, remap Input về đường dẫn tương đối và LF để index không phụ thuộc staging ASCII đã bị xóa. Bỏ index cũ khi build thành công không có index mới.
+- **M2 — SyncTeX:** SyncTexService nạp index bất biến theo PDF, gọi CLI view/edit bằng argv, timeout 10s; scratch chỉ chứa index và PDF placeholder, không copy hàng chục MB PDF mỗi click. Không chạy command editor/viewer từ output hoặc SYNCTEX_EDITOR/VIEWER; chỉ cho nguồn .tex trong real project root. Có kiểm path/symlink, cap index 32 MiB và output đọc 64 KiB.
+- **M2 — render:** PdfSnapshot.RenderSession tái sử dụng PDDocument/PDFRenderer trên luồng render của viewer. Đóng session khi reset/đổi PDF/close; generation guard cũ vẫn giữ. Giới hạn 24 triệu pixel ảnh giữ, 12 triệu/trang vẫn áp dụng, không phải giới hạn tổng RAM. Chuyển tọa độ SyncTeX có crop/rotation/MediaBox lệch gốc.
+- **M5 — kiểm thử:** thêm SyncTexServiceTest, SyncTexSmoke, SyncTexUiSmoke, PdfPerformanceSmoke; mở rộng CompileWorkspaceTest, LatexCompilerServiceTest, PdfSnapshotTest.
+- Phân công là phạm vi trách nhiệm module khi bàn giao, không phải xác nhận member tự viết code của phiên AI.
+
+### 30.2 Kết quả xác nhận
+
+- **148/148 JUnit chọn lọc đạt** (common 9 + server 21 + client 118), không failure/error/skip; target/pdf-performance-tests.log. Không chạy MongoDB integration.
+- **6/6 native SyncTeX build đạt**: 3 engine × root ASCII/tiếng Việt, file chương có dấu cách, forward/inverse đúng file/dòng, chặn đi ngoài project. target/synctex-native-03; log target/synctex-native.log.
+- **SyncTexUiSmoke đạt**: nút source → PDF, double-click PDF → file chương/dòng 4, từ PDF only hiện lại split, stale chặn. target/synctex-ui-03, log target/synctex-ui.log; đã xem ảnh synctex-preview.png.
+- Hồi quy **PdfPreviewUiSmoke đạt**: PDF 7 trang, pixels, export đúng bytes, stale/error/recovery/isolation; target/pdf-sync-export-01.log.
+- Hồi quy **PdfContinuousUiSmoke đạt**: PDF 13 trang, scroll/link/Back/zoom/reset/bounded images; target/pdf-sync-continuous-01.log.
+- **Benchmark 248 trang đạt**, 120 file chương + 12 PNG + TikZ/bảng/hyperref; PDF 11.708.355 byte. Native 11 compile (cold 1, warm 5, small edit 5), so 24 mẫu render mỗi chiến lược, 18 lượt điều hướng UI, kiểm pixel lấy mẫu/export và SyncTeX chương cuối.
+- Cold 7.855 ms (n=1), warm p50/p95 267/289 ms, small edit 4.794/4.938 ms. Render mở lại document mỗi trang p50/p95 **26/139 ms**, reuse **12/85 ms**. UI navigation **22/68 ms**; metadata read 364 ms, first visible sau nạp snapshot 368 ms. Viewer mở document 1 lần; max 3 ảnh / 3.271.752 pixel sau đợi renderer ổn định. target/pdf-performance-02/results.md và target/pdf-performance.log.
+- Chỉ kết luận cải thiện trong workload local đã đo, chưa app-vs-Overleaf benchmark; chưa đo RSS/native/GPU, frame-time liên tục, nghìn trang hay macOS/Linux. p95 từ mẫu nhỏ không phải cam kết. SyncTeX phụ thuộc TeX và có thể chỉ chính xác tới dòng/macro/float gần nhất.
+- Spotless các file Java sửa/thêm đạt; target/pdf-performance-format.log. Helper/generator/binary/evidence trong target Git ignore.
+- Build cuối bằng scripts/run-client.bat -BuildOnly đạt BUILD SUCCESS; target/pdf-performance-launcher-build.log.
+
+### 30.3 Sử dụng và điều kiện
+
+Đóng app cũ rồi chạy scripts/run-client.bat; mở dự án và Recompile một lần để có index mới. Đặt con trỏ và bấm Đến PDF, hoặc nhấp đúp đoạn văn trên PDF. Cần synctex cạnh latexmk đã chọn. Phiên này cài package synctex vào target/TinyTeX riêng của workspace để test; không sửa TeX hệ thống và không tự cài trên máy khác. Các file binary target không đi kèm commit code.
+
+Hướng dẫn/benchmark/tái lập và giới hạn ở [PDF_PERFORMANCE.md](PDF_PERFORMANCE.md); README thêm cách điều hướng và test selector mới. Báo cáo [so sánh Overleaf](DANH_GIA_SO_SANH_OVERLEAF.md) đã cập nhật tiêu chí 4; các nhận định cũ “chưa SyncTeX” ở mục lịch sử handoff không còn là trạng thái hiện tại.
+
+## 31. Chuẩn bị chạy source trên macOS
+
+Ngày **03/11/2026**, theo yêu cầu cài/chạy trên Mac. Không có máy Mac trong phiên; không khẳng định JavaFX/compile/SyncTeX native macOS đã được test.
+
+- **M1 — launcher:** scripts/run-client.sh kiểm full JDK 21+/Maven, tìm JDK Homebrew hoặc java_home trên Darwin khi JAVA_HOME chưa hợp lệ, thêm Homebrew bin/MacTeX vào PATH cho Finder. Giữ JAVA_HOME hợp lệ do người dùng chọn; JDK cũ báo lỗi rõ. Build Maven dùng cache target/maven-cache và resolve JavaFX native của máy đang build.
+- Thêm --check (chỉ báo JDK/Maven và optional TeX tools), --build-only/-BuildOnly; lỗi flag không được bỏ qua. Không tự cài brew/JDK/TeX hoặc sửa shell profile/system.
+- **Overleaf Desktop.command** ở root để mở Terminal rồi chạy launcher bằng nhấp đúp; cần chmod +x trên Mac, tài liệu có lệnh. Chưa phải .app/.dmg độc lập, chưa bundle JRE/TeX/sign/notarize.
+- **docs/MACOS.md**: cài Homebrew JDK 21/Maven/MacTeX no GUI, JAVA_HOME dùng brew prefix (không hardcode Intel/ARM), kiểm tool, build/chạy, Finder, Settings latexmk=/Library/TeX/texbin/latexmk, SyncTeX, optional Pandoc/Git và lỗi thường gặp. README đã link hướng dẫn.
+- Không chép binary/cache Windows sang Mac; cần source hiện tại. Các thay đổi local chưa được push nên clone remote có thể chưa chứa các tính năng mới. Local editing không cần MongoDB/server; cộng tác cần server riêng.
+- Đối chiếu lệnh cài với trang chính thức Homebrew/MacTeX ngày 03/11/2026; không cam kết mọi macOS cũ đều được hỗ trợ, cần xem yêu cầu của bản JDK/TeX/Homebrew đang dùng.
+- **Kiểm tra đạt:** POSIX sh -n cho hai entry point và mock Darwin/arm64, Homebrew JDK, đường dẫn project/JDK có dấu cách, check/build/run, JDK 17, thiếu Maven, flag sai. Helper target/check-macos-launcher.sh; evidence target/macos-launcher.Cn8NhF (các lượt sau tạo thư mục mới), kết quả MACOS_LAUNCHER_MOCK_OK. Không chạy Homebrew thật hoặc cài phần mềm hệ thống.
+- .gitattributes hiện đã buộc LF mặc định nên shell/.command giữ newline phù hợp; Git mode launcher 100644, dùng sh hoặc chmod theo docs.
+- Không thay runtime Java ở lượt này; không lặp lại 148 JUnit của §30 chỉ vì thay launcher/docs. Cần nghiệm thu trực tiếp trên Mac bằng --check, mở app, bộ gõ Việt, ba engine/PDF/export/SyncTeX. Không commit/push.

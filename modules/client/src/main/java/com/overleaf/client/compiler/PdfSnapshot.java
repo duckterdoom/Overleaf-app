@@ -34,7 +34,13 @@ public final class PdfSnapshot {
 
     public record Link(double x, double y, double width, double height, Destination destination) {}
 
-    public record PageInfo(double width, double height, List<Link> links) {}
+    public record PageInfo(
+            double width,
+            double height,
+            List<Link> links,
+            double cropLeft,
+            double cropTop,
+            int rotation) {}
 
     private PdfSnapshot(byte[] bytes, List<PageInfo> pageInfo, String fingerprint) {
         this.bytes = bytes;
@@ -84,7 +90,14 @@ public final class PdfSnapshot {
                         // A broken annotation must not prevent viewing/exporting a valid page.
                     }
                 }
-                info.add(new PageInfo(width, height, List.copyOf(links)));
+                info.add(
+                        new PageInfo(
+                                width,
+                                height,
+                                List.copyOf(links),
+                                box.getLowerLeftX() - page.getMediaBox().getLowerLeftX(),
+                                page.getMediaBox().getUpperRightY() - box.getUpperRightY(),
+                                rotation(page)));
             }
             return new PdfSnapshot(bytes, info, fingerprint);
         }
@@ -103,6 +116,72 @@ public final class PdfSnapshot {
     }
 
     public record PageImage(BufferedImage image, float scale) {}
+
+    /**
+     * SyncTeX uses unrotated page points from the top left; the viewer uses rotated crop fractions.
+     */
+    public Destination syncDestination(SyncTexService.PdfPoint point) {
+        PageInfo info = pageInfo(point.page());
+        boolean sideways = info.rotation() == 90 || info.rotation() == 270;
+        double w = sideways ? info.height() : info.width(),
+                h = sideways ? info.width() : info.height();
+        double u = (point.x() - info.cropLeft()) / w, v = (point.y() - info.cropTop()) / h;
+        double[] rotated =
+                switch (info.rotation()) {
+                    case 90 -> new double[] {1 - v, u};
+                    case 180 -> new double[] {1 - u, 1 - v};
+                    case 270 -> new double[] {v, 1 - u};
+                    default -> new double[] {u, v};
+                };
+        return new Destination(
+                point.page(), Math.clamp(rotated[0], 0, 1), Math.clamp(rotated[1], 0, 1));
+    }
+
+    public SyncTexService.PdfPoint syncPoint(int page, double x, double y) {
+        PageInfo info = pageInfo(page);
+        double[] normal =
+                switch (info.rotation()) {
+                    case 90 -> new double[] {y, 1 - x};
+                    case 180 -> new double[] {1 - x, 1 - y};
+                    case 270 -> new double[] {1 - y, x};
+                    default -> new double[] {x, y};
+                };
+        boolean sideways = info.rotation() == 90 || info.rotation() == 270;
+        return new SyncTexService.PdfPoint(
+                page,
+                info.cropLeft() + normal[0] * (sideways ? info.height() : info.width()),
+                info.cropTop() + normal[1] * (sideways ? info.width() : info.height()));
+    }
+
+    /** One document/renderer per viewer session, confined to its background render thread. */
+    public final class RenderSession implements AutoCloseable {
+        private final PDDocument document;
+        private final PDFRenderer renderer;
+
+        private RenderSession() throws IOException {
+            document = Loader.loadPDF(bytes);
+            renderer = new PDFRenderer(document);
+        }
+
+        public PageImage renderPage(int page, float requestedScale) throws IOException {
+            if (page < 0 || page >= pages || !Float.isFinite(requestedScale) || requestedScale <= 0)
+                throw new IllegalArgumentException("Invalid page or zoom.");
+            var box = document.getPage(page).getCropBox();
+            double area = Math.max(1, box.getWidth() * (double) box.getHeight());
+            float scale =
+                    (float) Math.min(requestedScale, Math.min(3, Math.sqrt(12_000_000 / area)));
+            return new PageImage(renderer.renderImage(page, scale, ImageType.RGB), scale);
+        }
+
+        @Override
+        public void close() throws IOException {
+            document.close();
+        }
+    }
+
+    public RenderSession openRenderer() throws IOException {
+        return new RenderSession();
+    }
 
     private static Destination destination(PDDocument doc, PDDestination destination)
             throws IOException {
@@ -159,13 +238,8 @@ public final class PdfSnapshot {
         if (page < 0 || page >= pages) throw new IllegalArgumentException("Page is out of range.");
         if (!Float.isFinite(requestedScale) || requestedScale <= 0)
             throw new IllegalArgumentException("Invalid zoom.");
-        try (var document = Loader.loadPDF(bytes)) {
-            var box = document.getPage(page).getCropBox();
-            double area = Math.max(1, box.getWidth() * (double) box.getHeight());
-            float scale =
-                    (float) Math.min(requestedScale, Math.min(3, Math.sqrt(12_000_000 / area)));
-            return new PageImage(
-                    new PDFRenderer(document).renderImage(page, scale, ImageType.RGB), scale);
+        try (var session = openRenderer()) {
+            return session.renderPage(page, requestedScale);
         }
     }
 

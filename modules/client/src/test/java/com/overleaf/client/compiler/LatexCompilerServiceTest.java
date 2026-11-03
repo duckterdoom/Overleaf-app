@@ -89,6 +89,7 @@ class LatexCompilerServiceTest {
             assertEquals("/custom/tex/latexmk", commands.get(0).get(0));
             assertEquals("keep", Files.readString(build.resolve("cached.aux")));
             assertTrue(commands.get(0).contains("-outdir=build"));
+            assertTrue(commands.get(0).contains("-synctex=1"));
         } finally {
             service.shutdown();
         }

@@ -1,86 +1,87 @@
 # Đánh giá app desktop so với Overleaf web
 
-> **Cập nhật preview/export:** đã thay Canvas bằng PDF viewer thật, Export dùng đúng bytes của PDF được preview, có kiểm tra stale/error; 81 test và smoke tài liệu 7 trang đạt. Xem [AI_Handoff.md §19](AI_Handoff.md#19-preview-đúng-pdf-và-export-cùng-kết-quả-compiler). Chưa có SyncTeX, chưa benchmark tốc độ với Overleaf.
+> **Cập nhật tiêu chí 4 (02/11/2026):** đã bổ sung SyncTeX hai chiều và tái sử dụng PDF renderer; benchmark local 248 trang đạt. 148 JUnit chọn lọc đạt. Xem [cách dùng và số liệu PDF](PDF_PERFORMANCE.md); kết quả các lượt review trước bên dưới có ghi phạm vi riêng.
 
-> **Cập nhật sau đánh giá:** tiêu chí Compile đã được cải thiện: cấu hình toolchain/timeout, Stop, tích hợp Error Explainer; 72 test đạt và đã kiểm chứng PDF thật qua ba engine, cache, TikZ và template tiếng Việt. Xem [AI_Handoff.md §17](AI_Handoff.md#17-cải-thiện-tiêu-chí-1--compile-local-và-kiểm-chứng-pdf-thật). Các bảng/phát hiện bên dưới ghi trạng thái **trước** lần cải thiện này.
+Ngày kiểm tra: **02/11/2026**, nhánh **Network**, HEAD trước cập nhật tài liệu: **2310f6c**. Báo cáo này thay thế đánh giá cũ ngày 01/11; trạng thái Canvas, Error Explainer chưa nối UI và chưa có history trong bản cũ không còn đúng.
 
-Ngày đối chiếu: **01/11/2026**. Nhánh `feat/m1-gui-client`, HEAD `b89dbc5`, kèm thay đổi local hiện có. Đây là đánh giá mã nguồn và kiểm thử cục bộ; không phải benchmark hai sản phẩm trên cùng tài liệu.
+**Kết luận:** app có lợi thế thực tế về chủ động compile local, làm việc với dữ liệu trên máy, giải thích lỗi tiếng Việt bằng rule offline và history local không có paywall trong code. PDF viewer, toolbar, gallery và layout đã tiến bộ rõ so với bản app trước. Chưa có bằng chứng app nhanh hơn hoặc tốt hơn Overleaf trên mọi mặt; cộng tác, SyncTeX và hệ sinh thái editor còn thiếu.
 
-## 1. Kết quả kiểm thử thực tế
+## 1. Đã kiểm thử gì
 
-Chạy Maven thật bằng JDK Microsoft 21.0.13, chế độ offline Maven dùng dependency đã cache. Không gọi test MongoDB, không sửa tài khoản/dự án người dùng. Offline Maven chỉ có nghĩa không tải dependency; các bài networking vẫn dùng socket loopback.
+Không sửa runtime, không sửa dự án/tài khoản thật. Toàn bộ smoke mới dùng home riêng dưới target/. Không đăng nhập hay upload tài liệu lên Overleaf để đo đối chứng. Không tắt card mạng/firewall của máy người dùng.
 
-| Test class | Đạt |
-| --- | ---: |
-| MessageCodecTest | 6 |
-| ResyncTransferTest | 3 |
-| ConnectionScopeTest | 1 |
-| NetworkingTest | 10 |
-| NetworkClientTest | 3 |
-| M4CollaborationTest | 6 |
-| OfflineResyncTest | 5 |
-| ProjectFileManagerTest | 8 |
-| LocalBackendTest | 13 |
-| **Tổng** | **55** |
+| Kiểm chứng | Kết quả và bằng chứng local |
+| --- | --- |
+| JUnit chọn lọc chạy lại | **143/143 đạt**, common 9 + server 21 + client 113; 0 failure/error/skip. target/template-library-tests.log |
+| Compile native chạy lại | **15 build đạt**: 3 engine × lần đầu/không sửa/sửa nhỏ/TikZ/template. target/comparison-20261102-compile.log và comparison-20261102-compile/results.md |
+| History/Auto Compile/layout chạy lại | **Đạt**: debounce, manual, label/restore có backup, lưu lại preference, split/editor/PDF/focus/detach. target/comparison-20261102-history.log |
+| PDF liên tục/link chạy lại | **Đạt**, PDF 13 trang; scroll đổi trang, kiểm pixel render, link từ trang 2 tới trang 5, Back và giới hạn giữ ảnh trang trong bộ nhớ. target/comparison-20261102-pdf.log |
+| Preview/export chạy lại | **Đạt**, PDF 7 trang: pixel khớp renderer của cùng PDF, export cùng bytes, stale/error chặn export, recovery và cách ly dự án. target/comparison-20261102-export.log |
+| Toolbar chạy lại | **Đạt**: đúng thứ tự icon, math/link/comment/ref/citation/figure/table/list/indent; read-only/stale guard, snippet compile PDF thật. target/comparison-20261102-editor.log |
+| Gallery/tạo dự án chạy lại | **Đạt**: Việt/Anh, tìm luận văn/thesis, category/tag, tạo nhiều file/default engine, custom folder/storage/move và consent installer mock. target/comparison-20261102-gallery.log |
+| Ma trận template đã chạy trong phiên triển khai cùng ngày | **174/174 đạt**, 29 mẫu × 2 ngôn ngữ × 3 engine. Không chạy lại toàn bộ ở lượt review này. [Ma trận](TEMPLATE_VALIDATION.md), target/template-import-smoke.log |
+| Import đã chạy trong phiên triển khai cùng ngày | Example, Word, Markdown và GitHub public đạt; không chạy lại ở lượt review này. target/template-import-smoke.log |
 
-Kết quả: **55/55 đạt, 0 lỗi, 0 bỏ qua**. Log local: `target/review-desktop-capabilities.log`; lệnh chạy lại trên máy hiện tại: `target\review-desktop-capabilities.cmd`. Helper/cache/log trong `target/` bị Git ignore.
+143 là bộ chọn lọc, không phải toàn bộ test repository: không chạy integration MongoDB. Các bài giao thức dùng socket loopback; Maven offline không đồng nghĩa đã ngắt internet. TLS có test handshake, token và hostname trong NetworkClientTest; không phải penetration test.
 
-`LatexErrorExplainerTest` cũng được đưa vào bộ chọn nhưng **không được JUnit Platform phát hiện**, do dùng annotation TestNG. Vì vậy không được cộng 8 test của lớp này vào tổng 55. Trong lần review trước, gọi trực tiếp 8 phương thức qua helper thì 8/8 đạt, nhưng đó không phải kết quả Maven phát hiện test tự động.
+Smoke UI điều khiển control/event trong JavaFX với stage ẩn, không phải khảo sát khả năng sử dụng hoặc kiểm thử mobile. Cài package thiếu dùng mock; không tải/cài package thật trong lượt review này.
 
-README đang ghi 52 test, đã cũ so với 55 test phát hiện ở nhánh này. Tên test `templateCompilesVietnameseWithEveryEngine` dễ gây hiểu nhầm: chỉ assert chuỗi template chứa package, không thực sự chạy ba compiler.
+## 2. Đối chiếu đủ 8 tiêu chí
 
-Không tìm thấy `latexmk`, `pdflatex`, `xelatex`, `lualatex` trên PATH của tiến trình kiểm tra. Chưa xác nhận có cài ở nơi khác. Chưa compile PDF/TikZ thật, chưa đo incremental build, CPU/RAM, độ trễ mạng hay thao tác UI ở lần kiểm tra này. Không đăng nhập/chạy tài liệu đối chứng trên Overleaf web.
-
-## 2. Đối chiếu 8 tiêu chí
-
-| Tiêu chí | Code thực tế của nhóm | Kết luận |
+| Tiêu chí | Bản app hiện tại và bằng chứng | Đánh giá so với Overleaf web |
 | --- | --- | --- |
-| 1. Compile | `LatexCompilerService` gọi `latexmk` local, chọn pdfLaTeX/XeLaTeX/LuaLaTeX, thu log nền, gộp yêu cầu chờ, giữ output trong `build/`. Timeout mặc định **120 giây**, có setter nhưng chưa có điều khiển timeout trong UI. | **Có lợi thế về quyền chủ động môi trường compile**, không phụ thuộc hàng đợi dịch vụ cloud. Chưa chứng minh nhanh hơn. Không phải compile vô hạn; mặc định ngắn hơn mức 240 giây của Overleaf Premium. Chưa có Typst, lựa chọn đường dẫn nhiều bản TeX, hoặc điều khiển shell-escape trong UI. Error Explainer chưa nối UI. |
-| 2. Internet | `LocalBackend` đăng ký/đăng nhập và quản lý dự án bằng file trên máy; `ProjectFileManager` đọc/ghi thật. Offline queue và RESYNC có test qua socket thật, kể cả replay không nhân đôi. | **Đã có nền tảng làm việc local/offline rõ ràng**. Compile offline cần toolchain/package có sẵn. Reconnect hiện do người dùng chọn; chưa tự nối lại, queue còn RAM, chưa có Git integration trong sản phẩm. |
-| 3. Editor | Theme/font/cỡ chữ/wrap/tự đóng ngoặc/autosave, syntax highlight, gutter số dòng, outline và tìm trong file đang mở. | Có tùy biến hữu ích nhưng **chưa chứng minh vượt Overleaf**. Chưa có LSP texlab, plugin API, multi-cursor, Vim/Emacs hoặc tìm/thay thế toàn dự án. Git quản lý source dự án này không đồng nghĩa có Git trong app. |
-| 4. Hiệu năng/PDF | `PdfCanvasPane` tự parse một phần LaTeX rồi vẽ Canvas; PDF compile thật mở bằng ứng dụng ngoài. | **Chưa đạt lợi thế preview PDF**. Canvas có thể vẽ ngay cả khi compile lỗi và không đảm bảo giống PDF. Chưa có PDF renderer thật, SyncTeX hai chiều hoặc benchmark dự án lớn. |
-| 5. Giá/giới hạn | Không có paywall/subscription trong code hiện tại. Server hỗ trợ nhiều kết nối, cấu hình mặc định 64 client toàn server; đó không phải số người đã stress-test hay cam kết vận hành. | **Có lợi thế tiềm năng về chi phí cho nhóm tự vận hành**, so với giới hạn cộng tác của gói Free. Vẫn có chi phí máy, điện, VPS và bảo trì; chưa có đủ tính năng thay thế gói trả phí như track changes/lịch sử/reference manager. |
-| 6. Riêng tư/dữ liệu | Dự án mặc định ở `~/OverleafDesktop`; tài khoản local dùng PBKDF2 có salt. Có TLS, truststore, kiểm tra hostname và server riêng. | **Đã có lợi thế kiểm soát nơi lưu và đường đi dữ liệu** so với dịch vụ cloud. TLS chỉ bảo vệ đường truyền; nội dung file chưa mã hóa lúc lưu. Shared token chưa phải quyền truy cập từng tài khoản/project; server chưa lưu bền vững. |
-| 7. Phiên bản/cộng tác | Engine transform operation, ACK, Lamport, presence/cursor, RESYNC, chống replay; các kịch bản đồng thời/offline đã có test. | Cộng tác có hoạt động nhưng **chưa đủ cơ sở nói tốt hơn Overleaf**. Chưa có branch/merge, comment/review/track changes, lịch sử có thể phục hồi qua UI; chỉ đồng bộ `main.tex`, room/history ở RAM. Class mang tên CRDT không phải bằng chứng hội tụ cho mọi kiểu edit. |
-| 8. Template/bibliography/mobile | Tạo dự án từ template dựng sẵn, quản lý file local, template có cấu hình tiếng Việt. | **Chưa chứng minh cải thiện**. Chưa có thư viện template phong phú, quản lý citation/Zotero/Mendeley, visual editor đầy đủ hoặc bản mobile. |
+| **1. Compile** | latexmk local; pdfLaTeX/XeLaTeX/LuaLaTeX; cấu hình executable/timeout, Stop, Auto Compile, cache, Error Explainer tích hợp. Mặc định 120 giây; 0 là không giới hạn theo cấu hình. Ba engine, TikZ và cache đã chạy native. | **Có lợi thế chủ động môi trường và timeout**, không phải chờ dịch vụ compile cloud. Không chứng minh nhanh hơn; không khẳng định tận dụng hết CPU. Chưa Typst hoặc điều khiển shell-escape/công cụ ngoài đầy đủ trong UI. |
+| **2. Internet** | LocalBackend đọc/ghi tài khoản và dự án trên máy, toolchain/PDF renderer local. Tests tạo/lưu/mở lại đạt; UI không cần đăng nhập cloud. Offline RESYNC có test. | **Có lợi thế làm việc local khi mất internet**, nếu Java/dependency/TeX/package đã chuẩn bị. Lần đầu bootstrap/cài package/import URL/GitHub vẫn cần mạng. Chưa test bằng cách ngắt internet toàn máy; chưa tự reconnect bền vững; pending queue vẫn RAM. |
+| **3. Editor** | Highlight, outline có cuộn/divider, theme/font/wrap/autosave, toolbar chèn LaTeX với ref/citation/hình/bảng/list, tìm trong file, layout linh hoạt. Toolbar có UI smoke + compile thật. | **Cải thiện trải nghiệm của app**, có ích cho người dùng Việt. Chưa đủ nói editor vượt web: chưa texlab/LSP, plugin API, multi-cursor, Vim/Emacs, refactoring hoặc tìm/thay thế toàn dự án. Add comment hiện toggle dấu % trong source, chưa phải thread thảo luận/review. |
+| **4. Hiệu năng/PDF** | PDFBox render PDF thật, scroll/link/zoom; **SyncTeX hai chiều** tới file chương/dòng nguồn; renderer dùng lại document. Benchmark **248 trang**, render p50 **12 ms** thay vì **26 ms** khi mở lại document từng trang; điều hướng p95 **68 ms** trong 18 lượt. Export cùng bytes và stale/error guard có hồi quy. | **Đã có SyncTeX và benchmark local**, xác nhận cải thiện render trong workload đã đo. Không giữ raster toàn tài liệu; giữ tối đa 3 ảnh ở các điểm đo. Chưa đối chứng Overleaf web, RSS/native/GPU hoặc benchmark macOS/Linux, nên chưa khẳng định nhanh hơn web. [Bằng chứng và giới hạn](PDF_PERFORMANCE.md). |
+| **5. Giá và giới hạn** | Không thấy paywall/subscription cho history/template/compile trong code đang chạy. History local có label/restore. | **Có lợi ích chi phí phần mềm tiềm năng khi tự vận hành**, đặc biệt so với history đầy đủ của gói Free web. Không đồng nghĩa miễn mọi chi phí hay đã đủ thay gói Premium: máy/VPS/backup/bảo trì vẫn tốn. Không kết luận pháp lý về license toàn sản phẩm từ việc không có paywall. |
+| **6. Riêng tư/dữ liệu** | Dự án mặc định ~/OverleafDesktop, đổi storage/thư mục được. Password local PBKDF2 có salt; server riêng TCP/TLS và hostname verification có code/test. Error Explainer dùng rule local. | **Có lợi thế kiểm soát nơi lưu và chọn server**; compile/explainer không cần gửi nội dung tới cloud trong luồng local. File và history chưa mã hóa trên ổ đĩa; TLS bảo vệ đường truyền khi bật. Shared token chưa phải ACL danh tính/project đầy đủ. Chưa security audit, không khẳng định an toàn hơn cloud tuyệt đối. |
+| **7. Phiên bản/cộng tác** | History local checkpoint/label/restore có backup đã chạy UI; transform operation, ACK, Lamport, presence/cursor, RESYNC/chống replay có test. | **History là bước tiến thật và dùng local không cần gói trả phí**. Cộng tác chưa chứng minh tốt hơn web: chỉ main.tex, pending/room/history đồng bộ còn RAM, chưa branch/merge, track changes, review thread hoặc khôi phục trạng thái server sau restart. |
+| **8. Template/bibliography/mobile** | **29 mẫu, 9 nhóm, Việt/Anh**, metadata/resource, nhiều file/chương/.bib/PNG/CSV; search/category/tag; preflight package/Biber, cài bundled TinyTeX sau xác nhận. Hỗ trợ nhập .bib và trích dẫn từ key. | **Có lợi thế tiện dụng cho người Việt và mẫu có sẵn offline**, đã xác nhận compile qua 174 lượt. Không nói phong phú hơn gallery Overleaf. Nhập .bib từ Zotero/Mendeley/ReadCube chưa phải đồng bộ tài khoản. Chưa visual editor hoàn chỉnh hoặc mobile; không có UX study màn hình nhỏ. |
 
-## 3. Những nhận định về Overleaf cần sửa
+## 3. Số đo compile trên máy này
 
-Các nguồn dưới đây là tài liệu chính thức đã truy cập khi đánh giá, không dựa vào giả định trong đề bài:
+Windows, Microsoft JDK 21.0.13, TinyTeX portable hiện có. Nguồn article nhỏ có công thức và tham chiếu; mỗi tình huống **một lượt/engine**, không lấy trung vị hoặc percentile. Không đo Overleaf trên cùng nguồn. Lúc đo có thể có tác vụ test khác, nên dùng số này làm bằng chứng cache hoạt động, không làm benchmark sản phẩm.
 
-- Timeout hiện được công bố là **10 giây Free / 240 giây Premium**, không phải khoảng 20 giây. Giới hạn và tính năng xem [Plan limits](https://docs.overleaf.com/getting-started/free-and-premium-plans/plan-limits).
-- Gói Free cho **1 cộng tác viên được mời**, ngoài chủ dự án. Một số công cụ AI hiện có allowance cơ bản trên Free; không nên nói tất cả AI đều trả phí. Xem [Plans](https://www.overleaf.com/plans).
-- Overleaf có chọn TeX Live version/compiler, đổi theme và font. Xem [Redesigned editor](https://docs.overleaf.com/getting-started/how-do-i-use-overleaf/redesigned-overleaf-editor).
-- Overleaf có cache auxiliary file và lựa chọn xóa cache/recompile from scratch; không đúng nếu nói luôn compile lại hoàn toàn và không cache. Xem [Clearing cache](https://docs.overleaf.com/troubleshooting-and-support/clearing-the-project-cache).
-- Overleaf có [tìm kiếm toàn dự án và thay thế trong file](https://docs.overleaf.com/navigating-in-the-editor/searching-within-a-project), [Vim/Emacs emulation](https://docs.overleaf.com/navigating-in-the-editor/vim-and-emacs-keybinding), [SyncTeX hai chiều](https://docs.overleaf.com/navigating-in-the-editor/working-with-the-pdf-viewer/moving-between-the-editor-and-pdf).
-- Có thể làm offline bằng editor/toolchain local và các tích hợp đồng bộ; trải nghiệm này khác với mở editor web khi mất mạng. [Git integration](https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/git-integration) là tính năng premium.
-- Overleaf có [Error Assist](https://docs.overleaf.com/integrations-and-add-ons/ai-features/error-assist), nên bộ giải thích lỗi của nhóm không phải ý tưởng Overleaf chưa có. Cơ hội khác biệt là giải thích tiếng Việt, offline, không gửi code ra dịch vụ AI; hiện logic local của nhóm chưa nối vào UI.
+| Engine | Lần đầu (ms) | Không sửa (ms) | Sửa nhỏ (ms) |
+| --- | ---: | ---: | ---: |
+| pdfLaTeX | 526 | 199 | 403 |
+| XeLaTeX | 915 | 239 | 461 |
+| LuaLaTeX | 2340 | 277 | 1075 |
 
-## 4. Điều có thể khẳng định khi trình bày đồ án
+Lượt không sửa được assert có log latexmk “Nothing to do” hoặc “up-to-date”; không suy luận cache chỉ từ việc thời gian giảm. Mỗi engine còn qua một build TikZ và một build template. Kiểm PDF header ở smoke này không đủ xác nhận mọi glyph; tiếng Việt của 29 mẫu đã có kiểm trích text ở ma trận riêng.
 
-> Dự án ưu tiên dữ liệu trên máy người dùng, chỉnh sửa và quản lý file local, có khả năng gọi toolchain LaTeX local và cộng tác qua server TCP/TLS riêng. Các ca kiểm thử hiện có xác nhận giao thức, thao tác file và những tình huống đồng bộ offline đã thiết kế. Chưa có phép đo chứng minh nhanh hơn Overleaf hoặc tương đương toàn bộ tính năng của Overleaf.
+Không dùng số đo này để tuyên bố app nhanh hơn web, compile vô hạn mặc định, tối ưu toàn bộ CPU, hay bảo đảm mọi tài liệu LaTeX bất kỳ.
 
-Không dùng các tuyên bố: “compile không timeout”, “tận dụng hết CPU”, “preview PDF chính xác”, “CRDT không xung đột”, “64 người đã được kiểm chứng”, “dữ liệu đã mã hóa trên ổ đĩa” hoặc “55 test chứng minh vượt Overleaf”.
+## 4. Các giả định về Overleaf cần điều chỉnh
 
-## 5. Thứ tự cải thiện đề xuất
+Thông tin dưới đây đã mở tài liệu chính thức khi review, ngày 02/11/2026; giá/gói có thể đổi sau đó.
 
-1. Nối Error Explainer vào Build output, chuyển test sang JUnit 5, sửa rule nhận diện file thiếu quá rộng. Đây là thay đổi nhỏ, dễ demo lợi ích tiếng Việt/offline.
-2. Cài/định vị toolchain rồi đo PDF thật: lần đầu/lần hai/sửa nhỏ, ba engine, tài liệu có TikZ và nhiều ảnh. Cho cấu hình timeout ở UI.
-3. Render PDF thật trong app, sau đó thêm SyncTeX; đây là khoảng thiếu quan trọng nhất của trải nghiệm soạn LaTeX hiện tại.
-4. Lưu offline queue xuống đĩa, tự reconnect, lưu document/history trên server và xác thực/quyền project. Kiểm tra lại sau restart, mất mạng, ACK thất lạc và edit/xóa chồng nhau.
-5. Thêm tìm/thay thế toàn dự án, Git và texlab theo nhu cầu. Chỉ công bố lợi thế hiệu năng khi có dataset, máy đo và số đo so sánh cụ thể.
+- **Timeout công bố là 10 giây Free / 240 giây Premium**, không phải khoảng 20 giây. [Plan limits](https://docs.overleaf.com/getting-started/free-and-premium-plans/plan-limits).
+- Free cho **1 cộng tác viên được mời/project** và có basic AI allowance. Không nên nói toàn bộ AI đều bị khóa trả phí. Không so giá tiền tuyệt đối vì còn chu kỳ thanh toán, loại plan và hỗ trợ tổ chức. [Plans](https://www.overleaf.com/plans).
+- Overleaf **có chọn compiler và TeX Live version**. Lợi thế local là chủ động cài môi trường/công cụ theo máy, không phải web hoàn toàn không chọn được phiên bản. [Compiler settings](https://docs.overleaf.com/getting-started/recompiling-your-project/selecting-a-tex-live-version-and-latex-compiler).
+- Overleaf **có cache auxiliary file** và Recompile from scratch. Không đúng khi nói lần nào cũng compile từ đầu. [Cache](https://docs.overleaf.com/troubleshooting-and-support/clearing-the-project-cache).
+- Web có **Vim/Emacs emulation**, search toàn dự án và SyncTeX hai chiều. Những phần này không phải lợi thế đã có của app. [Keybindings](https://docs.overleaf.com/navigating-in-the-editor/vim-and-emacs-keybinding), [Search](https://docs.overleaf.com/navigating-in-the-editor/searching-within-a-project), [SyncTeX](https://docs.overleaf.com/navigating-in-the-editor/working-with-the-pdf-viewer/moving-between-the-editor-and-pdf).
+- Free history hiển thị **24 giờ gần nhất và bản đã gắn nhãn**; full history là premium. App history khác về nơi lưu/chi phí tính năng, chưa tương đương version control đầy đủ của dịch vụ. [History](https://docs.overleaf.com/writing-and-editing/history-and-versioning).
+- Overleaf **có Error Assist** giải thích/gợi ý sửa, dùng shared AI allowance. Điểm khác của app là rule tiếng Việt chạy local, không phải khả năng hiểu mọi lỗi hơn AI. [Error Assist](https://docs.overleaf.com/integrations-and-add-ons/ai-features/error-assist).
+- Git integration là premium và cho phép chỉnh sửa local rồi push/pull. Không nên nói không có bất kỳ cách nào làm offline với dự án Overleaf; editor web và quy trình editor local + sync khác nhau. App hiện chỉ import GitHub, chưa là Git client. [Git integration](https://docs.overleaf.com/integrations-and-add-ons/git-integration-and-github-synchronization/git-integration).
 
-## 6. Kịch bản nghiệm thu tiếp theo
+## 5. Giới hạn kỹ thuật đáng chú ý của app
 
-| Kịch bản | Điều kiện đạt | Trạng thái lần này |
-| --- | --- | --- |
-| Tắt internet, mở app, đăng nhập local, tạo/mở/lưu lại dự án | Nội dung còn sau đóng/mở app, không cần cloud | Đã test lớp backend/file; chưa thao tác UI với mạng tắt |
-| Compile ba engine, không internet, package có sẵn | Sinh đúng PDF, ghi thời gian/CPU/RAM | Chưa chạy vì không tìm thấy toolchain trên PATH |
-| Compile hai lần và sửa một dòng | Đọc log latexmk để xác nhận reuse; đo bằng cùng tài liệu | Chưa đo |
-| Hai client; một offline sửa, client kia online sửa; reconnect | Nội dung khớp, không mất/nhân đôi thao tác trong kịch bản | Test engine/socket hiện có đạt |
-| Kill client khi có pending rồi mở lại | Pending phục hồi từ đĩa | Chưa có persistence queue |
-| Restart server rồi reconnect | Nội dung/history tồn tại | Chưa có persistence đường đồng bộ |
-| Ba client cùng phòng, dự án lớn, mạng trễ/mất gói | Đo p50/p95 và kiểm tra hội tụ, không mất chữ | Chưa benchmark thực tế |
-| So PDF app với output của toolchain | Trang/công thức/hình/font giống PDF thật | Preview Canvas hiện không đủ để đạt |
+- **History local:** text tối đa 2 MiB/bản, 1.024 revision hoặc tổng 128 MiB/project; code báo lỗi khi đạt giới hạn, không có nghĩa lưu lịch sử vô hạn. Đây không phải server audit history.
+- **Cộng tác:** main.tex; ServerConfig mặc định 64 kết nối toàn server, tài liệu tối đa 100.000 ký tự (cấu hình đến 200.000), không phải 64 người đã stress-test hoặc giới hạn cộng tác vượt web. Có vai trò trong engine, nhưng transport sử dụng shared token và chưa gắn quyền project với tài khoản local đầy đủ.
+- **Độ bền:** lưu nội dung/history local trên đĩa khác với lưu queue offline. Queue pending trong OfflineOperationQueue là LinkedHashMap RAM; DocumentSyncManager/OperationHistory cũng RAM. Chưa bảo đảm replay sau kill/restart hoặc server restart.
+- **Compile root:** workspace hiện main.tex, không phải chọn tùy ý main document như web; TinyTeX/package phải có trước để compile offline. UI preflight áp dụng TEMPLATE; không phải mọi tài liệu import được tự sửa/cài dependency.
+- **Tương thích:** kiểm chứng Windows hiện tại; chưa chạy native trên macOS/Linux, máy sạch không mạng hoặc stress tài liệu rất lớn. Không chứng minh mọi PDF bất kỳ đúng nội dung chỉ bằng equality với output compiler.
 
-Không sửa runtime theo các đề xuất trong báo cáo này.
+Các điểm code đối chiếu: modules/client/.../compiler/LatexCompilerService.java, ui/OverleafFxApp.java, ui/PdfPreviewPane.java, compiler/PdfSnapshot.java, workspace/ProjectHistory.java, ui/backend/LocalBackend.java, ProjectTemplates.java, TemplatePrerequisites.java; modules/common/.../sync/OfflineOperationQueue.java; modules/server/.../collab/DocumentSyncManager.java và net/ServerConfig.java.
+
+## 6. Thứ tự cải thiện tiếp theo
+
+1. **Chọn compile root** và mở rộng kiểm chứng SyncTeX cho tài liệu đặc thù; SyncTeX hai chiều đã triển khai, giữ kiểm export stale/error hiện có.
+2. **Queue offline bền vững + reconnect có backoff + server persistence**, rồi test kill/restart/ACK thất lạc và sửa/xóa chồng nhau.
+3. **Đồng bộ nhiều file và ACL theo project/tài khoản**, trước khi công bố dùng cho nhóm nghiên cứu thực tế.
+4. **Tìm/thay thế toàn dự án và texlab**, sau đó Git commit/diff/branch/merge nếu nhu cầu thật sự cần.
+5. **Benchmark có phương pháp**: cùng nguồn và TeX version trên app/web, lặp nhiều lần, cold/warm/edit, sách có hình/TikZ, p50/p95 latency, CPU/RAM; đánh giá màn hình nhỏ riêng.
+
+Câu có thể dùng khi thuyết trình: “Ứng dụng ưu tiên dữ liệu và toolchain local, hỗ trợ ba engine, preview/export cùng PDF đã kiểm chứng, giải thích lỗi tiếng Việt offline, history local và 29 mẫu song ngữ. Các kiểm thử xác nhận các kịch bản đã thiết kế; chưa chứng minh hiệu năng hoặc cộng tác vượt Overleaf web.”

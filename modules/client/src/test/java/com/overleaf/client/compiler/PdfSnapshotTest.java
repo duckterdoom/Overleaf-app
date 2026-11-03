@@ -29,6 +29,35 @@ class PdfSnapshotTest {
     @TempDir Path root;
 
     @Test
+    void syncCoordinatesRoundTripAcrossRotationsAndCroppedPages() throws Exception {
+        Path path = root.resolve("rotated-sync.pdf");
+        try (PDDocument doc = new PDDocument()) {
+            for (int rotation : new int[] {0, 90, 180, 270}) {
+                PDPage page = new PDPage(new PDRectangle(10, 15, 600, 800));
+                page.setCropBox(new PDRectangle(30, 45, 500, 700));
+                page.setRotation(rotation);
+                doc.addPage(page);
+            }
+            doc.save(path.toFile());
+        }
+        var pdf = PdfSnapshot.read(path, "");
+        for (int p = 0; p < 4; p++) {
+            var point = pdf.syncPoint(p, .25, .6);
+            var back = pdf.syncDestination(point);
+            assertEquals(.25, back.x(), .0001);
+            assertEquals(.6, back.y(), .0001);
+        }
+        assertEquals(145, pdf.syncPoint(0, .25, .6).x(), .001);
+        assertEquals(490, pdf.syncPoint(0, .25, .6).y(), .001);
+        try (var renderer = pdf.openRenderer()) {
+            assertEquals(
+                    pdf.render(0, 1).getRGB(10, 10),
+                    renderer.renderPage(0, 1).image().getRGB(10, 10));
+            assertEquals(700, renderer.renderPage(1, 1).image().getWidth());
+        }
+    }
+
+    @Test
     void linkCoordinatesRespectCropOffsetsAndRotatedDestination() throws Exception {
         Path file = root.resolve("links.pdf");
         try (PDDocument doc = new PDDocument()) {
