@@ -4,16 +4,8 @@ cd /d "%~dp0.."
 chcp 65001 > nul
 set "PYTHONUTF8=1"
 set "NEXT_TELEMETRY_DISABLED=1"
-if exist "apps\desktop\.venv\Scripts\python.exe" goto venv_ready
-where py > nul 2>&1
-if errorlevel 1 goto use_python
-py -3.12 -m venv apps\desktop\.venv
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-python.ps1"
 if errorlevel 1 goto failed
-goto venv_ready
-:use_python
-python -m venv apps\desktop\.venv
-if errorlevel 1 goto failed
-:venv_ready
 set "DESKTOP_PYTHON=%CD%\apps\desktop\.venv\Scripts\python.exe"
 "%DESKTOP_PYTHON%" -c "import sys; sys.exit(0 if sys.version_info >= (3,12) else 1)"
 if errorlevel 1 (

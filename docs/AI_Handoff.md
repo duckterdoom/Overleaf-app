@@ -1034,3 +1034,11 @@ Ngoài dependency, latexmk giữ lần chạy lỗi trong .fdb_latexmk nên cài
 Error Explainer phân biệt thiếu TFM (`ppl*` → palatino, `zpl*` → mathpazo) với chọn sai engine; không hướng dẫn đổi fontspec trong trường hợp thiếu metric. UI không in `:0` khi lỗi chưa xác định file/dòng. Log bài còn cảnh báo fancyhdr headheight nhỏ và biblatex không có driver cho kiểu `masterthesis`; đây là cảnh báo định dạng nguồn, không chặn build. Chưa sửa class/bibliography của tác giả.
 
 Kiểm chứng: 124 pytest đạt, có regression cache qua restart/legacy fatal/warm và font metrics; Next.js build/TypeScript đạt. Native trên bản nhập cô lập thành công 6 trang. Đã biên dịch cả project người dùng hiện có: 6 trang, 1.051.412 bytes; lượt phục hồi 7.985 ms, lượt warm 297 ms, cùng SHA-256 `792c8fd916e2b9fb579f4b5d46a0098dec1faefa747dfdeae9183cd6f59f4ca2`. Fingerprint source trước/sau không đổi. PDF xác minh: target/article-zip-repro-01/verified-article.pdf; report user-project-verification.json. Không sửa ZIP gốc, không commit/push.
+
+## 35. Phục hồi launcher Windows khi mất Python runtime (03/11/2026)
+
+Lỗi `uv trampoline failed to spawn Python child process` xuất hiện vì `.venv/pyvenv.cfg` vẫn trỏ tới `target/python-runtimes/cpython-3.12-windows-x86_64-none` nhưng runtime đã mất. Đã khôi phục CPython 3.12.16 bằng uv có sẵn trong repository; dependency trong venv cũ tiếp tục dùng được, không thay đổi dữ liệu dự án.
+
+Thêm `scripts/ensure-python.ps1`, gọi trước khi launcher desktop kiểm dependency: kiểm Python thực sự chạy được và đủ phiên bản, khôi phục runtime bằng uv khi có sẵn; nếu cần tạo lại venv thì giữ bản cũ dưới tên `.venv.backup-<id>` (được Git ignore). Không có uv thì thử Python đã cài, bỏ Windows Store alias và báo hướng dẫn khi thiếu. README giải thích thư mục runtime cần giữ. Server/console vẫn dùng cùng venv; có thể chạy launcher desktop để phục hồi trước.
+
+Kiểm chứng lần này: tình huống runtime mất được phục hồi thành công; `run-python-desktop.bat --build` đạt, Next.js static build/TypeScript đạt và npm audit không có lỗ hổng. `run-python-desktop.bat --smoke` trên home cô lập `target/launcher-repair-smoke` trả `PYTHON_DESKTOP_WINDOW_SMOKE_OK`, thoát mã 0. Không chạy lại toàn bộ pytest vì thay đổi chỉ ở launcher/tài liệu.

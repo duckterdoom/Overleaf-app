@@ -37,6 +37,8 @@ sh scripts/run-python-desktop.sh
 
 `--build` chuẩn bị dependency và build UI rồi thoát; lệnh tiếp theo mở ứng dụng. Launcher tự tạo `apps/desktop/.venv` nếu thiếu. Sau khi sửa frontend, chạy lại `--build`. macOS cũng có launcher `Overleaf Python Desktop.command`.
 
+Windows kiểm tra cả khả năng chạy Python, không chỉ sự tồn tại của `.venv`. Nếu runtime do uv quản lý bị mất, `scripts/ensure-python.ps1` khôi phục Python vào `target/python-runtimes` khi có uv và kết nối mạng; môi trường cần tạo lại sẽ được đổi tên để giữ bản dự phòng. Không xóa thư mục runtime này khi đang dùng `.venv` tương ứng.
+
 Compile cần TeX Live/MacTeX/MiKTeX hoặc TinyTeX phù hợp hệ điều hành. Windows hiện có thể dùng `target/TinyTeX/bin/windows/latexmk.exe`; thư mục này là công cụ local, **không được Git đóng gói sẵn cho máy khác**. Chọn `latexmk` trong **Cài đặt → Biên dịch** nếu app chưa tìm thấy. Không chép TinyTeX Windows hay `.venv` Windows sang macOS.
 
 Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải dependency/package/import online cần mạng; soạn thảo và compile local hoạt động offline khi đã chuẩn bị đủ công cụ và gói TeX. Đây là bản chạy từ source, chưa có bộ cài độc lập `.exe`/`.app`/`.dmg` đã ký.
