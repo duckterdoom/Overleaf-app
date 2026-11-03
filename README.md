@@ -53,7 +53,9 @@ Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải 
 - Preview PDF cuộn nhiều trang, mục lục/link, zoom, cửa sổ PDF riêng và SyncTeX hai chiều. Export dùng đúng snapshot bytes đang preview; nguồn thay đổi hoặc compile lỗi sẽ chặn export cho đến khi compile thành công.
 - Cộng tác `main.tex`: TCP/TLS, presence/cursor, offline queue, reconnect và RESYNC. Chưa đồng bộ toàn bộ cây file; room/queue nằm trong RAM, chưa có CRDT đầy đủ hoặc phân quyền theo tài khoản.
 
-Nút Comment chèn chú thích LaTeX `%`, chưa phải luồng review. Zotero/Mendeley/ReadCube dùng nhập `.bib`, chưa có OAuth. GitHub import chưa phải Git branch/merge.
+Nút Comment mở Review: nhận xét gắn đoạn chọn/dòng, trả lời, giải quyết/mở lại và lọc theo file/tổng quan. Nhận xét lưu local trong `.overleaf-review.json` của dự án, không chèn `%` vào source và chưa đồng bộ qua phòng TCP. Zotero/Mendeley/ReadCube dùng nhập `.bib`, chưa có OAuth. GitHub import chưa phải Git branch/merge.
+
+Thanh icon ngoài cùng bên trái workspace chuyển giữa **Tệp/Outline**, **Review** và **Chat cộng tác**; chỉ một panel hiện mỗi lần, bấm lại icon đang chọn hoặc nút đóng để ẩn. Panel kéo đổi chiều rộng được. Chat hiện là giao diện chờ tích hợp nhiều người dùng, chưa gửi/nhận tin nhắn.
 
 ## Cấu trúc source
 

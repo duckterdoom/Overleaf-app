@@ -19,6 +19,8 @@ import {
     FileText,
     Folder,
     FolderPlus,
+    MessageSquareText,
+    MessagesSquare,
     Grid2X2,
     LayoutPanelLeft,
     Leaf,
@@ -59,6 +61,9 @@ import FileActionsPanel from "../components/FileActionsPanel";
 import useParity from "../lib/useParity";
 import { action, native, translator, type Activity } from "../lib/parity";
 import { localize } from "../lib/i18n";
+import { orderedTree } from "../lib/fileTree";
+import ReviewPanel, { type ReviewAnchor } from "../components/ReviewPanel";
+import { reviewHighlights } from "../lib/reviewHighlights";
 const latex = StreamLanguage.define(stex);
 type Dialog = "project" | "file" | "folder" | null;
 const fold = (text: string) =>
@@ -112,6 +117,14 @@ export default function Workspace() {
         } | null>(null),
         [installing, setInstalling] = useState(false);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+    const [sidePanel, setSidePanel] = useState<
+        "files" | "review" | "chat" | null
+    >("files");
+    const [reviewDraft, setReviewDraft] = useState<ReviewAnchor | null>(null);
+    useEffect(() => {
+        setSidePanel("files");
+        setReviewDraft(null);
+    }, [project?.id]);
     const outlinePane = useRef<HTMLDivElement>(null);
     const revision = useRef(0),
         view = useRef<EditorView | null>(null),
@@ -478,8 +491,52 @@ export default function Workspace() {
     async function refreshFiles(path?: string) {
         if (!project) return;
         setEntries(await json<Entry[]>(`/projects/${project.id}/files`));
+        // Reveal the destination branch after creating/uploading into a folder.
+        const reveal = path ? path.split("/").slice(0, -1).join("/") : folder;
+        setCollapsed(
+            (current) =>
+                new Set(
+                    [...current].filter(
+                        (item) =>
+                            item !== reveal && !reveal.startsWith(item + "/"),
+                    ),
+                ),
+        );
         setStale(true);
         if (path) await openFile({ path, directory: false, editable: true });
+    }
+    function resizeSidebar(event: React.PointerEvent) {
+        event.preventDefault();
+        const pane = event.currentTarget.parentElement!;
+        const rect = pane.getBoundingClientRect();
+        const railWidth =
+            pane
+                .querySelector(".workspace-activity-bar")
+                ?.getBoundingClientRect().width || 0;
+        let width = Number(ext.settings.sidebarWidth) || 270;
+        const move = (event: PointerEvent) => {
+            width = Math.round(
+                Math.max(
+                    200,
+                    Math.min(
+                        600,
+                        rect.width - railWidth - 420,
+                        event.clientX - rect.left - railWidth,
+                    ),
+                ),
+            );
+            pane.style.setProperty("--sidebar-width", width + "px");
+        };
+        const end = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", end);
+            window.removeEventListener("pointercancel", end);
+            ext.setSettings((value) => ({ ...value, sidebarWidth: width }));
+            void action("settings", { sidebarWidth: width });
+        };
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", end);
+        window.addEventListener("pointercancel", end);
     }
     function resizeOutline(event: React.PointerEvent) {
         const pane = outlinePane.current;
@@ -981,11 +1038,80 @@ export default function Workspace() {
                     </section>
                 </div>
             ) : (
-                <div className="workspace-grid">
-                    <aside className="file-sidebar">
+                <div
+                    className="workspace-grid"
+                    style={
+                        {
+                            "--sidebar-width":
+                                (Number(ext.settings.sidebarWidth) || 270) +
+                                "px",
+                        } as React.CSSProperties
+                    }
+                >
+                    <nav
+                        className="workspace-activity-bar"
+                        aria-label={t(
+                            "Thanh công cụ workspace",
+                            "Workspace tools",
+                        )}
+                    >
+                        <button
+                            title={t("Tệp và outline", "Files and outline")}
+                            aria-label={t(
+                                "Tệp và outline",
+                                "Files and outline",
+                            )}
+                            aria-pressed={sidePanel === "files"}
+                            onClick={() =>
+                                setSidePanel(
+                                    sidePanel === "files" ? null : "files",
+                                )
+                            }
+                        >
+                            <FileText size={21} />
+                        </button>
+                        <button
+                            title={t("Nhận xét", "Review")}
+                            aria-label={t("Nhận xét", "Review")}
+                            aria-pressed={sidePanel === "review"}
+                            onClick={() =>
+                                setSidePanel(
+                                    sidePanel === "review" ? null : "review",
+                                )
+                            }
+                        >
+                            <MessageSquareText size={21} />
+                        </button>
+                        <button
+                            title={t("Chat cộng tác", "Collaborator chat")}
+                            aria-label={t("Chat cộng tác", "Collaborator chat")}
+                            aria-pressed={sidePanel === "chat"}
+                            onClick={() =>
+                                setSidePanel(
+                                    sidePanel === "chat" ? null : "chat",
+                                )
+                            }
+                        >
+                            <MessagesSquare size={21} />
+                        </button>
+                    </nav>
+                    <aside
+                        className="file-sidebar"
+                        hidden={sidePanel !== "files"}
+                    >
                         <div className="files-heading">
                             <Folder size={15} />
                             <strong>{localize("Tệp dự án", uiLanguage)}</strong>
+                            <button
+                                className="sidebar-close"
+                                aria-label={t(
+                                    "Đóng tệp và outline",
+                                    "Close files and outline",
+                                )}
+                                onClick={() => setSidePanel(null)}
+                            >
+                                <X size={17} />
+                            </button>
                         </div>
                         <div className="file-actions">
                             <button
@@ -1037,7 +1163,7 @@ export default function Workspace() {
                             }
                         >
                             <div className="file-tree">
-                                {entries
+                                {orderedTree(entries)
                                     .filter(
                                         (entry) =>
                                             ![...collapsed].some((folder) =>
@@ -1054,13 +1180,17 @@ export default function Workspace() {
                                             style={{
                                                 paddingLeft:
                                                     14 +
-                                                    12 *
+                                                    22 *
                                                         (entry.path.split("/")
                                                             .length -
                                                             1),
                                             }}
                                             className={
-                                                entry.path === file
+                                                (
+                                                    entry.directory
+                                                        ? entry.path === folder
+                                                        : entry.path === file
+                                                )
                                                     ? "file-selected"
                                                     : ""
                                             }
@@ -1088,6 +1218,20 @@ export default function Workspace() {
                                                 void openFile(entry);
                                             }}
                                         >
+                                            {entry.directory ? (
+                                                <ChevronRight
+                                                    size={14}
+                                                    className={
+                                                        collapsed.has(
+                                                            entry.path,
+                                                        )
+                                                            ? "tree-chevron"
+                                                            : "tree-chevron expanded"
+                                                    }
+                                                />
+                                            ) : (
+                                                <span className="tree-chevron-spacer" />
+                                            )}
                                             {entry.directory ? (
                                                 <Folder size={15} />
                                             ) : (
@@ -1152,6 +1296,89 @@ export default function Workspace() {
                             {folder || "/"}
                         </div>
                     </aside>
+                    <div
+                        className="workspace-sidepanel"
+                        hidden={sidePanel !== "review"}
+                    >
+                        <ReviewPanel
+                            key={project.id}
+                            project={project.id}
+                            file={file}
+                            source={content}
+                            language={uiLanguage}
+                            editor={view}
+                            draft={reviewDraft}
+                            onDraft={setReviewDraft}
+                            onClose={() => setSidePanel(null)}
+                            openFile={async (path) => {
+                                await openFile({
+                                    path,
+                                    directory: false,
+                                    editable: true,
+                                });
+                            }}
+                        />
+                    </div>
+                    <aside
+                        className="workspace-sidepanel collaborator-chat"
+                        hidden={sidePanel !== "chat"}
+                        aria-label={t(
+                            "Kênh chat cộng tác",
+                            "Collaborator chat channel",
+                        )}
+                    >
+                        <header>
+                            <strong>
+                                {t("Chat cộng tác", "Collaborator chat")}
+                            </strong>
+                            <button
+                                aria-label={t("Đóng chat", "Close chat")}
+                                onClick={() => setSidePanel(null)}
+                            >
+                                <X size={17} />
+                            </button>
+                        </header>
+                        <div className="chat-empty">
+                            <MessagesSquare size={42} />
+                            <h3>{t("Chưa có tin nhắn", "No messages yet")}</h3>
+                            <p>
+                                {t(
+                                    "Kênh trò chuyện cho các thành viên cùng dự án.",
+                                    "A conversation channel for collaborators in this project.",
+                                )}
+                            </p>
+                            <small>
+                                {t(
+                                    "Sẽ được bật khi tích hợp chat nhiều người dùng.",
+                                    "Will be enabled when multiplayer chat is integrated.",
+                                )}
+                            </small>
+                        </div>
+                        <footer>
+                            <textarea
+                                disabled
+                                aria-label={t(
+                                    "Tin nhắn cộng tác",
+                                    "Message collaborators",
+                                )}
+                                placeholder={t(
+                                    "Chat nhiều người dùng chưa được kết nối",
+                                    "Multiplayer chat is not connected yet",
+                                )}
+                            />
+                        </footer>
+                    </aside>
+                    <div
+                        className="sidebar-divider"
+                        hidden={!sidePanel}
+                        role="separator"
+                        aria-label={t(
+                            "Điều chỉnh thanh thư mục",
+                            "Resize file sidebar",
+                        )}
+                        aria-orientation="vertical"
+                        onPointerDown={resizeSidebar}
+                    />
                     <section
                         className={`workspace-content layout-${layout}`}
                         style={
@@ -1182,55 +1409,84 @@ export default function Workspace() {
                                     dirty={dirty}
                                     save={() => void save()}
                                     onError={setError}
+                                    onComment={() => {
+                                        const editor = view.current;
+                                        if (!editor) return;
+                                        const range =
+                                            editor.state.selection.main;
+                                        setReviewDraft({
+                                            file,
+                                            from: range.from,
+                                            line: editor.state.doc.lineAt(
+                                                range.from,
+                                            ).number,
+                                            quote: editor.state
+                                                .sliceDoc(range.from, range.to)
+                                                .slice(0, 20000),
+                                        });
+                                        setSidePanel("review");
+                                    }}
                                 />
-                                <div className="editor-area">
-                                    <CodeMirror
-                                        value={content}
-                                        height="100%"
-                                        theme={
-                                            ext.resolvedDark ? "dark" : "light"
-                                        }
-                                        readOnly={ext.readonly}
-                                        extensions={[
-                                            latex,
-                                            ...(ext.settings.wordWrap
-                                                ? [EditorView.lineWrapping]
-                                                : []),
-                                        ]}
-                                        onChange={change}
-                                        onCreateEditor={(editor) => {
-                                            view.current = editor;
-                                        }}
-                                        onUpdate={(update) => {
-                                            if (
-                                                update.selectionSet &&
-                                                ext.network.joined
-                                            )
-                                                void action("network-cursor", {
-                                                    line: update.state.doc.lineAt(
-                                                        update.state.selection
-                                                            .main.head,
-                                                    ).number,
-                                                    column:
-                                                        update.state.selection
-                                                            .main.head -
-                                                        update.state.doc.lineAt(
-                                                            update.state
-                                                                .selection.main
-                                                                .head,
-                                                        ).from,
-                                                });
-                                        }}
-                                        basicSetup={{
-                                            lineNumbers: true,
-                                            foldGutter: true,
-                                            autocompletion: true,
-                                            closeBrackets: Boolean(
-                                                ext.settings.autoClose,
-                                            ),
-                                            searchKeymap: true,
-                                        }}
-                                    />
+                                <div className="editor-review-row">
+                                    <div className="editor-area">
+                                        <CodeMirror
+                                            className="source-editor"
+                                            value={content}
+                                            height="100%"
+                                            theme={
+                                                ext.resolvedDark
+                                                    ? "dark"
+                                                    : "light"
+                                            }
+                                            readOnly={ext.readonly}
+                                            extensions={[
+                                                latex,
+                                                reviewHighlights,
+                                                ...(ext.settings.wordWrap
+                                                    ? [EditorView.lineWrapping]
+                                                    : []),
+                                            ]}
+                                            onChange={change}
+                                            onCreateEditor={(editor) => {
+                                                view.current = editor;
+                                            }}
+                                            onUpdate={(update) => {
+                                                if (
+                                                    update.selectionSet &&
+                                                    ext.network.joined
+                                                )
+                                                    void action(
+                                                        "network-cursor",
+                                                        {
+                                                            line: update.state.doc.lineAt(
+                                                                update.state
+                                                                    .selection
+                                                                    .main.head,
+                                                            ).number,
+                                                            column:
+                                                                update.state
+                                                                    .selection
+                                                                    .main.head -
+                                                                update.state.doc.lineAt(
+                                                                    update.state
+                                                                        .selection
+                                                                        .main
+                                                                        .head,
+                                                                ).from,
+                                                        },
+                                                    );
+                                            }}
+                                            basicSetup={{
+                                                lineNumbers: true,
+                                                foldGutter: true,
+                                                autocompletion: true,
+                                                closeBrackets: Boolean(
+                                                    ext.settings.autoClose,
+                                                ),
+                                                searchKeymap: true,
+                                            }}
+                                        />
+                                    </div>
                                 </div>
                                 <div className="build-heading">
                                     <Terminal size={15} />

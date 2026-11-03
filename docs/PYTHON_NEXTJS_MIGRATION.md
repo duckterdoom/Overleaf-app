@@ -50,7 +50,7 @@ Nếu dùng pip thay uv: `python -m pip install -e "apps/desktop[desktop,dev,mon
 | Networking M3/M4 | TCP/TLS frame v1/v2, AUTH, hostname/CA, heartbeat, bounded outbox/client/document/history, presence/cursor, OT/Lamport, ACK/ACK_BATCH, pending offline, reconnect/atomic RESYNC chunk/rebase và ROOM_UNKNOWN |
 | Persistence M5 | Module MongoDB repository/service tương ứng Java, tùy chọn pymongo; prototype chưa nối UI/room, giống phạm vi Java hiện có |
 
-Comment là chú thích mã LaTeX %, không phải luồng review. Reference manager dùng xuất/nhập .bib, không có OAuth. GitHub import là clone project public, không phải Git branch/merge. Cộng tác vẫn **main.tex-only** và engine OT đơn giản như Java, không thay tên nó thành CRDT hoàn chỉnh.
+Comment hiện mở Review: nhận xét gắn đoạn chọn/dòng, tô sáng đoạn, trả lời, giải quyết/mở lại, xóa có xác nhận và lọc tệp hiện tại/tổng quan. Dữ liệu lưu local trong `.overleaf-review.json`, không sửa source và chưa đồng bộ qua TCP; khác với track changes. Reference manager dùng xuất/nhập .bib, không có OAuth. GitHub import là clone project public, không phải Git branch/merge. Cộng tác vẫn **main.tex-only** và engine OT đơn giản như Java, không thay tên nó thành CRDT hoàn chỉnh.
 
 ## Cấu trúc và bàn giao
 

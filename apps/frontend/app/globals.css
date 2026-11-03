@@ -1425,8 +1425,135 @@ p {
     display: flex;
     min-height: 0;
 }
+.workspace-grid [hidden] {
+    display: none !important;
+}
+.workspace-activity-bar {
+    width: 46px;
+    flex: 0 0 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    padding-top: 8px;
+    background: #1c252f;
+    color: #e7edf3;
+    border-right: 1px solid #394452;
+}
+.workspace-activity-bar button {
+    width: 36px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
+    border-bottom: 3px solid transparent;
+}
+.workspace-activity-bar button:hover {
+    background: #303d4c;
+}
+.workspace-activity-bar button[aria-pressed="true"] {
+    background: #17623f;
+    border-bottom-color: #d7f5e0;
+    color: white;
+}
+.workspace-sidepanel {
+    width: var(--sidebar-width, 270px);
+    flex: 0 0 var(--sidebar-width, 270px);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    color: var(--ink);
+}
+.workspace-sidepanel .review-panel {
+    width: 100%;
+    max-width: none;
+    flex: 1;
+}
+.sidebar-close {
+    margin-left: auto;
+    padding: 5px;
+}
+.collaborator-chat header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+}
+.chat-empty {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: 14px;
+    padding: 24px 16px;
+}
+.chat-empty h3 {
+    font-size: 16px;
+    font-weight: 600;
+}
+.chat-empty p {
+    font-size: 14px;
+}
+.chat-empty small {
+    font-size: 12px;
+    opacity: 0.7;
+}
+.collaborator-chat footer {
+    border-top: 1px solid var(--line);
+    padding: 12px;
+}
+.collaborator-chat textarea {
+    min-height: 85px;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--soft);
+    resize: none;
+}
+.focus-mode .workspace-activity-bar,
+.focus-mode .workspace-sidepanel,
+.detached-pdf .workspace-activity-bar,
+.detached-pdf .workspace-sidepanel {
+    display: none;
+}
+.sidebar-divider {
+    width: 7px;
+    flex-shrink: 0;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--line);
+}
+.sidebar-divider:hover {
+    background: var(--green);
+}
+.focus-mode .sidebar-divider,
+.detached-pdf .sidebar-divider {
+    display: none;
+}
+.file-tree button > svg {
+    flex-shrink: 0;
+}
+.tree-chevron {
+    transition: transform 0.12s;
+}
+.tree-chevron.expanded {
+    transform: rotate(90deg);
+}
+.tree-chevron-spacer {
+    width: 14px;
+    flex: 0 0 14px;
+}
 .file-sidebar {
-    width: 215px;
+    width: var(--sidebar-width, 270px);
     flex-shrink: 0;
     background: #f8faf7;
     border-right: 1px solid var(--line);
@@ -1466,7 +1593,7 @@ p {
     display: flex;
     width: 100%;
     justify-content: flex-start;
-    font-size: 11px;
+    font-size: 14px;
     padding: 8px 12px;
     color: #75846c;
     gap: 8px;
@@ -1483,7 +1610,7 @@ p {
 }
 .outline-heading {
     border-top: 1px solid var(--line);
-    font-size: 8px;
+    font-size: 11px;
     letter-spacing: 1.3px;
     padding: 14px 15px 8px;
     color: #8a9782;
@@ -1495,7 +1622,7 @@ p {
 .outline button {
     display: block;
     text-align: left;
-    font-size: 10px;
+    font-size: 14px;
     padding: 7px 15px;
     color: #708266;
     line-height: 1.5;
@@ -1506,7 +1633,7 @@ p {
     padding: 5px 15px;
 }
 .folder-target {
-    font-size: 9px;
+    font-size: 12px;
     color: #98a18f;
     padding: 12px 15px;
     border-top: 1px solid var(--line);
@@ -1593,9 +1720,113 @@ p {
     min-height: 80px;
     overflow: hidden;
     font-size: 13px;
+    min-width: 0;
 }
-.editor-area > .cm-theme {
+.editor-review-row {
+    display: flex;
+    flex: 1;
+    min-height: 80px;
+    min-width: 0;
+}
+.review-panel {
+    width: 300px;
+    max-width: 45%;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--panel);
+    color: var(--ink);
+    border-right: 1px solid var(--line);
+    font-size: 14px;
+}
+.review-panel header,
+.review-filters {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+}
+.review-panel button {
+    padding: 6px;
+    border-radius: 4px;
+}
+.review-panel button:hover,
+.review-filters .active {
+    background: var(--soft);
+}
+.review-panel > small,
+.review-resolved {
+    padding: 8px 12px;
+}
+.review-threads {
+    overflow: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+}
+.review-threads article,
+.review-threads > form {
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin-bottom: 12px;
+}
+.review-threads .resolved {
+    opacity: 0.75;
+}
+.review-panel blockquote {
+    margin: 8px 0;
+    padding: 6px 8px;
+    border-left: 3px solid var(--green);
+    max-height: 90px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background: var(--soft);
+}
+.review-panel textarea {
+    width: 100%;
+    min-height: 70px;
+    margin: 8px 0;
+    padding: 8px;
+    background: var(--panel);
+    color: inherit;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    resize: vertical;
+}
+.review-message time {
+    display: block;
+    font-size: 11px;
+    opacity: 0.7;
+}
+.review-message p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    margin: 8px 0;
+}
+.review-location {
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+.review-highlight {
+    background: #c48c3538;
+    border-bottom: 1px solid #c48c35;
+}
+.editor-area > .source-editor {
     height: 100%;
+    min-height: 0;
+    min-width: 0;
+}
+.source-editor .cm-editor {
+    height: 100%;
+    min-height: 0;
+}
+.source-editor .cm-scroller {
+    min-height: 0;
+    overscroll-behavior: contain;
 }
 .cm-editor {
     height: 100%;
@@ -1940,7 +2171,7 @@ p {
         padding: 26px;
     }
     .file-sidebar {
-        width: 180px;
+        width: var(--sidebar-width, 270px);
     }
     .app-header {
         padding: 0 20px;

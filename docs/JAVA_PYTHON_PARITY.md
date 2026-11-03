@@ -33,7 +33,7 @@ Cập nhật theo yêu cầu chuyển **các tính năng thực sự đã có tr
 ## Giới hạn giữ đúng phạm vi
 
 - Room vẫn đồng bộ **main.tex**; shared-token auth, OT đơn giản và queue/room trong RAM. Không tuyên bố CRDT đầy đủ, ACL theo tài khoản hoặc đồng bộ toàn project.
-- Không có Git branch/merge, Zotero/Mendeley OAuth, LSP/plugin, track-changes review nếu Java chưa có. Comment là chú thích LaTeX.
+- Không có Git branch/merge, Zotero/Mendeley OAuth, LSP/plugin hoặc track changes. Python đã bổ sung Review local: nhận xét theo đoạn/dòng, reply/resolve/reopen, lưu riêng source; chưa đồng bộ nhận xét qua room TCP.
 - Snapshot ở RAM; restart cần compile lại. Root Unicode trên Windows dùng staging ASCII; cache giữa các lần staging chưa tối ưu bằng root ASCII.
 - Source launcher đã có cho Mac/Linux nhưng chưa có máy native để nghiệm thu, chưa có installer signed/notarized. Mongo M5 và Compose được nêu rõ mức kiểm chứng.
 - Việc chuyển code không đồng nghĩa chứng minh mọi edge case không còn lỗi. Bằng chứng kiểm thử và đường dẫn report được ghi trong tài liệu migration; không dùng số liệu Java để thay kết quả Python.

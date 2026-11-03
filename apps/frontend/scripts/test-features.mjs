@@ -49,10 +49,114 @@ try {
         .fill("Parity features");
     await page.getByRole("button", { name: "Tạo dự án", exact: true }).click();
     await expect(page.locator(".cm-content")).toBeVisible();
+    // The themed UIW wrapper must constrain CodeMirror, otherwise its content
+    // grows under overflow:hidden and neither wheel nor scrollbars can reach it.
+    const longSource = Array.from(
+        { length: 240 },
+        (_, i) => `% line ${i + 1} ${"long content ".repeat(35)}`,
+    ).join("\n");
+    await page.locator(".cm-content").fill(longSource);
+    const scroller = page.locator(".source-editor .cm-scroller");
+    await scroller.evaluate((el) => {
+        el.scrollTop = 0;
+        el.scrollLeft = 0;
+    });
+    await scroller.hover();
+    await page.mouse.wheel(0, 700);
+    await expect
+        .poll(() => scroller.evaluate((el) => el.scrollTop))
+        .toBeGreaterThan(100);
+    await page.mouse.wheel(500, 0);
+    await expect
+        .poll(() => scroller.evaluate((el) => el.scrollLeft))
+        .toBeGreaterThan(50);
+    const sizes = await scroller.evaluate((el) => ({
+        height: el.clientHeight,
+        parent: el.closest(".editor-area").clientHeight,
+        scroll: el.scrollHeight,
+    }));
+    expect(sizes.height).toBeLessThanOrEqual(sizes.parent);
+    expect(sizes.scroll).toBeGreaterThan(sizes.height);
     const source =
         "\\documentclass{article}\n\\usepackage{hyperref,graphicx}\n\\begin{document}\n\\section{First}\\label{sec:first}\nHello history.\n\\end{document}\n";
     await page.locator(".cm-content").fill(source);
     await page.locator(".save-source").click();
+    // Review is metadata, never a percent-comment edit of the LaTeX source.
+    const beforeReviewSource = await page.locator(".cm-content").innerText();
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("Control+Home");
+    await page.keyboard.press("Control+Shift+ArrowRight");
+    await page.locator("#editor-add-comment").click();
+    const review = page.getByRole("complementary", {
+        name: "Nhận xét",
+        exact: true,
+    });
+    await review
+        .getByLabel("Nội dung nhận xét", { exact: true })
+        .fill("Cần kiểm tra đoạn này");
+    await review
+        .getByRole("button", { name: "Đăng nhận xét", exact: true })
+        .click();
+    await expect(review).toContainText("Cần kiểm tra đoạn này");
+    await review.getByLabel("Trả lời", { exact: true }).fill("Đã kiểm tra");
+    await review
+        .getByRole("button", { name: "Gửi trả lời", exact: true })
+        .click();
+    await expect(review).toContainText("Đã kiểm tra");
+    await expect(page.locator(".review-highlight").first()).toBeVisible();
+    await page.screenshot({ path: path.join(home, "review.png") });
+    await review
+        .getByRole("button", { name: "Đánh dấu đã giải quyết", exact: true })
+        .click();
+    await expect(review.locator("article")).toHaveCount(0);
+    await review.getByLabel("Hiện đã giải quyết", { exact: true }).check();
+    await expect(review.locator("article")).toHaveCount(1);
+    await review.getByRole("button", { name: "Mở lại", exact: true }).click();
+    await review
+        .getByRole("button", { name: "Đóng nhận xét", exact: true })
+        .click();
+    await page.locator("#editor-add-comment").click();
+    await expect(review).toContainText("Cần kiểm tra đoạn này");
+    await review.getByRole("button", { name: "Hủy", exact: true }).click();
+    await review
+        .getByRole("button", { name: "Đóng nhận xét", exact: true })
+        .click();
+    expect(await page.locator(".cm-content").innerText()).toBe(
+        beforeReviewSource,
+    );
+    const rail = page.getByRole("navigation", {
+        name: "Thanh công cụ workspace",
+    });
+    await expect(rail.getByRole("button")).toHaveCount(3);
+    await rail.getByRole("button", { name: "Nhận xét", exact: true }).click();
+    await expect(review).toBeVisible();
+    await expect(page.locator(".file-sidebar")).toBeHidden();
+    expect(await review.evaluate((el) => !!el.closest(".editor-column"))).toBe(
+        false,
+    );
+    await rail
+        .getByRole("button", { name: "Chat cộng tác", exact: true })
+        .click();
+    await expect(review).toBeHidden();
+    const chat = page.getByRole("complementary", {
+        name: "Kênh chat cộng tác",
+    });
+    await expect(chat).toBeVisible();
+    await expect(chat.getByRole("textbox")).toBeDisabled();
+    await page.screenshot({ path: path.join(home, "chat-panel.png") });
+    await rail
+        .getByRole("button", { name: "Tệp và outline", exact: true })
+        .click();
+    await expect(page.locator(".file-sidebar")).toBeVisible();
+    await expect(chat).toBeHidden();
+    await rail
+        .getByRole("button", { name: "Tệp và outline", exact: true })
+        .click();
+    await expect(page.locator(".file-sidebar")).toBeHidden();
+    await expect(page.locator(".sidebar-divider")).toBeHidden();
+    await rail
+        .getByRole("button", { name: "Tệp và outline", exact: true })
+        .click();
     // Toolbar order and operations use the real CodeMirror state, not DOM-only text.
     const ids = await page
         .locator(".full-toolbar button[id]")
@@ -125,6 +229,39 @@ try {
         .fill("chapters/renamed.tex");
     await page.getByRole("button", { name: "Đổi tên", exact: true }).click();
     await expect(page.locator(".file-tree")).toContainText("renamed.tex");
+    const treePaths = await page
+        .locator(".file-tree button")
+        .evaluateAll((nodes) => nodes.map((n) => n.title));
+    expect(treePaths.indexOf("chapters/renamed.tex")).toBe(
+        treePaths.indexOf("chapters") + 1,
+    );
+    expect(treePaths.indexOf("chapters/renamed.tex")).toBeLessThan(
+        treePaths.indexOf("main.tex"),
+    );
+    await page.getByTitle("chapters", { exact: true }).click();
+    await expect(
+        page.getByTitle("chapters/renamed.tex", { exact: true }),
+    ).toHaveCount(0);
+    await page.getByTitle("chapters", { exact: true }).click();
+    await expect(
+        page.getByTitle("chapters/renamed.tex", { exact: true }),
+    ).toBeVisible();
+    const sidebarDivider = page.getByRole("separator", {
+        name: "Điều chỉnh thanh thư mục",
+    });
+    const sidebarBox = await sidebarDivider.boundingBox();
+    const beforeWidth = await page
+        .locator(".file-sidebar")
+        .evaluate((el) => el.clientWidth);
+    await page.mouse.move(sidebarBox.x + 3, sidebarBox.y + 100);
+    await page.mouse.down();
+    await page.mouse.move(sidebarBox.x + 103, sidebarBox.y + 100);
+    await page.mouse.up();
+    await expect
+        .poll(() =>
+            page.locator(".file-sidebar").evaluate((el) => el.clientWidth),
+        )
+        .toBeGreaterThan(beforeWidth + 50);
     const currentId = fs
         .readdirSync(path.join(home, "projects"))
         .find((id) => /^[a-f0-9]{32}$/.test(id));
@@ -236,7 +373,7 @@ try {
     await page.screenshot({ path: path.join(home, "features.png") });
     expect(errors).toEqual([]);
     console.log(
-        "PARITY_UI_OK accounts, toolbar, labels/diff/history, upload, nested file, outline drag, layout, F5, auto compile, preferences, English, profile, remember/activity, system dark, true example template",
+        "PARITY_UI_OK editor vertical/horizontal wheel scrolling, accounts, toolbar, labels/diff/history, upload, nested file, outline drag, layout, F5, auto compile, preferences, English, profile, remember/activity, system dark, true example template",
     );
 } finally {
     await browser?.close();

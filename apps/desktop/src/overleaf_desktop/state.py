@@ -32,6 +32,7 @@ DEFAULTS = {
     "latexmkPath": "",
     "compileTimeoutSeconds": 120,
     "outlineSplit": 0.60,
+    "sidebarWidth": 270,
     "projectsDirectory": "",
     "affiliation": "",
     "lastProject": "",
@@ -132,6 +133,8 @@ class State:
                     raise Problem("Lựa chọn cài đặt không hợp lệ.")
                 if key == "editorFontSize" and not 10 <= value <= 32:
                     raise Problem("Cỡ chữ cần từ 10 đến 32.")
+                if key == "sidebarWidth" and not 200 <= value <= 600:
+                    raise Problem("Chiều rộng thanh thư mục cần từ 200 đến 600.")
                 if key in {"outlineSplit", "editorSplit"} and not 0.1 <= value <= 0.9:
                     raise Problem("Tỉ lệ bố cục không hợp lệ.")
                 updated[key] = value

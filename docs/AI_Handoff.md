@@ -1042,3 +1042,37 @@ Lỗi `uv trampoline failed to spawn Python child process` xuất hiện vì `.v
 Thêm `scripts/ensure-python.ps1`, gọi trước khi launcher desktop kiểm dependency: kiểm Python thực sự chạy được và đủ phiên bản, khôi phục runtime bằng uv khi có sẵn; nếu cần tạo lại venv thì giữ bản cũ dưới tên `.venv.backup-<id>` (được Git ignore). Không có uv thì thử Python đã cài, bỏ Windows Store alias và báo hướng dẫn khi thiếu. README giải thích thư mục runtime cần giữ. Server/console vẫn dùng cùng venv; có thể chạy launcher desktop để phục hồi trước.
 
 Kiểm chứng lần này: tình huống runtime mất được phục hồi thành công; `run-python-desktop.bat --build` đạt, Next.js static build/TypeScript đạt và npm audit không có lỗ hổng. `run-python-desktop.bat --smoke` trên home cô lập `target/launcher-repair-smoke` trả `PYTHON_DESKTOP_WINDOW_SMOKE_OK`, thoát mã 0. Không chạy lại toàn bộ pytest vì thay đổi chỉ ở launcher/tài liệu.
+
+## 36. Sửa cuộn editor workspace (04/11/2026)
+
+Nguyên nhân: CSS `.editor-area > .cm-theme` không khớp wrapper `.cm-theme-light`/`.cm-theme-dark` do UIW tạo khi truyền theme dạng chuỗi. Wrapper thiếu chiều cao giới hạn, CodeMirror nở theo nội dung rồi bị `overflow:hidden` của editor-area cắt, gây không cuộn được đầy đủ.
+
+Thêm class ổn định `source-editor` vào CodeMirror trong `app/page.tsx`, áp dụng height 100%/min-height 0 cho wrapper và editor; scroller giữ overflow auto, giới hạn overscroll trong editor. Không phụ thuộc tên lớp theme. Đã build lại UI static để lần mở app tiếp theo dùng bản sửa.
+
+Kiểm chứng: Next.js production build/TypeScript đạt. Bổ sung browser regression vào `scripts/test-features.mjs` với 240 dòng dài: wheel dọc thực sự đổi scrollTop, wheel ngang đổi scrollLeft, chiều cao scroller không vượt vùng editor. Chạy toàn bộ script trên Edge headless đạt cả kiểm cuộn và các luồng UI sẵn có; bằng chứng trong `target/editor-scroll-01/features.png`. Không thay đổi source dự án của người dùng.
+
+## 37. Cây thư mục theo nhánh và sidebar kéo ngang (04/11/2026)
+
+Thêm `lib/fileTree.ts`: sắp xếp theo từng cấp cha/con, thư mục trước file trong cùng cấp, tên có natural numeric order. Trước đây danh sách phẳng từ backend đặt thư mục trước toàn cục khiến con nằm cách xa cha. Workspace dùng thứ tự mới, thụt mỗi cấp 22px, mũi tên đóng/mở và tô sáng thư mục đích. Sau tạo/upload, mở nhánh thư mục đích để không giấu file mới sau nhánh đã thu gọn.
+
+Thêm separator dọc giữa sidebar và editor: kéo ngang thay đổi đồng thời chiều rộng file tree/outline, mặc định 270px, lưu `sidebarWidth` vào settings, giới hạn 200–600px và chừa vùng editor khi kéo. Separator bị ẩn cùng sidebar trong focus/detached PDF. Cỡ chữ tên file và mục outline tăng lên 14px, tiêu đề outline 11px, đường dẫn đích 12px.
+
+Kiểm chứng: 124 pytest đạt (một deprecation warning đã có); Next.js production build/TypeScript đạt. Browser Edge headless `test-features.mjs` đạt, bổ sung kiểm thứ tự cha/con trước root file, đóng/mở nhánh và kéo sidebar rộng thêm thực tế. Screenshot `target/sidebar-tree-01/features.png`. Đã build UI mới; người dùng đóng/mở lại app để nhận thay đổi. Không di chuyển hoặc đổi cấu trúc file vật lý của dự án.
+
+## 38. Icon Comment mở Review thay vì chèn phần trăm (04/11/2026)
+
+`EditorToolbar` chuyển `editor-add-comment` sang callback Review, không gọi `lineEdit(comment)`. Chọn đoạn rồi bấm icon sẽ mở khung bên trái editor với ô nhận xét; không chọn đoạn thì gắn theo vị trí/dòng. `ReviewPanel.tsx` có tên người dùng/thời gian, trích đoạn, trả lời, giải quyết/mở lại, xóa có xác nhận, lọc tệp hiện tại/tổng quan và hiện đã giải quyết. Click vị trí nhận xét mở tệp và chọn đoạn nguồn. `reviewHighlights.ts` dùng CodeMirror Decoration/StateField tô sáng đoạn chưa giải quyết, map qua thay đổi; tìm lại quote khi cần, không đoán vị trí nếu quote mất hoặc trùng nhiều nơi.
+
+Backend `review.py` lưu atomic/lock trong `.overleaf-review.json` của từng dự án; route GET/POST `/api/projects/{project}/review` dùng session guard API sẵn có. Tên tác giả lấy từ session backend; giới hạn 2.000 thread, 200 message/thread, 10.000 ký tự/message, 20.000 ký tự quote, 8 MiB/project; kiểm path/symlink. File ẩn không vào cây source/fingerprint compile. Source và PDF không bị chèn nhận xét. Lưu bền qua đóng/mở app nhưng **chưa đồng bộ room TCP, chưa track changes/ACL review**. File đổi tên/xóa có thể làm thread giữ đường dẫn cũ; không tự gắn sang file khác.
+
+Kiểm chứng: 126 pytest đạt, gồm test review persistence/reply/resolve/delete, không đổi source/fingerprint, path traversal/validation. Next.js production build/TypeScript đạt. Edge browser regression toàn luồng đạt ở `target/review-comments-03`: đăng/reply/resolve/reopen, đóng/mở panel còn thread, Decoration hiện và nội dung editor trước/sau giữ nguyên. Screenshot `review.png` đã kiểm trực quan. Lần browser đầu chỉ vướng assertion trailing newline DOM, đã sửa test so sánh đúng before/after; không coi lượt lỗi là pass. README/migration/parity cập nhật ngữ nghĩa Comment mới; đã build UI để mở lại app nhận thay đổi.
+
+## 39. Thanh icon trái và panel Tệp/Review/Chat độc lập (04/11/2026)
+
+Workspace có activity bar 46px ngoài cùng bên trái, chỉ ba icon theo phạm vi yêu cầu: tệp, nhận xét (tương ứng icon 4 ảnh tham khảo), chat cộng tác (icon 5). State `sidePanel` chọn files/review/chat hoặc đóng; một panel hiện mỗi lần, icon active có dấu chỉ báo, tooltip/aria-label Anh/Việt. Bấm lại icon hoặc nút đóng sẽ ẩn panel và trả không gian cho editor/PDF.
+
+ReviewPanel chuyển khỏi editor-column sang cột sidebar cạnh activity bar, cùng vị trí với cây tệp/outline. Icon Review chỉ mở danh sách, icon Add comment trong toolbar tiếp tục bắt đoạn chọn và mở ô viết. Giữ panel mounted khi đổi tab để không mất nội dung nhận xét/trả lời đang nhập. Panel đều dùng chiều rộng lưu trong sidebarWidth; sửa phép kéo trừ bề rộng activity bar. Focus/detached PDF ẩn rail/panel phù hợp.
+
+Chat có tiêu đề, nút đóng, empty state và textarea disabled với thông báo chờ tích hợp nhiều người dùng; không giả lập gửi/nhận, chưa có protocol/storage chat. Không thêm các icon search/code/AI ngoài yêu cầu.
+
+Kiểm chứng: production static build/TypeScript đạt; browser Edge toàn luồng đạt ở `target/activity-sidebar-01`. Bổ sung test đúng ba icon, chuyển files/review/chat, review không nằm trong editor-column, đóng/mở panel và separator, chat textbox disabled; các test review/scroll/tree/resize/history/upload/compile trước đó vẫn đạt. Đã xem ảnh `chat-panel.png` trực quan, ảnh `review.png` cũng được lưu; đã build UI mới, cần mở lại app. Không thay đổi backend/network trong mục này.

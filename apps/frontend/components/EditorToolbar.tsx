@@ -50,6 +50,7 @@ export default function EditorToolbar({
     dirty,
     save,
     onError,
+    onComment,
 }: {
     editor: React.RefObject<EditorView | null>;
     project: string;
@@ -59,6 +60,7 @@ export default function EditorToolbar({
     dirty: boolean;
     save: () => void;
     onError: (error: string) => void;
+    onComment: () => void;
 }) {
     const t = translator(language),
         [dialog, setDialog] = useState<Dialog | null>(null),
@@ -348,9 +350,9 @@ export default function EditorToolbar({
                 ))}
                 <button
                     id="editor-add-comment"
-                    title={t("Thêm/bỏ chú thích", "Toggle comment")}
+                    title={t("Thêm nhận xét", "Add comment")}
                     disabled={readonly}
-                    onClick={() => lines("comment")}
+                    onClick={onComment}
                 >
                     <MessageSquarePlus size={16} />
                 </button>

@@ -18,6 +18,16 @@ def register(app, store, compiler):
     sync = SyncTex(store, compiler)
     app.state.install_task = None
     watch_cache = {}
+    from .review import Review
+    review = Review(store)
+
+    @app.get("/api/projects/{project}/review")
+    def get_review(project: str):
+        return review.read(project)
+
+    @app.post("/api/projects/{project}/review")
+    async def update_review(project: str, request: Request):
+        return review.update(project, await request.json())
     from .network import NetworkSession
 
     store.network = NetworkSession(store)
