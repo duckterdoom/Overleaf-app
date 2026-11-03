@@ -37,6 +37,7 @@ import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -74,6 +75,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 /**
@@ -190,15 +192,24 @@ public class OverleafFxApp extends Application {
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
         primaryStage.setTitle("Overleaf Desktop");
-        primaryStage.setMinWidth(1120);
-        primaryStage.setMinHeight(720);
+        primaryStage.setMinWidth(960);
+        primaryStage.setMinHeight(600);
 
         vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
         editorRoot = buildEditorRoot(primaryStage, "");
 
         screenHost = new StackPane();
         screenHost.getStyleClass().add("screen-host");
-        Scene scene = new Scene(screenHost, 1320, 860);
+        // --- BẮT ĐẦU ĐOẠN SỬA KÍCH THƯỚC VỪA MÀN HÌNH ---
+        // Lấy kích thước hiển thị thực tế của màn hình (đã trừ thanh Taskbar / Dock)
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+
+        // Tự động tính kích thước Scene = 88% độ phân giải màn hình của bạn
+        double appWidth = Math.min(1320, visualBounds.getWidth() * 0.88);
+        double appHeight = Math.min(860, visualBounds.getHeight() * 0.88);
+
+        Scene scene = new Scene(screenHost, appWidth, appHeight);
+        // --- KẾT THÚC ĐOẠN SỬA ---
         vietnameseUi = "vi".equals(settings.get(AppSettings.LANGUAGE));
         ThemeManager.apply(scene, settings);
         settings.onChange(key -> Platform.runLater(() -> onSettingChanged(scene, key)));
