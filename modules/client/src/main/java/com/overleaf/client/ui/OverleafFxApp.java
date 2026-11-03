@@ -3138,7 +3138,10 @@ public class OverleafFxApp extends Application {
                     case "LuaLaTeX" -> LatexCompilerService.Engine.LUALATEX;
                     default -> LatexCompilerService.Engine.PDFLATEX;
                 };
-        if (!saveCurrentFile(false)) {
+//        if (!saveCurrentFile(false)) {
+//            return;
+//        }
+        if (!saveCurrentFile(operationQueue != null)) {
             return;
         }
         LatexCompilerService.Options compileOptions;
