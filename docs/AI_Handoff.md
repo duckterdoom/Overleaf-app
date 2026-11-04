@@ -1,5 +1,9 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Sửa lỗi phông chữ tiếng Việt trên Next.js (04/11/2026):** loại bỏ hoàn toàn phông `Georgia` vốn thiếu dải ký tự tiếng Việt Unicode (U+1E00–U+1EFF) trên Windows, thay thế bằng bộ phông serif chuẩn mực hỗ trợ đầy đủ tiếng Việt (`Charter`, `Sitka Text`, `Sitka Heading`, `Cambria`, `Times New Roman`, `serif`); nới lỏng `letter-spacing` tránh va chạm/rơi dấu. Xem **mục 40**.
+
+> **Mới nhất — Giao diện Hoạt động, trò chơi Snake và loại bỏ thanh cuộn ngang (04/11/2026):** khôi phục thẻ Hoạt động theo bản Java, bổ sung mini-game Snake và màn hình kết thúc pixel art; tính toán kích cỡ lưới chính xác và loại bỏ triệt để thanh cuộn ngang. Xem **mục 35**.
+
 > **Mới nhất — Python + Next.js desktop (03/11/2026):** đã dựng bản đầu chạy thật bằng pywebview/FastAPI/Next.js, có editor/template/compile/PDF. **Chưa port đủ history, SyncTeX, import và cộng tác**. Xem **mục 32** và [PYTHON_NEXTJS_MIGRATION.md](PYTHON_NEXTJS_MIGRATION.md). Bản Java được giữ nguyên để đối chiếu.
 
 > **Mới nhất — chạy trên Mac (03/11/2026):** bổ sung launcher kiểm JDK 21/Maven, tự tìm Homebrew JDK/MacTeX, `--check`/`--build-only`, file nhấp đúp `.command`. Xem **mục 31** và [MACOS.md](MACOS.md). Chưa xác nhận native trên máy Mac.
@@ -1102,3 +1106,29 @@ ReviewPanel chuyển khỏi editor-column sang cột sidebar cạnh activity bar
 Chat có tiêu đề, nút đóng, empty state và textarea disabled với thông báo chờ tích hợp nhiều người dùng; không giả lập gửi/nhận, chưa có protocol/storage chat. Không thêm các icon search/code/AI ngoài yêu cầu.
 
 Kiểm chứng: production static build/TypeScript đạt; browser Edge toàn luồng đạt ở `target/activity-sidebar-01`. Bổ sung test đúng ba icon, chuyển files/review/chat, review không nằm trong editor-column, đóng/mở panel và separator, chat textbox disabled; các test review/scroll/tree/resize/history/upload/compile trước đó vẫn đạt. Đã xem ảnh `chat-panel.png` trực quan, ảnh `review.png` cũng được lưu; đã build UI mới, cần mở lại app. Không thay đổi backend/network trong mục này.
+
+## 40. Khắc phục lỗi hiển thị phông chữ tiếng Việt trên giao diện Next.js (04/11/2026)
+
+- **Nguyên nhân cốt lõi**:
+  - Giao diện Next.js trước đó khai báo phông `Georgia, serif` tại nhiều nơi: tiêu đề dự án `.page-heading h1` ("Dự án của bạn."), thẻ chào mừng `.welcome-card h2` ("Từ dòng đầu tiên đến bản PDF hoàn chỉnh."), ghi chú sidebar `.sidebar-note strong` ("Tập trung vào điều bạn viết."), modal header, tên thương hiệu và `.empty-projects`.
+  - Trên Windows, phông `Georgia` (`georgia.ttf`, ~219 KB) chỉ hỗ trợ bộ ký tự Latin cơ bản (Latin-1/Latin-2) và thiếu toàn bộ khối Unicode *Latin Extended Additional* (U+1E00–U+1EFF) – nơi định nghĩa các ký tự ghép dấu đặc thù của tiếng Việt (`ề`, `ế`, `ầ`, `ệ`, `ộ`, `ử`, `ừ`...).
+  - Khi DirectWrite / Chromium hiển thị các từ tiếng Việt như "điều", "viết", "đầu", "đến", hệ thống phân tách ký tự thành chữ cái gốc (`ê`, `â` - vốn có trong Georgia) và dấu thanh kết hợp (combining accents như U+0300, U+0301). Do `Georgia` không có bảng neo GPOS mark-to-base cho các dấu thanh này, dấu kết hợp bị vẽ lệch thành một ký tự độc lập (dấu huyền hoặc sắc đứng rời rạc cạnh chữ cái: `điề`u`, `viế`t`, `đâ`u`, `đế`n`).
+  - Ngoài ra, khoảng cách chữ âm quá lớn (`letter-spacing: -1.2px` và `-0.5px`) khiến các dấu rơi va chạm, đè lấn hoặc chồng chéo lên ký tự tiếp theo.
+
+- **Giải pháp xử lý**:
+  1. Định nghĩa biến CSS chuẩn hóa `--font-serif` và `--font-sans` trong `:root` ([globals.css](file:///d:/Overleaf-app/apps/frontend/app/globals.css)):
+     ```css
+     --font-serif: Charter, "Sitka Text", "Sitka Heading", Cambria, "Times New Roman", serif;
+     --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+     font-family: var(--font-sans);
+     ```
+     - Trên Windows: Ưu tiên `"Sitka Text"`, `"Sitka Heading"` (do Matthew Carter thiết kế với đầy đủ dấu tiếng Việt chuẩn và optical sizing) cùng `Cambria` (phông ClearType chất lượng cao của Microsoft hỗ trợ 100% tiếng Việt) và `Times New Roman`.
+     - Trên macOS: Sử dụng `Charter` (phông thanh lịch được Overleaf web tin dùng).
+     - Loại bỏ triệt để `Georgia` khỏi mọi font stack để tránh cơ chế fallback chắp vá ký tự.
+  2. Cập nhật `:root[data-font="serif"]` sử dụng `var(--font-serif)` để đảm bảo khi người dùng chuyển sang phông Serif trong Settings, toàn bộ ứng dụng vẫn hiển thị tiếng Việt hoàn hảo.
+  3. Cập nhật tất cả các selector tiêu đề (`.page-heading h1`, `.welcome-card h2`, `.sidebar-note strong`, `.auth-intro h1`, `.auth-card h2`, `.brand strong`, `.modal h2`, `.empty-projects h3`, `.empty-preview h3`, `.paper-tag`, `.paper-formula`) sang `var(--font-serif)`.
+  4. Nới lỏng khoảng cách ký tự (`letter-spacing`) từ mức âm sâu `-1.2px` / `-0.5px` về mức tự nhiên (`-0.3px` đến `normal`) để các thanh dấu tiếng Việt có không gian hiển thị thông thoáng, không bị va chạm.
+
+- **Kiểm chứng**:
+  - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
+  - Next.js static build (`npm run build`) tạo trang tĩnh thành công 100%. Code đã được đồng bộ để khi khởi chạy lại app, giao diện tự động áp dụng bản sửa lỗi.
