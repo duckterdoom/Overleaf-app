@@ -116,6 +116,14 @@ declare global {
     interface Window {
         pywebview?: {
             api: {
+                export_docx: (
+                    project: string,
+                    revision: string,
+                ) => Promise<{
+                    saved?: boolean;
+                    cancelled?: boolean;
+                    error?: string;
+                }>;
                 export_pdf: (
                     project: string,
                     snapshot: string,

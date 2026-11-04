@@ -1,4 +1,212 @@
 @import "tailwindcss";
+.preview-tabs {
+    display: flex;
+    flex-shrink: 0;
+    gap: 4px;
+    padding: 5px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+}
+.preview-tabs button {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-bottom: 3px solid transparent;
+}
+.preview-tabs button[aria-selected="true"] {
+    color: var(--green);
+    border-bottom-color: var(--green);
+    font-weight: 600;
+}
+.preview-format-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+.download-options {
+    position: relative;
+}
+.download-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    min-width: 220px;
+    padding: 6px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    box-shadow: 0 6px 22px #0004;
+}
+.download-menu button {
+    display: block;
+    padding: 12px;
+    width: 100%;
+    text-align: left;
+}
+.download-menu button:hover {
+    background: var(--soft);
+}
+.word-preview {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    color: var(--ink);
+}
+.word-actions,
+.word-format {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+}
+.word-actions button,
+.word-format button {
+    padding: 5px 8px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+}
+.word-notice,
+.word-error {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+.word-error {
+    color: #bb3131;
+}
+.word-preview details {
+    padding: 4px 12px;
+    font-size: 12px;
+    max-height: 120px;
+    overflow: auto;
+}
+.word-preview pre {
+    white-space: pre-wrap;
+}
+.word-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    padding: 20px;
+    background: #d9dcd8;
+}
+.word-document {
+    min-height: 600px;
+    background: white;
+    color: #171717;
+    max-width: 794px;
+    margin: auto;
+    padding: 48px;
+    font:
+        16px/1.65 "Times New Roman",
+        serif;
+    overflow-wrap: anywhere;
+    outline: none;
+    box-shadow: 0 2px 8px #0002;
+}
+.word-document h1 {
+    font-size: 26px;
+    font-weight: bold;
+    margin: 20px 0;
+}
+.word-document h2 {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 18px 0;
+}
+.word-document h3 {
+    font-size: 19px;
+    font-weight: bold;
+    margin: 16px 0;
+}
+.word-document p {
+    margin: 10px 0;
+}
+.word-document ul {
+    list-style: disc;
+    padding-left: 28px;
+}
+.word-document ol {
+    list-style: decimal;
+    padding-left: 28px;
+}
+.word-document table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 14px 0;
+}
+.word-document td,
+.word-document th {
+    border: 1px solid #aaa;
+    padding: 6px;
+}
+.word-document img {
+    max-width: 100%;
+    height: auto;
+}
+.word-document figure {
+    break-inside: avoid;
+    margin: 14px 0;
+    text-align: center;
+}
+.word-document figcaption {
+    font-size: 0.84em;
+    font-style: italic;
+    line-height: 1.2;
+    text-align: left;
+    margin-top: 6px;
+}
+.word-document h1 {
+    font-size: 1.25em;
+    line-height: 1.2;
+    text-align: center;
+}
+.word-document header h1 {
+    font-size: 1.5em;
+}
+.word-document h2 {
+    font-size: 1.1em;
+    line-height: 1.2;
+    text-align: left;
+}
+.word-document p {
+    margin: 0 0 0.5em;
+}
+.word-document[data-columns="2"] {
+    column-count: 2;
+    column-gap: 28px;
+    font-size: 14px;
+    text-align: justify;
+}
+.word-document[data-columns="2"] > header {
+    column-span: all;
+    text-align: center;
+}
+.word-document[data-columns="2"] > .word-abstract {
+    column-span: all;
+    margin-bottom: 24px;
+    font-size: 13px;
+}
+.word-abstract h2 {
+    text-align: center;
+    font-size: 16px;
+}
+.word-document [data-word-id]:focus {
+    outline: 1px solid #3c9564;
+    background: #eaf6ed;
+}
+.word-document [data-word-id] {
+    cursor: text;
+}
+.word-document:empty {
+    display: none;
+}
 .workspace-content.layout-split {
     grid-template-columns: minmax(260px, var(--editor-split, 50%)) 6px minmax(
             260px,
@@ -725,17 +933,21 @@
 .revision-list em {
     font-size: 12px;
 }
-.focus-mode > .app-header,
 .focus-mode .file-sidebar {
     display: none;
 }
-.focus-mode:after {
-    content: "Ctrl/⌘ + Shift + M";
-    position: fixed;
-    bottom: 3px;
-    right: 12px;
-    font-size: 10px;
-    color: var(--muted);
+.focus-mode > .app-header {
+    height: 44px;
+    min-height: 44px;
+    padding: 0 12px;
+    justify-content: flex-end;
+}
+.focus-mode > .app-header > :not(.layout-wrapper):not(.focus-exit-button) {
+    display: none;
+}
+.focus-exit-button {
+    border: 1px solid var(--line);
+    white-space: nowrap;
 }
 .detached-pdf > .app-header,
 .detached-pdf .file-sidebar,
@@ -844,16 +1056,12 @@
     --muted: #7e8983;
     --line: #e5e9e5;
     --surface: #f8faf8;
-    --font-serif: Charter, "Sitka Text", "Sitka Heading", Cambria, "Times New Roman", serif;
+    --font-serif:
+        Charter, "Sitka Text", "Sitka Heading", Cambria, "Times New Roman",
+        serif;
     --font-sans:
-        Inter,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        Roboto,
-        "Helvetica Neue",
-        Arial,
-        sans-serif;
+        Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
     font-family: var(--font-sans);
     color: var(--ink);
     font-size: 14px;

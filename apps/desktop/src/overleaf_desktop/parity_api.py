@@ -19,7 +19,31 @@ def register(app, store, compiler):
     app.state.install_task = None
     watch_cache = {}
     from .review import Review
+
     review = Review(store)
+    from .word import Word, MIME
+
+    word = Word(store)
+
+    @app.get("/api/projects/{project}/word")
+    def get_word(project: str):
+        return word.read(project)
+
+    @app.post("/api/projects/{project}/word")
+    def save_word(project: str, data: dict):
+        return word.save(project, data)
+
+    @app.post("/api/projects/{project}/word/generate")
+    def generate_word(project: str, data: dict):
+        return word.generate(project, data.get("revision"))
+
+    @app.get("/api/projects/{project}/word/docx")
+    def export_word(project: str, revision: str):
+        return Response(
+            word.export(project, revision),
+            media_type=MIME,
+            headers={"Content-Disposition": 'attachment; filename="main.docx"'},
+        )
 
     @app.get("/api/projects/{project}/review")
     def get_review(project: str):
@@ -28,6 +52,7 @@ def register(app, store, compiler):
     @app.post("/api/projects/{project}/review")
     async def update_review(project: str, request: Request):
         return review.update(project, await request.json())
+
     from .network import NetworkSession
 
     store.network = NetworkSession(store)

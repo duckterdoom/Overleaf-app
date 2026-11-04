@@ -35,6 +35,7 @@ import {
     X,
 } from "lucide-react";
 import PdfViewer from "../components/PdfViewer";
+import WordPreview, { type WordPreviewHandle } from "../components/WordPreview";
 import {
     bootstrap,
     compile,
@@ -121,9 +122,14 @@ export default function Workspace() {
         "files" | "review" | "chat" | null
     >("files");
     const [reviewDraft, setReviewDraft] = useState<ReviewAnchor | null>(null);
+    const [previewTab, setPreviewTab] = useState<"pdf" | "word">("pdf");
+    const [downloadMenu, setDownloadMenu] = useState(false);
+    const wordPreview = useRef<WordPreviewHandle | null>(null);
     useEffect(() => {
         setSidePanel("files");
         setReviewDraft(null);
+        setPreviewTab("pdf");
+        setDownloadMenu(false);
     }, [project?.id]);
     const outlinePane = useRef<HTMLDivElement>(null);
     const revision = useRef(0),
@@ -482,6 +488,9 @@ export default function Workspace() {
     });
     const uiLanguage = String(ext.settings.language || "vi"),
         t = translator(uiLanguage);
+    useEffect(() => {
+        if (!ext.focus) setLayoutMenu(false);
+    }, [ext.focus]);
     async function refreshActivity() {
         ext.setActivity(await action<Activity>("activity"));
     }
@@ -763,12 +772,35 @@ export default function Workspace() {
                                             setLayoutMenu(false);
                                         }}
                                     >
-                                        {t("Chế độ tập trung", "Focus mode")} ·
-                                        Ctrl⇧M
+                                        {ext.focus
+                                            ? t(
+                                                  "Thoát chế độ tập trung",
+                                                  "Exit focus mode",
+                                              ) + " · Esc"
+                                            : t(
+                                                  "Chế độ tập trung",
+                                                  "Focus mode",
+                                              ) + " · Ctrl⇧M"}
                                     </button>
                                 </div>
                             )}
                         </div>
+                        {ext.focus && (
+                            <button
+                                className="quiet focus-exit-button"
+                                aria-label={t(
+                                    "Thoát chế độ tập trung",
+                                    "Exit focus mode",
+                                )}
+                                onClick={() => {
+                                    ext.setFocus(false);
+                                    setLayoutMenu(false);
+                                }}
+                            >
+                                <X size={16} />
+                                {t("Thoát tập trung", "Exit focus")} · Esc
+                            </button>
+                        )}
                     </>
                 ) : (
                     <>
@@ -1667,24 +1699,142 @@ export default function Workspace() {
                                     >
                                         <ArrowRight size={17} />
                                     </button>
+                                    <div className="download-options">
+                                        <button
+                                            title={t("Tải xuống", "Download")}
+                                            aria-label={t(
+                                                "Tải xuống",
+                                                "Download",
+                                            )}
+                                            aria-expanded={downloadMenu}
+                                            onClick={() =>
+                                                setDownloadMenu(
+                                                    (value) => !value,
+                                                )
+                                            }
+                                        >
+                                            <Download size={18} />
+                                        </button>
+                                        {downloadMenu && (
+                                            <div
+                                                className="download-menu"
+                                                role="menu"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Escape")
+                                                        setDownloadMenu(false);
+                                                }}
+                                            >
+                                                <button
+                                                    role="menuitem"
+                                                    disabled={
+                                                        stale ||
+                                                        dirty ||
+                                                        !snapshot ||
+                                                        busy
+                                                    }
+                                                    onClick={() => {
+                                                        setDownloadMenu(false);
+                                                        void exportPdf();
+                                                    }}
+                                                >
+                                                    Export PDF (.pdf)
+                                                </button>
+                                                <button
+                                                    role="menuitem"
+                                                    disabled={busy}
+                                                    onClick={() => {
+                                                        setDownloadMenu(false);
+                                                        setPreviewTab("word");
+                                                        void wordPreview.current?.exportDocx();
+                                                    }}
+                                                >
+                                                    Export Word (.docx)
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div
+                                    className="preview-tabs"
+                                    role="tablist"
+                                    aria-label={t(
+                                        "Định dạng xem trước",
+                                        "Preview format",
+                                    )}
+                                >
                                     <button
-                                        title={localize("Xuất PDF", uiLanguage)}
-                                        disabled={
-                                            stale || dirty || !snapshot || busy
-                                        }
-                                        onClick={() => void exportPdf()}
+                                        role="tab"
+                                        aria-selected={previewTab === "pdf"}
+                                        onClick={() => setPreviewTab("pdf")}
                                     >
-                                        <Download size={18} />
+                                        PDF preview
+                                    </button>
+                                    <button
+                                        role="tab"
+                                        aria-selected={previewTab === "word"}
+                                        onClick={() => setPreviewTab("word")}
+                                    >
+                                        Word preview
                                     </button>
                                 </div>
-                                <PdfViewer
-                                    data={pdf}
-                                    stale={stale || dirty}
-                                    geometry={ext.geometry}
-                                    target={ext.target}
-                                    onInverse={ext.inverse}
-                                    language={uiLanguage}
-                                />
+                                <div
+                                    className="preview-format-panel"
+                                    hidden={previewTab !== "pdf"}
+                                >
+                                    <PdfViewer
+                                        data={pdf}
+                                        stale={stale || dirty}
+                                        geometry={ext.geometry}
+                                        target={ext.target}
+                                        onInverse={ext.inverse}
+                                        language={uiLanguage}
+                                    />
+                                </div>
+                                <div
+                                    className="preview-format-panel"
+                                    hidden={previewTab !== "word"}
+                                >
+                                    <WordPreview
+                                        key={project.id}
+                                        ref={wordPreview}
+                                        project={project.id}
+                                        language={uiLanguage}
+                                        sourceDirty={dirty}
+                                        active={previewTab === "word"}
+                                        sourceSignal={file + content + snapshot}
+                                        compiled={
+                                            !!snapshot && !stale && !dirty
+                                        }
+                                        onSynced={async () => {
+                                            if (dirty) return;
+                                            const ticket = revision.current;
+                                            const updated = await json<{
+                                                content: string;
+                                            }>(
+                                                `/projects/${project.id}/file?path=${encodeURIComponent(file)}`,
+                                            );
+                                            if (ticket !== revision.current)
+                                                return;
+                                            if (
+                                                updated.content !==
+                                                savedText.current
+                                            ) {
+                                                revision.current += 1;
+                                                setContent(updated.content);
+                                                savedText.current =
+                                                    updated.content;
+                                                setDirty(false);
+                                                setStale(true);
+                                                setNotice(
+                                                    "Đã đồng bộ Word sang LaTeX. Compile lại để cập nhật PDF.",
+                                                );
+                                            }
+                                        }}
+                                        saveSource={async () =>
+                                            !dirty || !!(await save())
+                                        }
+                                    />
+                                </div>
                             </section>
                         )}
                     </section>

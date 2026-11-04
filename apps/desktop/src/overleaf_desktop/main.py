@@ -231,6 +231,33 @@ class DesktopBridge:
         except Exception as error:
             return {"error": str(error)}
 
+    def export_docx(self, project: str, revision: str) -> dict:
+        import webview
+        from .word import Word
+        from .store import atomic_write
+
+        try:
+            word = Word(self._compiler.store)
+            data = word.export(project, revision)
+            selected = self._window.create_file_dialog(
+                webview.FileDialog.SAVE,
+                save_filename="main.docx",
+                file_types=("Word document (*.docx)",),
+            )
+            if not selected:
+                return {"cancelled": True}
+            target = Path(
+                selected[0] if isinstance(selected, (list, tuple)) else selected
+            )
+            if target.suffix.lower() != ".docx":
+                return {"error": "Tên tệp cần đuôi .docx."}
+            if word.read(project)["revision"] != revision:
+                return {"error": "Bản Word đã thay đổi trong lúc chọn nơi lưu."}
+            atomic_write(target, data)
+            return {"saved": True}
+        except Exception as error:
+            return {"error": str(error)}
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Overleaf Desktop · Python + Next.js")

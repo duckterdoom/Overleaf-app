@@ -90,6 +90,18 @@ export default function useParity(core: Core) {
     const [network, setNetwork] = useState<Network>(emptyNetwork),
         [focus, setFocus] = useState(false),
         [detached, setDetached] = useState(false);
+    useEffect(() => {
+        if (!focus) return;
+        const exitFocus = (event: KeyboardEvent) => {
+            if (event.key === "Escape" && !event.isComposing) {
+                event.preventDefault();
+                setFocus(false);
+            }
+        };
+        // Capture Escape before CodeMirror or another focused control consumes it.
+        window.addEventListener("keydown", exitFocus, true);
+        return () => window.removeEventListener("keydown", exitFocus, true);
+    }, [focus]);
     const [geometry, setGeometry] = useState<PageGeometry[]>([]),
         [target, setTarget] = useState<PdfPoint | null>(null),
         [issues, setIssues] = useState<
@@ -414,6 +426,16 @@ export default function useParity(core: Core) {
                     }
                 }
                 watchSignature.current = result.signature;
+                const live = latest.current;
+                if (
+                    !detached &&
+                    !live.dirty &&
+                    !live.buildInFlight.current &&
+                    result.snapshot &&
+                    result.snapshot === live.snapshot
+                ) {
+                    live.setStale(!result.current || result.dirty);
+                }
                 if (detached) {
                     current.setStale(!result.current);
                     if (

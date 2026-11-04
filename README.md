@@ -57,6 +57,24 @@ Nút Comment mở Review: nhận xét gắn đoạn chọn/dòng, trả lời, g
 
 Thanh icon ngoài cùng bên trái workspace chuyển giữa **Tệp/Outline**, **Review** và **Chat cộng tác**; chỉ một panel hiện mỗi lần, bấm lại icon đang chọn hoặc nút đóng để ẩn. Panel kéo đổi chiều rộng được. Chat hiện là giao diện chờ tích hợp nhiều người dùng, chưa gửi/nhận tin nhắn.
 
+**Chế độ tập trung:** vào từ Bố cục hoặc `Ctrl/Cmd+Shift+M`. Nhấn **Esc** để thoát; thanh trên cùng vẫn có **Bố cục → Thoát chế độ tập trung** và nút **Thoát tập trung · Esc**. Thoát sẽ giữ bố cục editor/PDF đã chọn.
+
+### Chỉnh sửa Word trong workspace và export DOCX
+
+Cạnh **PDF preview** có tab **Word preview** tự tạo nội dung khi mở hoặc chuẩn bị sau compile PDF thành công; có trạng thái đang chuyển đổi thay vì giấy trắng. Sửa chữ trong các đoạn ánh xạ được sẽ tự lưu và cập nhật đúng vị trí trong editor LaTeX. Sửa LaTeX sẽ tự cập nhật Word sau khi ngừng gõ nếu không có sửa Word đang chờ. Cũng có nút **Lưu Word** và `Ctrl/Cmd+S` trong vùng Word.
+
+Nút tải xuống mở menu **Export PDF (.pdf)** / **Export Word (.docx)**. Word export lưu các chỉnh sửa của bản Word; không cần compile PDF thành công để tạo Word. Bản PDF vẫn yêu cầu snapshot hợp lệ như trước. Desktop dùng hộp thoại lưu native, browser dùng download.
+
+Cần **Pandoc** (`PATH`, `OVERLEAF_PANDOC` hoặc bản local Windows `target/pandoc/pandoc.exe`). `.overleaf-word.json` giữ bản xem/mapping/revision; metadata này không tham gia compile. Bản Word cũ được sao lưu vào `.overleaf-word.previous.json` khi tạo lại. Nếu sửa đồng thời gây xung đột, app chặn ghi đè và giữ HTML đang sửa ở `.overleaf-word-conflict.html`. Word chưa đồng bộ qua room; cần rời phòng để ghi LaTeX từ Word.
+
+Đồng bộ hiện hỗ trợ **chữ trong vùng ánh xạ duy nhất**; giữ preamble, macro, label và cấu trúc input/include. Công thức, citation, đoạn trùng/không ánh xạ và cấu trúc được bảo vệ. Sửa định dạng/cấu trúc trong editor LaTeX; toolbar định dạng Word bị khóa trong chế độ đồng bộ để tránh hiển thị thay đổi chưa được ghi về nguồn. Chưa phải round-trip mọi cấu trúc LaTeX.
+
+Word nhận diện A4/Letter, lề phổ biến và hai cột (kể cả class LTJournalArticle), phục hồi abstract trong title hook, có zoom/fit-width. DOCX có section một cột cho đầu bài và hai cột cho thân bài tương ứng. Preview là dòng nội dung liên tục, không phân trang bằng engine TeX; không cam kết trùng từng dòng/trang PDF.
+
+Ảnh trong `\fbox{\includegraphics{...}}`, tên có dấu ngoặc kép hoặc thiếu phần mở rộng được chuẩn hóa khi chuyển Word; đọc `\graphicspath` từ nguồn/class local để tìm đúng thư mục ảnh. Giữ chiều rộng theo `\textwidth`/`\linewidth`/`\columnwidth`, caption và thứ tự figure. Ảnh raster được nhúng trực tiếp trong DOCX; có thông báo nếu chưa chuyển đủ số ảnh. Font Palatino (`mathpazo`/`palatino`) và cỡ 10/11/12pt thông dụng được áp dụng cho preview/styles DOCX; font thực tế còn phụ thuộc font cài trên máy mở Word. Bản preview cache cũ tự được tạo lại khi nâng bộ chuyển đổi, có giữ bản trước đó.
+
+Đây là trình soạn thảo nội dung Word cơ bản, chưa phải toàn bộ chức năng Microsoft Word hoặc import/chỉnh mọi DOCX có sẵn. Bố cục nhiều cột, font/class tùy biến, TikZ, trích dẫn/bibliography và lệnh LaTeX không hỗ trợ có thể khác hoặc không chuyển đủ; DOCX không cam kết giống từng trang PDF. Xem [giới hạn chuyển đổi của Pandoc](https://pandoc.org/MANUAL.html#description). Công thức và PNG/JPEG/GIF hỗ trợ trong phạm vi chuyển đổi; ảnh PDF/TikZ chưa được raster hóa để đưa vào Word.
+
 ## Cấu trúc source
 
 ```text

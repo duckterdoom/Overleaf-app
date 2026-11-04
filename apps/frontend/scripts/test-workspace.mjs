@@ -86,16 +86,21 @@ try {
         )
         .toBeGreaterThan(100);
     const downloadEvent = page.waitForEvent("download");
-    await page.getByRole("button", { name: "Xuất PDF", exact: true }).click();
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
+    await page
+        .getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true })
+        .click();
     const download = await downloadEvent;
     expect(readFileSync(await download.path())).toEqual(
         readFileSync(path.join(home, "projects", project, "build/main.pdf")),
     );
     await page.screenshot({ path: path.join(home, "workspace.png") });
     await page.locator(".cm-content").fill(source + "\n% unsaved edit\n");
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await expect(
-        page.getByRole("button", { name: "Xuất PDF", exact: true }),
+        page.getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true }),
     ).toBeDisabled();
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await page
         .locator(".cm-content")
         .fill(
@@ -109,8 +114,9 @@ try {
         "Biên dịch chưa thành công",
         { timeout: 90000 },
     );
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await expect(
-        page.getByRole("button", { name: "Xuất PDF", exact: true }),
+        page.getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true }),
     ).toBeDisabled();
     await expect(page.locator(".pdf-sheet")).toHaveCount(3);
     expect(errors).toEqual([]);

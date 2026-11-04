@@ -81,6 +81,48 @@ try {
         "\\documentclass{article}\n\\usepackage{hyperref,graphicx}\n\\begin{document}\n\\section{First}\\label{sec:first}\nHello history.\n\\end{document}\n";
     await page.locator(".cm-content").fill(source);
     await page.locator(".save-source").click();
+    // Edit Word directly in the workspace, then download the edited DOCX.
+    await page.getByRole("tab", { name: "Word preview", exact: true }).click();
+    const wordArea = page.getByRole("textbox", {
+        name: "Nội dung Word",
+        exact: true,
+    });
+    await expect(wordArea).toContainText("Hello history.");
+    await wordArea
+        .locator("[data-word-id]")
+        .filter({ hasText: "Hello history." })
+        .fill("Word direct editing – Tiếng Việt");
+    await page.getByRole("button", { name: "Lưu Word", exact: true }).click();
+    await expect(page.locator(".word-actions")).toContainText("Đã lưu Word");
+    await expect(page.locator(".cm-content")).toContainText(
+        "Word direct editing – Tiếng Việt",
+    );
+    const wordDownloadEvent = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
+    await page
+        .getByRole("menuitem", { name: "Export Word (.docx)", exact: true })
+        .click();
+    const wordDownload = await wordDownloadEvent;
+    expect(wordDownload.suggestedFilename()).toBe("main.docx");
+    const docxBytes = fs.readFileSync(await wordDownload.path());
+    expect(docxBytes.subarray(0, 2).toString()).toBe("PK");
+    fs.writeFileSync(path.join(home, "edited-word.docx"), docxBytes);
+    await page.screenshot({ path: path.join(home, "word-preview.png") });
+    await page
+        .locator(".cm-content")
+        .fill(
+            source.replace(
+                "Hello history.",
+                "LaTeX automatically updates Word.",
+            ),
+        );
+    await expect(wordArea).toContainText("LaTeX automatically updates Word.", {
+        timeout: 15000,
+    });
+    await page.locator(".cm-content").fill(source);
+    await page.locator(".save-source").click();
+    await expect(wordArea).toContainText("Hello history.", { timeout: 15000 });
+    await page.getByRole("tab", { name: "PDF preview", exact: true }).click();
     // Review is metadata, never a percent-comment edit of the LaTeX source.
     const beforeReviewSource = await page.locator(".cm-content").innerText();
     await page.locator(".cm-content").click();
@@ -283,6 +325,36 @@ try {
         .getByRole("button", { name: "Chỉ editor", exact: false })
         .click();
     await expect(page.locator(".preview-column")).toHaveCount(0);
+    // Focus mode must always expose a route back, even with the editor focused.
+    await page.getByRole("button", { name: "Bố cục", exact: true }).click();
+    await page
+        .locator(".layout-menu")
+        .getByRole("button", { name: "Chế độ tập trung", exact: false })
+        .click();
+    await expect(page.locator(".desktop-shell")).toHaveClass(/focus-mode/);
+    await expect(
+        page.getByRole("button", { name: "Bố cục", exact: true }),
+    ).toBeVisible();
+    await expect(page.locator(".focus-exit-button")).toBeVisible();
+    await page.screenshot({ path: path.join(home, "focus-mode.png") });
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".desktop-shell")).not.toHaveClass(/focus-mode/);
+    await expect(page.locator(".file-sidebar")).toBeVisible();
+    await page.keyboard.press("Control+Shift+M");
+    await expect(page.locator(".desktop-shell")).toHaveClass(/focus-mode/);
+    await page.getByRole("button", { name: "Bố cục", exact: true }).click();
+    await page
+        .locator(".layout-menu")
+        .getByRole("button", { name: "Thoát chế độ tập trung", exact: false })
+        .click();
+    await expect(page.locator(".desktop-shell")).not.toHaveClass(/focus-mode/);
+    await page.keyboard.press("Control+Shift+M");
+    await page.locator(".focus-exit-button").click();
+    await expect(page.locator(".desktop-shell")).not.toHaveClass(/focus-mode/);
+    await expect(page.locator(".workspace-content")).toHaveClass(
+        /layout-editor/,
+    );
     await page.keyboard.press("F5");
     await expect(page.locator(".statusbar")).toContainText(
         "Biên dịch thành công",
@@ -303,9 +375,11 @@ try {
         "Biên dịch thành công",
         { timeout: 90000 },
     );
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await expect(
-        page.getByRole("button", { name: "Xuất PDF", exact: true }),
+        page.getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true }),
     ).toBeEnabled({ timeout: 90000 });
+    await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await page
         .getByRole("checkbox", { name: "Tự biên dịch", exact: true })
         .uncheck();
@@ -322,7 +396,7 @@ try {
         page.getByRole("button", { name: "History", exact: true }),
     ).toBeVisible();
     await expect(
-        page.getByRole("button", { name: "Export PDF", exact: true }),
+        page.getByRole("button", { name: "Download", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Profile", exact: true }).click();
     await page

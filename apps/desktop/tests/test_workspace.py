@@ -160,6 +160,7 @@ def test_native_bridge_exposes_only_export_and_writes_same_bytes(
     )
     assert {name for name in dir(bridge) if not name.startswith("_")} == {
         "export_pdf",
+        "export_docx",
         "pick_directory",
         "upload_files",
         "import_project",
