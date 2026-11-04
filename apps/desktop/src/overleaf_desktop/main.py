@@ -103,6 +103,23 @@ class DesktopBridge:
         except Exception as error:
             return {"error": str(error)}
 
+    def import_path(
+        self,
+        kind: str,
+        source: str,
+        title: str = "",
+        parent: str = "",
+        language: str = "vi",
+    ):
+        if kind not in {"zip", "word", "markdown", "folder"}:
+            return {"error": "Kiểu nhập không hợp lệ."}
+        try:
+            return self._compiler.store.io.import_project(
+                kind, str(source), title, parent, language
+            )
+        except Exception as error:
+            return {"error": str(error)}
+
     def migrate_java(self):
         selected = self.pick_directory()
         if not selected:

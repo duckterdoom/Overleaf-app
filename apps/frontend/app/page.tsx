@@ -2004,6 +2004,7 @@ export default function Workspace() {
                                         setColor={setColor}
                                         language={uiLanguage}
                                         sourceLanguage={language}
+                                        onTitleChange={setName}
                                         onImported={(created) => {
                                             void refreshProjects();
                                             setDialog(null);

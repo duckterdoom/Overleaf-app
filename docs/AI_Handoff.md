@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 41**.
+
 > **Mới nhất — Sửa lỗi phông chữ tiếng Việt trên Next.js (04/11/2026):** loại bỏ hoàn toàn phông `Georgia` vốn thiếu dải ký tự tiếng Việt Unicode (U+1E00–U+1EFF) trên Windows, thay thế bằng bộ phông serif chuẩn mực hỗ trợ đầy đủ tiếng Việt (`Charter`, `Sitka Text`, `Sitka Heading`, `Cambria`, `Times New Roman`, `serif`); nới lỏng `letter-spacing` tránh va chạm/rơi dấu. Xem **mục 40**.
 
 > **Mới nhất — Giao diện Hoạt động, trò chơi Snake và loại bỏ thanh cuộn ngang (04/11/2026):** khôi phục thẻ Hoạt động theo bản Java, bổ sung mini-game Snake và màn hình kết thúc pixel art; tính toán kích cỡ lưới chính xác và loại bỏ triệt để thanh cuộn ngang. Xem **mục 35**.
@@ -1186,3 +1188,32 @@ Nguyên nhân bị kẹt: focus CSS ẩn cả app-header chứa nút Bố cục,
 `useParity` thêm listener Escape ở capture phase để hoạt động cả khi CodeMirror đang focus, bỏ qua sự kiện IME composition và cleanup listener khi thoát. Đóng layout menu sau khi rời focus. Phím Ctrl/Cmd+Shift+M vẫn dùng được.
 
 Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt. Browser Edge toàn feature regression đạt ở `target/focus-exit-01`; bổ sung ba đường thoát: Esc khi con trỏ trong editor, Bố cục → Thoát chế độ tập trung, nút thoát trực tiếp. Kiểm sidebar trở lại và layout editor-only giữ nguyên. Screenshot `focus-mode.png` đã xem trực quan. README cập nhật cách dùng; UI đã build để mở lại app nhận thay đổi. Không thay đổi luồng export PDF/Word trong mục này.
+
+## 45. Bổ sung hỗ trợ Kéo & Thả (Drag & Drop) khi nhập dự án (04/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Khi tạo dự án mới từ tài nguyên có sẵn (ZIP, Word `.docx`, Markdown, hoặc thư mục dự án), trước đây người dùng bắt buộc phải bấm vào từng nút tương ứng (`ZIP`, `Word (.docx)`, `Markdown`, `Thư mục có sẵn`), kích hoạt hộp thoại chọn file của hệ điều hành (`create_file_dialog`) và phải tự duyệt tìm đường dẫn tệp trên ổ đĩa.
+  - Thao tác này gây gián đoạn và bất tiện khi người dùng đã có sẵn thư mục chứa tệp trong Windows Explorer hoặc muốn kéo thả nhanh chóng.
+
+- **Giải pháp triển khai**:
+  1. **Vùng kéo thả trực quan (`NewProjectExtras.tsx`, `globals.css`)**:
+     - Bổ sung khối `.import-dropzone` tích hợp trực tiếp vào hộp thoại "Tạo dự án mới" (Create new project), tương thích cả giao diện sáng (Light) và tối (Dark mode).
+     - Phản hồi thị giác thời gian thực: khi kéo tệp hoặc thư mục vào vùng dropzone, viền nét đứt chuyển sang màu xanh lá chủ đạo (`var(--green)`), nền chuyển màu sáng/tối nhẹ kèm thông báo *"Thả tệp hoặc thư mục vào đây để tạo dự án ngay!"*.
+     - Tự động nhận diện định dạng:
+       - Tệp `.zip`: tự động nhận diện và nhập dưới dạng dự án nén LaTeX.
+       - Tệp `.docx`: tự động chuyển đổi từ Word sang LaTeX thông qua Pandoc.
+       - Tệp `.md` hoặc `.markdown`: tự động chuyển đổi từ Markdown sang LaTeX qua Pandoc.
+       - Thư mục hoặc nhiều tệp: tự động nhận diện cấu trúc dự án, tìm `main.tex` hoặc tệp gốc có `\documentclass`.
+       - Tệp `.tex` đơn lẻ: tự động đóng gói thành dự án hoàn chỉnh.
+     - Tự động gợi ý tên dự án từ tên tệp/thư mục thả vào nếu người dùng chưa nhập tên.
+     - Trạng thái tiến trình tải lên và nút hủy: hiển thị icon xoay và tên tệp đang xử lý, kèm nút "Hủy nhập" an toàn (`io-cancel`).
+     - Giữ nguyên các nút bấm (`[Dự án ví dụ]`, `[↑ ZIP]`, `[↑ Word]`, `[↑ Markdown]`, `[↑ Thư mục]`) bên trong dropzone để người dùng vẫn có thể click chọn tệp thủ công qua hộp thoại hệ thống nếu muốn.
+  2. **Hạ tầng truyền nhận dữ liệu (`parity_api.py`, `api.py`, `main.py`, `zip.ts`)**:
+     - Hỗ trợ đường dẫn gốc hệ điều hành (`import-path` / `native("import_path")`): trong môi trường WebView2/desktop, khi có `file.path`, ứng dụng gọi trực tiếp `action("import-path")` hoặc `native("import_path")` với hiệu năng tức thời, không qua sao chép trung gian.
+     - Hỗ trợ luồng nhị phân streaming (`POST /api/projects/import-file`): đối với môi trường trình duyệt hoặc khi `file.path` không được lộ vì lý do bảo mật, ứng dụng truyền luồng nhị phân trực tiếp đến FastAPI backend (bỏ qua giới hạn JSON 12MB của middleware và hỗ trợ tệp tới 50 MiB).
+     - Module phát sinh tệp nén thuần TypeScript (`lib/zip.ts`): cho phép đóng gói đệ quy các thư mục hoặc danh sách tệp được kéo thả trong trình duyệt thành một tệp ZIP chuẩn mực (không phụ thuộc thư viện ngoài) rồi chuyển đến backend.
+
+- **Kiểm chứng**:
+  - 49/49 bài kiểm thử `pytest` trong `test_parity.py` đạt 100%, bao gồm cả 2 luồng `POST /api/projects/import-file` và `POST /api/actions/import-path`.
+  - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
+  - Next.js static production build (`npm run build`) hoàn tất thành công. Code đã sẵn sàng phục vụ cho lần mở ứng dụng tiếp theo.

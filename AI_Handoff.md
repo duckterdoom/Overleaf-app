@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 41**.
+
 > **Mới nhất — Sửa lỗi phông chữ tiếng Việt trên Next.js (04/11/2026):** loại bỏ hoàn toàn phông `Georgia` vốn thiếu dải ký tự tiếng Việt Unicode (U+1E00–U+1EFF) trên Windows, thay thế bằng bộ phông serif chuẩn mực hỗ trợ đầy đủ tiếng Việt (`Charter`, `Sitka Text`, `Sitka Heading`, `Cambria`, `Times New Roman`, `serif`); nới lỏng `letter-spacing` tránh va chạm/rơi dấu. Xem **mục 40**.
 
 > **Mới nhất — Giao diện Hoạt động, trò chơi Snake và loại bỏ thanh cuộn ngang (04/11/2026):** khôi phục thẻ Hoạt động theo bản Java, bổ sung mini-game Snake và màn hình kết thúc pixel art; tính toán kích cỡ lưới chính xác và loại bỏ triệt để thanh cuộn ngang. Xem **mục 35**.
@@ -1132,3 +1134,86 @@ Kiểm chứng: production static build/TypeScript đạt; browser Edge toàn lu
 - **Kiểm chứng**:
   - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
   - Next.js static build (`npm run build`) tạo trang tĩnh thành công 100%. Code đã được đồng bộ để khi khởi chạy lại app, giao diện tự động áp dụng bản sửa lỗi.
+
+## 41. Soạn thảo Word trực tiếp trong workspace và export DOCX (04/11/2026)
+
+Cạnh PDF preview có tab Word preview, với trình soạn thảo rich text ngay trong workspace. `WordPreview.tsx` cho gõ/sửa, bold/italic/underline, heading/paragraph, list/table, undo/redo; auto-save sau 700ms, lưu khi blur, nút Save Word và Ctrl/Cmd+S trong vùng Word. Giữ component mounted khi đổi PDF/Word, không mất bản chỉnh sửa do chuyển tab. Menu download chọn Export PDF (.pdf) hoặc Export Word (.docx); Word export đợi lưu nội dung mới nhất, dùng dialog native trên desktop hoặc download ở browser. Không yêu cầu compile PDF trước khi chuyển Word. Các kiểm tra stale/error của PDF vẫn giữ.
+
+`word.py` sử dụng Pandoc: LaTeX → AST JSON → HTML/MathML có lọc → bản sửa HTML → DOCX thật. Hỗ trợ input/include dạng dấu ngoặc qua Store path guard và giới hạn độ sâu/kích thước; ảnh PNG/JPEG/GIF trong project chuyển thành data URI, không fetch ảnh ngoài; công thức MathML thành Word OMML. Pandoc chạy sandbox, timeout 60s, không shell. Draft lưu atomic riêng `.overleaf-word.json`, revision chống ghi đè giữa cửa sổ và fingerprint nguồn; Word không sửa LaTeX, không làm stale PDF. Tạo lại từ LaTeX có xác nhận thay thế chỉnh sửa Word. File tải xuống lấy từ revision Word, bridge kiểm lại revision sau dialog.
+
+API `/api/projects/{project}/word` GET/POST, `/word/generate` POST, `/word/docx?revision=...` GET. `DesktopBridge.export_docx` chỉ lưu đuôi docx. HTML lọc script/event handler/style/iframe/object/SVG và ảnh file/http; paste vào editor lấy plain text. Manifest Python/JS không thêm dependency; cần Pandoc riêng (PATH/OVERLEAF_PANDOC/target/pandoc/pandoc.exe). Bản portable Windows đã chuẩn bị local trong target, không được Git đóng gói.
+
+Giới hạn: editor Word cơ bản, không phải Microsoft Word đầy đủ, chưa mở/sửa mọi DOCX nhập từ ngoài; chưa đồng bộ Word trong room. Nhiều cột, class/macro tùy biến, TikZ, ảnh PDF và bibliography/citation có thể khác/thiếu; không cam kết DOCX giống từng trang PDF. Thông báo trong tab giải thích khác biệt và giữ Word cũ khi nguồn LaTeX đổi. Bản HTML là mô hình chỉnh sửa; DOCX được tạo khi export, không chỉnh trực tiếp XML ZIP trên từng phím gõ.
+
+Kiểm chứng: toàn bộ pytest trước test native mới đạt 128; sau bổ sung native DOCX dialog test, nhóm Word/workspace đạt 74 và test Word riêng đạt 3. Native Pandoc test kiểm tiếng Việt, include, ảnh PNG trong word/media, công thức OMML, sửa nội dung rồi đọc document.xml, persistence/revision, source/fingerprint không đổi và path traversal. Next.js static build/TypeScript đạt. PDF browser regression 3 trang/link/export byte-identical/stale/error đạt ở `target/word-pdf-guard-01`. Word browser đã tạo/sửa trực tiếp, lưu, tải `.docx`, kiểm ZIP/document.xml chứa “Word direct editing – Tiếng Việt”; ảnh `target/word-workspace-01/word-preview.png` đã xem. Các lượt toàn UI đầu dừng ở selector Export PDF cũ sau khi menu thay đổi; đã cập nhật selector cho menu mới, không tính lượt lỗi là pass.
+
+Đã chuyển bài LTJournalArticle trong home kiểm thử cô lập `target/article-zip-repro-01` thành `verified-article.docx` (15.446 bytes), fingerprint LaTeX giữ nguyên; đây là kiểm tạo DOCX, không xác nhận giữ bố cục bài báo nhiều cột. README hướng dẫn tab Word/menu download và giới hạn Pandoc.
+
+Kiểm cuối: toàn bộ browser feature regression đạt trên Edge ở `target/word-workspace-03` (mã thoát 0), gồm Word edit/export và các chức năng trước đó. Ruff F/E9 và git diff --check đạt; UI đã build lại với phím Ctrl/Cmd+S dành cho Word. Mở lại app để tải bản mới.
+
+## 42. Word tự nạp, đồng bộ chữ hai chiều và bố cục journal (04/11/2026)
+
+Mục này thay thế thiết kế Word tách nguồn ở mục 41. Tab Word tự tạo khi mở lần đầu hoặc chuẩn bị khi có PDF compile thành công, hiện trạng thái chuyển đổi thay vì tờ giấy trắng. Khi LaTeX đổi và không có Word đang sửa, sau debounce app lưu nguồn và tự cập nhật Word. Word cũ không có mapping được nâng cấp khi mở; giữ `.overleaf-word.previous.json` trước khi thay thế.
+
+`SyncHTML` ánh xạ text leaf về vị trí nguồn duy nhất trong main hoặc file input/include. Chỉnh chữ trên Word cập nhật đúng range LaTeX, escape ký tự đặc biệt, giữ preamble/class/macro/label/input và phần nguồn không chỉnh; cập nhật editor đang mở, đánh dấu PDF stale. Các lần sửa tiếp theo cập nhật offset mapping. Store.save tạo history như sửa nguồn bình thường; nhiều file được kiểm trước và rollback nếu ghi lỗi. Fingerprint/revision khác sẽ chặn ghi đè; xung đột nguồn giữ bản HTML đang sửa trong `.overleaf-word-conflict.html`. Không ghi từ Word khi đang trong room TCP.
+
+Giới hạn rõ: đồng bộ **nội dung chữ có ánh xạ**, không round-trip mọi LaTeX. Công thức, citation/section number, đoạn trùng hoặc không xác định nguồn bị bảo vệ. Trình soạn thảo cha readonly, chỉ các span có data-word-id được sửa. Định dạng/cấu trúc thực hiện trong editor LaTeX; toolbar rich-text và Ctrl+B/I/U bị khóa trong chế độ đồng bộ để tránh tạo thay đổi Word chưa có trong nguồn. Đổi toàn trang hoặc mất ID bị từ chối. Không tự chuyển toàn thân bài thành LaTeX mới, không phá cấu trúc include/macro.
+
+Bố cục: nhận diện một/hai cột từ nguồn và class local; đọc A4/Letter/lề top/bottom/left/right thông dụng. Word preview có kích thước giấy, lề và zoom/fit-width, header/abstract toàn chiều rộng trước thân hai cột. Khôi phục abstract nằm trong maketitle hook của LTJournalArticle (Pandoc không chạy hook). DOCX sửa section geometry/columns và section break liên tục cho phần đầu một cột/thân hai cột, giữ namespace XML gốc. Word preview là nội dung liên tục, chưa phân trang bằng TeX, chưa bảo đảm cùng dòng/trang với PDF; macro/TikZ/bibliography phức tạp vẫn có thể khác/thiếu.
+
+Kiểm chứng: 130 pytest đạt; test Word riêng 4 đạt sau bổ sung layout/section, include-file sync nhiều lần, escape phần trăm/ampersand, giữ macro/label, chặn sửa toàn trang và xung đột có backup. Next.js production build/TypeScript, Ruff F/E9 và diff check đạt. Browser Edge feature test có kiểm Word tự hiện (không bấm Create), Word→LaTeX, LaTeX→Word và export đạt ở `target/word-sync-03`. PDF browser 3 trang/link/export byte-identical/stale/error đạt ở `target/word-sync-pdf-02`.
+
+Đã thử trên bản sao article: `target/word-layout-01/article-word.png` kiểm tự hiện title/authors/abstract và data-columns=2; ảnh đã xem trực quan. `target/article-zip-repro-01/verified-article.docx` tạo thành công sau cải thiện (16.038 bytes), source fingerprint không đổi khi chỉ generate/export. Không sửa bản project thật của người dùng trong kiểm thử; mở lại app để dùng UI mới. README cập nhật ngữ nghĩa đồng bộ và các giới hạn.
+
+Regression cuối phát hiện race trong file watcher: poll signature cũ có thể setStale(true) sau compile mới đã hoàn tất. `useParity` đối chiếu snapshot ID đang hiển thị với snapshot backend, current/fingerprint và dirty; chỉ hiệu chỉnh stale khi không có buffer dirty/build đang chạy. Không mở export chỉ dựa vào trạng thái UI; backend vẫn verified snapshot như trước. Lượt feature `word-sync-04` phát hiện lỗi, đã sửa và chạy lại **word-sync-05 đạt toàn luồng**; **word-sync-pdf-03 đạt** PDF link/byte-identical export/stale/error. Static build/TypeScript và diff check cuối đạt. Khi Word đổi nội dung file đang mở, tăng revision để Auto Compile nhận thay đổi nếu đã bật.
+
+## 43. Khôi phục ảnh và typography khi chuyển Word (04/11/2026)
+
+Tái hiện đúng bài journal: PDF có 8 figure nhưng AST Pandoc ban đầu không có Image vì `\\fbox{\\includegraphics...}` bị reader bỏ qua. Tên ảnh có dấu ngoặc kép, nằm dưới Figures/ theo graphicspath khai báo trong LTJournalArticle.cls; pipeline cũ chỉ tìm root. DOCX trước đây chỉ 16 KB và 0 ảnh là kết quả thiếu nội dung, không phải xác minh fidelity thành công.
+
+`word.py` nay đọc class local được documentclass chọn, lấy graphicspath, tìm ảnh có/không đuôi, xử lý tên quote và chuẩn hóa fbox/framebox/mbox chứa includegraphics trước khi Pandoc đọc. Chỉ sửa bản chuyển đổi trong bộ nhớ; nguyên bản LaTeX giữ nguyên. Đường dẫn vẫn đi qua Store.path, không đọc ngoài project. Quy đổi width theo textwidth/linewidth/columnwidth sang mm, giữ style width/height với bộ lọc CSS riêng cho img, không cho URL/CSS tùy ý. Figure/figcaption được giữ, thêm số thứ tự và caption; cảnh báo số ảnh chuyển được nếu chưa đủ, không âm thầm coi ảnh bị mất là thành công.
+
+Nhận diện mathpazo/palatino để dùng Palatino Linotype và cỡ documentclass 10/11/12pt trong Word preview và DOCX styles (Normal/Body/Heading/Title/Caption), không thay font công thức/code. Heading căn giữa thay vì bị justify giãn chữ; caption nhỏ/nghiêng, figure tránh tách khối. Font thực tế vẫn phụ thuộc máy mở Word; chưa embed TeX font hoặc giữ toàn bộ typography/floats/page breaks của PDF.
+
+Thêm converterVersion=3/needsRefresh: cache preview cũ tự tái tạo khi mở tab/export, có backup trước đó. Không cần nhập lại ZIP. Bổ sung alt ngắn cho ảnh và loại data URI khỏi mô tả picture XML, tránh nhân đôi ảnh base64 trong document.xml. DOCX vẫn nhúng dữ liệu ảnh trong word/media.
+
+Kiểm chứng: **131 pytest đạt**, Ruff F/E9, static build/TypeScript và diff check đạt. Test mới bao gồm framed figures, class graphicspath, quote/không đuôi, kích thước 76.5mm, font Palatino 12pt, sanitizer và DOCX có drawing/media thật. Browser Edge `target/word-images-layout-01`: nâng cache cũ, đủ 8/8 ảnh decode naturalWidth>0, 8 caption; ảnh OWASP đầu tiên nằm sau section 3 và trước section 4 trong thứ tự nội dung. Đã xem screenshot `article-word.png`. Toàn bộ feature browser regression đạt ở `target/word-images-features-01`, gồm đồng bộ Word/LaTeX, export, editor/history/upload/Auto Compile.
+
+Trên bản sao bài người dùng: `target/article-zip-repro-01/verified-article.docx` hiện 1.070.279 bytes; kiểm 8 drawing và 8 word/media, SHA-256 tập ảnh nhúng khớp chính xác 8 file gốc (owaspyii2, cyprom_overview, advtemplateproject, actionscenario, 1, criteria, 2, 3). Source fingerprint không đổi khi generate/export. Giữ giới hạn: preview Word là continuous flow hai cột, chưa tái hiện vị trí float/phân trang giống TeX; bibliography/custom macro chưa được round-trip đầy đủ.
+
+## 44. Thoát chế độ tập trung bằng Esc và Bố cục (04/11/2026)
+
+Nguyên nhân bị kẹt: focus CSS ẩn cả app-header chứa nút Bố cục, chỉ còn gợi ý phím Ctrl/Cmd+Shift+M. Thay bằng header gọn 44px giữ Bố cục và nút Thoát tập trung · Esc. Mục Focus mode trong menu đổi thành Thoát chế độ tập trung khi đang bật; giữ nguyên layout split/editor/pdf khi thoát.
+
+`useParity` thêm listener Escape ở capture phase để hoạt động cả khi CodeMirror đang focus, bỏ qua sự kiện IME composition và cleanup listener khi thoát. Đóng layout menu sau khi rời focus. Phím Ctrl/Cmd+Shift+M vẫn dùng được.
+
+Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt. Browser Edge toàn feature regression đạt ở `target/focus-exit-01`; bổ sung ba đường thoát: Esc khi con trỏ trong editor, Bố cục → Thoát chế độ tập trung, nút thoát trực tiếp. Kiểm sidebar trở lại và layout editor-only giữ nguyên. Screenshot `focus-mode.png` đã xem trực quan. README cập nhật cách dùng; UI đã build để mở lại app nhận thay đổi. Không thay đổi luồng export PDF/Word trong mục này.
+
+## 45. Bổ sung hỗ trợ Kéo & Thả (Drag & Drop) khi nhập dự án (04/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Khi tạo dự án mới từ tài nguyên có sẵn (ZIP, Word `.docx`, Markdown, hoặc thư mục dự án), trước đây người dùng bắt buộc phải bấm vào từng nút tương ứng (`ZIP`, `Word (.docx)`, `Markdown`, `Thư mục có sẵn`), kích hoạt hộp thoại chọn file của hệ điều hành (`create_file_dialog`) và phải tự duyệt tìm đường dẫn tệp trên ổ đĩa.
+  - Thao tác này gây gián đoạn và bất tiện khi người dùng đã có sẵn thư mục chứa tệp trong Windows Explorer hoặc muốn kéo thả nhanh chóng.
+
+- **Giải pháp triển khai**:
+  1. **Vùng kéo thả trực quan (`NewProjectExtras.tsx`, `globals.css`)**:
+     - Bổ sung khối `.import-dropzone` tích hợp trực tiếp vào hộp thoại "Tạo dự án mới" (Create new project), tương thích cả giao diện sáng (Light) và tối (Dark mode).
+     - Phản hồi thị giác thời gian thực: khi kéo tệp hoặc thư mục vào vùng dropzone, viền nét đứt chuyển sang màu xanh lá chủ đạo (`var(--green)`), nền chuyển màu sáng/tối nhẹ kèm thông báo *"Thả tệp hoặc thư mục vào đây để tạo dự án ngay!"*.
+     - Tự động nhận diện định dạng:
+       - Tệp `.zip`: tự động nhận diện và nhập dưới dạng dự án nén LaTeX.
+       - Tệp `.docx`: tự động chuyển đổi từ Word sang LaTeX thông qua Pandoc.
+       - Tệp `.md` hoặc `.markdown`: tự động chuyển đổi từ Markdown sang LaTeX qua Pandoc.
+       - Thư mục hoặc nhiều tệp: tự động nhận diện cấu trúc dự án, tìm `main.tex` hoặc tệp gốc có `\documentclass`.
+       - Tệp `.tex` đơn lẻ: tự động đóng gói thành dự án hoàn chỉnh.
+     - Tự động gợi ý tên dự án từ tên tệp/thư mục thả vào nếu người dùng chưa nhập tên.
+     - Trạng thái tiến trình tải lên và nút hủy: hiển thị icon xoay và tên tệp đang xử lý, kèm nút "Hủy nhập" an toàn (`io-cancel`).
+     - Giữ nguyên các nút bấm (`[Dự án ví dụ]`, `[↑ ZIP]`, `[↑ Word]`, `[↑ Markdown]`, `[↑ Thư mục]`) bên trong dropzone để người dùng vẫn có thể click chọn tệp thủ công qua hộp thoại hệ thống nếu muốn.
+  2. **Hạ tầng truyền nhận dữ liệu (`parity_api.py`, `api.py`, `main.py`, `zip.ts`)**:
+     - Hỗ trợ đường dẫn gốc hệ điều hành (`import-path` / `native("import_path")`): trong môi trường WebView2/desktop, khi có `file.path`, ứng dụng gọi trực tiếp `action("import-path")` hoặc `native("import_path")` với hiệu năng tức thời, không qua sao chép trung gian.
+     - Hỗ trợ luồng nhị phân streaming (`POST /api/projects/import-file`): đối với môi trường trình duyệt hoặc khi `file.path` không được lộ vì lý do bảo mật, ứng dụng truyền luồng nhị phân trực tiếp đến FastAPI backend (bỏ qua giới hạn JSON 12MB của middleware và hỗ trợ tệp tới 50 MiB).
+     - Module phát sinh tệp nén thuần TypeScript (`lib/zip.ts`): cho phép đóng gói đệ quy các thư mục hoặc danh sách tệp được kéo thả trong trình duyệt thành một tệp ZIP chuẩn mực (không phụ thuộc thư viện ngoài) rồi chuyển đến backend.
+
+- **Kiểm chứng**:
+  - 49/49 bài kiểm thử `pytest` trong `test_parity.py` đạt 100%, bao gồm cả 2 luồng `POST /api/projects/import-file` và `POST /api/actions/import-path`.
+  - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
+  - Next.js static production build (`npm run build`) hoàn tất thành công. Code đã sẵn sàng phục vụ cho lần mở ứng dụng tiếp theo.

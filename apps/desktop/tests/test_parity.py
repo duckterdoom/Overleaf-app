@@ -395,7 +395,7 @@ def test_error_explainer_root_cause(message, title):
     assert explain("main.tex:12: " + message, "en")[0]["title"] != issues[0]["title"]
 
 
-def test_install_consent_and_api_wiring(store):
+def test_install_consent_and_api_wiring(store, tmp_path):
     compiler = Compiler(store)
     with pytest.raises(Problem):
         asyncio.run(install_packages(compiler, store.templates.items["blank"], False))
@@ -436,6 +436,35 @@ def test_install_consent_and_api_wiring(store):
             and client.get(base + "/watch").json()["current"] is False
         )
         assert client.get("/api/network").json()["joined"] is False
+
+        # Test drag-and-drop import-file endpoint
+        drop_archive = tmp_path / "stream_import.zip"
+        with zipfile.ZipFile(drop_archive, "w") as zf:
+            zf.writestr(
+                "main.tex",
+                r"\documentclass{article}\begin{document}Dropped file content\end{document}",
+            )
+        imported_res = client.post(
+            "/api/projects/import-file",
+            params={"kind": "zip", "filename": "stream_import.zip", "title": "DroppedProject"},
+            content=drop_archive.read_bytes(),
+        )
+        assert imported_res.status_code == 200
+        dropped_id = imported_res.json()["id"]
+        assert store.read(dropped_id, "main.tex").startswith(r"\documentclass")
+
+        # Test drag-and-drop import-path action
+        path_res = client.post(
+            "/api/actions/import-path",
+            json={
+                "kind": "zip",
+                "path": str(drop_archive),
+                "title": "PathProject",
+            },
+        )
+        assert path_res.status_code == 200
+        path_id = path_res.json()["id"]
+        assert store.read(path_id, "main.tex").startswith(r"\documentclass")
 
 
 def test_native_close_stages_latest_buffer_without_javascript_deadlock(store):

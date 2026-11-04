@@ -84,7 +84,10 @@ def create_api(
             if origin and urlsplit(origin).netloc != request.url.netloc:
                 return JSONResponse({"message": "Invalid origin"}, status_code=403)
             # Bound incoming JSON before the framework parses it (also covers chunked requests).
-            if "/upload/" in request.url.path and request.url.path.endswith("/part"):
+            if (
+                ("/upload/" in request.url.path and request.url.path.endswith("/part"))
+                or request.url.path.startswith("/api/projects/import-file")
+            ):
                 return await call_next(request)
             size = 0
             body = bytearray()

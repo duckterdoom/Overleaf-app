@@ -163,6 +163,42 @@ def register(app, store, compiler):
         io.abort_upload(project, batch)
         return {"cancelled": True}
 
+    @app.post("/api/projects/import-file")
+    async def import_file(request: Request):
+        import uuid
+        kind = request.query_params.get("kind", "zip")
+        title = request.query_params.get("title", "")
+        parent = request.query_params.get("parent", "")
+        language = request.query_params.get("language", "vi")
+        filename = request.query_params.get("filename", "")
+        if kind not in {"zip", "word", "markdown"}:
+            raise Problem("Kiểu nhập không hợp lệ.")
+        staging_dir = store.home / ".import-tmp"
+        staging_dir.mkdir(parents=True, exist_ok=True)
+        temp_name = f"{uuid.uuid4().hex}_{filename or 'import'}"
+        temp_path = staging_dir / temp_name
+        total_size = 0
+        try:
+            with open(temp_path, "wb") as f:
+                async for chunk in request.stream():
+                    total_size += len(chunk)
+                    if total_size > 50 * 1024 * 1024:
+                        raise Problem("Tệp tải lên vượt giới hạn 50 MiB.", 413)
+                    f.write(chunk)
+            return io.import_project(
+                kind,
+                str(temp_path),
+                title or Path(filename).stem,
+                parent,
+                language,
+            )
+        finally:
+            if temp_path.exists():
+                try:
+                    temp_path.unlink()
+                except Exception:
+                    pass
+
     @app.post("/api/install/cancel")
     async def cancel_install():
         if app.state.install_task:
@@ -339,6 +375,18 @@ def register(app, store, compiler):
                 "github",
                 data["url"],
                 data["title"],
+                data.get("parent", ""),
+                data.get("language", "vi"),
+            )
+        if name == "import-path":
+            kind = data.get("kind")
+            source = data.get("path")
+            if not kind or not source:
+                raise Problem("Thiếu thông tin tệp hoặc đường dẫn.")
+            return io.import_project(
+                kind,
+                source,
+                data.get("title", ""),
                 data.get("parent", ""),
                 data.get("language", "vi"),
             )
