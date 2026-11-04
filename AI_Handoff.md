@@ -1,6 +1,8 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
-> **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 41**.
+> **Mới nhất — Giao diện Editor toàn màn hình và Bảng Logs & Errors chuẩn Overleaf (04/11/2026):** chuyển toàn bộ build output và bảng error khỏi cột soạn thảo LaTeX để editor chiếm 100% chiều cao; bổ sung nút icon tài liệu kèm huy hiệu đếm lỗi/cảnh báo cạnh nút Recompile; chế độ xem Logs & Errors chuyên dụng ở cột phải với các tab All/Errors/Warnings/Info, thẻ lỗi mở rộng được, nút "Đi tới dòng", mục Raw logs thu gọn, thanh đáy "Clear cached files" và nút "Back to PDF" để quay lại xem PDF. Xem **mục 46**.
+
+> **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 45**.
 
 > **Mới nhất — Sửa lỗi phông chữ tiếng Việt trên Next.js (04/11/2026):** loại bỏ hoàn toàn phông `Georgia` vốn thiếu dải ký tự tiếng Việt Unicode (U+1E00–U+1EFF) trên Windows, thay thế bằng bộ phông serif chuẩn mực hỗ trợ đầy đủ tiếng Việt (`Charter`, `Sitka Text`, `Sitka Heading`, `Cambria`, `Times New Roman`, `serif`); nới lỏng `letter-spacing` tránh va chạm/rơi dấu. Xem **mục 40**.
 
@@ -1217,3 +1219,53 @@ Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt.
   - 49/49 bài kiểm thử `pytest` trong `test_parity.py` đạt 100%, bao gồm cả 2 luồng `POST /api/projects/import-file` và `POST /api/actions/import-path`.
   - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
   - Next.js static production build (`npm run build`) hoàn tất thành công. Code đã sẵn sàng phục vụ cho lần mở ứng dụng tiếp theo.
+
+## 46. Tối ưu không gian Editor toàn màn hình và Tích hợp Bảng Logs & Errors chuẩn Overleaf (04/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Ở giao diện cũ, cột trái (editor column) vừa phải chứa trình soạn thảo mã nguồn LaTeX (CodeMirror), vừa phải gánh thêm cửa sổ terminal "Build output" và danh sách giải thích lỗi LaTeX ("error explanations") ở bên dưới.
+  - Điều này làm khung soạn thảo LaTeX bị bóp nghẹt chỉ còn chiếm một phần nhỏ chiều cao (khoảng 240px), gây khó khăn khi viết tài liệu dài và không giống với trải nghiệm chuẩn mực của Overleaf.
+  - Người dùng muốn trình soạn thảo LaTeX ở cột trái chiếm trọn 100% chiều cao (toàn bộ diện tích khả dụng). Phần nhật ký biên dịch (build logs) và bảng lỗi/cảnh báo được chuyển hoàn toàn sang cột bên phải (nơi hiển thị PDF preview).
+
+- **Giải pháp triển khai theo thiết kế Overleaf (Ảnh 2, 3 và 4)**:
+  1. **Giải phóng 100% diện tích cho LaTeX Editor (Ảnh 2)**:
+     - Gỡ bỏ hoàn toàn khối terminal `.build-heading`, nút `.cache-clean`, khung terminal `<pre className="build-output">` và danh sách `.error-explanations` khỏi `.editor-column`.
+     - Bộ soạn thảo CodeMirror trong `.editor-area` nay tự động giãn nở đạt 100% chiều cao của cột trái, mang lại không gian viết rộng rãi, liền mạch, không còn bị chia cắt.
+  2. **Nút biểu tượng Nhật ký & Lỗi với Huy hiệu đếm (Badge Icon) cạnh nút Recompile (Ảnh 3)**:
+     - Khi đang ở chế độ xem PDF/Word (`previewTab !== "logs"`), một nút biểu tượng trang tài liệu chuẩn Overleaf (`.logs-toggle-btn`) được đặt ngay cạnh nút `Recompile` trên thanh công cụ biên dịch (`.compile-toolbar`).
+     - Biểu tượng tài liệu SVG có góc gập tinh tế, hiển thị số lượng lỗi hoặc cảnh báo ngay trên mặt trang tài liệu:
+       - Nếu có lỗi biên dịch (`errors > 0`): số huy hiệu hiển thị màu đỏ rực (`#dc2626`).
+       - Nếu có cảnh báo (`warnings > 0` và không có lỗi): số huy hiệu hiển thị màu vàng kim/hổ phách đặc trưng (`#d97706`, giống hệt số `2` trong Ảnh 3).
+       - Nếu không có lỗi hay cảnh báo: hiển thị số `0` với tông xám nhạt tinh tế.
+     - Nhấp chuột vào nút này sẽ lập tức chuyển đổi cột bên phải sang giao diện "Logs & Errors" chuyên dụng.
+  3. **Nút "Quay lại PDF" (Back to PDF) (Ảnh 4)**:
+     - Khi chuyển sang giao diện Logs (`previewTab === "logs"`), nút biểu tượng huy hiệu được thay thế bằng nút pill bo tròn `[Quay lại PDF]` (`Back to PDF`) ngay cạnh `Recompile`.
+     - Nhấp chuột vào nút này sẽ đưa giao diện xem trước cột phải trở lại ngay lập tức với tài liệu PDF đã biên dịch.
+  4. **Giao diện Nhật ký & Lỗi chuyên dụng (`LogsView.tsx`, Ảnh 4)**:
+     - **Thanh lọc phân loại (Filter Tabs)**:
+       - `Tất cả log <số lượng>` (All logs)
+       - `Lỗi <số lượng>` (Errors)
+       - `Cảnh báo <số lượng>` (Warnings)
+       - `Thông tin <số lượng>` (Info)
+       - Thẻ được chọn có đường viền gạch chân xanh lá Overleaf (`#00a877`).
+     - **Thẻ lỗi/cảnh báo tương tác (Interactive Issue Cards)**:
+       - Tiêu đề được phân màu trực quan: Đỏ cho lỗi, Vàng kim cho cảnh báo, Xanh dương cho thông tin.
+       - Hiển thị vị trí tệp và dòng cụ thể (ví dụ: `/main.tex:45`).
+       - Biểu tượng hỗ trợ/trợ lý (Sparkles) ở góc phải.
+       - Cho phép mở rộng / thu gọn để xem chi tiết thông điệp thô, nguyên nhân (Why), và giải pháp khắc phục đề xuất (Fix).
+       - Bổ sung nút **"Đi tới dòng {line}" (Jump to line)**: khi nhấn vào, con trỏ của CodeMirror sẽ tự động cuộn và đặt đúng vào dòng mã nguồn tương ứng trong tệp đang mở.
+     - **Bộ bóc tách nhật ký toàn diện (`parseAllLogs`)**:
+       - Tự động nhận diện cấu trúc cảnh báo LaTeX từ cả backend `explainer` lẫn dòng raw output: nhận diện cảnh báo font (`Font shape ... undefined`, `Some font shapes were not available, defaults substituted.`), thiếu nhãn tham chiếu chéo (`Reference undefined`), thiếu trích dẫn (`Citation undefined`), tràn lề (`Overfull / Underfull \hbox`), v.v.
+     - **Mục "Nhật ký thô" có thể gấp gọn (› Raw logs)**:
+       - Thu gọn mặc định để giữ giao diện sạch sẽ, có thể bấm mở để xem toàn bộ luồng xuất của `latexmk`.
+       - Đi kèm nút "Sao chép nhật ký" (Copy logs) và "Xóa" (Clear).
+     - **Thanh công cụ cố định phía dưới (Bottom Action Bar)**:
+       - Nút đỏ nổi bật: `[🗑 Xóa bộ nhớ đệm]` (Clear cached files) để dọn dẹp các tệp tạm, cache, aux của LaTeX.
+       - Nút `[Nhật ký & tệp khác ▴]` (Other logs and files): mở menu tải xuống tệp nhật ký `.log`, sao chép toàn bộ nhật ký hoặc mở nhanh PDF.
+  5. **Hỗ trợ toàn diện Giao diện Sáng (Light Mode) và Tối (Dark Mode)**:
+     - Tương thích màu sắc chuẩn mực với hệ thống CSS biến giao diện hiện tại của ứng dụng.
+
+- **Kiểm chứng**:
+  - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
+  - Next.js static production build (`npm run build`): Biên dịch tĩnh thành công 100%.
+  - Pytest (`test_parity.py`): 49/49 bài kiểm thử đạt kết quả tốt.

@@ -59,6 +59,7 @@ import ProjectMenu from "../components/ProjectMenu";
 import ProjectCard from "../components/ProjectCard";
 import NewProjectExtras from "../components/NewProjectExtras";
 import FileActionsPanel from "../components/FileActionsPanel";
+import LogsView, { parseAllLogs } from "../components/LogsView";
 import useParity from "../lib/useParity";
 import { action, native, translator, type Activity } from "../lib/parity";
 import { localize } from "../lib/i18n";
@@ -122,7 +123,9 @@ export default function Workspace() {
         "files" | "review" | "chat" | null
     >("files");
     const [reviewDraft, setReviewDraft] = useState<ReviewAnchor | null>(null);
-    const [previewTab, setPreviewTab] = useState<"pdf" | "word">("pdf");
+    const [previewTab, setPreviewTab] = useState<"pdf" | "word" | "logs">(
+        "pdf",
+    );
     const [downloadMenu, setDownloadMenu] = useState(false);
     const wordPreview = useRef<WordPreviewHandle | null>(null);
     useEffect(() => {
@@ -488,6 +491,31 @@ export default function Workspace() {
     });
     const uiLanguage = String(ext.settings.language || "vi"),
         t = translator(uiLanguage);
+    const logEntries = useMemo(
+        () => parseAllLogs(ext.issues, logs, file, uiLanguage),
+        [ext.issues, logs, file, uiLanguage],
+    );
+    const logCounts = useMemo(() => {
+        const errors = logEntries.filter((i) => i.type === "error").length;
+        const warnings = logEntries.filter((i) => i.type === "warning").length;
+        return {
+            all: logEntries.length,
+            errors,
+            warnings,
+        };
+    }, [logEntries]);
+    const logBadgeCount =
+        logCounts.errors > 0
+            ? logCounts.errors
+            : logCounts.warnings > 0
+              ? logCounts.warnings
+              : logCounts.all;
+    const logBadgeClass =
+        logCounts.errors > 0
+            ? "has-error"
+            : logCounts.warnings > 0
+              ? "has-warning"
+              : "is-clean";
     useEffect(() => {
         if (!ext.focus) setLayoutMenu(false);
     }, [ext.focus]);
@@ -1520,78 +1548,6 @@ export default function Workspace() {
                                         />
                                     </div>
                                 </div>
-                                <div className="build-heading">
-                                    <Terminal size={15} />
-                                    <strong>Build output</strong>
-                                    <span>
-                                        {busy
-                                            ? localize(
-                                                  "Đang biên dịch",
-                                                  uiLanguage,
-                                              )
-                                            : "latexmk local"}
-                                    </span>
-                                    <button onClick={() => setLogs("")}>
-                                        {localize("Xóa", uiLanguage)}
-                                    </button>
-                                </div>
-                                <button
-                                    className="cache-clean"
-                                    disabled={busy}
-                                    onClick={async () => {
-                                        try {
-                                            await action("clean", {
-                                                project: project.id,
-                                            });
-                                            setNotice(
-                                                t(
-                                                    "Đã dọn cache.",
-                                                    "Build cache cleaned.",
-                                                ),
-                                            );
-                                        } catch (error) {
-                                            setError(text(error));
-                                        }
-                                    }}
-                                >
-                                    {t(
-                                        "Dọn cache biên dịch",
-                                        "Clean build cache",
-                                    )}
-                                </button>
-                                <pre ref={logPane} className="build-output">
-                                    {logs ||
-                                        localize(
-                                            "Nhật ký biên dịch sẽ hiển thị tại đây.",
-                                            uiLanguage,
-                                        )}
-                                </pre>
-                                {ext.issues.length > 0 && (
-                                    <div className="error-explanations">
-                                        {ext.issues.map((issue, index) => (
-                                            <article key={index}>
-                                                <strong>
-                                                    {issue.title}
-                                                    {(issue.file ||
-                                                        issue.line > 0) && (
-                                                        <>
-                                                            {" "}
-                                                            · {issue.file}
-                                                            {issue.line > 0
-                                                                ? `:${issue.line}`
-                                                                : ""}
-                                                        </>
-                                                    )}
-                                                </strong>
-                                                <span>{issue.message}</span>
-                                                {issue.why && (
-                                                    <p>{issue.why}</p>
-                                                )}
-                                                <p>{issue.fix}</p>
-                                            </article>
-                                        ))}
-                                    </div>
-                                )}
                             </section>
                         )}
                         {layout === "split" && (
@@ -1667,6 +1623,64 @@ export default function Workspace() {
                                                 onClick={() => void ext.stop()}
                                             >
                                                 <Square size={15} />
+                                            </button>
+                                        )}
+                                        {previewTab === "logs" ? (
+                                            <button
+                                                className="back-to-pdf-btn"
+                                                title={t(
+                                                    "Quay lại chế độ xem PDF",
+                                                    "Back to PDF preview",
+                                                )}
+                                                onClick={() =>
+                                                    setPreviewTab("pdf")
+                                                }
+                                            >
+                                                {t(
+                                                    "Quay lại PDF",
+                                                    "Back to PDF",
+                                                )}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                className={`logs-toggle-btn ${logBadgeClass}`}
+                                                title={t(
+                                                    "Xem nhật ký biên dịch và lỗi",
+                                                    "Logs and output files",
+                                                )}
+                                                aria-label={t(
+                                                    "Nhật ký và lỗi",
+                                                    "Logs and errors",
+                                                )}
+                                                onClick={() =>
+                                                    setPreviewTab("logs")
+                                                }
+                                            >
+                                                <div className="logs-doc-icon">
+                                                    <svg
+                                                        width="18"
+                                                        height="20"
+                                                        viewBox="0 0 18 20"
+                                                        fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            d="M3 2C2.44772 2 2 2.44772 2 3V17C2 17.5523 2.44772 18 3 18H15C15.5523 18 16 17.5523 16 17V7L11 2H3Z"
+                                                            fill="#ffffff"
+                                                            stroke="#b5c0cb"
+                                                            strokeWidth="1.2"
+                                                        />
+                                                        <path
+                                                            d="M11 2V7H16"
+                                                            stroke="#b5c0cb"
+                                                            strokeWidth="1.2"
+                                                            strokeLinejoin="round"
+                                                        />
+                                                    </svg>
+                                                    <span className="logs-badge-num">
+                                                        {logBadgeCount}
+                                                    </span>
+                                                </div>
                                             </button>
                                         )}
                                     </div>
@@ -1754,87 +1768,175 @@ export default function Workspace() {
                                         )}
                                     </div>
                                 </div>
-                                <div
-                                    className="preview-tabs"
-                                    role="tablist"
-                                    aria-label={t(
-                                        "Định dạng xem trước",
-                                        "Preview format",
-                                    )}
-                                >
-                                    <button
-                                        role="tab"
-                                        aria-selected={previewTab === "pdf"}
-                                        onClick={() => setPreviewTab("pdf")}
-                                    >
-                                        PDF preview
-                                    </button>
-                                    <button
-                                        role="tab"
-                                        aria-selected={previewTab === "word"}
-                                        onClick={() => setPreviewTab("word")}
-                                    >
-                                        Word preview
-                                    </button>
-                                </div>
-                                <div
-                                    className="preview-format-panel"
-                                    hidden={previewTab !== "pdf"}
-                                >
-                                    <PdfViewer
-                                        data={pdf}
-                                        stale={stale || dirty}
-                                        geometry={ext.geometry}
-                                        target={ext.target}
-                                        onInverse={ext.inverse}
-                                        language={uiLanguage}
-                                    />
-                                </div>
-                                <div
-                                    className="preview-format-panel"
-                                    hidden={previewTab !== "word"}
-                                >
-                                    <WordPreview
-                                        key={project.id}
-                                        ref={wordPreview}
-                                        project={project.id}
-                                        language={uiLanguage}
-                                        sourceDirty={dirty}
-                                        active={previewTab === "word"}
-                                        sourceSignal={file + content + snapshot}
-                                        compiled={
-                                            !!snapshot && !stale && !dirty
-                                        }
-                                        onSynced={async () => {
-                                            if (dirty) return;
-                                            const ticket = revision.current;
-                                            const updated = await json<{
-                                                content: string;
-                                            }>(
-                                                `/projects/${project.id}/file?path=${encodeURIComponent(file)}`,
-                                            );
-                                            if (ticket !== revision.current)
-                                                return;
-                                            if (
-                                                updated.content !==
-                                                savedText.current
-                                            ) {
-                                                revision.current += 1;
-                                                setContent(updated.content);
-                                                savedText.current =
-                                                    updated.content;
-                                                setDirty(false);
-                                                setStale(true);
+                                {previewTab === "logs" ? (
+                                    <LogsView
+                                        project={project}
+                                        file={file}
+                                        issues={ext.issues}
+                                        logs={logs}
+                                        setLogs={setLogs}
+                                        logPaneRef={logPane}
+                                        busy={busy}
+                                        uiLanguage={uiLanguage}
+                                        onClearCache={async () => {
+                                            try {
+                                                await action("clean", {
+                                                    project: project.id,
+                                                });
                                                 setNotice(
-                                                    "Đã đồng bộ Word sang LaTeX. Compile lại để cập nhật PDF.",
+                                                    t(
+                                                        "Đã dọn cache.",
+                                                        "Build cache cleaned.",
+                                                    ),
                                                 );
+                                            } catch (error) {
+                                                setError(text(error));
                                             }
                                         }}
-                                        saveSource={async () =>
-                                            !dirty || !!(await save())
-                                        }
+                                        onJumpToLine={(targetFile, line) => {
+                                            if (
+                                                targetFile &&
+                                                targetFile !== file
+                                            ) {
+                                                const entry = entries.find(
+                                                    (e) =>
+                                                        e.path === targetFile ||
+                                                        e.path.endsWith(
+                                                            "/" + targetFile,
+                                                        ),
+                                                );
+                                                if (entry) {
+                                                    void openFile(entry);
+                                                }
+                                            }
+                                            if (line > 0 && view.current) {
+                                                try {
+                                                    const ed = view.current;
+                                                    const docLine =
+                                                        ed.state.doc.line(
+                                                            Math.min(
+                                                                line,
+                                                                ed.state.doc
+                                                                    .lines,
+                                                            ),
+                                                        );
+                                                    ed.dispatch({
+                                                        selection: {
+                                                            anchor:
+                                                                docLine.from,
+                                                        },
+                                                        scrollIntoView: true,
+                                                    });
+                                                    ed.focus();
+                                                } catch {}
+                                            }
+                                        }}
+                                        onBackToPdf={() => setPreviewTab("pdf")}
                                     />
-                                </div>
+                                ) : (
+                                    <>
+                                        <div
+                                            className="preview-tabs"
+                                            role="tablist"
+                                            aria-label={t(
+                                                "Định dạng xem trước",
+                                                "Preview format",
+                                            )}
+                                        >
+                                            <button
+                                                role="tab"
+                                                aria-selected={
+                                                    previewTab === "pdf"
+                                                }
+                                                onClick={() =>
+                                                    setPreviewTab("pdf")
+                                                }
+                                            >
+                                                PDF preview
+                                            </button>
+                                            <button
+                                                role="tab"
+                                                aria-selected={
+                                                    previewTab === "word"
+                                                }
+                                                onClick={() =>
+                                                    setPreviewTab("word")
+                                                }
+                                            >
+                                                Word preview
+                                            </button>
+                                        </div>
+                                        <div
+                                            className="preview-format-panel"
+                                            hidden={previewTab !== "pdf"}
+                                        >
+                                            <PdfViewer
+                                                data={pdf}
+                                                stale={stale || dirty}
+                                                geometry={ext.geometry}
+                                                target={ext.target}
+                                                onInverse={ext.inverse}
+                                                language={uiLanguage}
+                                            />
+                                        </div>
+                                        <div
+                                            className="preview-format-panel"
+                                            hidden={previewTab !== "word"}
+                                        >
+                                            <WordPreview
+                                                key={project.id}
+                                                ref={wordPreview}
+                                                project={project.id}
+                                                language={uiLanguage}
+                                                sourceDirty={dirty}
+                                                active={previewTab === "word"}
+                                                sourceSignal={
+                                                    file + content + snapshot
+                                                }
+                                                compiled={
+                                                    !!snapshot &&
+                                                    !stale &&
+                                                    !dirty
+                                                }
+                                                onSynced={async () => {
+                                                    if (dirty) return;
+                                                    const ticket =
+                                                        revision.current;
+                                                    const updated =
+                                                        await json<{
+                                                            content: string;
+                                                        }>(
+                                                            `/projects/${project.id}/file?path=${encodeURIComponent(file)}`,
+                                                        );
+                                                    if (
+                                                        ticket !==
+                                                        revision.current
+                                                    )
+                                                        return;
+                                                    if (
+                                                        updated.content !==
+                                                        savedText.current
+                                                    ) {
+                                                        revision.current += 1;
+                                                        setContent(
+                                                            updated.content,
+                                                        );
+                                                        savedText.current =
+                                                            updated.content;
+                                                        setDirty(false);
+                                                        setStale(true);
+                                                        setNotice(
+                                                            "Đã đồng bộ Word sang LaTeX. Compile lại để cập nhật PDF.",
+                                                        );
+                                                    }
+                                                }}
+                                                saveSource={async () =>
+                                                    !dirty || !!(await save())
+                                                }
+                                            />
+                                        </div>
+                                    </>
+                                )}
                             </section>
                         )}
                     </section>
