@@ -136,7 +136,9 @@ export default function ActivityHeatmap({
 
         let computedCell = 11;
         if (containerWidth > 0) {
-            computedCell = containerWidth / totalUnits;
+            // Subtract 2px margin of safety so subpixel rounding never exceeds container
+            const usable = Math.max(300, containerWidth - 2);
+            computedCell = usable / totalUnits;
             computedCell = Math.max(minCell, Math.min(maxCell, computedCell));
         }
 
@@ -144,7 +146,7 @@ export default function ActivityHeatmap({
         const computedStep = computedCell + computedGap;
         const computedGridWidth = COLS * computedCell + (COLS - 1) * computedGap;
         const computedGridHeight = ROWS * computedCell + (ROWS - 1) * computedGap;
-        const computedCanvasWidth = Math.ceil(computedGridWidth);
+        const computedCanvasWidth = Math.floor(computedGridWidth);
         const computedCanvasHeight = Math.ceil(computedGridHeight + 20);
 
         return {
@@ -753,6 +755,7 @@ export default function ActivityHeatmap({
                 background: "var(--panel, #FFFFFF)",
                 width: "100%",
                 boxSizing: "border-box",
+                overflow: "hidden",
             }}
         >
             {/* 1. Header Row */}
@@ -914,12 +917,14 @@ export default function ActivityHeatmap({
                 </div>
             </div>
 
-            {/* 3. Responsive Heatmap / Snake Canvas (fits 100% width of card) */}
+            {/* 3. Responsive Heatmap / Snake Canvas (fits 100% width of card without scrollbars) */}
             <div
                 ref={canvasWrapperRef}
                 style={{
                     width: "100%",
-                    overflowX: "auto",
+                    overflow: "hidden",
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
                     paddingBottom: "2px",
                 }}
             >
@@ -930,6 +935,7 @@ export default function ActivityHeatmap({
                     onDoubleClick={handleDoubleClick}
                     style={{
                         display: "block",
+                        maxWidth: "100%",
                         cursor: gameActive ? "default" : "pointer",
                         outline: "none",
                     }}

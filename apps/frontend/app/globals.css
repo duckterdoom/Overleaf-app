@@ -18,7 +18,12 @@
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 20px;
-    overflow: auto;
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.activity-panel::-webkit-scrollbar {
+    display: none;
 }
 .activity-panel > div:first-child {
     display: flex;
@@ -338,7 +343,12 @@
     padding: 20px;
     border: 1px solid var(--line);
     border-radius: 8px;
-    overflow: auto;
+    overflow: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.activity-card::-webkit-scrollbar {
+    display: none;
 }
 .activity-card header {
     display: flex;
