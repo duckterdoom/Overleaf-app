@@ -6,15 +6,7 @@ import { translator, type Activity } from "../lib/parity";
 
 const ROWS = 7;
 const COLS = 52;
-const CELL = 11;
 const GAP_RATIO = 0.3;
-const GAP = Math.max(3, CELL * GAP_RATIO); // 3.3
-const STEP = CELL + GAP; // 14.3
-const GRID_WIDTH = COLS * CELL + (COLS - 1) * GAP; // ~740.3
-const GRID_HEIGHT = ROWS * CELL + (ROWS - 1) * GAP; // ~96.8
-const LABEL_Y = GRID_HEIGHT + 14;
-const CANVAS_WIDTH = Math.ceil(GRID_WIDTH); // 741
-const CANVAS_HEIGHT = Math.ceil(GRID_HEIGHT + 20); // 117
 const TICK_MILLIS = 180;
 
 const SKULL_PIXELS = [
@@ -109,7 +101,67 @@ export default function ActivityHeatmap({
     }>({ visible: false, x: 0, y: 0, text: "" });
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const canvasWrapperRef = useRef<HTMLDivElement | null>(null);
     const containerRef = useRef<HTMLDivElement | null>(null);
+
+    // Responsive container width
+    const [containerWidth, setContainerWidth] = useState<number>(0);
+
+    useEffect(() => {
+        const el = canvasWrapperRef.current;
+        if (!el) return;
+
+        const updateWidth = () => {
+            const w = el.clientWidth;
+            if (w > 0) {
+                setContainerWidth(w);
+            }
+        };
+
+        updateWidth();
+
+        const ro = new ResizeObserver(() => {
+            updateWidth();
+        });
+        ro.observe(el);
+
+        return () => ro.disconnect();
+    }, []);
+
+    // Responsive geometry to perfectly fit 100% of card width
+    const geometry = useMemo(() => {
+        const minCell = 9;
+        const maxCell = 24;
+        const totalUnits = COLS + (COLS - 1) * GAP_RATIO; // 67.3
+
+        let computedCell = 11;
+        if (containerWidth > 0) {
+            computedCell = containerWidth / totalUnits;
+            computedCell = Math.max(minCell, Math.min(maxCell, computedCell));
+        }
+
+        const computedGap = computedCell * GAP_RATIO;
+        const computedStep = computedCell + computedGap;
+        const computedGridWidth = COLS * computedCell + (COLS - 1) * computedGap;
+        const computedGridHeight = ROWS * computedCell + (ROWS - 1) * computedGap;
+        const computedCanvasWidth = Math.ceil(computedGridWidth);
+        const computedCanvasHeight = Math.ceil(computedGridHeight + 20);
+
+        return {
+            cell: computedCell,
+            gap: computedGap,
+            step: computedStep,
+            gridWidth: computedGridWidth,
+            gridHeight: computedGridHeight,
+            canvasWidth: computedCanvasWidth,
+            canvasHeight: computedCanvasHeight,
+        };
+    }, [containerWidth]);
+
+    const geometryRef = useRef(geometry);
+    useEffect(() => {
+        geometryRef.current = geometry;
+    }, [geometry]);
 
     // Game state refs to avoid stale closures in interval / keydown
     const snakeRef = useRef<Array<[number, number]>>([]);
@@ -125,7 +177,6 @@ export default function ActivityHeatmap({
         bestScore: 0,
     });
 
-    // Sync state ref
     useEffect(() => {
         gameStateRef.current = { gameActive, gameOver, gameWon, score, bestScore };
     }, [gameActive, gameOver, gameWon, score, bestScore]);
@@ -231,6 +282,9 @@ export default function ActivityHeatmap({
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
+        const { cell, gap, step, gridWidth, gridHeight, canvasWidth, canvasHeight } =
+            geometryRef.current;
+
         const isDark =
             typeof document !== "undefined" &&
             (document.documentElement.classList.contains("dark") ||
@@ -240,11 +294,13 @@ export default function ActivityHeatmap({
         const ink = isDark ? "#E6EDF3" : "#191917";
         const accent = "#23664A";
         const trophyColor = "#C9822B";
+        const labelY = gridHeight + 14;
+        const cellRadius = Math.max(2, cell * 0.28);
 
         const { gameActive: active, gameOver: over, gameWon: won, score: currentScore, bestScore: best } =
             gameStateRef.current;
 
-        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
         // 1. Draw Grid Cells
         for (let col = 0; col < COLS; col++) {
@@ -262,9 +318,9 @@ export default function ActivityHeatmap({
                     }
                 }
                 ctx.fillStyle = fill;
-                const x = col * STEP;
-                const y = row * STEP;
-                fillRoundRect(ctx, x, y, CELL, CELL, 2.5);
+                const x = col * step;
+                const y = row * step;
+                fillRoundRect(ctx, x, y, cell, cell, cellRadius);
             }
         }
 
@@ -281,10 +337,10 @@ export default function ActivityHeatmap({
             for (let col = 0; col < COLS; col++) {
                 const weekDate = new Date(start.getTime() + col * 7 * 86400000);
                 const m = weekDate.getMonth();
-                const x = col * STEP;
-                if (m !== lastMonth && x - lastLabelX >= 28 && x <= GRID_WIDTH - 26) {
+                const x = col * step;
+                if (m !== lastMonth && x - lastLabelX >= 28 && x <= gridWidth - 26) {
                     const text = vi ? `thg ${m + 1}` : enMonths[m];
-                    ctx.fillText(text, x, LABEL_Y);
+                    ctx.fillText(text, x, labelY);
                     lastMonth = m;
                     lastLabelX = x;
                 }
@@ -293,17 +349,17 @@ export default function ActivityHeatmap({
             // Draw Food
             const food = foodRef.current;
             if (food) {
-                const centerX = food[0] * STEP + CELL / 2;
-                const centerY = food[1] * STEP + CELL / 2;
+                const centerX = food[0] * step + cell / 2;
+                const centerY = food[1] * step + cell / 2;
                 // Outer amber circle
                 ctx.fillStyle = trophyColor;
                 ctx.beginPath();
-                ctx.arc(centerX, centerY, CELL * 0.32, 0, Math.PI * 2);
+                ctx.arc(centerX, centerY, cell * 0.32, 0, Math.PI * 2);
                 ctx.fill();
                 // Specular highlight
                 ctx.fillStyle = "#E7BC7B";
                 ctx.beginPath();
-                ctx.arc(centerX - CELL * 0.12, centerY - CELL * 0.18, CELL * 0.11, 0, Math.PI * 2);
+                ctx.arc(centerX - cell * 0.12, centerY - cell * 0.18, cell * 0.11, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -311,7 +367,7 @@ export default function ActivityHeatmap({
             const snake = snakeRef.current;
             snake.forEach(([col, row], index) => {
                 ctx.fillStyle = index === 0 ? "#123D2B" : "#1F5A40";
-                fillRoundRect(ctx, col * STEP + 0.5, row * STEP + 0.5, CELL - 1, CELL - 1, 3);
+                fillRoundRect(ctx, col * step + 0.5, row * step + 0.5, cell - 1, cell - 1, cellRadius);
             });
 
             // Draw Game Chrome (Status Line below grid)
@@ -319,29 +375,29 @@ export default function ActivityHeatmap({
             ctx.textAlign = "left";
 
             ctx.fillStyle = accent;
-            ctx.fillText("SNAKE", 0, LABEL_Y);
+            ctx.fillText("SNAKE", 0, labelY);
 
             ctx.fillStyle = "#8B8B85";
-            ctx.fillText(`SCORE ${currentScore}`, 42, LABEL_Y);
+            ctx.fillText(`SCORE ${currentScore}`, 42, labelY);
 
             ctx.fillStyle = currentScore > 0 && currentScore >= best ? trophyColor : "#8B8B85";
-            ctx.fillText(`BEST ${best}`, 104, LABEL_Y);
+            ctx.fillText(`BEST ${best}`, 104, labelY);
 
             ctx.textAlign = "right";
             ctx.fillStyle = "#8B8B85";
-            ctx.fillText(vi ? "Esc để thoát" : "Esc to exit", GRID_WIDTH, LABEL_Y);
+            ctx.fillText(vi ? "Esc để thoát" : "Esc to exit", gridWidth, labelY);
             ctx.textAlign = "left";
 
             // If Game Over: Draw Retro Dialog Card
             if (over) {
                 ctx.fillStyle = "rgba(20, 27, 23, 0.45)";
-                ctx.fillRect(0, 0, GRID_WIDTH, GRID_HEIGHT);
+                ctx.fillRect(0, 0, gridWidth, gridHeight);
 
-                const scale = Math.max(0.78, Math.min(1.0, (GRID_HEIGHT - 6) / 96.0));
-                const boxWidth = Math.min(GRID_WIDTH - 24, 380);
+                const scale = Math.max(0.78, Math.min(1.0, (gridHeight - 6) / 96.0));
+                const boxWidth = Math.min(gridWidth - 24, 380);
                 const boxHeight = 96 * scale;
-                const x = (GRID_WIDTH - boxWidth) / 2;
-                const y = (GRID_HEIGHT - boxHeight) / 2;
+                const x = (gridWidth - boxWidth) / 2;
+                const y = (gridHeight - boxHeight) / 2;
 
                 const pixelShadow = isDark ? "#010409" : "#C9C9C1";
                 const pixelCream = isDark ? "#161B22" : "#FCFCF8";
@@ -428,23 +484,27 @@ export default function ActivityHeatmap({
     // Redraw whenever state or inputs change
     useEffect(() => {
         draw();
-    }, [activity, language, gameActive, gameOver, gameWon, score, bestScore]);
+    }, [activity, language, gameActive, gameOver, gameWon, score, bestScore, geometry]);
 
-    // Setup Canvas DPI
+    // Setup Canvas DPI whenever geometry dimensions update
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        const { canvasWidth, canvasHeight } = geometry;
+        if (canvasWidth <= 0 || canvasHeight <= 0) return;
+
         const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-        canvas.width = CANVAS_WIDTH * dpr;
-        canvas.height = CANVAS_HEIGHT * dpr;
-        canvas.style.width = `${CANVAS_WIDTH}px`;
-        canvas.style.height = `${CANVAS_HEIGHT}px`;
+        canvas.width = canvasWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+        canvas.style.width = `${canvasWidth}px`;
+        canvas.style.height = `${canvasHeight}px`;
+
         const ctx = canvas.getContext("2d");
         if (ctx) {
             ctx.scale(dpr, dpr);
         }
         draw();
-    }, []);
+    }, [geometry]);
 
     // Game Actions
     const stopGame = () => {
@@ -600,7 +660,6 @@ export default function ActivityHeatmap({
                 }
             } else {
                 if (e.key === " " || e.key === "Space") {
-                    // Start game on space if container has focus
                     if (document.activeElement === containerRef.current) {
                         e.preventDefault();
                         startGame();
@@ -626,8 +685,9 @@ export default function ActivityHeatmap({
         const clientX = e.clientX - rect.left;
         const clientY = e.clientY - rect.top;
 
-        const col = Math.floor(clientX / STEP);
-        const row = Math.floor(clientY / STEP);
+        const { step } = geometryRef.current;
+        const col = Math.floor(clientX / step);
+        const row = Math.floor(clientY / step);
 
         if (col < 0 || col >= COLS || row < 0 || row >= ROWS) {
             setTooltip((t) => ({ ...t, visible: false }));
@@ -691,6 +751,8 @@ export default function ActivityHeatmap({
                 borderRadius: "8px",
                 padding: "20px",
                 background: "var(--panel, #FFFFFF)",
+                width: "100%",
+                boxSizing: "border-box",
             }}
         >
             {/* 1. Header Row */}
@@ -852,8 +914,15 @@ export default function ActivityHeatmap({
                 </div>
             </div>
 
-            {/* 3. Heatmap / Snake Canvas */}
-            <div style={{ overflowX: "auto", paddingBottom: "2px" }}>
+            {/* 3. Responsive Heatmap / Snake Canvas (fits 100% width of card) */}
+            <div
+                ref={canvasWrapperRef}
+                style={{
+                    width: "100%",
+                    overflowX: "auto",
+                    paddingBottom: "2px",
+                }}
+            >
                 <canvas
                     ref={canvasRef}
                     onMouseMove={handleMouseMove}
