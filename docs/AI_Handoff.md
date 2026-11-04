@@ -1035,6 +1035,32 @@ Error Explainer phân biệt thiếu TFM (`ppl*` → palatino, `zpl*` → mathpa
 
 Kiểm chứng: 124 pytest đạt, có regression cache qua restart/legacy fatal/warm và font metrics; Next.js build/TypeScript đạt. Native trên bản nhập cô lập thành công 6 trang. Đã biên dịch cả project người dùng hiện có: 6 trang, 1.051.412 bytes; lượt phục hồi 7.985 ms, lượt warm 297 ms, cùng SHA-256 `792c8fd916e2b9fb579f4b5d46a0098dec1faefa747dfdeae9183cd6f59f4ca2`. Fingerprint source trước/sau không đổi. PDF xác minh: target/article-zip-repro-01/verified-article.pdf; report user-project-verification.json. Không sửa ZIP gốc, không commit/push.
 
+## 35. Khôi phục giao diện Hoạt động và trò chơi Snake trên Python + Next.js
+
+Ngày **04/11/2026**. Cập nhật thành phần `ActivityHeatmap.tsx` để đồng bộ giao diện theo bản Java gốc (Ảnh 1) và bổ sung trò chơi Snake (Ảnh 3, Ảnh 4):
+
+- **Giao diện thẻ Hoạt động (Ảnh 1):**
+  - Tiêu đề `Hoạt động` và nhãn phạm vi `52 tuần qua`.
+  - 3 khối số liệu thống kê rõ ràng: tổng số `chỉnh sửa` (tính từ `activity.edits`), số lần `biên dịch` (từ `activity.compiles`), và `chuỗi ngày` liên tiếp (streak).
+  - Lưới đóng góp 52 tuần × 7 ngày được vẽ trên Canvas với kích thước, khoảng cách ô, bo góc chuẩn mực; nhãn tháng bên dưới (`thg 11` ... `thg 10` cho tiếng Việt, `Nov` ... `Oct` cho tiếng Anh).
+  - Dải chú thích cấp độ (Ít → Nhiều) và dòng hướng dẫn "Nhấp đúp vào lưới · hoặc bấm Chơi Snake".
+  - Nút bấm `▷ Chơi Snake` (xanh nhạt bo góc) kèm chip hiển thị kỷ lục `BEST <điểm>`.
+
+- **Trò chơi Snake (Ảnh 3):**
+  - Chuyển chế độ bằng nút `▷ Chơi Snake` hoặc nhấp đúp vào lưới.
+  - Nút chuyển thành `← Quay lại lưới` để thoát bất kỳ lúc nào.
+  - Rắn di chuyển trên lưới 52×7 bằng phím mũi tên hoặc WASD với tốc độ 180ms/bước; đầu rắn màu xanh đậm, thân xanh lục; mồi hình quả tròn màu hổ phách có bóng phản chiếu. Thuật toán chọn mồi ưu tiên các ô ngày có hoạt động đóng góp thực tế.
+  - Thanh trạng thái game dưới lưới: `SNAKE    SCORE <điểm>    BEST <kỷ lục>` bên trái và `Esc để thoát` bên phải.
+
+- **Màn hình Kết thúc game (Ảnh 4):**
+  - Lưới tối màu với lớp phủ mờ `rgba(20, 27, 23, 0.45)`.
+  - Hộp thoại pixel art cổ điển với viền pixel đôi, bóng đổ 4px, icon đầu lâu (hoặc cúp vàng khi thắng) vẽ từ ma trận pixel thật.
+  - Tiêu đề `KẾT THÚC` (hoặc `THẮNG RỒI!`), dòng điểm số và kỷ lục, đường phân cách, cùng hướng dẫn điều khiển: `SPACE HOẶC NHẤP ĐÚP ĐỂ CHƠI LẠI` và `ESC HOẶC ← QUAY LẠI LƯỚI`.
+
+- **Tương thích:**
+  - Bảo tồn 364 thẻ `span` ẩn để các bài kiểm thử Playwright (`test-features.mjs`) tiếp tục chạy chính xác.
+  - Build static Next.js (`npm run build`) và TypeScript typecheck đạt 0 lỗi.
+
 ## 35. Phục hồi launcher Windows khi mất Python runtime (03/11/2026)
 
 Lỗi `uv trampoline failed to spawn Python child process` xuất hiện vì `.venv/pyvenv.cfg` vẫn trỏ tới `target/python-runtimes/cpython-3.12-windows-x86_64-none` nhưng runtime đã mất. Đã khôi phục CPython 3.12.16 bằng uv có sẵn trong repository; dependency trong venv cũ tiếp tục dùng được, không thay đổi dữ liệu dự án.

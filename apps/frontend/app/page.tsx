@@ -953,6 +953,10 @@ export default function Workspace() {
                                 </div>
                             </div>
                         </div>
+                        <ActivityHeatmap
+                            activity={ext.activity}
+                            language={uiLanguage}
+                        />
                         <div className="project-tools">
                             <h2>
                                 {localize("Tất cả dự án", uiLanguage)}
@@ -1018,10 +1022,6 @@ export default function Workspace() {
                                 </p>
                             </div>
                         )}
-                        <ActivityHeatmap
-                            activity={ext.activity}
-                            language={uiLanguage}
-                        />
                         <div className="home-bottom">
                             <span>
                                 <Check size={13} /> LaTeX local
