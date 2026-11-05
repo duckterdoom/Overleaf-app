@@ -37,10 +37,12 @@ def register(app, store, compiler):
     def generate_word(project: str, data: dict):
         return word.generate(project, data.get("revision"))
 
-    @app.get("/api/projects/{project}/word/docx")
-    def export_word(project: str, revision: str):
+    @app.get("/api/projects/{project}/pdf/{snapshot}/docx")
+    def export_word(project: str, snapshot: str):
+        from .pdf_export.service import exporter
+
         return Response(
-            word.export(project, revision),
+            exporter(compiler).export(project, snapshot),
             media_type=MIME,
             headers={"Content-Disposition": 'attachment; filename="main.docx"'},
         )
@@ -52,6 +54,24 @@ def register(app, store, compiler):
     @app.post("/api/projects/{project}/review")
     async def update_review(project: str, request: Request):
         return review.update(project, await request.json())
+
+    from .ielts import IeltsManager
+
+    ielts = IeltsManager(store)
+
+    @app.get("/api/projects/{project}/ielts")
+    def get_ielts(project: str):
+        return ielts.read(project)
+
+    @app.post("/api/projects/{project}/ielts")
+    async def save_ielts(project: str, request: Request):
+        return ielts.save(project, await request.json())
+
+    @app.post("/api/projects/{project}/ielts/report")
+    async def generate_ielts_report(project: str, request: Request):
+        data = await request.json()
+        filename = ielts.generate_report_tex(project, data)
+        return {"success": True, "file": filename}
 
     from .network import NetworkSession
 
@@ -166,6 +186,7 @@ def register(app, store, compiler):
     @app.post("/api/projects/import-file")
     async def import_file(request: Request):
         import uuid
+
         kind = request.query_params.get("kind", "zip")
         title = request.query_params.get("title", "")
         parent = request.query_params.get("parent", "")

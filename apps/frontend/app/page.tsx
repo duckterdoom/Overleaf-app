@@ -19,6 +19,7 @@ import {
     FileText,
     Folder,
     FolderPlus,
+    GraduationCap,
     MessageSquareText,
     MessagesSquare,
     Grid2X2,
@@ -60,6 +61,7 @@ import ProjectCard from "../components/ProjectCard";
 import NewProjectExtras from "../components/NewProjectExtras";
 import FileActionsPanel from "../components/FileActionsPanel";
 import LogsView, { parseAllLogs } from "../components/LogsView";
+import IeltsGradingPanel from "../components/IeltsGradingPanel";
 import useParity from "../lib/useParity";
 import { action, native, translator, type Activity } from "../lib/parity";
 import { localize } from "../lib/i18n";
@@ -120,13 +122,14 @@ export default function Workspace() {
         [installing, setInstalling] = useState(false);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [sidePanel, setSidePanel] = useState<
-        "files" | "review" | "chat" | null
+        "files" | "review" | "chat" | "ielts" | null
     >("files");
     const [reviewDraft, setReviewDraft] = useState<ReviewAnchor | null>(null);
     const [previewTab, setPreviewTab] = useState<"pdf" | "word" | "logs">(
         "pdf",
     );
     const [downloadMenu, setDownloadMenu] = useState(false);
+    const [wordExporting, setWordExporting] = useState(false);
     const wordPreview = useRef<WordPreviewHandle | null>(null);
     useEffect(() => {
         setSidePanel("files");
@@ -436,6 +439,55 @@ export default function Workspace() {
         } catch (error) {
             setError(text(error));
             setStale(true);
+        }
+    }
+    async function exportWord() {
+        if (!project || !snapshot || stale || dirty || busy || wordExporting)
+            return;
+        setWordExporting(true);
+        setError("");
+        setNotice(t("Đang chuyển PDF sang Word…", "Converting PDF to Word…"));
+        try {
+            if (wordPreview.current && !(await wordPreview.current.flush()))
+                throw Error(
+                    t(
+                        "Chưa lưu được bản Word đang sửa.",
+                        "Could not save pending Word edits.",
+                    ),
+                );
+            if (window.pywebview?.api) {
+                const result = await window.pywebview.api.export_docx(
+                    project.id,
+                    snapshot,
+                );
+                if (result.error) throw Error(result.error);
+                setNotice(
+                    result.saved
+                        ? t("Đã xuất Word từ PDF.", "Word exported from PDF.")
+                        : t("Đã hủy lưu Word.", "Word save cancelled."),
+                );
+            } else {
+                const response = await request(
+                    `/projects/${project.id}/pdf/${snapshot}/docx`,
+                );
+                const url = URL.createObjectURL(await response.blob()),
+                    anchor = document.createElement("a");
+                anchor.href = url;
+                anchor.download = "main.docx";
+                anchor.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+                setNotice(t("Đã xuất Word từ PDF.", "Word exported from PDF."));
+            }
+        } catch (error) {
+            setError(text(error));
+            setNotice(
+                t(
+                    "Chưa xuất được Word. Xem thông báo lỗi.",
+                    "Word export failed. See the error message.",
+                ),
+            );
+        } finally {
+            setWordExporting(false);
         }
     }
     function insert(before: string, after = "") {
@@ -1154,6 +1206,24 @@ export default function Workspace() {
                         >
                             <MessagesSquare size={21} />
                         </button>
+                        <button
+                            title={t(
+                                "Chấm điểm IELTS Writing",
+                                "IELTS Writing Evaluation",
+                            )}
+                            aria-label={t(
+                                "Chấm điểm IELTS Writing",
+                                "IELTS Writing Evaluation",
+                            )}
+                            aria-pressed={sidePanel === "ielts"}
+                            onClick={() =>
+                                setSidePanel(
+                                    sidePanel === "ielts" ? null : "ielts",
+                                )
+                            }
+                        >
+                            <GraduationCap size={21} />
+                        </button>
                     </nav>
                     <aside
                         className="file-sidebar"
@@ -1427,6 +1497,35 @@ export default function Workspace() {
                                 )}
                             />
                         </footer>
+                    </aside>
+                    <aside
+                        className="workspace-sidepanel ielts-sidepanel-wrapper"
+                        hidden={sidePanel !== "ielts"}
+                        aria-label={t(
+                            "Bảng chấm điểm IELTS Writing",
+                            "IELTS Writing Evaluation Panel",
+                        )}
+                    >
+                        <IeltsGradingPanel
+                            key={project.id}
+                            project={project}
+                            file={file}
+                            source={content}
+                            language={uiLanguage}
+                            editor={view}
+                            onClose={() => setSidePanel(null)}
+                            onFileCreated={async (newPath) => {
+                                await refreshFiles(newPath);
+                                const entry = entries.find(
+                                    (e) =>
+                                        e.path === newPath ||
+                                        e.path.endsWith("/" + newPath),
+                                );
+                                if (entry) {
+                                    void openFile(entry);
+                                }
+                            }}
+                        />
                     </aside>
                     <div
                         className="sidebar-divider"
@@ -1721,6 +1820,7 @@ export default function Workspace() {
                                                 "Download",
                                             )}
                                             aria-expanded={downloadMenu}
+                                            disabled={wordExporting}
                                             onClick={() =>
                                                 setDownloadMenu(
                                                     (value) => !value,
@@ -1755,11 +1855,20 @@ export default function Workspace() {
                                                 </button>
                                                 <button
                                                     role="menuitem"
-                                                    disabled={busy}
+                                                    disabled={
+                                                        busy ||
+                                                        stale ||
+                                                        dirty ||
+                                                        !snapshot ||
+                                                        wordExporting
+                                                    }
+                                                    title={t(
+                                                        "Chuyển PDF bằng bộ chuyển đổi gốc ilovepdf-python",
+                                                        "Convert PDF using the original ilovepdf-python converter",
+                                                    )}
                                                     onClick={() => {
                                                         setDownloadMenu(false);
-                                                        setPreviewTab("word");
-                                                        void wordPreview.current?.exportDocx();
+                                                        void exportWord();
                                                     }}
                                                 >
                                                     Export Word (.docx)
@@ -1822,8 +1931,7 @@ export default function Workspace() {
                                                         );
                                                     ed.dispatch({
                                                         selection: {
-                                                            anchor:
-                                                                docLine.from,
+                                                            anchor: docLine.from,
                                                         },
                                                         scrollIntoView: true,
                                                     });
@@ -1902,12 +2010,11 @@ export default function Workspace() {
                                                     if (dirty) return;
                                                     const ticket =
                                                         revision.current;
-                                                    const updated =
-                                                        await json<{
-                                                            content: string;
-                                                        }>(
-                                                            `/projects/${project.id}/file?path=${encodeURIComponent(file)}`,
-                                                        );
+                                                    const updated = await json<{
+                                                        content: string;
+                                                    }>(
+                                                        `/projects/${project.id}/file?path=${encodeURIComponent(file)}`,
+                                                    );
                                                     if (
                                                         ticket !==
                                                         revision.current

@@ -3108,3 +3108,777 @@ p {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* =========================================================================
+   IELTS WRITING EVALUATION & DIAGNOSTIC PANEL (Images 1, 2, 3, 4)
+   ========================================================================= */
+
+.ielts-sidepanel-wrapper {
+    width: var(--sidebar-width, 360px);
+    flex: 0 0 var(--sidebar-width, 360px);
+    min-width: 320px;
+}
+
+.ielts-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 13px;
+    overflow: hidden;
+}
+
+/* Header */
+.ielts-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--soft);
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ielts-header-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.ielts-header-title strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #17623f;
+    display: block;
+    line-height: 1.2;
+}
+
+:root[data-mode="dark"] .ielts-header-title strong {
+    color: #4ade80;
+}
+
+.ielts-sub {
+    font-size: 10px;
+    color: var(--muted);
+    line-height: 1.2;
+}
+
+.ielts-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.mode-toggle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border-radius: 14px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.mode-toggle-btn.tutor-active {
+    background: #dcfce7;
+    color: #15803d;
+    border-color: #bbf7d0;
+}
+
+:root[data-mode="dark"] .mode-toggle-btn {
+    background: #1e293b;
+    color: #38bdf8;
+    border-color: #334155;
+}
+
+:root[data-mode="dark"] .mode-toggle-btn.tutor-active {
+    background: #14532d;
+    color: #86efac;
+    border-color: #166534;
+}
+
+.ielts-close-btn {
+    padding: 4px;
+    color: var(--muted);
+    border-radius: 4px;
+    display: grid;
+    place-items: center;
+}
+
+.ielts-close-btn:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: var(--ink);
+}
+
+/* Meta Bar & Live Word Count */
+.ielts-meta-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    font-size: 11px;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.ielts-candidate-input {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+}
+
+.ielts-candidate-input label {
+    font-weight: 600;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.ielts-candidate-input input {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 3px 7px;
+    font-size: 11px;
+    color: var(--ink);
+    width: 100%;
+    max-width: 130px;
+}
+
+.ielts-word-counter {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--muted);
+    white-space: nowrap;
+}
+
+.ielts-word-counter strong {
+    color: var(--ink);
+}
+
+.wc-pill {
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.wc-pass {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.wc-warn {
+    background: #fef3c7;
+    color: #b45309;
+}
+
+/* Overall Score Banner (Image 3) */
+.ielts-score-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 14px;
+    background: #17623f;
+    color: white;
+    flex-shrink: 0;
+}
+
+.banner-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.banner-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.85;
+}
+
+.banner-val {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.banner-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.overall-item {
+    gap: 4px;
+}
+
+.overall-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.badge-gold {
+    background: #fef08a;
+    color: #854d0e;
+}
+
+.badge-emerald {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.badge-blue {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+.badge-amber {
+    background: #fed7aa;
+    color: #9a3412;
+}
+
+.badge-rose {
+    background: #ffe4e6;
+    color: #9f1239;
+}
+
+/* Tabs */
+.ielts-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+    background: var(--soft);
+    flex-shrink: 0;
+}
+
+.ielts-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.ielts-tab:hover {
+    color: var(--ink);
+}
+
+.ielts-tab.active {
+    color: #17623f;
+    border-bottom-color: #17623f;
+    background: var(--panel);
+}
+
+:root[data-mode="dark"] .ielts-tab.active {
+    color: #4ade80;
+    border-bottom-color: #4ade80;
+}
+
+.tab-band-pill {
+    padding: 1px 5px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+:root[data-mode="dark"] .tab-band-pill {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+/* Content Area */
+.ielts-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-header-info h4 {
+    margin: 0 0 3px 0;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.task-header-info p {
+    margin: 0;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+/* Criteria Card */
+.criteria-card {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.criteria-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.criteria-title-wrap strong {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    display: block;
+}
+
+.criteria-desc {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.3;
+    display: block;
+    margin-top: 2px;
+}
+
+.criteria-score-box {
+    background: #17623f;
+    color: white;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 15px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* Score Selector Row */
+.score-selector-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px 0;
+}
+
+.selector-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+}
+
+.band-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.band-chip {
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+
+.band-chip:hover {
+    border-color: #17623f;
+    color: #17623f;
+}
+
+.band-chip.active {
+    background: #17623f;
+    color: white;
+    border-color: #17623f;
+}
+
+/* Official Band Descriptors Box (Images 1 & 2) */
+.descriptors-box {
+    border-radius: 5px;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    overflow: hidden;
+}
+
+.descriptors-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    cursor: pointer;
+    user-select: none;
+    font-size: 11px;
+    font-weight: 600;
+    color: #17623f;
+}
+
+:root[data-mode="dark"] .descriptors-header {
+    color: #4ade80;
+}
+
+.desc-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.descriptors-list {
+    margin: 0;
+    padding: 6px 10px 8px 24px;
+    font-size: 11px;
+    color: var(--ink);
+    line-height: 1.45;
+    border-top: 1px solid var(--line);
+}
+
+.descriptors-list li {
+    margin-bottom: 4px;
+}
+
+.descriptors-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Feedback Fields */
+.feedback-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.feedback-field label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.feedback-field textarea {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+    resize: vertical;
+}
+
+.student-feedback-box {
+    padding: 8px 10px;
+    background: var(--soft);
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.4;
+    border-left: 3px solid #17623f;
+    color: var(--ink);
+}
+
+/* Task Summary Card */
+.task-summary-card {
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.task-summary-card strong {
+    font-size: 12px;
+}
+
+.task-summary-card textarea {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+}
+
+/* Summary Tab */
+.summary-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.report-card {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    overflow: hidden;
+}
+
+.report-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--soft);
+    border-bottom: 1px solid var(--line);
+}
+
+.report-card-header strong {
+    font-size: 13px;
+    display: block;
+}
+
+.report-card-header span {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.score-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.score-summary-table th,
+.score-summary-table td {
+    padding: 8px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+}
+
+.score-summary-table th:first-child,
+.score-summary-table td:first-child {
+    text-align: left;
+}
+
+.score-summary-table th {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.score-summary-table tfoot td {
+    background: var(--soft);
+    font-weight: 700;
+}
+
+.band-highlight {
+    font-size: 13px;
+    color: #17623f;
+}
+
+:root[data-mode="dark"] .band-highlight {
+    color: #4ade80;
+}
+
+.final-band-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: #17623f;
+    color: white;
+    border-radius: 10px;
+    font-weight: 800;
+}
+
+.assessment-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.general-feedback-block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.general-feedback-block strong {
+    font-size: 12px;
+}
+
+.general-feedback-block textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: inherit;
+}
+
+.student-assessment-p {
+    margin: 0;
+    padding: 8px 10px;
+    background: var(--soft);
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+/* LaTeX Engine -> PDF Report Box (Image 3) */
+.latex-report-box {
+    border: 1px solid #17623f;
+    border-radius: 6px;
+    background: #f0fdf4;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+:root[data-mode="dark"] .latex-report-box {
+    background: #064e3b;
+    border-color: #059669;
+}
+
+.report-box-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.report-box-info strong {
+    font-size: 13px;
+    color: #17623f;
+    display: block;
+}
+
+:root[data-mode="dark"] .report-box-info strong {
+    color: #86efac;
+}
+
+.report-box-info p {
+    margin: 2px 0 0 0;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.35;
+}
+
+.generate-report-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 5px;
+    background: #17623f;
+    color: white;
+    border: none;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.generate-report-btn:hover:not(:disabled) {
+    background: #124d31;
+}
+
+/* Footer Actions */
+.ielts-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-top: 1px solid var(--line);
+    background: var(--soft);
+    flex-shrink: 0;
+    gap: 8px;
+}
+
+.ielts-save-status {
+    font-size: 11px;
+    color: #16a34a;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ielts-footer-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.ielts-save-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: #17623f;
+    color: white;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ielts-save-btn:hover:not(:disabled) {
+    background: #134e32;
+}
+
+.ielts-pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    background: var(--panel);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.ielts-pdf-btn:hover:not(:disabled) {
+    background: var(--soft);
+}
+

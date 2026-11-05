@@ -1,5 +1,7 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Chấm điểm IELTS Writing trực tiếp trên Editor (Task 1 & Task 2) và Xuất Báo Cáo PDF (05/11/2026):** tích hợp icon IELTS (`GraduationCap`) trên thanh công cụ bên trái theo Ảnh 4; bảng chấm điểm đầy đủ 4 tiêu chí chuẩn quốc tế cho Task 1 (TA, CC, LR, GRA) và Task 2 (TR, CC, LR, GRA) theo Ảnh 1 & 2; hiển thị chi tiết Band Descriptors chính thức, ô nhập lời phê của Tutor; tính điểm làm tròn theo chuẩn IELTS; lưu trữ bền vững và sinh báo cáo LaTeX/PDF theo kiến trúc Ảnh 3. Xem **mục 47**.
+
 > **Mới nhất — Giao diện Editor toàn màn hình và Bảng Logs & Errors chuẩn Overleaf (04/11/2026):** chuyển toàn bộ build output và bảng error khỏi cột soạn thảo LaTeX để editor chiếm 100% chiều cao; bổ sung nút icon tài liệu kèm huy hiệu đếm lỗi/cảnh báo cạnh nút Recompile; chế độ xem Logs & Errors chuyên dụng ở cột phải với các tab All/Errors/Warnings/Info, thẻ lỗi mở rộng được, nút "Đi tới dòng", mục Raw logs thu gọn, thanh đáy "Clear cached files" và nút "Back to PDF" để quay lại xem PDF. Xem **mục 46**.
 
 > **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 45**.
@@ -1269,3 +1271,50 @@ Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt.
   - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
   - Next.js static production build (`npm run build`): Biên dịch tĩnh thành công 100%.
   - Pytest (`test_parity.py`): 49/49 bài kiểm thử đạt kết quả tốt.
+
+## 47. Chấm điểm IELTS Writing trực tiếp trên Editor (Task 1 & Task 2) và Xuất Báo Cáo PDF (05/11/2026)
+
+- **Ngữ cảnh & Ý tưởng**:
+  - Tích hợp một hệ thống chấm và đánh giá bài viết IELTS Writing (cả Task 1 Báo cáo và Task 2 Bài luận) trực tiếp trên giao diện soạn thảo Overleaf Desktop.
+  - Giúp Tutor (giáo viên chấm bài) và Student (học viên) có một quy trình làm việc khép kín theo đúng sơ đồ kiến trúc tại **Ảnh 3**:
+    `Student (Visual Writing Editor) + Tutor (Review & Scoring) -> Document & Review Engine -> Database (.overleaf-ielts.json) + LaTeX Engine (ielts_report.tex) -> PDF REPORT`.
+
+- **Chi tiết triển khai**:
+  1. **Nút biểu tượng IELTS Writing trên thanh công cụ bên trái (Ảnh 4)**:
+     - Bổ sung nút biểu tượng `GraduationCap` trên thanh `workspace-activity-bar` nằm ngay dưới icon Chat cộng tác.
+     - Khi nhấp vào, mở bảng điều khiển chấm điểm IELTS Writing chuyên dụng ở thanh bên trái (`sidePanel === "ielts"`).
+  2. **Tiêu chí chấm điểm Task 1 & Task 2 (Ảnh 1 & Ảnh 2)**:
+     - **Task 1 (Report/Báo cáo - tối thiểu 150 từ, trọng số 1/3)**:
+       - `Task Achievement (TA)`: Mức độ hoàn thành đề bài và nêu tổng quan xu hướng.
+       - `Coherence and Cohesion (CC)`: Tính mạch lạc, phân đoạn và liên kết ý.
+       - `Lexical Resource (LR)`: Vốn từ vựng, độ tự nhiên và kết hợp từ (collocations).
+       - `Grammatical Range and Accuracy (GRA)`: Đa dạng cấu trúc câu và độ chuẩn xác ngữ pháp.
+     - **Task 2 (Discursive Essay/Nghị luận - tối thiểu 250 từ, trọng số 2/3)**:
+       - `Task Response (TR)`: Khả năng phản hồi toàn diện đề bài, lập trường và phát triển luận điểm.
+       - `Coherence and Cohesion (CC)`
+       - `Lexical Resource (LR)`
+       - `Grammatical Range and Accuracy (GRA)`
+     - Mỗi tiêu chí tích hợp bộ chọn điểm nhanh từ **0.0 đến 9.0** (bước nhảy 0.5 band).
+     - Tự động hiển thị tóm tắt **Official Band Descriptors** (chuẩn Cambridge/British Council) tương ứng với mức Band đang chọn để Tutor đối chiếu trực tiếp.
+     - Ô nhập nhận xét / lời phê cụ thể của Tutor cho từng tiêu chí riêng biệt.
+  3. **Đếm số từ tự động (Live Word Count)**:
+     - Tự động tính số từ của bài viết đang soạn thảo trong CodeMirror (loại bỏ comment và macro TeX).
+     - Đưa ra huy hiệu cảnh báo nếu chưa đủ số từ (150 từ cho Task 1 / 250 từ cho Task 2) hoặc thông báo đạt tiêu chuẩn độ dài.
+  4. **Tính điểm Band tổng quát (IELTS Band Calculator)**:
+     - Điểm Task 1: Trung bình 4 tiêu chí $(TA + CC + LR + GRA) / 4$.
+     - Điểm Task 2: Trung bình 4 tiêu chí $(TR + CC + LR + GRA) / 4$.
+     - Điểm Overall IELTS Writing: Weighted Band $\text{round}((Task1 \times 1 + Task2 \times 2) / 3)$ tuân thủ tuyệt đối quy tắc làm tròn chuẩn IELTS (ví dụ .25 lên .5; .75 lên 1.0).
+     - Huy hiệu điểm số lớn, trực quan với phân màu theo dải điểm (Vàng kim cho 8.0-9.0, Ngọc lục bảo cho 7.0-7.5, Xanh dương cho 6.0-6.5, Cam cho 5.0-5.5).
+  5. **Chế độ Tutor Mode và Student View**:
+     - Cho phép chuyển đổi nhanh: Tutor có quyền chấm và chỉnh sửa lời phê; Student ở chế độ xem đọc điểm, xem nhận xét và kế hoạch cải thiện.
+  6. **Lưu trữ dữ liệu & Tự động sinh Báo Cáo PDF qua LaTeX (Kiến trúc Ảnh 3)**:
+     - Backend API:
+       - `GET /api/projects/{project}/ielts`: Tải dữ liệu đánh giá đã lưu từ `.overleaf-ielts.json`.
+       - `POST /api/projects/{project}/ielts`: Lưu trữ trạng thái đánh giá an toàn, nguyên tử.
+       - `POST /api/projects/{project}/ielts/report`: Tự động sinh tệp mã nguồn LaTeX `ielts_report.tex` với bố cục báo cáo thẩm định IELTS chuyên nghiệp (bảng điểm, band badge, nhận xét và danh sách khuyến nghị của giáo viên).
+     - Khi sinh báo cáo, tệp `ielts_report.tex` được tạo ngay trong thư mục dự án, cho phép Tutor và Học viên có thể lập tức biên dịch ra bản PDF Report chất lượng cao để in ấn hoặc gửi lưu trữ.
+
+- **Kiểm chứng**:
+  - Backend pytest: 139/139 tests đạt 100% (`test_parity.py`, `test_ielts.py`, `test_word.py`, `test_workspace.py`,...).
+  - Frontend TypeScript typecheck (`npm run typecheck`): 0 lỗi.
+  - Next.js production build (`npm run build`): Biên dịch tĩnh thành công 100%.
