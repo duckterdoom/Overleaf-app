@@ -20,6 +20,7 @@ __pycache__/
 apps/frontend/out/
 apps/desktop/build/
 apps/frontend/public/pdf.worker.min.mjs
+apps/frontend/public/superdoc-workers/
 *.tsbuildinfo
 
 # Package Files

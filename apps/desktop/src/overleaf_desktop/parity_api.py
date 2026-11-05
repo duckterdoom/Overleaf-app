@@ -39,13 +39,29 @@ def register(app, store, compiler):
 
     @app.get("/api/projects/{project}/pdf/{snapshot}/docx")
     def export_word(project: str, snapshot: str):
-        from .pdf_export.service import exporter
+        from .docx_workspace import download
 
         return Response(
-            exporter(compiler).export(project, snapshot),
+            download(compiler, project, snapshot)[0],
             media_type=MIME,
             headers={"Content-Disposition": 'attachment; filename="main.docx"'},
         )
+
+    from .docx_workspace import DocxWorkspace
+    docx_workspace = DocxWorkspace(compiler)
+
+    @app.post('/api/projects/{project}/docx-preview')
+    def open_docx(project: str, data: dict):
+        return docx_workspace.open(project, data['snapshot'], data.get('reset', False), data.get('revision'))
+
+    @app.get('/api/projects/{project}/docx-preview/{revision}')
+    def read_docx(project: str, revision: str):
+        return Response(docx_workspace.read(project, revision), media_type=MIME)
+
+    @app.put('/api/projects/{project}/docx-preview/{revision}')
+    async def save_docx(project: str, revision: str, request: Request):
+        data = await request.body()
+        return docx_workspace.save(project, revision, data)
 
     @app.get("/api/projects/{project}/review")
     def get_review(project: str):

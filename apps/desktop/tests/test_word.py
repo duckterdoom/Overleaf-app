@@ -94,42 +94,38 @@ def test_word_round_trip_edit_and_export(tmp_path):
         service.generate(project, saved["revision"])
 
 
-def test_native_docx_export_rechecks_revision_after_save_dialog(tmp_path, monkeypatch):
+def test_native_docx_export_rechecks_pdf_after_save_dialog(tmp_path, monkeypatch):
     import sys
     from types import SimpleNamespace
     from overleaf_desktop.main import DesktopBridge
-    from overleaf_desktop.compiler import Compiler
+    from overleaf_desktop.compiler import Compiler, Snapshot
+    from overleaf_desktop.pdf_export.service import PDFWordExporter
 
     store = Store(tmp_path / "home")
     project = store.create("Native Word")["id"]
-    service = Word(store)
-    draft = service.write(
-        project,
-        {
-            "html": "<p>Word draft</p>",
-            "fingerprint": store.fingerprint(project),
-            "warnings": [],
-        },
+    compiler = Compiler(store)
+    compiler.snapshots[project] = Snapshot(
+        "pdf-for-word", store.fingerprint(project), b"%PDF-test"
     )
-    bridge = DesktopBridge(Compiler(store))
+    bridge = DesktopBridge(compiler)
     monkeypatch.setitem(
         sys.modules, "webview", SimpleNamespace(FileDialog=SimpleNamespace(SAVE=1))
     )
-    monkeypatch.setattr(Word, "export", lambda self, project, revision: b"PK-test-docx")
+    monkeypatch.setattr(
+        PDFWordExporter, "export", lambda self, project, snapshot: b"PK-test-docx"
+    )
     target = tmp_path / "out.docx"
     bridge._window = SimpleNamespace(create_file_dialog=lambda *a, **kw: [str(target)])
-    assert bridge.export_docx(project, draft["revision"]) == {"saved": True}
+    assert bridge.export_docx(project, "pdf-for-word") == {"saved": True}
     assert target.read_bytes() == b"PK-test-docx"
     target.unlink()
 
     def changed(*args, **kwargs):
-        service.save(
-            project, {"revision": draft["revision"], "html": "<p>Newer edit</p>"}
-        )
+        store.save(project, "main.tex", "Newer source edit")
         return [str(target)]
 
     bridge._window = SimpleNamespace(create_file_dialog=changed)
-    assert "error" in bridge.export_docx(project, draft["revision"])
+    assert "error" in bridge.export_docx(project, "pdf-for-word")
     assert not target.exists()
 
 

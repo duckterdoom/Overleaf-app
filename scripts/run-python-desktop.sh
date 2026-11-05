@@ -8,7 +8,7 @@ if [ ! -x apps/desktop/.venv/bin/python ]; then
 fi
 desktop_python="$PWD/apps/desktop/.venv/bin/python"
 "$desktop_python" -c 'import sys; assert sys.version_info >= (3, 12), "Python 3.12+ required"'
-if ! "$desktop_python" -c 'import fastapi, uvicorn, webview, PIL, pypdf, overleaf_desktop' >/dev/null 2>&1; then
+if ! "$desktop_python" -c 'import fastapi, uvicorn, webview, PIL, pypdf, pdf2docx, pymupdf, docx, overleaf_desktop' >/dev/null 2>&1; then
     "$desktop_python" -m pip install -e 'apps/desktop[desktop]'
 fi
 if [ ! -f apps/frontend/out/index.html ] || [ "${1:-}" = --build ]; then

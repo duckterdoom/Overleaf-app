@@ -6,8 +6,10 @@ import {
     useRef,
     useState,
 } from "react";
-import { json, request } from "../lib/api";
+import { json } from "../lib/api";
 import { errorText, translator } from "../lib/parity";
+import type { WordPreviewHandle } from "../lib/word-preview";
+export type { WordPreviewHandle } from "../lib/word-preview";
 
 type Draft = {
     html: string;
@@ -31,7 +33,6 @@ type Draft = {
         fontSize?: number;
     };
 };
-export type WordPreviewHandle = { exportDocx: () => Promise<void> };
 export default forwardRef<
     WordPreviewHandle,
     {
@@ -227,36 +228,14 @@ export default forwardRef<
         }
     }
     useImperativeHandle(ref, () => ({
-        exportDocx: async () => {
-            await task(async () => {
-                if (!ready)
-                    throw Error(t("Đang tải bản Word.", "Loading Word draft."));
-                const value = model.current
-                    ? await persist()
-                    : await generate();
-                if (!value) return;
-                const currentValue = value.needsRefresh
-                    ? await generate()
-                    : value;
-                if (window.pywebview?.api) {
-                    const result = await window.pywebview.api.export_docx(
-                        project,
-                        currentValue.revision,
-                    );
-                    if (result.error) throw Error(result.error);
-                } else {
-                    const response = await request(
-                            route + "/docx?revision=" + currentValue.revision,
-                        ),
-                        blob = await response.blob();
-                    const url = URL.createObjectURL(blob),
-                        anchor = document.createElement("a");
-                    anchor.href = url;
-                    anchor.download = "main.docx";
-                    anchor.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                }
-            });
+        flush: async () => {
+            try {
+                await persist();
+                return true;
+            } catch (error) {
+                setError(errorText(error));
+                return false;
+            }
         },
     }));
     function changed() {

@@ -36,7 +36,8 @@ import {
     X,
 } from "lucide-react";
 import PdfViewer from "../components/PdfViewer";
-import WordPreview, { type WordPreviewHandle } from "../components/WordPreview";
+import WordPreview from "../components/WordDocxPreview";
+import type { WordPreviewHandle } from "../lib/word-preview";
 import {
     bootstrap,
     compile,
@@ -767,6 +768,7 @@ export default function Workspace() {
                             className="project-breadcrumb"
                             disabled={busy}
                             onClick={async () => {
+                                if (wordPreview.current && !(await wordPreview.current.flush())) return;
                                 if (dirty && !(await save())) return;
                                 await ext.leaveBeforeOpen("");
                                 setProject(null);
@@ -784,7 +786,7 @@ export default function Workspace() {
                         <button
                             className="quiet"
                             disabled={busy}
-                            onClick={() => void ext.showHistory()}
+                            onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) await ext.showHistory(); }}
                         >
                             <Clock3 size={17} />
                             {t("Lịch sử", "History")}
@@ -826,7 +828,8 @@ export default function Workspace() {
                                     ].map(([value, label]) => (
                                         <button
                                             key={value}
-                                            onClick={() => {
+                                            onClick={async () => {
+                                                if (wordPreview.current && !(await wordPreview.current.flush())) return;
                                                 ext.layout(value);
                                                 setLayoutMenu(false);
                                             }}
@@ -1751,9 +1754,7 @@ export default function Workspace() {
                                                     "Nhật ký và lỗi",
                                                     "Logs and errors",
                                                 )}
-                                                onClick={() =>
-                                                    setPreviewTab("logs")
-                                                }
+                                                onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) setPreviewTab("logs"); }}
                                             >
                                                 <div className="logs-doc-icon">
                                                     <svg
@@ -1956,9 +1957,7 @@ export default function Workspace() {
                                                 aria-selected={
                                                     previewTab === "pdf"
                                                 }
-                                                onClick={() =>
-                                                    setPreviewTab("pdf")
-                                                }
+                                                onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) setPreviewTab("pdf"); }}
                                             >
                                                 PDF preview
                                             </button>
@@ -1997,6 +1996,8 @@ export default function Workspace() {
                                                 project={project.id}
                                                 language={uiLanguage}
                                                 sourceDirty={dirty}
+                                                snapshot={snapshot}
+                                                onCompile={() => void build()}
                                                 active={previewTab === "word"}
                                                 sourceSignal={
                                                     file + content + snapshot

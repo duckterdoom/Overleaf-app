@@ -12,7 +12,7 @@ if errorlevel 1 (
     echo Python 3.12+ is required. See docs\PYTHON_NEXTJS_MIGRATION.md.
     goto failed
 )
-"%DESKTOP_PYTHON%" -c "import fastapi, uvicorn, webview, PIL, pypdf, overleaf_desktop" > nul 2>&1
+"%DESKTOP_PYTHON%" -c "import fastapi, uvicorn, webview, PIL, pypdf, pdf2docx, pymupdf, docx, overleaf_desktop" > nul 2>&1
 if not errorlevel 1 goto dependencies_ready
 "%DESKTOP_PYTHON%" -m pip install -e "apps/desktop[desktop]"
 if errorlevel 1 goto failed

@@ -118,7 +118,7 @@ declare global {
             api: {
                 export_docx: (
                     project: string,
-                    revision: string,
+                    snapshot: string,
                 ) => Promise<{
                     saved?: boolean;
                     cancelled?: boolean;

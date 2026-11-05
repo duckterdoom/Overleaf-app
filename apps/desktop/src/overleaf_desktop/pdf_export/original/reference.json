@@ -1,0 +1,18 @@
+{
+  "signature": "96c5e4a7df391c948ee5c585391f03069cfad0ba4d6c70c026017b334f21d305",
+  "sourcePdfSha256": "e4ab54c632f1c10d0c4ad2bf665e39481c185263ec58782a067c420619686ddd",
+  "sample": "paper_input.pdf",
+  "bundleFiles": {
+    "build_perfect_docx.py": "520ff22a3f513b1ae3633087bfdc5f78cfe8fbf4e6106d9b6426b1ae506bb38b",
+    "convert_pdf2docx.py": "80ffd27ab4896933d6ada22e7ab80b9a07f738bbc5b8dd10233c3e424ef04481",
+    "universal_converter.py": "d858669905d9875a0206cce648f0400ff202155646280de072b52dce15eec563",
+    "extracted_figures/fig_xref_109.png": "20ffdf85db46fc9211bdc084cdab3fa5d181f32ae4cd297fb5616abb93b062e8",
+    "extracted_figures/fig_xref_112.png": "222b49b2061f5172fbebdc16f25869eff78136c4e68eae5fbf652b910144e4f9",
+    "extracted_figures/fig_xref_116.png": "de7275d18db59392c33719763b321ef6caedafdae2842ff1356e0c1d02866756",
+    "extracted_figures/fig_xref_117.png": "2e99b6e711df3db0e523e652e57d3875a4ca90af50962b252dae501aa4490f2f",
+    "extracted_figures/fig_xref_128.png": "d83d205e088040a90c8b30556cdbd9505daaa7cc5d8c07d77ca80b42a2f18cf5",
+    "extracted_figures/fig_xref_70.png": "8199ad9c532da6f2289a2ade3cfe7bff8e2f4eab043ce12a965972512c4439c6",
+    "extracted_figures/fig_xref_91.png": "ce7b883aa837db62f39f98a958b2aff4ea4c32fe351833b7786367f27d4249f4",
+    "extracted_figures/fig_xref_94.png": "abf7e36602865ebe1fa4ff52f530ac914f81c6c07fc00ec0fd0b94f1b334a355"
+  }
+}

@@ -7,7 +7,15 @@ name = "overleaf-desktop-python"
 version = "0.1.0"
 description = "Local LaTeX desktop with a Python backend and exported Next.js UI"
 requires-python = ">=3.12"
-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "Pillow>=11,<13", "pypdf>=5,<7"]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "uvicorn>=0.34,<1",
+    "Pillow>=11,<13",
+    "pypdf>=5,<7",
+    "pdf2docx==0.5.13",
+    "pymupdf==1.28.2",
+    "python-docx>=1.2,<2",
+]
 
 [project.optional-dependencies]
 desktop = ["pywebview>=6,<7"]
@@ -22,7 +30,10 @@ overleaf-server-python = "overleaf_desktop.network:server_main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-overleaf_desktop = ["resources/templates/**/*", "resources/*.json"]
+overleaf_desktop = ["resources/templates/**/*", "resources/*.json", "pdf_export/original/*.py", "pdf_export/original/*.json", "pdf_export/original/extracted_figures/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = ["src/overleaf_desktop/pdf_export/original"]

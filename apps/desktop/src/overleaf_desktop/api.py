@@ -44,6 +44,8 @@ def create_api(
         try:
             yield
         finally:
+            if hasattr(compiler, "pdf_word_exporter"):
+                compiler.pdf_word_exporter.cancel()
             install = getattr(app.state, "install_task", None)
             if install and not install.done():
                 install.cancel()
@@ -85,9 +87,8 @@ def create_api(
                 return JSONResponse({"message": "Invalid origin"}, status_code=403)
             # Bound incoming JSON before the framework parses it (also covers chunked requests).
             if (
-                ("/upload/" in request.url.path and request.url.path.endswith("/part"))
-                or request.url.path.startswith("/api/projects/import-file")
-            ):
+                "/upload/" in request.url.path and request.url.path.endswith("/part")
+            ) or request.url.path.startswith("/api/projects/import-file"):
                 return await call_next(request)
             size = 0
             body = bytearray()

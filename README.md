@@ -61,19 +61,22 @@ Thanh icon ngoài cùng bên trái workspace chuyển giữa **Tệp/Outline**, 
 
 ### Chỉnh sửa Word trong workspace và export DOCX
 
-Cạnh **PDF preview** có tab **Word preview** tự tạo nội dung khi mở hoặc chuẩn bị sau compile PDF thành công; có trạng thái đang chuyển đổi thay vì giấy trắng. Sửa chữ trong các đoạn ánh xạ được sẽ tự lưu và cập nhật đúng vị trí trong editor LaTeX. Sửa LaTeX sẽ tự cập nhật Word sau khi ngừng gõ nếu không có sửa Word đang chờ. Cũng có nút **Lưu Word** và `Ctrl/Cmd+S` trong vùng Word.
+Cạnh **PDF preview** có tab **Word preview**. Mặc định **Word phân trang** mở trực tiếp DOCX từ bộ chuyển đổi gốc của bạn bằng SuperDoc, có trang, cột, hình, caption và header/footer. Có thể sửa trực tiếp, dùng toolbar định dạng, tự lưu sau khi ngừng gõ hoặc **Lưu Word** / `Ctrl/Cmd+S`. Nếu chưa có PDF, mở tab sẽ yêu cầu compile và hiển thị trạng thái chuyển đổi/phân trang.
 
-Nút tải xuống mở menu **Export PDF (.pdf)** / **Export Word (.docx)**. Word export lưu các chỉnh sửa của bản Word; không cần compile PDF thành công để tạo Word. Bản PDF vẫn yêu cầu snapshot hợp lệ như trước. Desktop dùng hộp thoại lưu native, browser dùng download.
+Nút tải xuống mở menu **Export PDF (.pdf)** / **Export Word (.docx)**. DOCX ban đầu dùng nguyên bộ chuyển đổi từ `D:\ilovepdf-python` đã đóng gói trong app: builder bài mẫu, Universal mặc định và patched pdf2docx fallback. Khi đã sửa Word, download lấy đúng bytes DOCX đã lưu từ trình soạn thảo. Export vẫn yêu cầu PDF/source hiện hành; nếu nguồn thay đổi trong lúc Word có sửa, app giữ draft và chặn export thay vì âm thầm ghi đè. **Tạo lại từ PDF** thay draft sau xác nhận, giữ revision trước đó.
 
-Cần **Pandoc** (`PATH`, `OVERLEAF_PANDOC` hoặc bản local Windows `target/pandoc/pandoc.exe`). `.overleaf-word.json` giữ bản xem/mapping/revision; metadata này không tham gia compile. Bản Word cũ được sao lưu vào `.overleaf-word.previous.json` khi tạo lại. Nếu sửa đồng thời gây xung đột, app chặn ghi đè và giữ HTML đang sửa ở `.overleaf-word-conflict.html`. Word chưa đồng bộ qua room; cần rời phòng để ghi LaTeX từ Word.
+Mã nghiên cứu nằm trong [integrations/pdf2docx-research](integrations/pdf2docx-research/README.md); runtime trong `apps/desktop/src/overleaf_desktop/pdf_export`. Không cần thư mục nguồn cũ để chạy app. Chi tiết ở [PDF_TO_WORD_EXPORT.md](docs/PDF_TO_WORD_EXPORT.md).
 
-Đồng bộ hiện hỗ trợ **chữ trong vùng ánh xạ duy nhất**; giữ preamble, macro, label và cấu trúc input/include. Công thức, citation, đoạn trùng/không ánh xạ và cấu trúc được bảo vệ. Sửa định dạng/cấu trúc trong editor LaTeX; toolbar định dạng Word bị khóa trong chế độ đồng bộ để tránh hiển thị thay đổi chưa được ghi về nguồn. Chưa phải round-trip mọi cấu trúc LaTeX.
+`.overleaf-docx/` giữ DOCX hiện tại, revision trước và metadata/checksum, không tham gia compile. Đổi tab, xem lịch sử, đổi bố cục hoặc quay về danh sách dự án sẽ lưu trước. Sửa Word phân trang được giữ trong DOCX, không tự sửa mã LaTeX.
 
-Word nhận diện A4/Letter, lề phổ biến và hai cột (kể cả class LTJournalArticle), phục hồi abstract trong title hook, có zoom/fit-width. DOCX có section một cột cho đầu bài và hai cột cho thân bài tương ứng. Preview là dòng nội dung liên tục, không phân trang bằng engine TeX; không cam kết trùng từng dòng/trang PDF.
+Nút **Đồng bộ chữ LaTeX** giữ chế độ cũ khi cần sửa chữ qua ánh xạ Word ↔ LaTeX; cần **Pandoc** (`PATH`, `OVERLEAF_PANDOC` hoặc `target/pandoc/pandoc.exe`). Chỉ chữ trong vùng ánh xạ duy nhất được ghi về nguồn; công thức, citation, macro và cấu trúc được bảo vệ. Chế độ này dùng bản HTML riêng `.overleaf-word.json`, không phải bản DOCX phân trang và không cung cấp bytes download. Chưa đồng bộ chỉnh sửa DOCX đầy đủ hai chiều với LaTeX.
 
-Ảnh trong `\fbox{\includegraphics{...}}`, tên có dấu ngoặc kép hoặc thiếu phần mở rộng được chuẩn hóa khi chuyển Word; đọc `\graphicspath` từ nguồn/class local để tìm đúng thư mục ảnh. Giữ chiều rộng theo `\textwidth`/`\linewidth`/`\columnwidth`, caption và thứ tự figure. Ảnh raster được nhúng trực tiếp trong DOCX; có thông báo nếu chưa chuyển đủ số ảnh. Font Palatino (`mathpazo`/`palatino`) và cỡ 10/11/12pt thông dụng được áp dụng cho preview/styles DOCX; font thực tế còn phụ thuộc font cài trên máy mở Word. Bản preview cache cũ tự được tạo lại khi nâng bộ chuyển đổi, có giữ bản trước đó.
+Đã kiểm bài journal mẫu: Word phân trang **6 trang, 8 ảnh**, sửa chữ → tự lưu → đổi tab → mở lại vẫn giữ nội dung; download trùng bytes DOCX đã sửa. Đây là render DOCX thực, không phải engine TeX; ngắt dòng/trang có thể khác PDF hoặc Microsoft Word tùy font và cấu trúc tài liệu.
 
-Đây là trình soạn thảo nội dung Word cơ bản, chưa phải toàn bộ chức năng Microsoft Word hoặc import/chỉnh mọi DOCX có sẵn. Bố cục nhiều cột, font/class tùy biến, TikZ, trích dẫn/bibliography và lệnh LaTeX không hỗ trợ có thể khác hoặc không chuyển đủ; DOCX không cam kết giống từng trang PDF. Xem [giới hạn chuyển đổi của Pandoc](https://pandoc.org/MANUAL.html#description). Công thức và PNG/JPEG/GIF hỗ trợ trong phạm vi chuyển đổi; ảnh PDF/TikZ chưa được raster hóa để đưa vào Word.
+SuperDoc và worker được bundle local, tắt telemetry, không cần dịch vụ chỉnh Word trên cloud. Build tự chép worker qua `scripts/copy-worker.mjs`. SuperDoc dùng AGPL-3.0; dependency `@superdoc/docx-engine` có giấy phép riêng trong package. Giữ các thông báo giấy phép khi đóng gói/phân phối.
+
+Chất lượng chuyển PDF → DOCX phụ thuộc chính bộ converter gốc; không cam kết mọi tài liệu giống PDF tuyệt đối. Preview không tự thay bằng ảnh nguyên trang để giả lập khả năng chỉnh sửa.
+
 
 ## Cấu trúc source
 

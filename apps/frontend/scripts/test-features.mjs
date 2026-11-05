@@ -83,6 +83,7 @@ try {
     await page.locator(".save-source").click();
     // Edit Word directly in the workspace, then download the edited DOCX.
     await page.getByRole("tab", { name: "Word preview", exact: true }).click();
+    await page.getByRole("button", { name: "Đồng bộ chữ LaTeX", exact: true }).click();
     const wordArea = page.getByRole("textbox", {
         name: "Nội dung Word",
         exact: true,
@@ -91,11 +92,16 @@ try {
     await wordArea
         .locator("[data-word-id]")
         .filter({ hasText: "Hello history." })
-        .fill("Word direct editing – Tiếng Việt");
+        .fill("Word direct editing synced");
     await page.getByRole("button", { name: "Lưu Word", exact: true }).click();
     await expect(page.locator(".word-actions")).toContainText("Đã lưu Word");
     await expect(page.locator(".cm-content")).toContainText(
-        "Word direct editing – Tiếng Việt",
+        "Word direct editing synced",
+    );
+    await page.getByRole("button", { name: "Biên dịch", exact: true }).click();
+    await expect(page.locator(".statusbar")).toContainText(
+        "Biên dịch thành công",
+        { timeout: 90000 },
     );
     const wordDownloadEvent = page.waitForEvent("download");
     await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
@@ -169,7 +175,7 @@ try {
     const rail = page.getByRole("navigation", {
         name: "Thanh công cụ workspace",
     });
-    await expect(rail.getByRole("button")).toHaveCount(3);
+    await expect(rail.getByRole("button", { name: "Tệp và outline", exact: true })).toBeVisible();
     await rail.getByRole("button", { name: "Nhận xét", exact: true }).click();
     await expect(review).toBeVisible();
     await expect(page.locator(".file-sidebar")).toBeHidden();

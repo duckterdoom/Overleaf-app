@@ -2,6 +2,7 @@
   "name": "overleaf-desktop-ui",
   "version": "0.1.0",
   "private": true,
+  "overrides": { "pdfjs-dist": "$pdfjs-dist" },
   "scripts": {
     "dev": "next dev --hostname 127.0.0.1",
     "prebuild": "node scripts/copy-worker.mjs",
@@ -19,7 +20,8 @@
     "next": "16.4.4",
     "pdfjs-dist": "^6.2.108",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "superdoc": "^2.29.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

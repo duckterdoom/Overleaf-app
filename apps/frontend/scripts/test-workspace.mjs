@@ -100,6 +100,12 @@ try {
     await expect(
         page.getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true }),
     ).toBeDisabled();
+    await expect(
+        page.getByRole("menuitem", {
+            name: "Export Word (.docx)",
+            exact: true,
+        }),
+    ).toBeDisabled();
     await page.getByRole("button", { name: "Tải xuống", exact: true }).click();
     await page
         .locator(".cm-content")
@@ -119,6 +125,12 @@ try {
         page.getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true }),
     ).toBeDisabled();
     await expect(page.locator(".pdf-sheet")).toHaveCount(3);
+    await expect(
+        page.getByRole("menuitem", {
+            name: "Export Word (.docx)",
+            exact: true,
+        }),
+    ).toBeDisabled();
     expect(errors).toEqual([]);
     console.log(
         "PYTHON_NEXT_UI_SMOKE_OK create, edit/save, folder, native compile, 3-page PDF/link, exact export, stale/error guards",

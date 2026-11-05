@@ -1,4 +1,15 @@
 @import "tailwindcss";
+@import "superdoc/style.css";
+.native-word-preview { display: flex; flex-direction: column; flex: 1; min-height: 0; color: var(--ink); background: var(--panel); }
+.native-word-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 8px; font-size: 12px; border-bottom: 1px solid var(--line); }
+.native-word-actions button { padding: 6px; border: 1px solid var(--line); border-radius: 4px; }
+.native-word-actions button[aria-pressed="true"] { color: var(--green); border-color: var(--green); }
+.native-word-note, .native-word-warning { padding: 5px 10px; font-size: 12px; }
+.native-word-warning { color: #b66b16; }
+.native-word-toolbar { flex-shrink: 0; max-height: 100px; overflow: auto; }
+.native-word-host { flex: 1; min-height: 0; height: 100%; overflow: hidden; background: #cdd2d7; color: #111; }
+.native-word-host .superdoc { height: 100%; }
+.native-word-empty { padding: 20px; }
 .preview-tabs {
     display: flex;
     flex-shrink: 0;

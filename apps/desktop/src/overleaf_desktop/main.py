@@ -51,6 +51,8 @@ class DesktopBridge:
 
     def _flush_source(self):
         try:
+            if hasattr(self._compiler, "pdf_word_exporter"):
+                self._compiler.pdf_word_exporter.cancel()
             with self._pending_lock:
                 pending = self._pending
             if pending and pending.get("dirty"):
@@ -248,14 +250,13 @@ class DesktopBridge:
         except Exception as error:
             return {"error": str(error)}
 
-    def export_docx(self, project: str, revision: str) -> dict:
+    def export_docx(self, project: str, snapshot: str) -> dict:
         import webview
-        from .word import Word
+        from .docx_workspace import download, DocxWorkspace
         from .store import atomic_write
 
         try:
-            word = Word(self._compiler.store)
-            data = word.export(project, revision)
+            data, revision = download(self._compiler, project, snapshot)
             selected = self._window.create_file_dialog(
                 webview.FileDialog.SAVE,
                 save_filename="main.docx",
@@ -268,8 +269,9 @@ class DesktopBridge:
             )
             if target.suffix.lower() != ".docx":
                 return {"error": "Tên tệp cần đuôi .docx."}
-            if word.read(project)["revision"] != revision:
-                return {"error": "Bản Word đã thay đổi trong lúc chọn nơi lưu."}
+            self._compiler.verified(project, snapshot)
+            if revision and DocxWorkspace(self._compiler).status(project)['revision'] != revision:
+                return {'error': 'Bản Word vừa đổi trong lúc chọn nơi lưu. Vui lòng xuất lại.'}
             atomic_write(target, data)
             return {"saved": True}
         except Exception as error:

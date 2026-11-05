@@ -164,6 +164,7 @@ def test_native_bridge_exposes_only_export_and_writes_same_bytes(
         "pick_directory",
         "upload_files",
         "import_project",
+        "import_path",
         "migrate_java",
         "profile_picture",
         "open_binary",
