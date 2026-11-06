@@ -64,6 +64,15 @@ export default forwardRef<
         html = useRef(""),
         dirtyRef = useRef(false),
         queue = useRef<Promise<unknown>>(Promise.resolve());
+    useEffect(() => {
+        const warn = (event: BeforeUnloadEvent) => {
+            if (!dirtyRef.current) return;
+            event.preventDefault();
+            event.returnValue = "";
+        };
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, []);
     const working = useRef(false);
     const [draft, setDraft] = useState<Draft | null>(null),
         [dirty, setDirty] = useState(false),

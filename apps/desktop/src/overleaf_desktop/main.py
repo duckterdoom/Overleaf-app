@@ -179,7 +179,7 @@ class DesktopBridge:
         child_bridge._address = self._address
         child_bridge._primary_window = self._primary_window or self._window
         window = webview.create_window(
-            "PDF — Overleaf Desktop",
+            "PDF — Latex",
             self._address + "&project=" + project + "&pdf=true&main=" + quote(main, safe=''),
             js_api=child_bridge,
             width=850,
@@ -284,7 +284,7 @@ class DesktopBridge:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Overleaf Desktop · Python + Next.js")
+    parser = argparse.ArgumentParser(description="Latex · Python + Next.js")
     parser.add_argument(
         "--home",
         type=Path,
@@ -333,7 +333,7 @@ def main() -> None:
 
             bridge = DesktopBridge(compiler)
             window = webview.create_window(
-                "Overleaf Desktop",
+                "Latex",
                 address,
                 js_api=bridge,
                 width=1440,

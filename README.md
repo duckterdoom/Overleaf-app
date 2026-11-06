@@ -1,23 +1,48 @@
-# Overleaf Desktop — Python + Next.js
+# Latex — Python + Next.js
 
-Ứng dụng desktop soạn thảo LaTeX, biên dịch và xem PDF trên máy, có cộng tác qua TCP/TLS. Giao diện Next.js được build thành file tĩnh và mở trong cửa sổ **pywebview**; backend **Python/FastAPI** chạy local. Bản hiện tại không cần JVM, JavaFX hoặc Maven để chạy.
+Ứng dụng soạn thảo LaTeX chạy trong trình duyệt, backend **Python/FastAPI** chạy trên máy local và phục vụ cả giao diện **Next.js** lẫn API tại cùng địa chỉ. Có thể dùng editor, tab nhiều tài liệu, PDF/Word preview, compile và upload mà không cài pywebview/WebView2. Đây là bước chuyển đầu tiên sang web; dữ liệu hiện vẫn là workspace local, chưa phải dịch vụ Internet nhiều tài khoản/phân quyền. Đường chạy desktop cũ được giữ để tương thích.
+
+## Chạy local web
+
+Cần Python **3.12+**, Node.js **22.13+** để build và bộ TeX có `latexmk` để compile. Đóng app desktop cũ trước khi dùng cùng thư mục dữ liệu.
+
+Windows, tại root repository:
+
+```powershell
+.\scripts\run-python-web.bat --build
+.\scripts\run-python-web.bat
+```
+
+Mở **http://127.0.0.1:8000/**; launcher tự mở trình duyệt. Dừng bằng **Ctrl+C** ở terminal. Nếu cổng đang bận, dùng `scripts\run-python-web.bat --port 8001`. Để chỉ chạy server: thêm `--no-browser`.
+
+macOS/Linux:
+
+```sh
+sh scripts/run-python-web.sh --build
+sh scripts/run-python-web.sh
+```
+
+Không cần cài thư viện GUI cho bản web. Lần đầu cần mạng để cài dependency; các lần sau có thể dùng lại thư viện, UI build và gói TeX đã chuẩn bị. Launcher ưu tiên `uv.lock` khi có uv, fallback pip nếu không có. Dữ liệu mặc định tiếp tục ở `~/OverleafDesktopPython` để giữ dự án cũ; đổi bằng `--home` hoặc `OVERLEAF_WEB_HOME`.
+
+Đã kiểm thử local web trên Windows trong môi trường Python sạch **không có pywebview**. Xem [LOCAL_WEB.md](docs/LOCAL_WEB.md) cho cấu hình, phiên truy cập, phạm vi MongoDB và kết quả kiểm thử. Sau khi sửa UI cần build lại; không cần chạy một Next.js server riêng cho chế độ này.
 
 ## Công nghệ và luồng hoạt động
 
 | Thành phần | Công nghệ / vai trò |
 | --- | --- |
-| Cửa sổ desktop | Python 3.12+, pywebview, hộp thoại file/thư mục native |
+| Local web | Trình duyệt + FastAPI/Uvicorn cùng origin; cookie HttpOnly/SameSite cho phiên local |
+| Desktop cũ (tùy chọn) | Python 3.12+, pywebview, hộp thoại file/thư mục native |
 | Giao diện | Next.js static export, React, TypeScript, Tailwind CSS, Lucide icons |
 | Editor | CodeMirror: highlight, folding, tìm/thay thế, chèn LaTeX |
-| Backend local | FastAPI/Uvicorn, API loopback có token phiên |
+| Backend local | FastAPI/Uvicorn; cookie ở web, bearer token ở desktop; bind loopback |
 | Compile | latexmk với pdfLaTeX, XeLaTeX hoặc LuaLaTeX; TeX cài trên máy hoặc TinyTeX đi kèm môi trường local |
 | PDF | PDF.js, pypdf và SyncTeX; PDF thật, export cùng bytes với preview |
 | Cộng tác | Server Python riêng: TCP/TLS, wire v1/v2, OT/Lamport, ACK và RESYNC |
 | Dữ liệu | File local, JSON, history; MongoDB/pymongo là module tùy chọn chưa nối UI/room |
 
-Luồng chạy: **pywebview → UI tĩnh → API Python local → file/TeX/PDF**. Khi bật cộng tác, client kết nối thêm server TCP/TLS. Sau khi build UI, không cần chạy Next.js server; Node.js dùng cho build/phát triển.
+Luồng local web: **trình duyệt → UI Next.js đã build → API Python cùng origin → file/TeX/PDF**. Desktop cũ dùng pywebview thay trình duyệt. Cộng tác TCP/TLS hiện vẫn là module cũ, chưa thay bằng phòng WebSocket nhiều người. Node.js dùng cho build; Python phục vụ UI/API khi chạy.
 
-## Chạy từ source
+## Chạy desktop cũ từ source (tùy chọn)
 
 Chuẩn bị Python **3.12+**, Node.js **22.13+** để build, native WebView và bộ TeX có `latexmk`. Windows dùng WebView2; macOS dùng WebKit; Linux cần GTK/WebKit hoặc Qt phù hợp với pywebview. Mac/Linux chưa được kiểm thử native trong lần nghiệm thu Windows hiện tại.
 

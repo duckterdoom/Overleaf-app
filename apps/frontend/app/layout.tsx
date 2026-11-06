@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
-    title: "Overleaf Desktop",
+    title: "Latex",
     description: "Local LaTeX workspace",
 };
 export default function RootLayout({

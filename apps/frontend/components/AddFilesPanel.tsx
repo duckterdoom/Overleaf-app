@@ -453,6 +453,12 @@ export default function AddFilesPanel({
                                                     "Upload folder including empty folders",
                                                 )}
                                                 onClick={async () => {
+                                                    if (
+                                                        !window.pywebview?.api
+                                                    ) {
+                                                        directoryInput.current?.click();
+                                                        return;
+                                                    }
                                                     try {
                                                         const result =
                                                             await native(

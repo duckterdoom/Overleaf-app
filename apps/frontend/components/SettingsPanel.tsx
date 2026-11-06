@@ -3,6 +3,7 @@ import { useState } from "react";
 import { X, FolderOpen, Check, LoaderCircle } from "lucide-react";
 import {
     action,
+    chooseDirectory,
     native,
     errorText,
     translator,
@@ -299,7 +300,15 @@ export default function SettingsPanel({
                                             onClick={async () => {
                                                 try {
                                                     const folder =
-                                                        await window.pywebview?.api.pick_directory();
+                                                        await chooseDirectory(
+                                                            String(
+                                                                draft.projectsDirectory ||
+                                                                    "",
+                                                            ),
+                                                            String(
+                                                                draft.language,
+                                                            ),
+                                                        );
                                                     if (folder)
                                                         update(
                                                             "projectsDirectory",

@@ -600,10 +600,27 @@ export default function useParity(core: Core) {
             }
         };
         window.addEventListener("synctex-source", source);
+        const fromTab = (event: MessageEvent) => {
+            if (
+                event.origin !== window.location.origin ||
+                event.data?.type !== "overleaf-source"
+            )
+                return;
+            const detail = event.data;
+            if (
+                detail.project === latest.current.project?.id &&
+                typeof detail.file === "string" &&
+                Number.isFinite(detail.line) &&
+                Number.isFinite(detail.column)
+            )
+                void positionSource(detail);
+        };
+        window.addEventListener("message", fromTab);
         window.addEventListener("pdf-reattach", reattach);
         window.addEventListener("keydown", shortcut);
         return () => {
             window.removeEventListener("synctex-source", source);
+            window.removeEventListener("message", fromTab);
             window.removeEventListener("pdf-reattach", reattach);
             window.removeEventListener("keydown", shortcut);
         };

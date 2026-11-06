@@ -45,9 +45,7 @@ export default function AuthView({
                     <span className="brand-mark">
                         <Leaf size={26} />
                     </span>
-                    <strong>
-                        overleaf<span>desktop</span>
-                    </strong>
+                    <strong>Latex</strong>
                 </div>
                 <h1>
                     {t(
@@ -69,7 +67,7 @@ export default function AuthView({
                 </small>
             </div>
             <div className="auth-card">
-                <p className="eyebrow">OVERLEAF DESKTOP</p>
+                <p className="eyebrow">Latex</p>
                 <h2>
                     {signup
                         ? t("Tạo tài khoản", "Create an account")

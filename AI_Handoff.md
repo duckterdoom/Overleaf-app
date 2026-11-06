@@ -1482,3 +1482,33 @@ Validation: imported ZIP compiled through the application Compiler using pdfLaTe
 Browser integration mới: `apps/frontend/scripts/test-document-tabs.mjs`, chạy với Python executable và một home mới. Kiểm main/report compile riêng, PDF/Word tabs, sửa Word → đổi main → quay lại report vẫn giữ chữ; Word main không có chữ của report; tải report.docx trùng bytes draft report; sửa nguồn/đổi tab được lưu và đóng tab chuyển sang output còn lại. Bằng chứng `target/multidoc-ui-05/document-tabs.png`, `document-tabs-word.png`, `edited-report.docx`. Production build/TypeScript và kiểm whitespace các file sửa đạt. Đã cập nhật selector regression cũ để phân biệt file tree với source tabs có cùng tên/tooltip.
 
 Final browser checks: multidoc-ui-06 passed (including closing source/output tabs and reviewing saved Word after source changes); multidoc-regression-02 passed existing features; multidoc-pdf-regression-01 passed 3-page PDF/link/exact-export/stale/error guards. Logs use the selected compile root when no explicit source filename is present. No commit or push performed.
+
+
+## 55. Đường chạy Local Web độc lập desktop và cập nhật thư viện (06/11/2026)
+
+**Phạm vi:** bước đầu đưa mã Python + Next.js hiện có lên trình duyệt local; không yêu cầu pywebview/native WebView. Chưa triển khai dịch vụ Internet nhiều người dùng, phòng WebSocket/CRDT hoặc chuyển toàn bộ dữ liệu UI sang MongoDB.
+
+**Khởi động:** thêm `overleaf_desktop/web.py`, console entry `overleaf-web`, `scripts/run-python-web.bat` và `.sh`. Windows chạy --build để npm ci/build, sau đó chạy launcher không tham số để mở http://127.0.0.1:8000/. Có --port, --home, --frontend, --latexmk, --no-browser; bind chỉ loopback. Default home vẫn ~/OverleafDesktopPython để giữ dữ liệu, ưu tiên OVERLEAF_WEB_HOME rồi OVERLEAF_PYTHON_HOME. Không đổi/move tên folder apps/desktop hoặc package cũ để tránh phá import. Desktop entry/launchers cũ vẫn giữ.
+
+**Phiên web:** create_api thêm mode web có POST /api/web/session phát cookie HttpOnly, SameSite Strict, path=/api; token không trả trong JSON/link. Frontend bootstrap idempotent và mọi request chờ bootstrap, dùng cookie cùng origin. Host/origin/cross-site được kiểm trước API. Desktop/test vẫn dùng bearer; reload desktop fallback cả 404 và 405 vì static mount có thể trả 405 cho POST route không tồn tại. Mode web hiện là một workspace/local profile dùng chung trong process, chưa tách phiên người dùng theo browser hoặc phân quyền project; không public qua reverse proxy ở bước này.
+
+**Frontend:** brand/title đổi Local Web khi health trả mode local-web. Download PDF/DOCX dùng luồng browser đã có. Tab PDF riêng dùng window.open cùng root/cookie; SyncTeX gửi message về opener có kiểm origin/project/file/line/column. API binary có whitelist ảnh/PDF, Store path validation, size cap và SVG attachment/sandbox; browser tải SVG xuống thay vì thực thi như trang app. Hộp chọn ảnh đại diện có browser input và POST avatar; upload folder có fallback webkitdirectory. Chọn thư mục lưu ở local server dùng nhập đường dẫn khi không có native picker; không giả vờ browser cung cấp absolute path thư mục upload. Java migration có API action local tương đương và prompt đường dẫn. stage_source/close_pdf_windows là no-op khi không có native bridge. Nguồn/Word chưa lưu sẽ có beforeunload guard.
+
+**Dependency:** Next 16.4.4 →16.4.5 (pin), CodeMirror view 6.38.0 →6.43.15, Playwright 1.64.1 →1.65.0. FastAPI/Uvicorn min nâng theo bản đang kiểm 0.162/0.54. Group [web] gồm uvicorn[standard] + pymongo>=4.19,<5, không kéo pywebview. Lock cập nhật Pydantic 2.14.3/core 2.50.4, dnspython 2.9.2, typing-inspection 0.4.5; thêm httptools/websockets/watchfiles/dotenv/yaml và uvloop theo platform. Không nâng major TypeScript/Lucide/Pillow/PyMuPDF; giữ nguyên converter bundle và pins để không đổi output người dùng. Launcher ưu tiên uv frozen --extra web --inexact (giữ các extra cũ), có fallback pip nếu không có uv.
+
+**MongoDB:** đọc lại persistence.py xác nhận đây là repository prototype chưa UI-wired. Đã cập nhật/cài PyMongo nhưng không tự migrate hoặc ghi dữ liệu Mongo; Store/UI vẫn file+JSON/history. Không yêu cầu Mongo đang chạy để mở local web. README/LOCAL_WEB ghi rõ giới hạn này và bước sau cần user sessions, membership/ACL, Mongo storage thực, room/document sync và compile workers trước khi triển khai public.
+
+**Kiểm chứng:** Windows launcher --build chạy thật npm ci + Next production static build/TypeScript đạt. Launcher không --build với --port 0 --no-browser --home riêng chạy thật, bootstrap cookie/health trả local-web; dừng Ctrl+C (Windows hỏi terminate batch chọn Y). uv lock --check, git diff --check và shell script bash -n đạt; chưa chạy runtime Mac/Linux. Npm audit 0 advisory được báo.
+
+Tạo venv `target/local-web-clean-env` bằng uv sync frozen extra web: 33 package, **không có pywebview**; import module web và CLI production/browser test đều chạy được. Full backend **148 pytest đạt**, thêm 4 test cookie/bootstrap/origin/Host/cross-site, desktop cookie isolation, binary paths/SVG và CLI không bind public. Cảnh báo Starlette/httpx TestClient có sẵn vẫn chưa gây fail.
+
+Browser script mới `scripts/test-local-web.mjs` gọi module web production, không dùng server test hoặc bearer URL. `target/local-web-ui-03` đạt: cookie HttpOnly/no token trong URL/sessionStorage; reload; create/save; compile PDF 2 trang và download exact bytes; tab PDF riêng; Word edit/download trùng draft bytes; upload/mở ảnh; avatar; ZIP browser import rồi compile. Screenshot local-web-word.png/local-web-home.png trong home test. Lượt đầu chọn text-run quá cụ thể không khớp DOCX có nhiều run, đã đổi selector line có chữ LOCAL; không sửa converter để né test.
+
+Regression cũ: `local-web-documents-regression-01` đạt nhiều root/source/PDF/Word và cách ly edit/export; `local-web-legacy-regression-02` đạt toàn bộ features cũ, kể cả reload/profile/English sau khi sửa bootstrap 405. README chuyển quickstart chính sang web; chi tiết ở docs/LOCAL_WEB.md. Chưa commit/push trong lượt này.
+
+
+## 56. Rename displayed application to Latex (2026-11-06)
+
+Changed the visible app name to Latex in the login screen, header, browser metadata/document title, desktop/PDF window titles and CLI descriptions. Removed the desktop/local-web suffix from the displayed brand. README and local-web guide headings now use Latex. Kept package identifiers, session keys, data folders, migration references and readiness markers for compatibility with existing projects and launch/test tooling. Updated the existing browser title assertion to Latex. Production build/TypeScript checked; no new unit tests for this presentation-only change.
+
+Browser verification: latex-brand-ui-01 passed with the browser title Latex and existing local-web workflows intact.

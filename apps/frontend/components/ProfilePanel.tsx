@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, User, Camera } from "lucide-react";
 import { request } from "../lib/api";
 import {
@@ -32,6 +32,7 @@ export default function ProfilePanel({
         [error, setError] = useState(""),
         [busy, setBusy] = useState(false),
         [refresh, setRefresh] = useState(0);
+    const pictureInput = useRef<HTMLInputElement>(null);
     useEffect(() => {
         let object = "",
             disposed = false;
@@ -83,6 +84,35 @@ export default function ProfilePanel({
                     </button>
                 </header>
                 <div className="profile-avatar">
+                    <input
+                        ref={pictureInput}
+                        type="file"
+                        accept="image/png,image/jpeg,image/gif"
+                        hidden
+                        aria-label={t(
+                            "Tải ảnh đại diện",
+                            "Upload profile picture",
+                        )}
+                        onChange={async (event) => {
+                            const file = event.target.files?.[0];
+                            event.target.value = "";
+                            if (!file) return;
+                            try {
+                                await request("/avatar", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type":
+                                            file.type ||
+                                            "application/octet-stream",
+                                    },
+                                    body: file,
+                                });
+                                setRefresh((value) => value + 1);
+                            } catch (error) {
+                                setError(errorText(error));
+                            }
+                        }}
+                    />
                     {image ? (
                         <img src={image} alt={session.name} />
                     ) : (
@@ -91,6 +121,10 @@ export default function ProfilePanel({
                     <button
                         title={t("Chọn ảnh", "Select picture")}
                         onClick={async () => {
+                            if (!window.pywebview?.api) {
+                                pictureInput.current?.click();
+                                return;
+                            }
                             try {
                                 await native("profile_picture");
                                 setRefresh((value) => value + 1);

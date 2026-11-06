@@ -180,13 +180,16 @@ export default function Workspace() {
     const text = (message: unknown) =>
         message instanceof Error ? message.message : String(message);
     useEffect(() => {
-        bootstrap();
-        void Promise.all([
-            json<Project[]>("/projects"),
-            json<Catalog>("/templates"),
-            json("/health"),
-        ])
-            .then(([projects, catalog]) => {
+        void bootstrap()
+            .then(() =>
+                Promise.all([
+                    json<Project[]>("/projects"),
+                    json<Catalog>("/templates"),
+                    json<{ mode: string }>("/health"),
+                ]),
+            )
+            .then(([projects, catalog, health]) => {
+                document.title = "Latex";
                 setProjects(projects);
                 setCatalog(catalog);
                 setReady(true);
@@ -195,7 +198,7 @@ export default function Workspace() {
             .catch((error) => {
                 setError(text(error));
                 setNotice(
-                    "Không kết nối được backend. Mở lại ứng dụng desktop.",
+                    "Không kết nối được backend. Khởi chạy lại local web hoặc ứng dụng desktop.",
                 );
             });
     }, []);
@@ -970,9 +973,7 @@ export default function Workspace() {
                     <span className="brand-mark">
                         <Leaf size={23} />
                     </span>
-                    <strong>
-                        overleaf<span>desktop</span>
-                    </strong>
+                    <strong>Latex</strong>
                 </div>
                 {project ? (
                     <>

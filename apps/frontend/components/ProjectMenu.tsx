@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X, FolderOpen } from "lucide-react";
-import { action, errorText, translator } from "../lib/parity";
+import { action, errorText, translator, chooseDirectory } from "../lib/parity";
 import type { Project } from "../lib/api";
 export default function ProjectMenu({
     project,
@@ -115,8 +115,10 @@ export default function ProjectMenu({
                             <button
                                 title={t("Chọn thư mục", "Select folder")}
                                 onClick={async () => {
-                                    const value =
-                                        await window.pywebview?.api.pick_directory();
+                                    const value = await chooseDirectory(
+                                        parent,
+                                        language,
+                                    );
                                     if (value) setParent(value);
                                 }}
                             >

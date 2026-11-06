@@ -256,6 +256,15 @@ export default forwardRef<WordPreviewHandle, Props>(
                     ? legacyRef.current?.flush() || Promise.resolve(true)
                     : persist(),
         }));
+        useEffect(() => {
+            const warn = (event: BeforeUnloadEvent) => {
+                if (!dirty) return;
+                event.preventDefault();
+                event.returnValue = "";
+            };
+            window.addEventListener("beforeunload", warn);
+            return () => window.removeEventListener("beforeunload", warn);
+        }, [dirty]);
 
         return (
             <div

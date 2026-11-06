@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlsplit, quote
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response, StreamingResponse
+from fastapi.responses import JSONResponse, Response, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -37,7 +37,7 @@ class CompileBody(BaseModel):
 
 
 def create_api(
-    store: Store, compiler: Compiler, token: str, frontend: Path | None = None
+    store: Store, compiler: Compiler, token: str, frontend: Path | None = None, *, web: bool = False
 ) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app):
@@ -74,18 +74,23 @@ def create_api(
         if request.url.hostname not in {"127.0.0.1", "localhost"}:
             return JSONResponse({"message": "Invalid local host"}, status_code=403)
         if request.url.path.startswith("/api/"):
-            expected = "Bearer " + token
-            if not secrets.compare_digest(
-                request.headers.get("authorization", "").encode("utf-8"),
-                expected.encode("ascii"),
-            ):
-                return JSONResponse(
-                    {"message": "Phiên desktop không hợp lệ. Mở lại ứng dụng."},
-                    status_code=401,
-                )
             origin = request.headers.get("origin")
             if origin and urlsplit(origin).netloc != request.url.netloc:
                 return JSONResponse({"message": "Invalid origin"}, status_code=403)
+            if request.headers.get("sec-fetch-site") == "cross-site":
+                return JSONResponse({"message": "Invalid request site"}, status_code=403)
+            bootstrap = web and request.url.path == "/api/web/session" and request.method == "POST"
+            expected = "Bearer " + token
+            bearer = secrets.compare_digest(
+                request.headers.get("authorization", "").encode("utf-8"),
+                expected.encode("ascii"),
+            )
+            cookie = web and secrets.compare_digest(request.cookies.get("overleaf_local_session", "").encode(), token.encode())
+            if not (bootstrap or bearer or cookie):
+                return JSONResponse(
+                    {"message": "Phiên truy cập không hợp lệ. Tải lại trang hoặc mở lại ứng dụng."},
+                    status_code=401,
+                )
             # Bound incoming JSON before the framework parses it (also covers chunked requests).
             if (
                 "/upload/" in request.url.path and request.url.path.endswith("/part")
@@ -93,9 +98,10 @@ def create_api(
                 return await call_next(request)
             size = 0
             body = bytearray()
+            limit = 32 * 1024 * 1024 if '/docx-preview/' in request.url.path and request.method == 'PUT' else 12 * 1024 * 1024
             async for chunk in request.stream():
                 size += len(chunk)
-                if size > 12 * 1024 * 1024:
+                if size > limit:
                     return JSONResponse(
                         {"message": "Request too large"}, status_code=413
                     )
@@ -112,9 +118,17 @@ def create_api(
     def health():
         return {
             "version": "0.1.0",
-            "stack": "python-nextjs-desktop",
+            "stack": "python-nextjs-web" if web else "python-nextjs-desktop",
+            "mode": "local-web" if web else "desktop",
             "latexmk": compiler.executable,
         }
+
+    if web:
+        @app.post("/api/web/session")
+        def browser_session(request: Request):
+            response = JSONResponse({"mode": "local-web"})
+            response.set_cookie("overleaf_local_session", token, httponly=True, samesite="strict", secure=request.url.scheme == "https", path="/api")
+            return response
 
     @app.get("/api/templates")
     def templates():
@@ -133,6 +147,16 @@ def create_api(
     @app.get("/api/projects/{project}/files")
     def files(project: str):
         return store.tree(project)
+
+    @app.get("/api/projects/{project}/binary")
+    def binary(project: str, path: str):
+        import mimetypes
+        source = store.path(project, path)
+        if source.suffix.lower() not in {'.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'} or not source.is_file():
+            raise Problem("Chọn ảnh hoặc PDF có trong dự án.", 404)
+        if source.stat().st_size > 100 * 1024 * 1024:
+            raise Problem("Tệp vượt giới hạn 100 MiB.", 413)
+        return FileResponse(source, media_type=mimetypes.guess_type(source.name)[0] or 'application/octet-stream', filename=source.name, content_disposition_type='attachment' if source.suffix.lower() == '.svg' else 'inline', headers={'Content-Security-Policy': "sandbox; default-src 'none'"})
 
     @app.get("/api/projects/{project}/file")
     def read_file(project: str, path: str):

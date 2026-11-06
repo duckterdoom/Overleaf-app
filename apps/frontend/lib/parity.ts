@@ -1,4 +1,4 @@
-import { json } from "./api";
+import { json, request } from "./api";
 export type Session = { name: string; email: string; offline: boolean };
 export type Settings = Record<string, string | number | boolean>;
 export type Boot = {
@@ -55,6 +55,18 @@ export type NativeResult = {
     opened?: boolean;
     [key: string]: unknown;
 };
+export async function chooseDirectory(
+    current: string,
+    language: string,
+): Promise<string | null> {
+    if (window.pywebview?.api) return window.pywebview.api.pick_directory();
+    return window.prompt(
+        language === "en"
+            ? "Folder path on this local server:"
+            : "Nhập đường dẫn thư mục trên máy chạy local web:",
+        current,
+    );
+}
 export async function native(
     name: string,
     ...parameters: unknown[]
@@ -62,10 +74,80 @@ export async function native(
     const api = window.pywebview?.api as unknown as
         | Record<string, (...args: unknown[]) => Promise<NativeResult>>
         | undefined;
-    if (!api?.[name])
+    if (!api?.[name]) {
+        if (name === "stage_source" || name === "close_pdf_windows") return {};
+        if (name === "migrate_java") {
+            const folder = await chooseDirectory(
+                "",
+                document.documentElement.lang.startsWith("en") ? "en" : "vi",
+            );
+            return folder
+                ? action("migrate-java", { folder })
+                : { cancelled: true };
+        }
+        if (name === "detach_pdf") {
+            const route = new URLSearchParams({
+                project: String(parameters[0]),
+                pdf: "true",
+                main: String(parameters[1] || ""),
+            });
+            const tab = window.open("/#" + route.toString(), "_blank");
+            if (!tab)
+                throw Error(
+                    "Trình duyệt chặn tab mới. Cho phép mở tab rồi thử lại.",
+                );
+            return { opened: true };
+        }
+        if (name === "focus_source") {
+            if (!window.opener)
+                throw Error("Mở lại PDF từ tab editor để điều hướng về nguồn.");
+            window.opener.postMessage(
+                {
+                    type: "overleaf-source",
+                    project: parameters[0],
+                    file: parameters[1],
+                    line: parameters[2],
+                    column: parameters[3],
+                },
+                window.location.origin,
+            );
+            window.opener.focus();
+            return { opened: true };
+        }
+        if (name === "open_binary") {
+            const tab = window.open("about:blank", "_blank");
+            if (!tab)
+                throw Error(
+                    "Trình duyệt chặn tab mới. Cho phép mở tab rồi thử lại.",
+                );
+            tab.opener = null;
+            try {
+                const response = await request(
+                    `/projects/${encodeURIComponent(String(parameters[0]))}/binary?path=${encodeURIComponent(String(parameters[1]))}`,
+                );
+                const object = URL.createObjectURL(await response.blob());
+                if (String(parameters[1]).toLowerCase().endsWith(".svg")) {
+                    tab.close();
+                    const download = document.createElement("a");
+                    download.href = object;
+                    download.download =
+                        String(parameters[1]).split("/").pop() || "image.svg";
+                    download.click();
+                    setTimeout(() => URL.revokeObjectURL(object), 30000);
+                    return { opened: true };
+                }
+                tab.location.href = object;
+                setTimeout(() => URL.revokeObjectURL(object), 120000);
+                return { opened: true };
+            } catch (error) {
+                tab.close();
+                throw error;
+            }
+        }
         throw new Error(
-            "Thao tác này cần cửa sổ desktop. Chạy launcher Python.",
+            "Thao tác này chưa có trên local web. Dùng chức năng upload/import trong trình duyệt.",
         );
+    }
     const result = await api[name](...parameters);
     if (result?.error) throw new Error(result.error);
     return result;

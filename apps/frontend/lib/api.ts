@@ -48,10 +48,12 @@ export type CompileEvent = {
 };
 let token = "";
 let launchRoute: Record<string, string> = {};
+let sessionReady: Promise<void> | null = null;
 export function getLaunchRoute() {
     return launchRoute;
 }
 export function bootstrap() {
+    if (sessionReady) return sessionReady;
     const params = new URLSearchParams(location.hash.slice(1));
     launchRoute = Object.fromEntries(params);
     token =
@@ -60,15 +62,35 @@ export function bootstrap() {
         token;
     if (token) sessionStorage.setItem("overleaf_session", token);
     history.replaceState(null, "", location.pathname);
+    sessionReady = (async () => {
+        if (params.get("session")) return; // Existing desktop/test launch links.
+        const response = await fetch("/api/web/session", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (response.ok) {
+            token = "";
+            sessionStorage.removeItem("overleaf_session");
+            return;
+        }
+        if (token && [404, 405].includes(response.status)) return; // Desktop static server has no web bootstrap route.
+        throw new Error(
+            "Không tạo được phiên local web. Tải lại trang từ địa chỉ launcher hiển thị.",
+        );
+    })();
+    return sessionReady;
 }
 export async function request(path: string, options: RequestInit = {}) {
+    await bootstrap();
+    const headers = new Headers(options.headers);
+    if (!headers.has("Content-Type"))
+        headers.set("Content-Type", "application/json");
+    if (token) headers.set("Authorization", `Bearer ${token}`);
     const response = await fetch(`/api${path}`, {
         ...options,
-        headers: {
-            "Content-Type": "application/json",
-            ...options.headers,
-            Authorization: `Bearer ${token}`,
-        },
+        credentials: "same-origin",
+        headers,
     });
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));

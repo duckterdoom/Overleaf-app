@@ -295,6 +295,8 @@ def register(app, store, compiler):
         if name == "remove-avatar":
             store.state.avatar(remove=True)
             return {"removed": True}
+        if name == 'migrate-java':
+            return io.import_java(data['folder'])
         if name in {"settings", "settings-reset"}:
             result = (
                 store.state.reset_preferences()
