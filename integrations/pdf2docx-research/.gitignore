@@ -1,0 +1,6 @@
+venv*/
+__pycache__/
+*.pdf
+*.docx
+extracted_figures/
+temp_convert.ps1

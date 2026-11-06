@@ -1,5 +1,17 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Chấm điểm IELTS Writing trực tiếp trên Editor (Task 1 & Task 2) và Xuất Báo Cáo PDF (05/11/2026):** tích hợp icon IELTS (`GraduationCap`) trên thanh công cụ bên trái theo Ảnh 4; bảng chấm điểm đầy đủ 4 tiêu chí chuẩn quốc tế cho Task 1 (TA, CC, LR, GRA) và Task 2 (TR, CC, LR, GRA) theo Ảnh 1 & 2; hiển thị chi tiết Band Descriptors chính thức, ô nhập lời phê của Tutor; tính điểm làm tròn theo chuẩn IELTS; lưu trữ bền vững và sinh báo cáo LaTeX/PDF theo kiến trúc Ảnh 3. Xem **mục 47**.
+
+> **Mới nhất — Giao diện Editor toàn màn hình và Bảng Logs & Errors chuẩn Overleaf (04/11/2026):** chuyển toàn bộ build output và bảng error khỏi cột soạn thảo LaTeX để editor chiếm 100% chiều cao; bổ sung nút icon tài liệu kèm huy hiệu đếm lỗi/cảnh báo cạnh nút Recompile; chế độ xem Logs & Errors chuyên dụng ở cột phải với các tab All/Errors/Warnings/Info, thẻ lỗi mở rộng được, nút "Đi tới dòng", mục Raw logs thu gọn, thanh đáy "Clear cached files" và nút "Back to PDF" để quay lại xem PDF. Xem **mục 46**.
+
+> **Mới nhất — Kéo thả tệp/thư mục khi nhập dự án (ZIP/Word/Markdown/Folder) (04/11/2026):** bổ sung vùng kéo thả (Drag & Drop Zone) trực quan trong hộp thoại tạo dự án mới; tự động nhận diện định dạng (.zip, .docx, .md, thư mục hoặc danh sách tệp), tự điền tên dự án và giải phóng thao tác phải mở cửa sổ duyệt file path; hỗ trợ cả native path và upload stream nhị phân độc lập. Xem **mục 45**.
+
+> **Mới nhất — Sửa lỗi phông chữ tiếng Việt trên Next.js (04/11/2026):** loại bỏ hoàn toàn phông `Georgia` vốn thiếu dải ký tự tiếng Việt Unicode (U+1E00–U+1EFF) trên Windows, thay thế bằng bộ phông serif chuẩn mực hỗ trợ đầy đủ tiếng Việt (`Charter`, `Sitka Text`, `Sitka Heading`, `Cambria`, `Times New Roman`, `serif`); nới lỏng `letter-spacing` tránh va chạm/rơi dấu. Xem **mục 40**.
+
+> **Mới nhất — Giao diện Hoạt động, trò chơi Snake và loại bỏ thanh cuộn ngang (04/11/2026):** khôi phục thẻ Hoạt động theo bản Java, bổ sung mini-game Snake và màn hình kết thúc pixel art; tính toán kích cỡ lưới chính xác và loại bỏ triệt để thanh cuộn ngang. Xem **mục 35**.
+
+> **Mới nhất — Python + Next.js desktop (03/11/2026):** đã dựng bản đầu chạy thật bằng pywebview/FastAPI/Next.js, có editor/template/compile/PDF. **Chưa port đủ history, SyncTeX, import và cộng tác**. Xem **mục 32** và [PYTHON_NEXTJS_MIGRATION.md](PYTHON_NEXTJS_MIGRATION.md). Bản Java được giữ nguyên để đối chiếu.
+
 > **Mới nhất — chạy trên Mac (03/11/2026):** bổ sung launcher kiểm JDK 21/Maven, tự tìm Homebrew JDK/MacTeX, `--check`/`--build-only`, file nhấp đúp `.command`. Xem **mục 31** và [MACOS.md](MACOS.md). Chưa xác nhận native trên máy Mac.
 
 > **Mới nhất — PDF/hiệu năng (02/11/2026):** SyncTeX hai chiều, renderer tái sử dụng document, benchmark **248 trang**; **148/148 JUnit**, 6 native SyncTeX build và smoke UI/hồi quy PDF đạt. Xem **mục 30** và [PDF_PERFORMANCE.md](PDF_PERFORMANCE.md).
@@ -945,3 +957,418 @@ Ngày **03/11/2026**, theo yêu cầu cài/chạy trên Mac. Không có máy Mac
 - **Kiểm tra đạt:** POSIX sh -n cho hai entry point và mock Darwin/arm64, Homebrew JDK, đường dẫn project/JDK có dấu cách, check/build/run, JDK 17, thiếu Maven, flag sai. Helper target/check-macos-launcher.sh; evidence target/macos-launcher.Cn8NhF (các lượt sau tạo thư mục mới), kết quả MACOS_LAUNCHER_MOCK_OK. Không chạy Homebrew thật hoặc cài phần mềm hệ thống.
 - .gitattributes hiện đã buộc LF mặc định nên shell/.command giữ newline phù hợp; Git mode launcher 100644, dùng sh hoặc chmod theo docs.
 - Không thay runtime Java ở lượt này; không lặp lại 148 JUnit của §30 chỉ vì thay launcher/docs. Cần nghiệm thu trực tiếp trên Mac bằng --check, mở app, bộ gõ Việt, ba engine/PDF/export/SyncTeX. Không commit/push.
+
+## 32. Bắt đầu chuyển sang Python + Next.js desktop
+
+Ngày **03/11/2026**. Người dùng muốn bỏ Java và đã chọn **ứng dụng desktop có cửa sổ riêng**. Đã tạo bản đầu trong apps/desktop và apps/frontend; **chưa hoàn tất chuyển toàn bộ tính năng**. Bản Java và launcher cũ vẫn giữ để đối chiếu, không xóa dự án/tài khoản thật. Xem [kiến trúc và trạng thái](PYTHON_NEXTJS_MIGRATION.md).
+
+### 32.1 Stack và phạm vi đã làm
+
+- Python 3.12+ / FastAPI / Uvicorn xử lý local project/file/template/compile; pywebview mở cửa sổ desktop. Frontend Next.js 16.4.4 + React/TypeScript + Tailwind, CodeMirror và PDF.js. Next static export được Python phục vụ trên loopback/cổng ngẫu nhiên; không chạy Java hoặc Node server khi UI đã build.
+- apps/desktop/src/overleaf_desktop: store.py (metadata JSON, template, file/fingerprint), compiler.py (async subprocess, log stream/Stop/timeout, PDF snapshot), api.py (Authorization/Origin/Host, route/static), main.py (cửa sổ và dialog export).
+- apps/frontend: dashboard tìm/tạo dự án, gallery 29 mẫu/9 nhóm/nguồn en-vi, file tree, tạo folder/file, chỉnh sửa/lưu Cmd/Ctrl+S, outline và toolbar cơ bản; compile engine chọn được, log stream, PDF thật/scroll/link/zoom/export và stale/error guard.
+- Source template/assets dùng lại dưới dạng dữ liệu từ modules/client/src/main/resources/templates; không gọi Java. Chưa copy tài nguyên vào gói phát hành độc lập. .tex/.bib/PNG vẫn cùng định dạng, metadata/account/history Java chưa tự chuyển.
+- Mặc định dữ liệu mới **~/OverleafDesktopPython**, có OVERLEAF_PYTHON_HOME hoặc --home khi chạy module. Không chạm ~/OverleafDesktop. Metadata mới .project.json/ID UUID, không đọc account Java.
+- scripts/run-python-desktop.bat/.sh tạo venv/cài desktop dependencies nếu thiếu, build frontend khi chưa có out (hoặc --build), sau đó mở cửa sổ. Lệnh Java cũ vẫn chạy Java; không đổi mặc định ngầm.
+- Dependency có package-lock.json và uv.lock; uv sync --frozen cho đúng Python lock. Launcher pip có thể resolve trong dải pyproject. Binary/.venv/node_modules/out/.next/cache/worker/evidence bị Git ignore.
+- Host loopback và token theo phiên không thay thế auth/ACL của server nhiều người. Chưa có WebSocket cộng tác hoặc tương thích TCP Java. Không triển khai API local này như server multiuser chưa bổ sung các lớp cần thiết.
+- M1 bàn giao frontend/window; M2 compiler/PDF/store; M3 API/session và giao thức cộng tác tiếp theo; M4 engine đồng bộ chưa port; M5 dữ liệu/test/installer. Đây là phạm vi trách nhiệm, không xác nhận member tự viết code trong phiên AI.
+
+### 32.2 Kiểm chứng
+
+- **71 pytest đạt**, 29 mẫu × vi/en materialize, assets/escape, save/reopen/fingerprint/path, auth/origin/host, stale PDF, native export mock kiểm bytes và source đổi khi save dialog mở. Có deprecation warning TestClient/httpx, không failure. target/python-next-tests.log.
+- **Next static export + TypeScript đạt**; launcher --build đạt, target/python-next-build.log và target/python-launcher-build.log.
+- **6 PDF build thật đạt** qua Python: 3 engine × root ASCII/tiếng Việt, research article nhiều file. Chưa chạy lại toàn bộ 174 build bằng backend mới. target/python-native-02, log target/python-native.log.
+- **Native Stop/timeout/recovery đạt**, TeX loop bị dừng rồi compile lại thành công; target/python-cancel-01, log target/python-cancel.log.
+- **Cửa sổ pywebview/WebView2 thật** ở chế độ ẩn đã load UI và API thành công; target/python-desktop-ui-02, log target/python-desktop-ui.log. Launcher --smoke cũng đạt với home riêng target/python-launcher-ui-01, log target/python-launcher-ui.log.
+- **UI regression Edge headless đạt**: tạo dự án, sửa/lưu, folder, compile, PDF 3 trang/link, export byte-identical, source stale/compile lỗi vẫn giữ bản PDF trước và khóa export. target/python-web-ui-01, log target/python-web-ui.log; đã xem dashboard.png/workspace.png. Browser test dùng download fallback; dialog hệ điều hành chưa được tự bấm, native export kiểm qua unit mock.
+- Ruff format/check F,E9 đạt; POSIX shell syntax đạt. Máy hiện tại Windows, chưa native Mac/Linux hoặc build installer. Test Java/số đo 248 trang không phải test coverage/benchmark của Python mới.
+
+### 32.3 Việc cần tiếp tục để thay hoàn toàn Java
+
+History/Auto Compile/settings/i18n và toàn bộ toolbar; SyncTeX; upload/ZIP/Word/Markdown/GitHub/storage/import dự án cũ; TeX preflight và Error Explainer; server/cộng tác/queue bền vững/quyền; tài khoản/database; benchmark Python/PDF.js lớn; đóng gói/sign/notarize .exe/.app/.dmg. Chi tiết ở bảng trạng thái migration. Bản đầu chưa có tính năng thì không tạo nút giả hoặc tuyên bố đã port xong.
+
+Chạy Windows: scripts/run-python-desktop.bat. Mac: sh scripts/run-python-desktop.sh sau khi có Python 3.12+/Node để build/MacTeX và native pywebview dependencies. UI đã build không cần Node server; bộ TeX vẫn là dependency riêng. Không commit/push trong lượt này.
+
+## 33. Đồng bộ chức năng Java sang Python + Next.js desktop
+
+Cập nhật theo yêu cầu chuyển **đầy đủ các tính năng Java thực sự có trong dự án**. Mục 32 là lịch sử bản scaffold; các phần “chưa có history/SyncTeX/import/account/network” của mục đó đã được triển khai ở lượt này. Xem [bảng đối chiếu](JAVA_PYTHON_PARITY.md), [hướng dẫn chạy/bằng chứng](PYTHON_NEXTJS_MIGRATION.md).
+
+### 33.1 Đã code và nối UI
+
+- **Account/profile/settings/activity:** state.py lưu PBKDF2-SHA256, remember/offline/logout, name/email/password, avatar crop/remove, theme/font/word wrap/autoclose/autosave/Auto Compile/lang/compiler/timeout/storage/reset. AuthView, ProfilePanel, SettingsPanel và heatmap dùng dữ liệu thật.
+- **Project/file/import:** store.py + files.py quản lý location catalog, custom parent/default storage, rename/icon/color/trash, move kiểm bytes/giữ backup; tạo file/folder/nested target, context menu, binary open, staged upload/drag/drop/paste/empty folder/queue/cancel/rollback, copy project/build, HTTPS và .bib. ZIP/folder/Pandoc DOCX/Markdown/GitHub public HTTPS có staging và dừng process tree khi hủy.
+- **Java migration:** đọc đúng Java properties, cả catalog dùng **đường dẫn làm key**, projects ở default/custom parent, .overleaf-project icon/color, account hash/settings/avatar/activity, .overleaf-history metadata/checksum. Tạo bản sao và ledger chống nhập trùng, không sửa project gốc. 438 asset/template đã vào package Python, không phụ thuộc thư mục Java lúc chạy.
+- **Editor/workspace:** CodeMirror và toolbar đầy đủ theo thứ tự Math/Link/Comment/Reference/Citation/Figure/Table/List/Decrease/Increase indent; dialog quét label/.bib/images, chống stale insertion, escaping/snippet validation. Outline cuộn/resize, editor/PDF divider, layout split/editor/PDF/detach/focus, keyboard save/compile, watcher, save-on-switch/close.
+- **History:** history.py preimage/checkpoint/dedup/label/filter/diff/restore/checksum/quota; HistoryPanel ba cột. Restore bị khóa trong phòng; giữ nội dung hiện tại trước khi ghi đè.
+- **Compile/TeX:** compiler.py stream log, 3 engines, timeout tùy chọn/0 unlimited, Stop process tree, clean cache, Unicode ASCII staging, missing-glyph guard. toolchain.py diagnostics/package/Biber preflight, cài bundled TinyTeX sau consent, cancel/shutdown cleanup.
+- **Error Explainer:** chuyển **đủ 28 rule gốc Java** thành resources/error-rules.json; explainer.py thay placeholder lệnh/tệp/context, why/fix Việt/Anh và exit/start/timeout/stop/glyph. Wrapper “exit code 12” không thay cho chẩn đoán lỗi gốc.
+- **PDF/SyncTeX:** PDF.js thật, canvas quanh viewport, scroll/link/Back/zoom, immutable bytes và source fingerprint/dirty/export guard; native save dialog kiểm trước/sau. synctex.py giữ index theo snapshot, forward/inverse cho tệp con/Unicode; pdfGeometry.ts dùng MediaBox/CropBox/rotation/zoom. Closing callback dùng staged buffer trong Python, không gọi evaluate_js để tránh WebView2 deadlock.
+- **Networking M3/M4:** network.py port TCP/TLS wire v1/v2, AUTH/identity/limits/bounded outbox/heartbeat, room presence/cursor, OT/Lamport/history, ACK/ACK_BATCH, offline pending/reconnect/atomic chunk RESYNC/rebase/ROOM_UNKNOWN. NetworkPanel và useParity nối vào editor; main.tex-only, shared token và RAM queue đúng phạm vi Java.
+- **M5:** persistence.py port User/Project/Document repositories và DatabaseService bằng pymongo tùy chọn; giữ trạng thái prototype chưa gắn UI/room, không tạo kết nối DB giả. Có test mongomock.
+- **Launcher/deploy:** run-python-desktop/server/console .bat/.sh; thêm Overleaf Python Desktop.command. deploy/python có Dockerfile/Compose/hướng dẫn env/TLS PEM. API HTTP local không dùng làm server đa người.
+
+### 33.2 Vai trò bàn giao
+
+| Vai trò | Folder/file Python/Next.js tiếp quản |
+| --- | --- |
+| M1 GUI/client | apps/frontend/app, components, lib/useParity, desktop/main.py native window/dialogs |
+| M2 compile/PDF | compiler.py, toolchain.py, explainer.py, synctex.py, PdfViewer/pdfGeometry |
+| M3 networking | network.py framing/TCP/TLS/session/client, api/parity_api, scripts server/console, deploy/python |
+| M4 synchronization | network.py operation/transform/history/ACK/pending/RESYNC/presence/cursor |
+| M5 data/test | store.py, state.py, files.py, history.py, persistence.py, packaged resources, tests |
+
+Đây là phân công tiếp quản chức năng; không khẳng định từng thành viên tự viết các thay đổi trong phiên AI này.
+
+### 33.3 Kiểm chứng và giới hạn
+
+- 122 pytest đạt; gồm data/API/history/upload/import/protocol/TCP/TLS và native bridge, M5 mock. Có một deprecation warning TestClient/httpx.
+- 186 build PDF thật đạt: 31 cấu hình (29 gallery + blank/example) × vi/en × 3 engines, target/python-parity-matrix-01/matrix.json. Script matrix ban đầu phát hiện fixture benchmark 496 trang; đã sửa fixture và chạy benchmark riêng đúng 248 trang.
+- 6 native SyncTeX forward/inverse vào tệp con ở ASCII/Unicode đạt; 12 PDF.js geometry combinations crop/media offset/rotation/zoom đạt.
+- Pandoc DOCX/Markdown và HTTPS thật đạt; Python clients tương tác Java server thật qua AUTH/UTF16/ACK/offline/RESYNC đạt.
+- UI Edge headless: account/remember/profile, toolbar/history label/diff/upload/nested file/outline/layout/F5/Auto Compile/settings/English/activity đạt; PDF 3 trang/link/byte export/stale/error đạt. Evidence target/python-parity-features-05 và python-parity-ui-03.
+- Fixture 248 trang: native cold 1766 ms/warm 594 ms; viewer lần kiểm song song ~1619 ms đến trang đầu, tối đa 3 canvas/~4 MB pixels. Report target/python-parity-large-01. Không so sánh tốc độ với Overleaf web hoặc suy rộng sang sách nhiều hình/TikZ.
+- Native WebView2 window load/close đạt; dialog export/migration/upload được kiểm unit và logic backend, chưa tự bấm mọi hộp thoại OS. Mac/Linux chưa native nghiệm thu; chưa installer signed/notarized, Docker Compose chưa chạy trên máy hiện tại, Mongo Atlas chưa kiểm thật.
+- Room vẫn main.tex-only, shared token, OT đơn giản, room/pending RAM; không tuyên bố full CRDT/multi-file ACL/bền vững khi restart. Unicode root compile đúng nhưng cache staging chưa tối ưu bằng ASCII root. Các giới hạn này được ghi rõ, không thay bằng nút giả.
+
+Windows build/chạy: `scripts\run-python-desktop.bat --build`, rồi `scripts\run-python-desktop.bat`. Mac/Linux: `sh scripts/run-python-desktop.sh --build`, rồi `sh scripts/run-python-desktop.sh`. Dữ liệu mặc định ~/OverleafDesktopPython; Java giữ nguyên để đối chiếu. Không commit/push trong lượt này.
+
+Bổ sung nghiệm thu mục 33: UI Chromium tại target/python-parity-features-10 đạt cả rename tệp còn chưa lưu, system dark và đúng template example. Đã thêm trạng thái tải ban đầu để static HTML không render heatmap theo ngày build; heatmap có streak/ngày hoạt động như Java. Hai lần Edge bổ sung kẹt ở startup đã được dọn đúng process; không tính là test đạt. Wheel backend kiểm đủ 438 asset và 28 error rule. Build/TypeScript và 122 pytest vẫn đạt; không tạo installer hoặc commit/push.
+
+## 34. Sửa compile ZIP LTJournalArticle: thiếu package/font và cache lỗi
+
+Đã tái hiện ZIP `_Article__Hands_on_Training_for_Mitigating_vulnerabilites__Toan_.zip` trên Python. TinyTeX đi kèm thiếu `footmisc`, `abstract`, `titling`; class dùng mathpazo còn cần font `palatino`, `mathpazo` (tlmgr tự cài dependency `fpl`). Đã cài vào **target/TinyTeX**, không đổi TeX hệ thống hoặc nội dung nguồn của bài. Các package cài local không vào Git; máy khác dùng cùng class cần chuẩn bị các package này.
+
+Ngoài dependency, latexmk giữ lần chạy lỗi trong .fdb_latexmk nên cài package xong vẫn có thể trả lại lỗi cũ dù source không đổi. compiler.py dùng marker `build/.overleaf-build-failed` và log fatal để thêm `-g` cho lượt phục hồi, xóa marker chỉ sau khi xác minh PDF thành công. Warm build bình thường giữ cache. Cách dùng `-g`: [latexmk manual](https://tug.ctan.org/support/latexmk/latexmk.pdf).
+
+Error Explainer phân biệt thiếu TFM (`ppl*` → palatino, `zpl*` → mathpazo) với chọn sai engine; không hướng dẫn đổi fontspec trong trường hợp thiếu metric. UI không in `:0` khi lỗi chưa xác định file/dòng. Log bài còn cảnh báo fancyhdr headheight nhỏ và biblatex không có driver cho kiểu `masterthesis`; đây là cảnh báo định dạng nguồn, không chặn build. Chưa sửa class/bibliography của tác giả.
+
+Kiểm chứng: 124 pytest đạt, có regression cache qua restart/legacy fatal/warm và font metrics; Next.js build/TypeScript đạt. Native trên bản nhập cô lập thành công 6 trang. Đã biên dịch cả project người dùng hiện có: 6 trang, 1.051.412 bytes; lượt phục hồi 7.985 ms, lượt warm 297 ms, cùng SHA-256 `792c8fd916e2b9fb579f4b5d46a0098dec1faefa747dfdeae9183cd6f59f4ca2`. Fingerprint source trước/sau không đổi. PDF xác minh: target/article-zip-repro-01/verified-article.pdf; report user-project-verification.json. Không sửa ZIP gốc, không commit/push.
+
+## 35. Khôi phục giao diện Hoạt động và trò chơi Snake trên Python + Next.js
+
+Ngày **04/11/2026**. Cập nhật thành phần `ActivityHeatmap.tsx` để đồng bộ giao diện theo bản Java gốc (Ảnh 1) và bổ sung trò chơi Snake (Ảnh 3, Ảnh 4):
+
+- **Giao diện thẻ Hoạt động (Ảnh 1):**
+  - Tiêu đề `Hoạt động` và nhãn phạm vi `52 tuần qua`.
+  - 3 khối số liệu thống kê rõ ràng: tổng số `chỉnh sửa` (tính từ `activity.edits`), số lần `biên dịch` (từ `activity.compiles`), và `chuỗi ngày` liên tiếp (streak).
+  - Lưới đóng góp 52 tuần × 7 ngày được vẽ trên Canvas với kích thước, khoảng cách ô, bo góc chuẩn mực; nhãn tháng bên dưới (`thg 11` ... `thg 10` cho tiếng Việt, `Nov` ... `Oct` cho tiếng Anh).
+  - Dải chú thích cấp độ (Ít → Nhiều) và dòng hướng dẫn "Nhấp đúp vào lưới · hoặc bấm Chơi Snake".
+  - Nút bấm `▷ Chơi Snake` (xanh nhạt bo góc) kèm chip hiển thị kỷ lục `BEST <điểm>`.
+
+- **Trò chơi Snake (Ảnh 3):**
+  - Chuyển chế độ bằng nút `▷ Chơi Snake` hoặc nhấp đúp vào lưới.
+  - Nút chuyển thành `← Quay lại lưới` để thoát bất kỳ lúc nào.
+  - Rắn di chuyển trên lưới 52×7 bằng phím mũi tên hoặc WASD với tốc độ 180ms/bước; đầu rắn màu xanh đậm, thân xanh lục; mồi hình quả tròn màu hổ phách có bóng phản chiếu. Thuật toán chọn mồi ưu tiên các ô ngày có hoạt động đóng góp thực tế.
+  - Thanh trạng thái game dưới lưới: `SNAKE    SCORE <điểm>    BEST <kỷ lục>` bên trái và `Esc để thoát` bên phải.
+
+- **Màn hình Kết thúc game (Ảnh 4):**
+  - Lưới tối màu với lớp phủ mờ `rgba(20, 27, 23, 0.45)`.
+  - Hộp thoại pixel art cổ điển với viền pixel đôi, bóng đổ 4px, icon đầu lâu (hoặc cúp vàng khi thắng) vẽ từ ma trận pixel thật.
+  - Tiêu đề `KẾT THÚC` (hoặc `THẮNG RỒI!`), dòng điểm số và kỷ lục, đường phân cách, cùng hướng dẫn điều khiển: `SPACE HOẶC NHẤP ĐÚP ĐỂ CHƠI LẠI` và `ESC HOẶC ← QUAY LẠI LƯỚI`.
+
+- **Tương thích:**
+  - Bảo tồn 364 thẻ `span` ẩn để các bài kiểm thử Playwright (`test-features.mjs`) tiếp tục chạy chính xác.
+  - Build static Next.js (`npm run build`) và TypeScript typecheck đạt 0 lỗi.
+
+## 35. Phục hồi launcher Windows khi mất Python runtime (03/11/2026)
+
+Lỗi `uv trampoline failed to spawn Python child process` xuất hiện vì `.venv/pyvenv.cfg` vẫn trỏ tới `target/python-runtimes/cpython-3.12-windows-x86_64-none` nhưng runtime đã mất. Đã khôi phục CPython 3.12.16 bằng uv có sẵn trong repository; dependency trong venv cũ tiếp tục dùng được, không thay đổi dữ liệu dự án.
+
+Thêm `scripts/ensure-python.ps1`, gọi trước khi launcher desktop kiểm dependency: kiểm Python thực sự chạy được và đủ phiên bản, khôi phục runtime bằng uv khi có sẵn; nếu cần tạo lại venv thì giữ bản cũ dưới tên `.venv.backup-<id>` (được Git ignore). Không có uv thì thử Python đã cài, bỏ Windows Store alias và báo hướng dẫn khi thiếu. README giải thích thư mục runtime cần giữ. Server/console vẫn dùng cùng venv; có thể chạy launcher desktop để phục hồi trước.
+
+Kiểm chứng lần này: tình huống runtime mất được phục hồi thành công; `run-python-desktop.bat --build` đạt, Next.js static build/TypeScript đạt và npm audit không có lỗ hổng. `run-python-desktop.bat --smoke` trên home cô lập `target/launcher-repair-smoke` trả `PYTHON_DESKTOP_WINDOW_SMOKE_OK`, thoát mã 0. Không chạy lại toàn bộ pytest vì thay đổi chỉ ở launcher/tài liệu.
+
+## 36. Sửa cuộn editor workspace (04/11/2026)
+
+Nguyên nhân: CSS `.editor-area > .cm-theme` không khớp wrapper `.cm-theme-light`/`.cm-theme-dark` do UIW tạo khi truyền theme dạng chuỗi. Wrapper thiếu chiều cao giới hạn, CodeMirror nở theo nội dung rồi bị `overflow:hidden` của editor-area cắt, gây không cuộn được đầy đủ.
+
+Thêm class ổn định `source-editor` vào CodeMirror trong `app/page.tsx`, áp dụng height 100%/min-height 0 cho wrapper và editor; scroller giữ overflow auto, giới hạn overscroll trong editor. Không phụ thuộc tên lớp theme. Đã build lại UI static để lần mở app tiếp theo dùng bản sửa.
+
+Kiểm chứng: Next.js production build/TypeScript đạt. Bổ sung browser regression vào `scripts/test-features.mjs` với 240 dòng dài: wheel dọc thực sự đổi scrollTop, wheel ngang đổi scrollLeft, chiều cao scroller không vượt vùng editor. Chạy toàn bộ script trên Edge headless đạt cả kiểm cuộn và các luồng UI sẵn có; bằng chứng trong `target/editor-scroll-01/features.png`. Không thay đổi source dự án của người dùng.
+
+## 37. Cây thư mục theo nhánh và sidebar kéo ngang (04/11/2026)
+
+Thêm `lib/fileTree.ts`: sắp xếp theo từng cấp cha/con, thư mục trước file trong cùng cấp, tên có natural numeric order. Trước đây danh sách phẳng từ backend đặt thư mục trước toàn cục khiến con nằm cách xa cha. Workspace dùng thứ tự mới, thụt mỗi cấp 22px, mũi tên đóng/mở và tô sáng thư mục đích. Sau tạo/upload, mở nhánh thư mục đích để không giấu file mới sau nhánh đã thu gọn.
+
+Thêm separator dọc giữa sidebar và editor: kéo ngang thay đổi đồng thời chiều rộng file tree/outline, mặc định 270px, lưu `sidebarWidth` vào settings, giới hạn 200–600px và chừa vùng editor khi kéo. Separator bị ẩn cùng sidebar trong focus/detached PDF. Cỡ chữ tên file và mục outline tăng lên 14px, tiêu đề outline 11px, đường dẫn đích 12px.
+
+Kiểm chứng: 124 pytest đạt (một deprecation warning đã có); Next.js production build/TypeScript đạt. Browser Edge headless `test-features.mjs` đạt, bổ sung kiểm thứ tự cha/con trước root file, đóng/mở nhánh và kéo sidebar rộng thêm thực tế. Screenshot `target/sidebar-tree-01/features.png`. Đã build UI mới; người dùng đóng/mở lại app để nhận thay đổi. Không di chuyển hoặc đổi cấu trúc file vật lý của dự án.
+
+## 38. Icon Comment mở Review thay vì chèn phần trăm (04/11/2026)
+
+`EditorToolbar` chuyển `editor-add-comment` sang callback Review, không gọi `lineEdit(comment)`. Chọn đoạn rồi bấm icon sẽ mở khung bên trái editor với ô nhận xét; không chọn đoạn thì gắn theo vị trí/dòng. `ReviewPanel.tsx` có tên người dùng/thời gian, trích đoạn, trả lời, giải quyết/mở lại, xóa có xác nhận, lọc tệp hiện tại/tổng quan và hiện đã giải quyết. Click vị trí nhận xét mở tệp và chọn đoạn nguồn. `reviewHighlights.ts` dùng CodeMirror Decoration/StateField tô sáng đoạn chưa giải quyết, map qua thay đổi; tìm lại quote khi cần, không đoán vị trí nếu quote mất hoặc trùng nhiều nơi.
+
+Backend `review.py` lưu atomic/lock trong `.overleaf-review.json` của từng dự án; route GET/POST `/api/projects/{project}/review` dùng session guard API sẵn có. Tên tác giả lấy từ session backend; giới hạn 2.000 thread, 200 message/thread, 10.000 ký tự/message, 20.000 ký tự quote, 8 MiB/project; kiểm path/symlink. File ẩn không vào cây source/fingerprint compile. Source và PDF không bị chèn nhận xét. Lưu bền qua đóng/mở app nhưng **chưa đồng bộ room TCP, chưa track changes/ACL review**. File đổi tên/xóa có thể làm thread giữ đường dẫn cũ; không tự gắn sang file khác.
+
+Kiểm chứng: 126 pytest đạt, gồm test review persistence/reply/resolve/delete, không đổi source/fingerprint, path traversal/validation. Next.js production build/TypeScript đạt. Edge browser regression toàn luồng đạt ở `target/review-comments-03`: đăng/reply/resolve/reopen, đóng/mở panel còn thread, Decoration hiện và nội dung editor trước/sau giữ nguyên. Screenshot `review.png` đã kiểm trực quan. Lần browser đầu chỉ vướng assertion trailing newline DOM, đã sửa test so sánh đúng before/after; không coi lượt lỗi là pass. README/migration/parity cập nhật ngữ nghĩa Comment mới; đã build UI để mở lại app nhận thay đổi.
+
+## 39. Thanh icon trái và panel Tệp/Review/Chat độc lập (04/11/2026)
+
+Workspace có activity bar 46px ngoài cùng bên trái, chỉ ba icon theo phạm vi yêu cầu: tệp, nhận xét (tương ứng icon 4 ảnh tham khảo), chat cộng tác (icon 5). State `sidePanel` chọn files/review/chat hoặc đóng; một panel hiện mỗi lần, icon active có dấu chỉ báo, tooltip/aria-label Anh/Việt. Bấm lại icon hoặc nút đóng sẽ ẩn panel và trả không gian cho editor/PDF.
+
+ReviewPanel chuyển khỏi editor-column sang cột sidebar cạnh activity bar, cùng vị trí với cây tệp/outline. Icon Review chỉ mở danh sách, icon Add comment trong toolbar tiếp tục bắt đoạn chọn và mở ô viết. Giữ panel mounted khi đổi tab để không mất nội dung nhận xét/trả lời đang nhập. Panel đều dùng chiều rộng lưu trong sidebarWidth; sửa phép kéo trừ bề rộng activity bar. Focus/detached PDF ẩn rail/panel phù hợp.
+
+Chat có tiêu đề, nút đóng, empty state và textarea disabled với thông báo chờ tích hợp nhiều người dùng; không giả lập gửi/nhận, chưa có protocol/storage chat. Không thêm các icon search/code/AI ngoài yêu cầu.
+
+Kiểm chứng: production static build/TypeScript đạt; browser Edge toàn luồng đạt ở `target/activity-sidebar-01`. Bổ sung test đúng ba icon, chuyển files/review/chat, review không nằm trong editor-column, đóng/mở panel và separator, chat textbox disabled; các test review/scroll/tree/resize/history/upload/compile trước đó vẫn đạt. Đã xem ảnh `chat-panel.png` trực quan, ảnh `review.png` cũng được lưu; đã build UI mới, cần mở lại app. Không thay đổi backend/network trong mục này.
+
+## 40. Khắc phục lỗi hiển thị phông chữ tiếng Việt trên giao diện Next.js (04/11/2026)
+
+- **Nguyên nhân cốt lõi**:
+  - Giao diện Next.js trước đó khai báo phông `Georgia, serif` tại nhiều nơi: tiêu đề dự án `.page-heading h1` ("Dự án của bạn."), thẻ chào mừng `.welcome-card h2` ("Từ dòng đầu tiên đến bản PDF hoàn chỉnh."), ghi chú sidebar `.sidebar-note strong` ("Tập trung vào điều bạn viết."), modal header, tên thương hiệu và `.empty-projects`.
+  - Trên Windows, phông `Georgia` (`georgia.ttf`, ~219 KB) chỉ hỗ trợ bộ ký tự Latin cơ bản (Latin-1/Latin-2) và thiếu toàn bộ khối Unicode *Latin Extended Additional* (U+1E00–U+1EFF) – nơi định nghĩa các ký tự ghép dấu đặc thù của tiếng Việt (`ề`, `ế`, `ầ`, `ệ`, `ộ`, `ử`, `ừ`...).
+  - Khi DirectWrite / Chromium hiển thị các từ tiếng Việt như "điều", "viết", "đầu", "đến", hệ thống phân tách ký tự thành chữ cái gốc (`ê`, `â` - vốn có trong Georgia) và dấu thanh kết hợp (combining accents như U+0300, U+0301). Do `Georgia` không có bảng neo GPOS mark-to-base cho các dấu thanh này, dấu kết hợp bị vẽ lệch thành một ký tự độc lập (dấu huyền hoặc sắc đứng rời rạc cạnh chữ cái: `điề`u`, `viế`t`, `đâ`u`, `đế`n`).
+  - Ngoài ra, khoảng cách chữ âm quá lớn (`letter-spacing: -1.2px` và `-0.5px`) khiến các dấu rơi va chạm, đè lấn hoặc chồng chéo lên ký tự tiếp theo.
+
+- **Giải pháp xử lý**:
+  1. Định nghĩa biến CSS chuẩn hóa `--font-serif` và `--font-sans` trong `:root` ([globals.css](file:///d:/Overleaf-app/apps/frontend/app/globals.css)):
+     ```css
+     --font-serif: Charter, "Sitka Text", "Sitka Heading", Cambria, "Times New Roman", serif;
+     --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+     font-family: var(--font-sans);
+     ```
+     - Trên Windows: Ưu tiên `"Sitka Text"`, `"Sitka Heading"` (do Matthew Carter thiết kế với đầy đủ dấu tiếng Việt chuẩn và optical sizing) cùng `Cambria` (phông ClearType chất lượng cao của Microsoft hỗ trợ 100% tiếng Việt) và `Times New Roman`.
+     - Trên macOS: Sử dụng `Charter` (phông thanh lịch được Overleaf web tin dùng).
+     - Loại bỏ triệt để `Georgia` khỏi mọi font stack để tránh cơ chế fallback chắp vá ký tự.
+  2. Cập nhật `:root[data-font="serif"]` sử dụng `var(--font-serif)` để đảm bảo khi người dùng chuyển sang phông Serif trong Settings, toàn bộ ứng dụng vẫn hiển thị tiếng Việt hoàn hảo.
+  3. Cập nhật tất cả các selector tiêu đề (`.page-heading h1`, `.welcome-card h2`, `.sidebar-note strong`, `.auth-intro h1`, `.auth-card h2`, `.brand strong`, `.modal h2`, `.empty-projects h3`, `.empty-preview h3`, `.paper-tag`, `.paper-formula`) sang `var(--font-serif)`.
+  4. Nới lỏng khoảng cách ký tự (`letter-spacing`) từ mức âm sâu `-1.2px` / `-0.5px` về mức tự nhiên (`-0.3px` đến `normal`) để các thanh dấu tiếng Việt có không gian hiển thị thông thoáng, không bị va chạm.
+
+- **Kiểm chứng**:
+  - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
+  - Next.js static build (`npm run build`) tạo trang tĩnh thành công 100%. Code đã được đồng bộ để khi khởi chạy lại app, giao diện tự động áp dụng bản sửa lỗi.
+
+## 41. Soạn thảo Word trực tiếp trong workspace và export DOCX (04/11/2026)
+
+Cạnh PDF preview có tab Word preview, với trình soạn thảo rich text ngay trong workspace. `WordPreview.tsx` cho gõ/sửa, bold/italic/underline, heading/paragraph, list/table, undo/redo; auto-save sau 700ms, lưu khi blur, nút Save Word và Ctrl/Cmd+S trong vùng Word. Giữ component mounted khi đổi PDF/Word, không mất bản chỉnh sửa do chuyển tab. Menu download chọn Export PDF (.pdf) hoặc Export Word (.docx); Word export đợi lưu nội dung mới nhất, dùng dialog native trên desktop hoặc download ở browser. Không yêu cầu compile PDF trước khi chuyển Word. Các kiểm tra stale/error của PDF vẫn giữ.
+
+`word.py` sử dụng Pandoc: LaTeX → AST JSON → HTML/MathML có lọc → bản sửa HTML → DOCX thật. Hỗ trợ input/include dạng dấu ngoặc qua Store path guard và giới hạn độ sâu/kích thước; ảnh PNG/JPEG/GIF trong project chuyển thành data URI, không fetch ảnh ngoài; công thức MathML thành Word OMML. Pandoc chạy sandbox, timeout 60s, không shell. Draft lưu atomic riêng `.overleaf-word.json`, revision chống ghi đè giữa cửa sổ và fingerprint nguồn; Word không sửa LaTeX, không làm stale PDF. Tạo lại từ LaTeX có xác nhận thay thế chỉnh sửa Word. File tải xuống lấy từ revision Word, bridge kiểm lại revision sau dialog.
+
+API `/api/projects/{project}/word` GET/POST, `/word/generate` POST, `/word/docx?revision=...` GET. `DesktopBridge.export_docx` chỉ lưu đuôi docx. HTML lọc script/event handler/style/iframe/object/SVG và ảnh file/http; paste vào editor lấy plain text. Manifest Python/JS không thêm dependency; cần Pandoc riêng (PATH/OVERLEAF_PANDOC/target/pandoc/pandoc.exe). Bản portable Windows đã chuẩn bị local trong target, không được Git đóng gói.
+
+Giới hạn: editor Word cơ bản, không phải Microsoft Word đầy đủ, chưa mở/sửa mọi DOCX nhập từ ngoài; chưa đồng bộ Word trong room. Nhiều cột, class/macro tùy biến, TikZ, ảnh PDF và bibliography/citation có thể khác/thiếu; không cam kết DOCX giống từng trang PDF. Thông báo trong tab giải thích khác biệt và giữ Word cũ khi nguồn LaTeX đổi. Bản HTML là mô hình chỉnh sửa; DOCX được tạo khi export, không chỉnh trực tiếp XML ZIP trên từng phím gõ.
+
+Kiểm chứng: toàn bộ pytest trước test native mới đạt 128; sau bổ sung native DOCX dialog test, nhóm Word/workspace đạt 74 và test Word riêng đạt 3. Native Pandoc test kiểm tiếng Việt, include, ảnh PNG trong word/media, công thức OMML, sửa nội dung rồi đọc document.xml, persistence/revision, source/fingerprint không đổi và path traversal. Next.js static build/TypeScript đạt. PDF browser regression 3 trang/link/export byte-identical/stale/error đạt ở `target/word-pdf-guard-01`. Word browser đã tạo/sửa trực tiếp, lưu, tải `.docx`, kiểm ZIP/document.xml chứa “Word direct editing – Tiếng Việt”; ảnh `target/word-workspace-01/word-preview.png` đã xem. Các lượt toàn UI đầu dừng ở selector Export PDF cũ sau khi menu thay đổi; đã cập nhật selector cho menu mới, không tính lượt lỗi là pass.
+
+Đã chuyển bài LTJournalArticle trong home kiểm thử cô lập `target/article-zip-repro-01` thành `verified-article.docx` (15.446 bytes), fingerprint LaTeX giữ nguyên; đây là kiểm tạo DOCX, không xác nhận giữ bố cục bài báo nhiều cột. README hướng dẫn tab Word/menu download và giới hạn Pandoc.
+
+Kiểm cuối: toàn bộ browser feature regression đạt trên Edge ở `target/word-workspace-03` (mã thoát 0), gồm Word edit/export và các chức năng trước đó. Ruff F/E9 và git diff --check đạt; UI đã build lại với phím Ctrl/Cmd+S dành cho Word. Mở lại app để tải bản mới.
+
+## 42. Word tự nạp, đồng bộ chữ hai chiều và bố cục journal (04/11/2026)
+
+Mục này thay thế thiết kế Word tách nguồn ở mục 41. Tab Word tự tạo khi mở lần đầu hoặc chuẩn bị khi có PDF compile thành công, hiện trạng thái chuyển đổi thay vì tờ giấy trắng. Khi LaTeX đổi và không có Word đang sửa, sau debounce app lưu nguồn và tự cập nhật Word. Word cũ không có mapping được nâng cấp khi mở; giữ `.overleaf-word.previous.json` trước khi thay thế.
+
+`SyncHTML` ánh xạ text leaf về vị trí nguồn duy nhất trong main hoặc file input/include. Chỉnh chữ trên Word cập nhật đúng range LaTeX, escape ký tự đặc biệt, giữ preamble/class/macro/label/input và phần nguồn không chỉnh; cập nhật editor đang mở, đánh dấu PDF stale. Các lần sửa tiếp theo cập nhật offset mapping. Store.save tạo history như sửa nguồn bình thường; nhiều file được kiểm trước và rollback nếu ghi lỗi. Fingerprint/revision khác sẽ chặn ghi đè; xung đột nguồn giữ bản HTML đang sửa trong `.overleaf-word-conflict.html`. Không ghi từ Word khi đang trong room TCP.
+
+Giới hạn rõ: đồng bộ **nội dung chữ có ánh xạ**, không round-trip mọi LaTeX. Công thức, citation/section number, đoạn trùng hoặc không xác định nguồn bị bảo vệ. Trình soạn thảo cha readonly, chỉ các span có data-word-id được sửa. Định dạng/cấu trúc thực hiện trong editor LaTeX; toolbar rich-text và Ctrl+B/I/U bị khóa trong chế độ đồng bộ để tránh tạo thay đổi Word chưa có trong nguồn. Đổi toàn trang hoặc mất ID bị từ chối. Không tự chuyển toàn thân bài thành LaTeX mới, không phá cấu trúc include/macro.
+
+Bố cục: nhận diện một/hai cột từ nguồn và class local; đọc A4/Letter/lề top/bottom/left/right thông dụng. Word preview có kích thước giấy, lề và zoom/fit-width, header/abstract toàn chiều rộng trước thân hai cột. Khôi phục abstract nằm trong maketitle hook của LTJournalArticle (Pandoc không chạy hook). DOCX sửa section geometry/columns và section break liên tục cho phần đầu một cột/thân hai cột, giữ namespace XML gốc. Word preview là nội dung liên tục, chưa phân trang bằng TeX, chưa bảo đảm cùng dòng/trang với PDF; macro/TikZ/bibliography phức tạp vẫn có thể khác/thiếu.
+
+Kiểm chứng: 130 pytest đạt; test Word riêng 4 đạt sau bổ sung layout/section, include-file sync nhiều lần, escape phần trăm/ampersand, giữ macro/label, chặn sửa toàn trang và xung đột có backup. Next.js production build/TypeScript, Ruff F/E9 và diff check đạt. Browser Edge feature test có kiểm Word tự hiện (không bấm Create), Word→LaTeX, LaTeX→Word và export đạt ở `target/word-sync-03`. PDF browser 3 trang/link/export byte-identical/stale/error đạt ở `target/word-sync-pdf-02`.
+
+Đã thử trên bản sao article: `target/word-layout-01/article-word.png` kiểm tự hiện title/authors/abstract và data-columns=2; ảnh đã xem trực quan. `target/article-zip-repro-01/verified-article.docx` tạo thành công sau cải thiện (16.038 bytes), source fingerprint không đổi khi chỉ generate/export. Không sửa bản project thật của người dùng trong kiểm thử; mở lại app để dùng UI mới. README cập nhật ngữ nghĩa đồng bộ và các giới hạn.
+
+Regression cuối phát hiện race trong file watcher: poll signature cũ có thể setStale(true) sau compile mới đã hoàn tất. `useParity` đối chiếu snapshot ID đang hiển thị với snapshot backend, current/fingerprint và dirty; chỉ hiệu chỉnh stale khi không có buffer dirty/build đang chạy. Không mở export chỉ dựa vào trạng thái UI; backend vẫn verified snapshot như trước. Lượt feature `word-sync-04` phát hiện lỗi, đã sửa và chạy lại **word-sync-05 đạt toàn luồng**; **word-sync-pdf-03 đạt** PDF link/byte-identical export/stale/error. Static build/TypeScript và diff check cuối đạt. Khi Word đổi nội dung file đang mở, tăng revision để Auto Compile nhận thay đổi nếu đã bật.
+
+## 43. Khôi phục ảnh và typography khi chuyển Word (04/11/2026)
+
+Tái hiện đúng bài journal: PDF có 8 figure nhưng AST Pandoc ban đầu không có Image vì `\\fbox{\\includegraphics...}` bị reader bỏ qua. Tên ảnh có dấu ngoặc kép, nằm dưới Figures/ theo graphicspath khai báo trong LTJournalArticle.cls; pipeline cũ chỉ tìm root. DOCX trước đây chỉ 16 KB và 0 ảnh là kết quả thiếu nội dung, không phải xác minh fidelity thành công.
+
+`word.py` nay đọc class local được documentclass chọn, lấy graphicspath, tìm ảnh có/không đuôi, xử lý tên quote và chuẩn hóa fbox/framebox/mbox chứa includegraphics trước khi Pandoc đọc. Chỉ sửa bản chuyển đổi trong bộ nhớ; nguyên bản LaTeX giữ nguyên. Đường dẫn vẫn đi qua Store.path, không đọc ngoài project. Quy đổi width theo textwidth/linewidth/columnwidth sang mm, giữ style width/height với bộ lọc CSS riêng cho img, không cho URL/CSS tùy ý. Figure/figcaption được giữ, thêm số thứ tự và caption; cảnh báo số ảnh chuyển được nếu chưa đủ, không âm thầm coi ảnh bị mất là thành công.
+
+Nhận diện mathpazo/palatino để dùng Palatino Linotype và cỡ documentclass 10/11/12pt trong Word preview và DOCX styles (Normal/Body/Heading/Title/Caption), không thay font công thức/code. Heading căn giữa thay vì bị justify giãn chữ; caption nhỏ/nghiêng, figure tránh tách khối. Font thực tế vẫn phụ thuộc máy mở Word; chưa embed TeX font hoặc giữ toàn bộ typography/floats/page breaks của PDF.
+
+Thêm converterVersion=3/needsRefresh: cache preview cũ tự tái tạo khi mở tab/export, có backup trước đó. Không cần nhập lại ZIP. Bổ sung alt ngắn cho ảnh và loại data URI khỏi mô tả picture XML, tránh nhân đôi ảnh base64 trong document.xml. DOCX vẫn nhúng dữ liệu ảnh trong word/media.
+
+Kiểm chứng: **131 pytest đạt**, Ruff F/E9, static build/TypeScript và diff check đạt. Test mới bao gồm framed figures, class graphicspath, quote/không đuôi, kích thước 76.5mm, font Palatino 12pt, sanitizer và DOCX có drawing/media thật. Browser Edge `target/word-images-layout-01`: nâng cache cũ, đủ 8/8 ảnh decode naturalWidth>0, 8 caption; ảnh OWASP đầu tiên nằm sau section 3 và trước section 4 trong thứ tự nội dung. Đã xem screenshot `article-word.png`. Toàn bộ feature browser regression đạt ở `target/word-images-features-01`, gồm đồng bộ Word/LaTeX, export, editor/history/upload/Auto Compile.
+
+Trên bản sao bài người dùng: `target/article-zip-repro-01/verified-article.docx` hiện 1.070.279 bytes; kiểm 8 drawing và 8 word/media, SHA-256 tập ảnh nhúng khớp chính xác 8 file gốc (owaspyii2, cyprom_overview, advtemplateproject, actionscenario, 1, criteria, 2, 3). Source fingerprint không đổi khi generate/export. Giữ giới hạn: preview Word là continuous flow hai cột, chưa tái hiện vị trí float/phân trang giống TeX; bibliography/custom macro chưa được round-trip đầy đủ.
+
+## 44. Thoát chế độ tập trung bằng Esc và Bố cục (04/11/2026)
+
+Nguyên nhân bị kẹt: focus CSS ẩn cả app-header chứa nút Bố cục, chỉ còn gợi ý phím Ctrl/Cmd+Shift+M. Thay bằng header gọn 44px giữ Bố cục và nút Thoát tập trung · Esc. Mục Focus mode trong menu đổi thành Thoát chế độ tập trung khi đang bật; giữ nguyên layout split/editor/pdf khi thoát.
+
+`useParity` thêm listener Escape ở capture phase để hoạt động cả khi CodeMirror đang focus, bỏ qua sự kiện IME composition và cleanup listener khi thoát. Đóng layout menu sau khi rời focus. Phím Ctrl/Cmd+Shift+M vẫn dùng được.
+
+Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt. Browser Edge toàn feature regression đạt ở `target/focus-exit-01`; bổ sung ba đường thoát: Esc khi con trỏ trong editor, Bố cục → Thoát chế độ tập trung, nút thoát trực tiếp. Kiểm sidebar trở lại và layout editor-only giữ nguyên. Screenshot `focus-mode.png` đã xem trực quan. README cập nhật cách dùng; UI đã build để mở lại app nhận thay đổi. Không thay đổi luồng export PDF/Word trong mục này.
+
+## 45. Bổ sung hỗ trợ Kéo & Thả (Drag & Drop) khi nhập dự án (04/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Khi tạo dự án mới từ tài nguyên có sẵn (ZIP, Word `.docx`, Markdown, hoặc thư mục dự án), trước đây người dùng bắt buộc phải bấm vào từng nút tương ứng (`ZIP`, `Word (.docx)`, `Markdown`, `Thư mục có sẵn`), kích hoạt hộp thoại chọn file của hệ điều hành (`create_file_dialog`) và phải tự duyệt tìm đường dẫn tệp trên ổ đĩa.
+  - Thao tác này gây gián đoạn và bất tiện khi người dùng đã có sẵn thư mục chứa tệp trong Windows Explorer hoặc muốn kéo thả nhanh chóng.
+
+- **Giải pháp triển khai**:
+  1. **Vùng kéo thả trực quan (`NewProjectExtras.tsx`, `globals.css`)**:
+     - Bổ sung khối `.import-dropzone` tích hợp trực tiếp vào hộp thoại "Tạo dự án mới" (Create new project), tương thích cả giao diện sáng (Light) và tối (Dark mode).
+     - Phản hồi thị giác thời gian thực: khi kéo tệp hoặc thư mục vào vùng dropzone, viền nét đứt chuyển sang màu xanh lá chủ đạo (`var(--green)`), nền chuyển màu sáng/tối nhẹ kèm thông báo *"Thả tệp hoặc thư mục vào đây để tạo dự án ngay!"*.
+     - Tự động nhận diện định dạng:
+       - Tệp `.zip`: tự động nhận diện và nhập dưới dạng dự án nén LaTeX.
+       - Tệp `.docx`: tự động chuyển đổi từ Word sang LaTeX thông qua Pandoc.
+       - Tệp `.md` hoặc `.markdown`: tự động chuyển đổi từ Markdown sang LaTeX qua Pandoc.
+       - Thư mục hoặc nhiều tệp: tự động nhận diện cấu trúc dự án, tìm `main.tex` hoặc tệp gốc có `\documentclass`.
+       - Tệp `.tex` đơn lẻ: tự động đóng gói thành dự án hoàn chỉnh.
+     - Tự động gợi ý tên dự án từ tên tệp/thư mục thả vào nếu người dùng chưa nhập tên.
+     - Trạng thái tiến trình tải lên và nút hủy: hiển thị icon xoay và tên tệp đang xử lý, kèm nút "Hủy nhập" an toàn (`io-cancel`).
+     - Giữ nguyên các nút bấm (`[Dự án ví dụ]`, `[↑ ZIP]`, `[↑ Word]`, `[↑ Markdown]`, `[↑ Thư mục]`) bên trong dropzone để người dùng vẫn có thể click chọn tệp thủ công qua hộp thoại hệ thống nếu muốn.
+  2. **Hạ tầng truyền nhận dữ liệu (`parity_api.py`, `api.py`, `main.py`, `zip.ts`)**:
+     - Hỗ trợ đường dẫn gốc hệ điều hành (`import-path` / `native("import_path")`): trong môi trường WebView2/desktop, khi có `file.path`, ứng dụng gọi trực tiếp `action("import-path")` hoặc `native("import_path")` với hiệu năng tức thời, không qua sao chép trung gian.
+     - Hỗ trợ luồng nhị phân streaming (`POST /api/projects/import-file`): đối với môi trường trình duyệt hoặc khi `file.path` không được lộ vì lý do bảo mật, ứng dụng truyền luồng nhị phân trực tiếp đến FastAPI backend (bỏ qua giới hạn JSON 12MB của middleware và hỗ trợ tệp tới 50 MiB).
+     - Module phát sinh tệp nén thuần TypeScript (`lib/zip.ts`): cho phép đóng gói đệ quy các thư mục hoặc danh sách tệp được kéo thả trong trình duyệt thành một tệp ZIP chuẩn mực (không phụ thuộc thư viện ngoài) rồi chuyển đến backend.
+
+- **Kiểm chứng**:
+  - 49/49 bài kiểm thử `pytest` trong `test_parity.py` đạt 100%, bao gồm cả 2 luồng `POST /api/projects/import-file` và `POST /api/actions/import-path`.
+  - TypeScript typecheck (`npm run typecheck`) đạt 0 lỗi.
+  - Next.js static production build (`npm run build`) hoàn tất thành công. Code đã sẵn sàng phục vụ cho lần mở ứng dụng tiếp theo.
+
+## 46. Tối ưu không gian Editor toàn màn hình và Tích hợp Bảng Logs & Errors chuẩn Overleaf (04/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Ở giao diện cũ, cột trái (editor column) vừa phải chứa trình soạn thảo mã nguồn LaTeX (CodeMirror), vừa phải gánh thêm cửa sổ terminal "Build output" và danh sách giải thích lỗi LaTeX ("error explanations") ở bên dưới.
+  - Điều này làm khung soạn thảo LaTeX bị bóp nghẹt chỉ còn chiếm một phần nhỏ chiều cao (khoảng 240px), gây khó khăn khi viết tài liệu dài và không giống với trải nghiệm chuẩn mực của Overleaf.
+  - Người dùng muốn trình soạn thảo LaTeX ở cột trái chiếm trọn 100% chiều cao (toàn bộ diện tích khả dụng). Phần nhật ký biên dịch (build logs) và bảng lỗi/cảnh báo được chuyển hoàn toàn sang cột bên phải (nơi hiển thị PDF preview).
+
+- **Giải pháp triển khai theo thiết kế Overleaf (Ảnh 2, 3 và 4)**:
+  1. **Giải phóng 100% diện tích cho LaTeX Editor (Ảnh 2)**:
+     - Gỡ bỏ hoàn toàn khối terminal `.build-heading`, nút `.cache-clean`, khung terminal `<pre className="build-output">` và danh sách `.error-explanations` khỏi `.editor-column`.
+     - Bộ soạn thảo CodeMirror trong `.editor-area` nay tự động giãn nở đạt 100% chiều cao của cột trái, mang lại không gian viết rộng rãi, liền mạch, không còn bị chia cắt.
+  2. **Nút biểu tượng Nhật ký & Lỗi với Huy hiệu đếm (Badge Icon) cạnh nút Recompile (Ảnh 3)**:
+     - Khi đang ở chế độ xem PDF/Word (`previewTab !== "logs"`), một nút biểu tượng trang tài liệu chuẩn Overleaf (`.logs-toggle-btn`) được đặt ngay cạnh nút `Recompile` trên thanh công cụ biên dịch (`.compile-toolbar`).
+     - Biểu tượng tài liệu SVG có góc gập tinh tế, hiển thị số lượng lỗi hoặc cảnh báo ngay trên mặt trang tài liệu:
+       - Nếu có lỗi biên dịch (`errors > 0`): số huy hiệu hiển thị màu đỏ rực (`#dc2626`).
+       - Nếu có cảnh báo (`warnings > 0` và không có lỗi): số huy hiệu hiển thị màu vàng kim/hổ phách đặc trưng (`#d97706`, giống hệt số `2` trong Ảnh 3).
+       - Nếu không có lỗi hay cảnh báo: hiển thị số `0` với tông xám nhạt tinh tế.
+     - Nhấp chuột vào nút này sẽ lập tức chuyển đổi cột bên phải sang giao diện "Logs & Errors" chuyên dụng.
+  3. **Nút "Quay lại PDF" (Back to PDF) (Ảnh 4)**:
+     - Khi chuyển sang giao diện Logs (`previewTab === "logs"`), nút biểu tượng huy hiệu được thay thế bằng nút pill bo tròn `[Quay lại PDF]` (`Back to PDF`) ngay cạnh `Recompile`.
+     - Nhấp chuột vào nút này sẽ đưa giao diện xem trước cột phải trở lại ngay lập tức với tài liệu PDF đã biên dịch.
+  4. **Giao diện Nhật ký & Lỗi chuyên dụng (`LogsView.tsx`, Ảnh 4)**:
+     - **Thanh lọc phân loại (Filter Tabs)**:
+       - `Tất cả log <số lượng>` (All logs)
+       - `Lỗi <số lượng>` (Errors)
+       - `Cảnh báo <số lượng>` (Warnings)
+       - `Thông tin <số lượng>` (Info)
+       - Thẻ được chọn có đường viền gạch chân xanh lá Overleaf (`#00a877`).
+     - **Thẻ lỗi/cảnh báo tương tác (Interactive Issue Cards)**:
+       - Tiêu đề được phân màu trực quan: Đỏ cho lỗi, Vàng kim cho cảnh báo, Xanh dương cho thông tin.
+       - Hiển thị vị trí tệp và dòng cụ thể (ví dụ: `/main.tex:45`).
+       - Biểu tượng hỗ trợ/trợ lý (Sparkles) ở góc phải.
+       - Cho phép mở rộng / thu gọn để xem chi tiết thông điệp thô, nguyên nhân (Why), và giải pháp khắc phục đề xuất (Fix).
+       - Bổ sung nút **"Đi tới dòng {line}" (Jump to line)**: khi nhấn vào, con trỏ của CodeMirror sẽ tự động cuộn và đặt đúng vào dòng mã nguồn tương ứng trong tệp đang mở.
+     - **Bộ bóc tách nhật ký toàn diện (`parseAllLogs`)**:
+       - Tự động nhận diện cấu trúc cảnh báo LaTeX từ cả backend `explainer` lẫn dòng raw output: nhận diện cảnh báo font (`Font shape ... undefined`, `Some font shapes were not available, defaults substituted.`), thiếu nhãn tham chiếu chéo (`Reference undefined`), thiếu trích dẫn (`Citation undefined`), tràn lề (`Overfull / Underfull \hbox`), v.v.
+     - **Mục "Nhật ký thô" có thể gấp gọn (› Raw logs)**:
+       - Thu gọn mặc định để giữ giao diện sạch sẽ, có thể bấm mở để xem toàn bộ luồng xuất của `latexmk`.
+       - Đi kèm nút "Sao chép nhật ký" (Copy logs) và "Xóa" (Clear).
+     - **Thanh công cụ cố định phía dưới (Bottom Action Bar)**:
+       - Nút đỏ nổi bật: `[🗑 Xóa bộ nhớ đệm]` (Clear cached files) để dọn dẹp các tệp tạm, cache, aux của LaTeX.
+       - Nút `[Nhật ký & tệp khác ▴]` (Other logs and files): mở menu tải xuống tệp nhật ký `.log`, sao chép toàn bộ nhật ký hoặc mở nhanh PDF.
+  5. **Hỗ trợ toàn diện Giao diện Sáng (Light Mode) và Tối (Dark Mode)**:
+     - Tương thích màu sắc chuẩn mực với hệ thống CSS biến giao diện hiện tại của ứng dụng.
+
+- **Kiểm chứng**:
+  - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
+  - Next.js static production build (`npm run build`): Biên dịch tĩnh thành công 100%.
+  - Pytest (`test_parity.py`): 49/49 bài kiểm thử đạt kết quả tốt.
+
+## 47. Chấm điểm IELTS Writing trực tiếp trên Editor (Task 1 & Task 2) và Xuất Báo Cáo PDF (05/11/2026)
+
+- **Ngữ cảnh & Ý tưởng**:
+  - Tích hợp một hệ thống chấm và đánh giá bài viết IELTS Writing (cả Task 1 Báo cáo và Task 2 Bài luận) trực tiếp trên giao diện soạn thảo Overleaf Desktop.
+  - Giúp Tutor (giáo viên chấm bài) và Student (học viên) có một quy trình làm việc khép kín theo đúng sơ đồ kiến trúc tại **Ảnh 3**:
+    `Student (Visual Writing Editor) + Tutor (Review & Scoring) -> Document & Review Engine -> Database (.overleaf-ielts.json) + LaTeX Engine (ielts_report.tex) -> PDF REPORT`.
+
+- **Chi tiết triển khai**:
+  1. **Nút biểu tượng IELTS Writing trên thanh công cụ bên trái (Ảnh 4)**:
+     - Bổ sung nút biểu tượng `GraduationCap` trên thanh `workspace-activity-bar` nằm ngay dưới icon Chat cộng tác.
+     - Khi nhấp vào, mở bảng điều khiển chấm điểm IELTS Writing chuyên dụng ở thanh bên trái (`sidePanel === "ielts"`).
+  2. **Tiêu chí chấm điểm Task 1 & Task 2 (Ảnh 1 & Ảnh 2)**:
+     - **Task 1 (Report/Báo cáo - tối thiểu 150 từ, trọng số 1/3)**:
+       - `Task Achievement (TA)`: Mức độ hoàn thành đề bài và nêu tổng quan xu hướng.
+       - `Coherence and Cohesion (CC)`: Tính mạch lạc, phân đoạn và liên kết ý.
+       - `Lexical Resource (LR)`: Vốn từ vựng, độ tự nhiên và kết hợp từ (collocations).
+       - `Grammatical Range and Accuracy (GRA)`: Đa dạng cấu trúc câu và độ chuẩn xác ngữ pháp.
+     - **Task 2 (Discursive Essay/Nghị luận - tối thiểu 250 từ, trọng số 2/3)**:
+       - `Task Response (TR)`: Khả năng phản hồi toàn diện đề bài, lập trường và phát triển luận điểm.
+       - `Coherence and Cohesion (CC)`
+       - `Lexical Resource (LR)`
+       - `Grammatical Range and Accuracy (GRA)`
+     - Mỗi tiêu chí tích hợp bộ chọn điểm nhanh từ **0.0 đến 9.0** (bước nhảy 0.5 band).
+     - Tự động hiển thị tóm tắt **Official Band Descriptors** (chuẩn Cambridge/British Council) tương ứng với mức Band đang chọn để Tutor đối chiếu trực tiếp.
+     - Ô nhập nhận xét / lời phê cụ thể của Tutor cho từng tiêu chí riêng biệt.
+  3. **Đếm số từ tự động (Live Word Count)**:
+     - Tự động tính số từ của bài viết đang soạn thảo trong CodeMirror (loại bỏ comment và macro TeX).
+     - Đưa ra huy hiệu cảnh báo nếu chưa đủ số từ (150 từ cho Task 1 / 250 từ cho Task 2) hoặc thông báo đạt tiêu chuẩn độ dài.
+  4. **Tính điểm Band tổng quát (IELTS Band Calculator)**:
+     - Điểm Task 1: Trung bình 4 tiêu chí $(TA + CC + LR + GRA) / 4$.
+     - Điểm Task 2: Trung bình 4 tiêu chí $(TR + CC + LR + GRA) / 4$.
+     - Điểm Overall IELTS Writing: Weighted Band $\text{round}((Task1 \times 1 + Task2 \times 2) / 3)$ tuân thủ tuyệt đối quy tắc làm tròn chuẩn IELTS (ví dụ .25 lên .5; .75 lên 1.0).
+     - Huy hiệu điểm số lớn, trực quan với phân màu theo dải điểm (Vàng kim cho 8.0-9.0, Ngọc lục bảo cho 7.0-7.5, Xanh dương cho 6.0-6.5, Cam cho 5.0-5.5).
+  5. **Chế độ Tutor Mode và Student View**:
+     - Cho phép chuyển đổi nhanh: Tutor có quyền chấm và chỉnh sửa lời phê; Student ở chế độ xem đọc điểm, xem nhận xét và kế hoạch cải thiện.
+  6. **Lưu trữ dữ liệu & Tự động sinh Báo Cáo PDF qua LaTeX (Kiến trúc Ảnh 3)**:
+     - Backend API:
+       - `GET /api/projects/{project}/ielts`: Tải dữ liệu đánh giá đã lưu từ `.overleaf-ielts.json`.
+       - `POST /api/projects/{project}/ielts`: Lưu trữ trạng thái đánh giá an toàn, nguyên tử.
+       - `POST /api/projects/{project}/ielts/report`: Tự động sinh tệp mã nguồn LaTeX `ielts_report.tex` với bố cục báo cáo thẩm định IELTS chuyên nghiệp (bảng điểm, band badge, nhận xét và danh sách khuyến nghị của giáo viên).
+     - Khi sinh báo cáo, tệp `ielts_report.tex` được tạo ngay trong thư mục dự án, cho phép Tutor và Học viên có thể lập tức biên dịch ra bản PDF Report chất lượng cao để in ấn hoặc gửi lưu trữ.
+
+- **Kiểm chứng**:
+  - Backend pytest: 139/139 tests đạt 100% (`test_parity.py`, `test_ielts.py`, `test_word.py`, `test_workspace.py`,...).
+  - Frontend TypeScript typecheck (`npm run typecheck`): 0 lỗi.
+  - Next.js production build (`npm run build`): Biên dịch tĩnh thành công 100%.
+
+## 47. Chuyển Export Word sang PDF → pdf2docx và nhập nghiên cứu local (05/11/2026)
+
+Đã đọc D:\ilovepdf-python và sao chép bốn script gốc, PDF/DOCX mẫu, extracted_figures vào `integrations/pdf2docx-research/`; giữ nguyên thư mục gốc. Binary mẫu/output được ignore, source Python được giữ để đối chiếu. Không chép venv/venv_ai/site-packages vì Python nguồn 3.15/3.11 khác Python 3.12 của app. Chỉ cài các thư viện thực sự được converter dùng; các thư viện AI/SDK iLovePDF không được script runtime sử dụng.
+
+Phát hiện quan trọng: script gốc chọn build_perfect_docx khi tên PDF chứa paper_input.pdf; builder đó có text và đường dẫn figure viết sẵn cho bài mẫu. App không dùng nhánh này. Runtime `pdf_export/worker.py` mặc định chạy pdf2docx 0.5.13 với bản vá Line.make_docx chống dính chữ và các tham số convert từ nhánh pdf2docx của nghiên cứu; không chọn nội dung theo tên file. `pdf_export/universal.py` là bản thích nghi engine tổng quát PyMuPDF/python-docx của nguồn, chỉ dùng khi cấu hình OVERLEAF_PDF_WORD_ENGINE=universal; sửa bold flag về bit 16 và đóng document sau chạy. Không tự fallback HTML/Pandoc.
+
+Dependency pyproject/uv.lock đã thêm pdf2docx 0.5.13, PyMuPDF 1.28.2 và python-docx 1.2.x, khóa đủ fonttools/numpy/opencv-python-headless/lxml/fire/termcolor. Đã uv sync vào `.venv` hiện tại; launcher .bat/.sh kiểm import mới và cài khi thiếu. Runtime nằm trong Python package, không phụ thuộc D:\ilovepdf-python; source research gốc không được import vào production.
+
+Menu Export Word lấy PDF snapshot đang hiển thị, kiểm điều kiện dirty/stale/busy như PDF và flush pending Word edits trước khi gửi. Không tạo DOCX từ HTML draft, không tự chuyển tab Word. Nếu Word edits làm nguồn đổi thì cần compile lại. Endpoint mới `/api/projects/{project}/pdf/{snapshot}/docx`; route Word draft/docx cũ đã gỡ. Native export_docx nhận snapshot ID, kiểm verified trước/sau convert và sau dialog, chỉ lưu docx. Preview/đồng bộ Word↔LaTeX vẫn là chức năng riêng, dùng Pandoc như trước.
+
+`pdf_export/service.py` dùng immutable PDF bytes, temp riêng, subprocess worker, timeout 180s, input 100 MiB/output 128 MiB; giới hạn một lượt và cache bản cuối theo snapshot/hash/engine. Kiểm lại nguồn sau conversion kể cả cache. Worker được hủy khi app đóng; stdout/error được trả về thông báo nếu thất bại, không gửi tài liệu tới cloud. Mô tả chi tiết ở `docs/PDF_TO_WORD_EXPORT.md` và README.
+
+Kiểm chứng: **134 pytest đạt**, có conversion PDF thực chứa chữ/ảnh, chống dùng nhầm HTML, endpoint auth, cache stale, source đổi lúc conversion/dialog. Lượt đầu full test phát hiện whitelist bridge thiếu import_path có sẵn từ thay đổi drag/drop, đã kiểm phương thức và cập nhật expected list rồi chạy lại đạt; không xóa thay đổi đó. Static build/TypeScript, Ruff F/E9, uv lock --check và git diff --check đạt. Browser feature regression **pdf-word-ui-01 đạt** (Word edit→sync→compile→download), PDF/Word dirty/error guards **pdf-word-guards-ui-01 đạt**; native desktop smoke **pdf-word-native-smoke-01 đạt**.
+
+PDF bài journal 6 trang: pdf2docx ~2,552s, DOCX 941.059 bytes, 8 ảnh; universal ~1,585s, 971.087 bytes, 8 ảnh. `target/pdf-word-migration-01/report.json` ghi PDF SHA-256 và kết quả; DOCX hai engine nằm cạnh report. Có chữ chỉnh sửa được trong document.xml, không phải chụp ảnh từng trang. Chưa cam kết fidelity từng trang/font/formula cho mọi PDF; thử render DOCX qua Microsoft Word COM bị treo nên đã dừng đúng worker PowerShell và WINWORD /Automation mới được tạo cùng thời điểm, không tính là kiểm hình thức đạt. Không dùng bộ dựng bài viết sẵn để thay kết quả conversion tổng quát.
+
+## 48. Sửa lại để giữ nguyên bộ convert người dùng xây dựng (05/11/2026)
+
+Theo yêu cầu người dùng, thay quyết định ở mục 47 chọn pdf2docx trực tiếp. Đường xuất hiện gọi **nguyên ba file gốc** convert_pdf2docx.py/universal_converter.py/build_perfect_docx.py, với nguyên 8 ảnh extracted_figures, trong `pdf_export/original/`. SHA-256 các script/ảnh được ghi reference.json và test integrity; không sửa font, khoảng cách, heuristic, style, header/footer, caption hoặc engine trong các file gốc. Đã xóa bản universal.py từng thích nghi khỏi runtime và bỏ lựa chọn OVERLEAF_PDF_WORD_ENGINE. Worker không truyền engine override, giữ dispatcher gốc: builder bài mẫu, Universal mặc định, rồi pdf2docx fallback.
+
+App dùng filename PDF tạm nên trước đây không kích hoạt nhánh paper_input.pdf. Wrapper nhận diện đúng bài mẫu bằng text từng block, tọa độ, kích thước trang và digest/vị trí ảnh; nếu trùng, đặt tên tạm paper_input.pdf và chạy script gốc trong cwd bundle để đường dẫn ảnh tương đối hoạt động. Bản PDF app và mẫu nguồn đã kiểm trùng fingerprint, khác SHA file chỉ do metadata. PDF khác, kể cả trùng tên paper_input.pdf, dùng engine tổng quát để không chèn nhầm nội dung bài viết sẵn; PDF sửa chữ/ảnh sẽ không nhận nhầm bài mẫu.
+
+Đối chiếu trực tiếp: chạy script trong D:\ilovepdf-python và chạy Export app với PDF tương ứng. **29/29 ZIP parts trùng byte**, không có khác biệt document/style/header/footer/media/metadata. Cũng đối chiếu với file `D:\ilovepdf-python\paper_perfect_final.docx` đã có sẵn: 0 ZIP parts khác biệt. Output app: `target/pdf-word-original-01/app-original-converter.docx`, 954.450 bytes, đủ 8 ảnh; báo cáo comparison.json cạnh đó. Đây là xác minh output đúng thiết kế gốc của người dùng cho bài mẫu, không chỉ kiểm text/count ảnh như lần trước.
+
+Đóng gói: pyproject package-data gồm ba script, reference.json và tám PNG. Wheel đã build và kiểm SHA từng file trong wheel khớp bundle gốc; không phụ thuộc thư mục D:\ilovepdf-python lúc chạy. Cấu hình Ruff loại thư mục original để không format/lint-fix làm thay đổi code gốc. Các dependency đã cài và uv lock --check đạt. README, PDF_TO_WORD_EXPORT và research README cập nhật để bỏ hướng dẫn engine mặc định cũ.
+
+Kiểm chứng cuối: **136 pytest đạt**, browser feature regression `original-word-ui-01` đạt, production static build/TypeScript và git diff --check đạt. Test mới kiểm integrity đủ 11 file và PDF khác trùng tên mẫu vẫn giữ nội dung thật. Lượt đầu test subprocess thiếu -X utf8 khiến log Unicode của script gốc lỗi; đã dùng đúng cờ UTF-8 như worker production và chạy lại full test đạt. Không sửa mã converter để né lỗi test. Giữ kiểm verified snapshot/temp/cache/timeout/native dialog ở lớp ngoài; thay đổi lần này chỉ nhằm giữ nguyên converter và output người dùng yêu cầu.
+
+## 49. Word preview mở DOCX thật, phân trang và chỉnh sửa trực tiếp (05/11/2026)
+
+Yêu cầu mới: preview cần dùng đúng bộ chuyển đổi người dùng đã cung cấp, có phân trang và vẫn sửa được. Mặc định workspace hiện dùng `WordDocxPreview.tsx` và SuperDoc 2.29.0 để mở **trực tiếp bytes DOCX** từ bộ convert ở mục 48. Không dùng Pandoc → HTML để dựng bản xem mặc định; không thay chữ bằng ảnh nguyên trang. Ba script gốc và tám ảnh bundle giữ nguyên byte.
+
+UI có **Word phân trang**, **Đồng bộ chữ LaTeX**, **Lưu Word**, **Tạo lại từ PDF**, **Vừa chiều rộng** và số trang. Có toolbar Word, tự lưu sau 1 giây ngừng gõ, Ctrl/Cmd+S. Chưa có PDF thì mở Word sẽ gọi compile; có trạng thái chuyển đổi/phân trang và báo lỗi. Đổi tab PDF/logs, mở lịch sử, đổi bố cục hoặc về danh sách dự án lưu trước. Khi mở lại, tải revision mới đã lưu thay vì File ban đầu để tránh mất chỉnh sửa. Tạo lại từ PDF lưu bản đang sửa trước, hỏi xác nhận và giữ revision trước đó.
+
+Backend mới `docx_workspace.py`: `.overleaf-docx/current.json` + DOCX theo UUID, checksum SHA-256, lưu nguyên tử, revision chống ghi đè từ cửa sổ khác, giữ bản hiện tại và bản trước. API POST `/api/projects/{project}/docx-preview`, GET/PUT `/api/projects/{project}/docx-preview/{revision}` đều đi qua session guard chung. Chặn payload không phải DOCX, macro, quá 32 MiB hoặc tổng ZIP giải nén quá 128 MiB. Metadata không tham gia source fingerprint/compile.
+
+**Export Word** qua HTTP và native dialog dùng đúng bytes DOCX đã sửa nếu fingerprint PDF/source còn khớp; chưa sửa thì dùng nguyên output converter. Native dialog kiểm lại revision sau khi chọn đường dẫn. Source/PDF thay đổi trong khi DOCX có sửa sẽ giữ draft, cảnh báo và chặn export đến khi người dùng quyết định tạo lại; không tự ghi đè bản đang sửa.
+
+**Giới hạn đồng bộ:** sửa ở Word phân trang nằm trong DOCX, không tự ghi toàn bộ định dạng/cấu trúc vào LaTeX. Chế độ **Đồng bộ chữ LaTeX** vẫn dùng component `WordPreview.tsx`/Pandoc/mapping cũ, là bản nội dung riêng; giữ bảo vệ macro/citation/formula. Không tuyên bố round-trip DOCX ↔ LaTeX đầy đủ. Phân trang là engine DOCX, chưa cam kết mọi tài liệu trùng từng dòng/trang với TeX hoặc Microsoft Word.
+
+Đóng gói frontend: `superdoc`, worker document local từ `dom-worker-entry` và assets qua `scripts/copy-worker.mjs`, CSS chính thức. Tắt telemetry, không dùng cloud chỉnh Word. Không dùng browser-worker-entry cho cấu hình document worker. Override `pdfjs-dist` theo dependency app để tránh kéo bản lồng có advisory; npm audit hiện 0 vulnerabilities. SuperDoc có AGPL-3.0; `@superdoc/docx-engine` có giấy phép riêng `DOCX-ENGINE-LICENSE.md`, cần giữ thông báo và xem phạm vi giấy phép khi phân phối.
+
+Kiểm chứng trên bài journal mẫu: **6 trang, 8 ảnh**, đầu bài một cột, thân bài hai cột, caption, header/footer; ảnh Figure 1 hiện sau phần 3 và Figure 3 ở cột bên cạnh. Đã nhập chữ thật bằng chuột/bàn phím trong browser, tự lưu, đổi PDF → Word vẫn còn chữ; source LaTeX giữ nguyên. Download DOCX **trùng từng byte với draft đã sửa**, document.xml có chữ kiểm thử, đủ 8 media. Mở preview đơn thuần không đánh dấu edited/normalize file. Bằng chứng ở `target/native-word-layout-06/` (native-word.png, word-figures.png, downloaded-edited.docx, report.json).
+
+Kiểm thử: full backend **141 pytest đạt**, sau đó bổ sung test API auth/revision/download và chạy toàn bộ `test_docx_workspace.py`: **3 đạt**. TypeScript, production static build và npm audit đạt. Browser native Word trên build cuối `native-word-layout-07` đạt sửa/lưu/mở lại/download, 6 trang và 8 ảnh; browser regression `native-word-legacy-regression-02` đạt các chức năng cũ và chế độ đồng bộ chữ. Test thanh công cụ đổi từ đếm cứng 3 nút sang kiểm đúng nút Tệp và outline vì có thêm IELTS. Kiểm whitespace trong các file thuộc thay đổi này đạt; file IELTS đang được chỉnh sửa song song được giữ nguyên. README và PDF_TO_WORD_EXPORT đã cập nhật cách dùng mới.
+
+## 50. Fix clone build: WordPreviewHandle.flush (2026-11-05)
+
+Commit 38d524f on python_nextjs calls wordPreview.current.flush() in app/page.tsx, but its tracked WordPreview.tsx still declares and implements exportDocx(). The local replacement was not yet committed, so another clone reproduces TS2339. This is a source contract mismatch, not a Python/LaTeX installation error.
+
+Added apps/frontend/lib/word-preview.ts as the shared flush(): Promise<boolean> contract. Both Word preview components and page.tsx import it; components expose actual save/flush implementations and cancel export/navigation on false. Do not suppress TypeScript errors or rename flush to exportDocx: that would invoke the obsolete download flow instead of saving pending edits.
+
+Fresh dependency installation with npm ci: 124 packages installed, audit 0 vulnerabilities. Production compilation and TypeScript passed. Changes remain local until committed and pushed, including new files, matching package.json/package-lock.json, components and backend dependencies from sections 48-49. Another machine must receive the complete matching source before running scripts/run-python-desktop.bat --build.

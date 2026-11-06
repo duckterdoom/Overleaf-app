@@ -1,0 +1,366 @@
+[
+  {
+    "pattern": "command failed with exit code (\\d+)",
+    "en": {
+      "title": "latexmk could not finish the build",
+      "why": "Exit code {1} is a launcher summary, not the original LaTeX error.",
+      "fix": "Find the first LaTeX or package error above this message. Check for missing packages, fonts or input files before changing document syntax."
+    },
+    "vi": {
+      "title": "latexmk chưa hoàn tất biên dịch",
+      "why": "Mã {1} là thông báo tổng kết, chưa phải nguyên nhân lỗi LaTeX.",
+      "fix": "Tìm lỗi LaTeX hoặc gói đầu tiên ở phía trên. Kiểm tra gói, font và tệp đầu vào bị thiếu trước khi sửa cú pháp tài liệu."
+    }
+  },
+  {
+    "pattern": "(?:can't|cannot) write on file [`']([^']+)'",
+    "en": {
+      "title": "Cannot write an auxiliary file",
+      "why": "TeX could not write {1}. The output subfolder may be missing or unwritable.",
+      "fix": "Create the corresponding subfolder under build, check permissions and compile main.tex again."
+    },
+    "vi": {
+      "title": "Không ghi được tệp phụ trợ",
+      "why": "TeX không ghi được {1}. Thư mục con đầu ra có thể chưa có hoặc không có quyền ghi.",
+      "fix": "Tạo thư mục con tương ứng trong build, kiểm tra quyền ghi rồi biên dịch lại main.tex."
+    }
+  },
+  {
+    "pattern": "Undefined control sequence",
+    "en": {
+      "title": "Unknown command",
+      "why": "LaTeX does not recognise the command {cmd}. This is usually a typo, or the package that defines it has not been loaded.",
+      "fix": "Check the spelling, then add the matching \\usepackage{...} line above \\begin{document} if the command comes from a package."
+    },
+    "vi": {
+      "title": "Lệnh không tồn tại",
+      "why": "LaTeX không nhận ra lệnh {cmd}. Thường là do gõ sai tên lệnh, hoặc chưa nạp gói định nghĩa lệnh đó.",
+      "fix": "Kiểm tra lại chính tả. Nếu lệnh thuộc một gói, hãy thêm dòng \\usepackage{...} tương ứng phía trên \\begin{document}."
+    }
+  },
+  {
+    "pattern": "Missing \\$ inserted",
+    "en": {
+      "title": "Math symbol used in normal text",
+      "why": "A symbol or command that only works in math mode (such as _ or ^) appeared outside a formula.",
+      "fix": "Put the formula between $ signs, or write \\_ to print a plain underscore."
+    },
+    "vi": {
+      "title": "Ký hiệu toán học nằm ngoài công thức",
+      "why": "Một ký hiệu chỉ dùng được trong chế độ toán (như _ hoặc ^) xuất hiện ở đoạn văn thường.",
+      "fix": "Đặt công thức giữa hai dấu $, hoặc gõ \\_ nếu chỉ muốn in dấu gạch dưới."
+    }
+  },
+  {
+    "pattern": "(?:File [`'‘]([^'’]+)['’] (?:not found|does not exist)|(?:can't|cannot) find file [`'‘]([^'’]+)['’])",
+    "en": {
+      "title": "File not found",
+      "why": "LaTeX could not find the file {file}.",
+      "fix": "If it is a package (.sty or .cls), install it with your TeX distribution's package manager. If it is your own file, check the name, the folder and the extension in the \\input or \\includegraphics line."
+    },
+    "vi": {
+      "title": "Không tìm thấy tệp",
+      "why": "LaTeX không tìm thấy tệp {file}.",
+      "fix": "Nếu đó là một gói (.sty hoặc .cls), hãy cài nó bằng trình quản lý gói của bản TeX đang dùng. Nếu là tệp của bạn, hãy kiểm tra tên, thư mục và phần mở rộng trong dòng \\input hoặc \\includegraphics."
+    }
+  },
+  {
+    "pattern": "Missing \\\\begin\\{document\\}",
+    "en": {
+      "title": "\\begin{document} is missing",
+      "why": "LaTeX found printable text before the document started, or the preamble contains a mistake.",
+      "fix": "Make sure \\begin{document} exists, and look above it for stray text or an unclosed brace."
+    },
+    "vi": {
+      "title": "Thiếu \\begin{document}",
+      "why": "LaTeX gặp nội dung cần in trước khi tài liệu bắt đầu, hoặc phần khai báo đầu tệp có lỗi.",
+      "fix": "Kiểm tra \\begin{document} đã có chưa, và tìm phía trên nó xem có chữ thừa hoặc dấu ngoặc nhọn chưa đóng không."
+    }
+  },
+  {
+    "pattern": "\\\\begin\\{([^}]+)\\} on input line (\\d+) ended by \\\\end\\{([^}]+)\\}",
+    "en": {
+      "title": "Environment closed with the wrong name",
+      "why": "\\begin{{1}} opened on line {2} was closed by \\end{{3}}.",
+      "fix": "Make the two names match, or add the missing \\end{{1}} before it."
+    },
+    "vi": {
+      "title": "Môi trường đóng sai tên",
+      "why": "\\begin{{1}} mở ở dòng {2} nhưng lại bị đóng bởi \\end{{3}}.",
+      "fix": "Cho hai tên khớp nhau, hoặc thêm \\end{{1}} còn thiếu ở phía trước."
+    }
+  },
+  {
+    "pattern": "Environment (\\S+) undefined",
+    "en": {
+      "title": "Unknown environment",
+      "why": "LaTeX does not know the environment {1}.",
+      "fix": "Check the spelling, or load the package that provides it."
+    },
+    "vi": {
+      "title": "Môi trường không tồn tại",
+      "why": "LaTeX không biết môi trường {1}.",
+      "fix": "Kiểm tra chính tả, hoặc nạp gói cung cấp môi trường này."
+    }
+  },
+  {
+    "pattern": "Runaway argument|Paragraph ended before",
+    "en": {
+      "title": "A brace is probably not closed",
+      "why": "A command received an argument that never ended, so LaTeX kept reading until the paragraph finished.",
+      "fix": "Look at the line shown and the lines just above it for a { without a matching }."
+    },
+    "vi": {
+      "title": "Có thể thiếu dấu đóng ngoặc nhọn",
+      "why": "Một lệnh nhận đối số nhưng không có chỗ kết thúc, nên LaTeX đọc tiếp đến hết đoạn.",
+      "fix": "Xem dòng được báo và vài dòng ngay phía trên để tìm dấu { chưa có dấu } tương ứng."
+    }
+  },
+  {
+    "pattern": "Extra \\}, or forgotten \\$",
+    "en": {
+      "title": "Extra closing brace or missing $",
+      "why": "LaTeX found a } that does not close anything, or a formula that was opened with $ but never closed.",
+      "fix": "Count the braces on this line and check that every $ has a partner."
+    },
+    "vi": {
+      "title": "Thừa dấu } hoặc thiếu dấu $",
+      "why": "LaTeX gặp một dấu } không đóng cho dấu nào, hoặc một công thức mở bằng $ nhưng chưa đóng.",
+      "fix": "Đếm lại các dấu ngoặc nhọn trên dòng này và kiểm tra mỗi dấu $ đều có dấu đi cặp."
+    }
+  },
+  {
+    "pattern": "Missing ([{}]) inserted",
+    "en": {
+      "title": "Unbalanced braces",
+      "why": "LaTeX expected a {1} and added one by itself.",
+      "fix": "Count the { and } on this line and in the command just before it."
+    },
+    "vi": {
+      "title": "Dấu ngoặc nhọn không cân",
+      "why": "LaTeX cần một dấu {1} nên đã tự thêm vào.",
+      "fix": "Đếm lại các dấu { và } trên dòng này và ở lệnh ngay phía trước."
+    }
+  },
+  {
+    "pattern": "Too many \\}'s",
+    "en": {
+      "title": "Too many closing braces",
+      "why": "There are more } than { so far.",
+      "fix": "Remove the extra } or add the missing {."
+    },
+    "vi": {
+      "title": "Thừa dấu ngoặc nhọn đóng",
+      "why": "Hiện có nhiều dấu } hơn dấu {.",
+      "fix": "Xóa dấu } thừa hoặc thêm dấu { còn thiếu."
+    }
+  },
+  {
+    "pattern": "Argument of (\\\\[A-Za-z@]+) has an extra \\}",
+    "en": {
+      "title": "Extra closing brace in an argument",
+      "why": "The argument of {1} contains a } that has no opening partner.",
+      "fix": "Remove the extra } or add the missing { just before it."
+    },
+    "vi": {
+      "title": "Thừa dấu } trong đối số",
+      "why": "Đối số của {1} chứa một dấu } không có dấu { đi cặp.",
+      "fix": "Xóa dấu } thừa hoặc thêm dấu { còn thiếu ngay trước nó."
+    }
+  },
+  {
+    "pattern": "File ended while scanning use of (\\\\[A-Za-z@]+)",
+    "en": {
+      "title": "File ended too early",
+      "why": "LaTeX reached the end of the file while still reading the argument of {1}.",
+      "fix": "A closing brace is missing somewhere before the end. Check the last commands you wrote."
+    },
+    "vi": {
+      "title": "Tệp kết thúc quá sớm",
+      "why": "LaTeX đến cuối tệp khi vẫn còn đang đọc đối số của {1}.",
+      "fix": "Có dấu ngoặc nhọn đóng bị thiếu ở đâu đó trước phần cuối. Kiểm tra lại những lệnh viết sau cùng."
+    }
+  },
+  {
+    "pattern": "Misplaced alignment tab character",
+    "en": {
+      "title": "Stray & character",
+      "why": "The & sign is only allowed inside tables and aligned formulas.",
+      "fix": "Write \\& to print a real ampersand, or move the text into a tabular."
+    },
+    "vi": {
+      "title": "Dấu & đặt sai chỗ",
+      "why": "Dấu & chỉ được dùng trong bảng và công thức căn hàng.",
+      "fix": "Gõ \\& nếu muốn in dấu và, hoặc đưa đoạn văn vào trong môi trường tabular."
+    }
+  },
+  {
+    "pattern": "Extra alignment tab",
+    "en": {
+      "title": "Too many columns in a table row",
+      "why": "A row has more & separators than the table has columns.",
+      "fix": "Add a column to the tabular header, or remove the extra &."
+    },
+    "vi": {
+      "title": "Dòng bảng có quá nhiều cột",
+      "why": "Một dòng có nhiều dấu & hơn số cột đã khai báo của bảng.",
+      "fix": "Thêm cột vào phần khai báo tabular, hoặc xóa dấu & thừa."
+    }
+  },
+  {
+    "pattern": "Illegal parameter number",
+    "en": {
+      "title": "Misused # sign",
+      "why": "A # appears where LaTeX does not expect it, often inside a \\newcommand.",
+      "fix": "Write \\# for a real hash sign, and check that #1, #2 and so on match the number of arguments you declared."
+    },
+    "vi": {
+      "title": "Dấu # dùng sai",
+      "why": "Dấu # xuất hiện ở chỗ LaTeX không mong đợi, thường nằm trong một lệnh \\newcommand.",
+      "fix": "Gõ \\# nếu muốn in dấu thăng, và kiểm tra #1, #2... khớp với số đối số đã khai báo."
+    }
+  },
+  {
+    "pattern": "Double (?:subscript|superscript)",
+    "en": {
+      "title": "Double subscript or superscript",
+      "why": "The same symbol received two _ or two ^ in a row.",
+      "fix": "Group them with braces, for example x_{a_b} or {x^2}^3."
+    },
+    "vi": {
+      "title": "Hai chỉ số liên tiếp",
+      "why": "Cùng một ký hiệu nhận hai dấu _ hoặc hai dấu ^ liền nhau.",
+      "fix": "Gom chúng bằng dấu ngoặc nhọn, ví dụ x_{a_b} hoặc {x^2}^3."
+    }
+  },
+  {
+    "pattern": "Unicode character (\\S+)",
+    "en": {
+      "title": "Character not supported by this engine",
+      "why": "The current setup could not print the character {1}.",
+      "fix": "Switch the compiler to XeLaTeX or LuaLaTeX in the toolbar, or load the right encoding package (for Vietnamese with pdfLaTeX, \\usepackage[utf8]{vietnam})."
+    },
+    "vi": {
+      "title": "Ký tự không được hỗ trợ",
+      "why": "Cấu hình hiện tại không in được ký tự {1}.",
+      "fix": "Đổi trình biên dịch sang XeLaTeX hoặc LuaLaTeX trên thanh công cụ, hoặc nạp gói mã hóa phù hợp (với tiếng Việt dùng pdfLaTeX: \\usepackage[utf8]{vietnam})."
+    }
+  },
+  {
+    "pattern": "font \"([^\"]+)\" cannot be found",
+    "en": {
+      "title": "Font not found",
+      "why": "The font {1} is not installed on this computer.",
+      "fix": "Install the font, or choose another one, for example in \\setmainfont."
+    },
+    "vi": {
+      "title": "Không tìm thấy phông chữ",
+      "why": "Phông {1} chưa được cài trên máy này.",
+      "fix": "Cài phông chữ đó, hoặc chọn phông khác, ví dụ trong \\setmainfont."
+    }
+  },
+  {
+    "pattern": "Unknown graphics extension: (\\.?[A-Za-z0-9]+)",
+    "en": {
+      "title": "Image type not supported",
+      "why": "The image format {1} cannot be used with this compiler.",
+      "fix": "Use PNG, JPG or PDF, or convert the image first."
+    },
+    "vi": {
+      "title": "Định dạng ảnh không được hỗ trợ",
+      "why": "Định dạng ảnh {1} không dùng được với trình biên dịch này.",
+      "fix": "Dùng PNG, JPG hoặc PDF, hoặc chuyển đổi ảnh trước."
+    }
+  },
+  {
+    "pattern": "Undefined color [`'‘]([^'’]+)",
+    "en": {
+      "title": "Unknown color",
+      "why": "The color {1} has not been defined.",
+      "fix": "Check the spelling, load the xcolor package, or define it with \\definecolor."
+    },
+    "vi": {
+      "title": "Màu chưa được định nghĩa",
+      "why": "Màu {1} chưa được định nghĩa.",
+      "fix": "Kiểm tra chính tả, nạp gói xcolor, hoặc định nghĩa bằng \\definecolor."
+    }
+  },
+  {
+    "pattern": "Command (\\\\[A-Za-z@]+) already defined",
+    "en": {
+      "title": "Command name already in use",
+      "why": "{1} already exists, so \\newcommand cannot create it again.",
+      "fix": "Pick another name, or use \\renewcommand if you want to replace it on purpose."
+    },
+    "vi": {
+      "title": "Tên lệnh đã được dùng",
+      "why": "{1} đã tồn tại nên \\newcommand không thể tạo lại.",
+      "fix": "Chọn tên khác, hoặc dùng \\renewcommand nếu bạn cố ý muốn thay thế."
+    }
+  },
+  {
+    "pattern": "Option clash for package ([A-Za-z0-9_-]+)",
+    "en": {
+      "title": "Package loaded twice with different options",
+      "why": "The package {1} was loaded again with options that differ from the first time.",
+      "fix": "Load it once, and put every option in that single \\usepackage line."
+    },
+    "vi": {
+      "title": "Gói được nạp hai lần với tùy chọn khác nhau",
+      "why": "Gói {1} được nạp lại với các tùy chọn khác lần đầu.",
+      "fix": "Chỉ nạp một lần, và đưa mọi tùy chọn vào đúng một dòng \\usepackage."
+    }
+  },
+  {
+    "pattern": "Lonely \\\\item",
+    "en": {
+      "title": "\\item outside a list",
+      "why": "An \\item was used without a list around it.",
+      "fix": "Put it between \\begin{itemize} and \\end{itemize}, or use enumerate for a numbered list."
+    },
+    "vi": {
+      "title": "\\item nằm ngoài danh sách",
+      "why": "Lệnh \\item được dùng mà không nằm trong danh sách nào.",
+      "fix": "Đặt nó giữa \\begin{itemize} và \\end{itemize}, hoặc dùng enumerate cho danh sách đánh số."
+    }
+  },
+  {
+    "pattern": "Missing number, treated as zero",
+    "en": {
+      "title": "A number is missing",
+      "why": "A length or counter command did not receive the value it needs.",
+      "fix": "Check the number and unit in the command on this line, for example 5pt or 0.5\\textwidth."
+    },
+    "vi": {
+      "title": "Thiếu một con số",
+      "why": "Một lệnh về độ dài hoặc bộ đếm không nhận được giá trị cần thiết.",
+      "fix": "Kiểm tra số và đơn vị trong lệnh ở dòng này, ví dụ 5pt hoặc 0.5\\textwidth."
+    }
+  },
+  {
+    "pattern": "Can be used only in preamble",
+    "en": {
+      "title": "Command in the wrong place",
+      "why": "This command must appear before \\begin{document}.",
+      "fix": "Move it up into the preamble."
+    },
+    "vi": {
+      "title": "Lệnh đặt sai vị trí",
+      "why": "Lệnh này phải nằm trước \\begin{document}.",
+      "fix": "Chuyển nó lên phần khai báo ở đầu tệp."
+    }
+  },
+  {
+    "pattern": "Emergency stop",
+    "en": {
+      "title": "LaTeX stopped early",
+      "why": "After a serious error LaTeX gave up reading the file.",
+      "fix": "Fix the first error in the list. Later errors are often caused by it."
+    },
+    "vi": {
+      "title": "LaTeX dừng sớm",
+      "why": "Sau một lỗi nghiêm trọng, LaTeX bỏ dở việc đọc tệp.",
+      "fix": "Sửa lỗi đầu tiên trong danh sách. Các lỗi sau thường là hệ quả của nó."
+    }
+  }
+]
