@@ -10,12 +10,16 @@ from .pdf_export.service import exporter
 
 
 class DocxWorkspace:
-    def __init__(self, compiler):
+    def __init__(self, compiler, main=""):
         self.compiler = compiler
         self.store = compiler.store
+        self.main = main
 
     def folder(self, project):
         path = self.store.root(project) / '.overleaf-docx'
+        if self.main and self.main != self.store.info(project)['main']:
+            self.store.path(project, self.main)
+            path = self.store.root(project) / ('.overleaf-docx-' + hashlib.sha256(self.main.encode()).hexdigest()[:16])
         if path.is_symlink():
             raise Problem('DOCX workspace không được là symbolic link.')
         path.mkdir(exist_ok=True)
@@ -72,7 +76,11 @@ class DocxWorkspace:
         return self.status(project)
 
     def open(self, project, snapshot, reset=False, revision=None):
-        pdf = self.compiler.verified(project, snapshot)
+        # Existing drafts may be reviewed after source edits; conversion and
+        # download still require a verified current PDF below/in the exporter.
+        pdf = self.compiler.preview(project, snapshot)
+        if (self.main or self.store.info(project)['main']) != (pdf.main or self.store.info(project)['main']):
+            raise Problem('PDF không thuộc tệp Word đang mở.', 409)
         with self.store.lock:
             current = self.status(project)
             if current and not reset and (current['fingerprint'] == pdf.fingerprint or current['edited']):
@@ -85,7 +93,7 @@ class DocxWorkspace:
             self.compiler.verified(project, snapshot)
             if (self.status(project) or {}).get('revision') != ticket:
                 raise Problem('DOCX vừa được sửa ở cửa sổ khác.', 409)
-            return self.commit(project, data, {'snapshot': snapshot, 'fingerprint': pdf.fingerprint, 'edited': False})
+            return self.commit(project, data, {'snapshot': snapshot, 'fingerprint': pdf.fingerprint, 'edited': False, 'main': pdf.main})
 
     def save(self, project, revision, data):
         with self.store.lock:
@@ -97,7 +105,7 @@ class DocxWorkspace:
 
 def download(compiler, project, snapshot):
     pdf = compiler.verified(project, snapshot)
-    workspace = DocxWorkspace(compiler)
+    workspace = DocxWorkspace(compiler, pdf.main)
     with compiler.store.lock:
         current = workspace.status(project)
         if current and current['edited']:

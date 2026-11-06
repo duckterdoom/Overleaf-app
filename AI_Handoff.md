@@ -1,5 +1,15 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+> **Mới nhất — Khôi phục và nâng cấp icon mũi tên thoát dự án trong thanh Header (`ArrowLeft`) (06/11/2026):** sửa lỗi icon mũi tên quay lại bị đẩy lệch và ẩn mất khi tên dự án dài (do thuộc tính căn giữa mặc định của thẻ button); tách cấu trúc thành nút icon thoát chuyên dụng `.project-breadcrumb-back` với `flex-shrink: 0` cố định 24x24px, bo góc và hiệu ứng chuyển động trực quan khi hover, đi kèm phần tên dự án tự động thu gọn `text-overflow: ellipsis` từ đầu đến cuối; cho phép người dùng click thoát ra màn hình danh sách dự án dễ dàng và rõ ràng. Xem **mục 52**.
+
+> **Mới nhất — Sửa lỗi viền/nền và làm sáng icon thanh công cụ Word Preview ở chế độ tối (Dark Mode) (06/11/2026):** khắc phục triệt để lỗi phân tách nền trắng - tối trên thanh công cụ SuperDoc bằng cách cấu hình `min-width: 100%; width: max-content; background: var(--panel) !important;`; đồng bộ toàn bộ biến theme SuperDoc (`--sd-ui-*`) sang màu dark panel; làm sáng các icon, nhãn, thanh phân cách và ô chọn phông chữ sang tông màu bạc sáng (`#d8e2ec` / `#e2e8f0`) giúp hiển thị rõ nét, tương phản cao và mượt mà khi người dùng bật Dark Mode. Xem **mục 51**.
+
+> **Mới nhất — Thu gọn thanh công cụ Word Preview tối đa hóa diện tích đọc văn bản (06/11/2026):** nén thanh thao tác `.native-word-actions` xuống chiều cao 30px (nút 22px tinh gọn), chuyển dòng ghi chú giải thích sang tooltip hover (`ℹ`) thay vì chiếm riêng một hàng 30px, giúp giải phóng toàn bộ không gian dọc cho vùng hiển thị và chỉnh sửa văn bản Word bên dưới. Xem **mục 50**.
+
+> **Mới nhất — Thu gọn thanh Header trong trang Editor (06/11/2026):** giảm chiều cao thanh tiêu đề `app-header` từ 76px xuống 42px khi đang mở dự án; tinh chỉnh kích thước logo, tên dự án, nút thao tác (`History`, `Collaborate`, `Layout`, `Settings`) và avatar gọn gàng chuẩn Overleaf, giải phóng thêm 34px chiều dọc cho không gian soạn thảo mã nguồn và khung xem trước tài liệu bên dưới. Xem **mục 49**.
+
+> **Mới nhất — Tối ưu thanh công cụ: Hợp nhất tab PDF/Word cùng hàng với Recompile & Logs (06/11/2026):** chuyển các nút chuyển đổi chế độ xem `PDF preview` và `Word preview` lên cùng một hàng (`compile-toolbar`) ngay cạnh nút Recompile và nút Logs; loại bỏ hoàn toàn thanh tab riêng biệt thứ 2 (`.preview-tabs`) chiếm dụng chiều cao; thiết kế dạng nút chuyển segmented/pill gọn gàng, tinh tế, tiết kiệm tối đa diện tích dọc cho màn hình xem trước tài liệu. Xem **mục 48**.
+
 > **Mới nhất — Chấm điểm IELTS Writing trực tiếp trên Editor (Task 1 & Task 2) và Xuất Báo Cáo PDF (05/11/2026):** tích hợp icon IELTS (`GraduationCap`) trên thanh công cụ bên trái theo Ảnh 4; bảng chấm điểm đầy đủ 4 tiêu chí chuẩn quốc tế cho Task 1 (TA, CC, LR, GRA) và Task 2 (TR, CC, LR, GRA) theo Ảnh 1 & 2; hiển thị chi tiết Band Descriptors chính thức, ô nhập lời phê của Tutor; tính điểm làm tròn theo chuẩn IELTS; lưu trữ bền vững và sinh báo cáo LaTeX/PDF theo kiến trúc Ảnh 3. Xem **mục 47**.
 
 > **Mới nhất — Giao diện Editor toàn màn hình và Bảng Logs & Errors chuẩn Overleaf (04/11/2026):** chuyển toàn bộ build output và bảng error khỏi cột soạn thảo LaTeX để editor chiếm 100% chiều cao; bổ sung nút icon tài liệu kèm huy hiệu đếm lỗi/cảnh báo cạnh nút Recompile; chế độ xem Logs & Errors chuyên dụng ở cột phải với các tab All/Errors/Warnings/Info, thẻ lỗi mở rộng được, nút "Đi tới dòng", mục Raw logs thu gọn, thanh đáy "Clear cached files" và nút "Back to PDF" để quay lại xem PDF. Xem **mục 46**.
@@ -1318,3 +1328,157 @@ Kiểm chứng: Next.js production build/TypeScript và git diff --check đạt.
   - Backend pytest: 139/139 tests đạt 100% (`test_parity.py`, `test_ielts.py`, `test_word.py`, `test_workspace.py`,...).
   - Frontend TypeScript typecheck (`npm run typecheck`): 0 lỗi.
   - Next.js production build (`npm run build`): Biên dịch tĩnh thành công 100%.
+
+## 48. Tối ưu thanh công cụ biên dịch: Hợp nhất tab xem trước PDF/Word cùng hàng với Recompile và nút Logs (06/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Trước đây, khung xem trước tài liệu bị chia thành nhiều thanh công cụ xếp chồng lên nhau theo chiều dọc:
+    - Hàng 1: Thanh biên dịch `compile-toolbar` (Engine, nút Recompile, nút Logs, Auto compile, SyncTeX, Download).
+    - Hàng 2: Thanh tab chọn định dạng xem trước `preview-tabs` (chiếm riêng ~40px chiều cao chỉ để chứa 2 tab "PDF preview" và "Word preview").
+    - Hàng 3: Thanh công cụ điều khiển của chính người xem (PDF viewer toolbar / Word actions toolbar).
+  - Điều này làm giao diện bị chiếm dụng diện tích dọc quá nhiều, các nút và khung trông to và thừa thãi, làm giảm không gian hiển thị của tài liệu thực tế.
+- **Giải pháp & Chi tiết triển khai**:
+  1. **Hợp nhất `PDF preview` & `Word preview` lên cùng hàng với `Recompile` & nút Logs**:
+     - Chuyển 2 nút `PDF preview` và `Word preview` vào cùng thanh `compile-toolbar` ngay bên cạnh nút Logs toggle.
+     - Sử dụng thanh phân cách mảnh `preview-toolbar-divider` để phân tách trực quan nhóm thao tác biên dịch với nhóm chế độ xem.
+     - Thiết kế nhóm tab dạng segmented/pill control (`.preview-mode-switch` & `.preview-mode-tab`):
+       - Chiều cao thu gọn 24px, bo góc tinh tế, nền mờ hiện đại.
+       - Thẻ kích hoạt được làm nổi bật với chữ sắc nét, độ tương phản cao ở cả Light Mode lẫn Dark Mode.
+       - Giữ nguyên thuộc tính chuẩn Accessibility (`role="tab"`, `aria-selected`, tablist) đảm bảo tương thích 100% với các bài test tự động.
+  2. **Tối ưu kích thước nhỏ gọn và dễ nhìn**:
+     - Cố định chiều cao `compile-toolbar` ở mức **38px** (thay vì 43px+ và bị wrap nhiều dòng trước đó).
+     - Điều chỉnh padding, kích thước nút, font size và icon hài hòa, sắc nét.
+     - Nút `logs-toggle-btn` hiển thị icon tài liệu và huy hiệu đếm số lỗi/cảnh báo ngay cạnh nút Recompile; khi nhấp vào có thể chuyển đổi mượt mà giữa chế độ xem Logs và xem tài liệu.
+     - Khi ở tab Logs, nút "Quay lại PDF" (`back-to-pdf-btn`) được thiết kế nhỏ gọn, hoặc người dùng có thể nhấp trực tiếp vào tab "PDF preview" để quay về xem văn bản.
+     - Giảm chiều cao thanh công cụ `preview-toolbar` bên trong `PdfViewer` xuống **30px** (từ 36px), loại bỏ chữ thừa giúp tối đa hóa không gian đọc trang PDF.
+  3. **Loại bỏ hoàn toàn hàng `.preview-tabs` thừa**:
+     - Giảm tải DOM và giải phóng ngay lập tức hơn 40px chiều cao cho vùng hiển thị tài liệu.
+- **Kiểm chứng**:
+  - TypeScript typecheck (`npm run typecheck`): 0 lỗi.
+  - Next.js build (`npm run build`): Đạt 100%.
+
+## 49. Thu gọn thanh Header trong trang Editor tăng tối đa góc nhìn (06/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Trước đây, thanh tiêu đề ứng dụng (`.app-header`) dùng chung chiều cao cố định **76px** với padding lớn (30px) và khoảng cách phần tử rộng (28px).
+  - Khi người dùng vào trang editor soạn thảo văn bản, thanh header quá dày này chiếm dụng một diện tích dọc rất lớn, làm thu hẹp góc nhìn và giảm không gian làm việc của trình soạn thảo LaTeX cũng như khung preview bên dưới.
+- **Giải pháp & Chi tiết triển khai**:
+  1. **Tạo lớp điều chỉnh riêng cho chế độ Editor (`.app-header.in-editor`)**:
+     - Khi đang mở một dự án (`project !== null`), thanh header được tự động gắn thêm lớp `in-editor`.
+     - Giảm chiều cao thanh từ **76px** xuống **42px** (giải phóng ngay lập tức **34px** chiều dọc cho vùng làm việc bên dưới).
+     - Giảm padding ngang từ `30px` xuống `14px`, gap thu gọn từ `28px` xuống `12px`.
+  2. **Tối ưu tỷ lệ các thành phần bên trong Header**:
+     - **Logo Overleaf**: Thu nhỏ biểu tượng lá cây (`brand-mark`) từ 38px xuống 26px, chữ Overleaf từ 25px xuống 16px, subtitle desktop gọn gàng, cân đối.
+     - **Thanh phân cách & Tên dự án**: Thu gọn font size tên dự án xuống 13px, hỗ trợ `text-overflow: ellipsis` (tối đa 340px) tránh vỡ giao diện khi tên file/dự án dài.
+     - **Các nút chức năng (`History`, `Collaborate`, `Layout`)**: Đặt chiều cao 28px, padding 0 9px, icon 14px tinh gọn chuẩn giao diện Overleaf hiện đại.
+     - **Nút Cài đặt & Avatar**: Căn chỉnh chiều cao 28px, avatar tròn 26px font 11px sắc nét.
+     - Menu xổ xuống của Bố cục (`layout-menu`) được tính toán lại vị trí tự động `top: calc(100% + 5px)` luôn khớp hoàn hảo dưới nút.
+- **Kiểm chứng**:
+  - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
+  - Next.js static build (`npm run build`): Thành công 100%.
+
+## 50. Thu gọn thanh công cụ Word Preview tối đa hóa diện tích đọc văn bản (06/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Khi xem trước tài liệu Word (.docx), giao diện trước đó có thanh tác vụ `.native-word-actions` với các nút kích thước lớn, kèm theo một đoạn văn bản ghi chú riêng (`.native-word-note`: *"DOCX from the original converter, edited and saved directly..."*) chiếm thêm gần 30px chiều dọc.
+  - Phía dưới lại có thanh công cụ định dạng của SuperDoc, dẫn đến việc phần đầu bị chiếm dụng quá nhiều không gian dọc trước khi người dùng nhìn thấy nội dung trang Word thực sự.
+- **Giải pháp & Chi tiết triển khai**:
+  1. **Nén thanh tác vụ `.native-word-actions` xuống chiều cao 30px**:
+     - Thiết lập `height: 30px`, `padding: 0 8px`, `flex-wrap: nowrap`.
+     - Các nút bấm (`Paginated Word`, `LaTeX text sync`, `Save Word`, `Regenerate from PDF`, `Fit width`) được tinh chỉnh chiều cao **22px**, padding `0 7px`, font size **11px**, bo góc 4px gọn gàng.
+     - Trạng thái kích hoạt (`aria-pressed="true"`) giữ điểm nhấn xanh lá Overleaf với nền bán trong suốt tinh tế.
+  2. **Giải phóng hoàn toàn dòng ghi chú thừa (`.native-word-note`)**:
+     - Ẩn hoàn toàn thẻ `<p className="native-word-note">` khỏi luồng hiển thị giao diện (`display: none !important`), tiết kiệm ngay gần **30px** chiều dọc.
+     - Chuyển toàn bộ nội dung giải thích thành tooltip hover (`title`) trên phần trạng thái tệp (`.native-word-status`) kèm biểu tượng `ℹ` nhỏ gọn. Người dùng khi cần đối chiếu chỉ việc rê chuột vào sẽ đọc được đầy đủ thông tin mà không làm chật chội màn hình.
+  3. **Tối ưu thanh định dạng Word (`.native-word-toolbar`) & Warning**:
+     - Cố định đường viền phân tách mỏng, cảnh báo `.native-word-warning` thu nhỏ thành dải thông báo 1 dòng kín đáo.
+- **Kiểm chứng**:
+  - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
+  - Next.js static build (`npm run build`): Thành công 100%.
+
+## 51. Sửa lỗi viền/nền và làm sáng icon thanh công cụ Word Preview ở Dark Mode (06/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Khi xem trước Word (.docx) ở chế độ giao diện tối (Dark Mode), thanh công cụ định dạng SuperDoc xuất hiện vệt cắt màu kỳ lạ: nửa bên trái có nền trắng chói (`#fff`) trong khi nửa bên phải lộ nền tối (`#202a33`) của container cha, tạo thành một đường viền phân tách sắc cạnh (glitch) gây khó chịu cho mắt người dùng.
+  - Nguyên nhân: Thư viện SuperDoc mặc định đặt `width: 100%` và fallback `background: var(--sd-ui-toolbar-bg, var(--sd-ui-bg, #fff))`. Khi thanh công cụ bị tràn chiều ngang và cuộn (`overflow-x: auto`), phần nền trắng 100% chỉ bao phủ viewport ban đầu, còn phần nội dung tràn ra ngoài hiển thị nền của container cha.
+  - Đồng thời, các icon công cụ (danh sách, thước kẻ, cọ định dạng, căn lề, v.v.) và nhãn chữ mặc định có màu xám đậm (`#47484a`), khi hiển thị trên nền tối gần như không có độ tương phản, rất khó nhìn và khó thao tác.
+- **Giải pháp & Chi tiết triển khai**:
+  1. **Đồng nhất màu nền và loại bỏ triệt để lỗi phân tách nền / lỗi viền**:
+     - Thiết lập `.native-word-toolbar { background: var(--panel); }`.
+     - Buộc thanh công cụ SuperDoc mở rộng phủ kín toàn bộ bề rộng nội dung: `.native-word-toolbar .superdoc-toolbar { min-width: 100%; width: max-content; background: var(--panel) !important; box-sizing: border-box; }`.
+     - Nhờ đó, nền thanh công cụ luôn liền mạch một màu duy nhất từ đầu tới cuối khi cuộn ngang, xóa bỏ hoàn toàn đường viền phân chia màu trắng - tối.
+  2. **Đồng bộ hệ thống biến CSS theme SuperDoc (`--sd-ui-*`) cho Dark Mode**:
+     - Cấu hình các biến chính của SuperDoc dưới `:root[data-mode="dark"]`:
+       - `--sd-ui-bg` & `--sd-ui-toolbar-bg`: `var(--panel)` (`#202a33`).
+       - `--sd-ui-toolbar-button-text`: `#e2e8f0`.
+       - `--sd-ui-border`: `var(--line)` (`#3c4b52`).
+       - `--sd-ui-dropdown-bg`: `#202a33`.
+       - `--sd-ui-dropdown-border`: `#3c4b52`.
+       - `--sd-ui-dropdown-hover-bg`: `#2c3a46`.
+  3. **Làm sáng icon và nhãn công cụ với độ tương phản cao**:
+     - Đặt màu nút bấm `.sd-toolbar-button`, combobox `.sd-font-combobox`, nhãn chữ `.sd-button-label` và các icon SVG `.sd-toolbar-icon svg` sang tông màu bạc sáng `#d8e2ec` / `#e2e8f0` (độ tương phản đạt trên 10:1 so với nền tối `#202a33`).
+     - Tinh chỉnh icon mũi tên caret `.sd-dropdown-caret` sang màu xám sáng `#94a3b8`.
+     - Đường phân cách công cụ `.toolbar-separator .separator-inner` sử dụng tông `var(--line)` (`#3c4b52`) thanh thoát.
+     - Trạng thái hover có hiệu ứng sáng rõ (`color: #ffffff; background: rgba(255, 255, 255, 0.08)`), trạng thái active/được chọn có nền `rgba(255, 255, 255, 0.16)`.
+     - Menu xổ xuống (Dropdown Menu & Font Picker teleported ra `document.body`) cũng được áp dụng giao diện dark mode đồng bộ, viền mỏng và nền tối sang trọng.
+- **Kiểm chứng**:
+  - TypeScript typecheck (`npm run typecheck`): 0 lỗi.
+  - Next.js static build (`npm run build`): Đạt 100%.
+
+## 52. Khôi phục và nâng cấp icon mũi tên thoát dự án trong thanh Header (06/11/2026)
+
+- **Ngữ cảnh & Vấn đề**:
+  - Sau khi thu gọn thanh Header ở mục 49, người dùng phản ánh icon mũi tên thoát (`ArrowLeft`) bị biến mất khỏi thanh header khi mở dự án, khiến người dùng không thể bấm quay lại danh sách dự án bên ngoài (`media_1793949642721_6b6b955b.png`).
+  - **Nguyên nhân cốt lõi**:
+    1. Trong CSS chung, phần tử `<button>` có mặc định `justify-content: center`.
+    2. Khi tên dự án dài (ví dụ: `_Article_Hands_on_Training_for_Mitigating_vulnerabilites_Toan_`, ~60 ký tự), nội dung dài hơn `max-width: 340px`. Do thuộc tính `justify-content: center` kết hợp `overflow: hidden`, trình duyệt căn giữa nội dung tràn và đẩy lệch toàn bộ phần đầu sang bên trái ngoài vùng hiển thị.
+    3. Hậu quả là biểu tượng `<ArrowLeft />` cùng các ký tự đầu tiên (`_Arti`) bị cắt lẹm và biến mất hoàn toàn khỏi tầm nhìn.
+- **Giải pháp & Chi tiết triển khai**:
+  1. **Tách biệt cấu trúc icon thoát `.project-breadcrumb-back` và tiêu đề `.project-breadcrumb-title`**:
+     - Trong [`page.tsx`](file:///d:/Overleaf-app/apps/frontend/app/page.tsx), gói icon `ArrowLeft` trong `<span className="project-breadcrumb-back">` với `flex-shrink: 0`.
+     - Tên dự án được đặt trong `<span className="project-breadcrumb-title">` riêng biệt.
+  2. **Cấu hình căn lề trái chuẩn xác (`justify-content: flex-start !important`)**:
+     - Thiết lập `.project-breadcrumb` luôn căn trái tuyệt đối (`justify-content: flex-start !important; text-align: left;`).
+     - Đặt `min-width: 0`, `max-width: 380px` cho toàn khối breadcrumb.
+     - Đặt `overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;` trên `.project-breadcrumb-title`. Nhờ đó, tên dự án luôn hiển thị đầy đủ từ chữ cái đầu tiên và chỉ thu gọn bằng dấu `...` ở phần đuôi nếu vượt quá chiều rộng cho phép.
+  3. **Thiết kế nút icon thoát dạng pill trực quan, dễ thao tác**:
+     - `.project-breadcrumb-back` có kích thước cố định 24x24px, bo góc 4px với nền nhẹ `rgba(255, 255, 255, 0.08)`.
+     - Khi rê chuột vào (hover), nút nổi bật rõ ràng, chuyển màu sang xanh lá Overleaf (`var(--green)`) kèm hiệu ứng đẩy nhẹ sang trái (`transform: translateX(-1px)`), tạo cảm giác phản hồi hành động quay lại rất trực quan.
+     - Bổ sung `title` và `aria-label` giải thích rõ ràng ("Thoát về danh sách dự án" / "Thoát ra ngoài").
+- **Kiểm chứng**:
+  - TypeScript typecheck (`tsc --noEmit`): 0 lỗi.
+  - Next.js static build (`npm run build`): Thành công 100%.
+
+
+## 53. Sửa môi trường compile ZIP Optica (06/11/2026)
+
+Đã nhập đúng `D:\download\Universal_manuscript_template_for_Optica_Publishing_Group_journals.zip` bằng `ProjectIO.import_project` vào home kiểm thử riêng `target/optica-zip-repro-01`. ZIP có class `optica-article.cls`, style, hai ảnh PDF và bibliography đầy đủ. Import tạo main.tex từ Optica-template.tex theo cơ chế hiện tại; không sửa ZIP hoặc mã LaTeX.
+
+Tái hiện đúng ảnh: class gọi `xcolor[table]` nên cần `colortbl.sty`, nhưng TinyTeX tối thiểu chưa có. Sau khi cài gói đầu tiên, các lượt compile tiếp tục phát hiện thiếu silence/newtx/lastpage/cite, dependency xpatch/xstring/fontaxes/mweights, scalefnt và centernot, rồi thiếu font metric Courier và TeX Gyre. Đã xác định scalefnt thuộc package `carlisle`, centernot thuộc `oberdiek` bằng tlmgr search --global --file; không giả định tên .sty luôn bằng tên package.
+
+Đã cài các gói/font vào **target/TinyTeX**. Thêm `scripts/install-optica-tex.ps1` để máy khác có TinyTeX local chuẩn bị cùng bộ dependency: dùng Perl đi kèm, tlmgr install tên package thật, kiểm kpsewhich cho các .sty và font TFM, trả lỗi khi cài/kiểm tra thất bại, khôi phục PATH/PERL5LIB. Chỉ thao tác TinyTeX local trong repo, không đổi TeX hệ thống. README có lệnh PowerShell và yêu cầu mạng; package đã cài trong target không đi theo Git nên máy khác cần chạy script sau khi nhận source.
+
+Không cần thay mã compiler, Error Explainer hoặc tắt kiểm tra lỗi. Compiler hiện có marker failed/-g để retry sau khi cài package mà không phải sửa nguồn hoặc xóa dự án.
+
+Validation: imported ZIP compiled through the application Compiler using pdfLaTeX: 7 pages, 453867 bytes, 3984 ms, verified current snapshot. Evidence: target/optica-zip-repro-01/report.json, events-before.json, events-after.json and preview-page-1.png. No missing characters or undefined references/citations in final log. Remaining non-fatal warning: TS1/phv/b/sc font shape unavailable, default shape substituted by TeX. PowerShell installer syntax and real installation/probes passed; no frontend rebuild needed for this environment-only fix.
+
+
+## 54. Compile nhiều tệp gốc và tab Editor/PDF/Word trong một dự án (06/11/2026)
+
+**Hành vi:** ô **Tệp biên dịch / Compile file** chọn bất kỳ `.tex` trong dự án, ví dụ `ielts_report.tex`; Recompile, F5, Ctrl/Cmd+Enter và Auto Compile dùng đúng lựa chọn. Mở file có `\documentclass` sẽ tự chọn file đó. Mở đoạn nội dung dùng input/include giữ root đang chọn; fragment không có preamble vẫn cần compile qua tài liệu gốc. Không thay metadata `project.main` của dự án.
+
+**Frontend M1:** `page.tsx` có hai dãy tab nguồn và output (`main.pdf`, `ielts_report.pdf`, `ielts_report.docx`...), nút đóng, cuộn ngang và tooltip đường dẫn đầy đủ. Giữ ít nhất một tab nguồn. Đổi/đóng tab lưu nguồn và flush Word trước; lỗi lưu sẽ giữ tab đang làm. Cache PDF, snapshot, geometry và log theo root trong phiên; chuyển tab khôi phục bản tương ứng, không lấy PDF cuối cùng của cả project. Ghi nhớ cursor/scroll của editor theo file; editor riêng theo key tránh dùng chung undo qua hai file. Chuyển file khóa nhập tạm thời, có token chống response cũ ghi đè lựa chọn mới, chặn compile trong lúc tải file. History restore thêm lại source tab; tab không còn tồn tại được lọc khi đổi file/cập nhật cây. Tab/cache PDF reset khi mở dự án khác; dữ liệu nguồn/DOCX đã lưu vẫn nằm trên đĩa.
+
+`useParity.ts` truyền root vào watch, khóa auto-compile theo project/root/engine/revision, bỏ response watch sai root/file sau khi đổi tab. Cửa sổ PDF tách riêng nhận root đang xem thay vì luôn theo PDF cuối project. Download đặt tên theo root. CSS tab có active indicator, màu theo theme và nút đóng độc lập; không thay bố cục sidebar/Review/IELTS đang có.
+
+**Backend M2:** CompileBody thêm `main` tùy chọn, mặc định vẫn `project.main` để tương thích caller cũ. Compiler.start kiểm `.tex`, đường dẫn và file có thật, Job giữ root cố định. Root mặc định vẫn ghi `build/main.*`; root khác ghi trong `build/targets/<hash-full-path>/`, tránh đè PDF/aux/SyncTeX khi hai thư mục đều có main.tex. Mỗi Snapshot mang main, documents cache theo (project, main); lỗi/recompile chỉ vô hiệu snapshot của root đó, không xóa kết quả root khác. Preview/geometry/export/SyncTeX tìm đúng snapshot theo ID. Watch cache cũng theo root; kiểm nguồn/export vẫn dùng fingerprint toàn dự án, nên sửa một file dùng chung hoặc file khác có thể khiến preview cũ bị đánh dấu stale một cách bảo thủ.
+
+**Word:** `docx_workspace.py` tách draft/revision/checksum theo root; tệp chính giữ `.overleaf-docx/` để không mất draft cũ, root khác dùng `.overleaf-docx-<hash>/`. POST preview nhận snapshot đúng root; GET/PUT revision thêm query main. Native/browser export lấy đúng DOCX đã sửa của root, tên tải xuống theo tệp, native dialog kiểm lại revision tương ứng. Draft có sẵn được xem/sửa tiếp khi nguồn stale, nhưng chuyển đổi mới và download vẫn cần verified PDF. Chế độ Word phân trang hỗ trợ mọi root; chế độ đồng bộ chữ LaTeX/Pandoc cũ chỉ cho project.main, nút có giải thích khi root khác. Không tuyên bố đồng bộ DOCX đầy đủ ngược về LaTeX hoặc tăng fidelity của converter gốc trong thay đổi này.
+
+**Kiểm chứng backend:** full suite **144 pytest đạt**. `test_multidocument.py` kiểm hai root cùng basename, không đè output, giữ preview/API/watch của cả hai, lỗi root B không xóa root A, từ chối traversal/file không phải .tex; kiểm sửa Word report không sửa Word main, revision không dùng chéo và stale chặn download. Sau bổ sung xem draft stale, nhóm tests multi-document + DOCX chạy lại **5 đạt**.
+
+**Compile thật:** `target/multidoc-real-01/report.json` ghi main.tex, ielts_report.tex sinh bởi IeltsManager và nested/main.tex đều compile pdfLaTeX, nội dung PDF khác nhau đúng nguồn và vẫn verified sau khi compile root khác. Query SyncTeX forward của report trả tọa độ hợp lệ. Khi tái hiện IELTS phát hiện TinyTeX local thiếu tcolorbox; đã cài tcolorbox/environ/trimspaces rồi compile lại thành công, không sửa source báo cáo để né dependency. Các gói local này không đi theo Git; README nêu yêu cầu cho máy khác.
+
+Browser integration mới: `apps/frontend/scripts/test-document-tabs.mjs`, chạy với Python executable và một home mới. Kiểm main/report compile riêng, PDF/Word tabs, sửa Word → đổi main → quay lại report vẫn giữ chữ; Word main không có chữ của report; tải report.docx trùng bytes draft report; sửa nguồn/đổi tab được lưu và đóng tab chuyển sang output còn lại. Bằng chứng `target/multidoc-ui-05/document-tabs.png`, `document-tabs-word.png`, `edited-report.docx`. Production build/TypeScript và kiểm whitespace các file sửa đạt. Đã cập nhật selector regression cũ để phân biệt file tree với source tabs có cùng tên/tooltip.
+
+Final browser checks: multidoc-ui-06 passed (including closing source/output tabs and reviewing saved Word after source changes); multidoc-regression-02 passed existing features; multidoc-pdf-regression-01 passed 3-page PDF/link/exact-export/stale/error guards. Logs use the selected compile root when no explicit source filename is present. No commit or push performed.

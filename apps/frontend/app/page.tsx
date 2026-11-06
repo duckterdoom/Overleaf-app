@@ -47,6 +47,7 @@ import {
     type Entry,
     type Project,
     type Template,
+    type PageGeometry,
 } from "../lib/api";
 
 import AuthView from "../components/AuthView";
@@ -71,6 +72,14 @@ import ReviewPanel, { type ReviewAnchor } from "../components/ReviewPanel";
 import { reviewHighlights } from "../lib/reviewHighlights";
 const latex = StreamLanguage.define(stex);
 type Dialog = "project" | "file" | "folder" | null;
+type ResultTab = { main: string; format: "pdf" | "word" };
+type DocumentResult = {
+    pdf: Uint8Array;
+    snapshot: string;
+    stale: boolean;
+    logs: string;
+    geometry: PageGeometry[];
+};
 const fold = (text: string) =>
     text
         .normalize("NFD")
@@ -131,6 +140,17 @@ export default function Workspace() {
     );
     const [downloadMenu, setDownloadMenu] = useState(false);
     const [wordExporting, setWordExporting] = useState(false);
+    const [sourceTabs, setSourceTabs] = useState<string[]>([]);
+    const [fileLoading, setFileLoading] = useState(false);
+    const [compileTarget, setCompileTarget] = useState("");
+    const [resultTabs, setResultTabs] = useState<ResultTab[]>([]);
+    const results = useRef<Record<string, DocumentResult>>({});
+    const positions = useRef<
+        Record<
+            string,
+            { anchor: number; head: number; top: number; left: number }
+        >
+    >({});
     const wordPreview = useRef<WordPreviewHandle | null>(null);
     useEffect(() => {
         setSidePanel("files");
@@ -138,12 +158,25 @@ export default function Workspace() {
         setPreviewTab("pdf");
         setDownloadMenu(false);
     }, [project?.id]);
+    useEffect(() => {
+        setSourceTabs((tabs) =>
+            tabs.filter(
+                (path) =>
+                    path === file ||
+                    entries.some(
+                        (entry) => !entry.directory && entry.path === path,
+                    ),
+            ),
+        );
+    }, [entries, file]);
     const outlinePane = useRef<HTMLDivElement>(null);
     const revision = useRef(0),
         view = useRef<EditorView | null>(null),
         logPane = useRef<HTMLPreElement>(null);
     const savedText = useRef("");
     const buildInFlight = useRef(false);
+    const fileOperation = useRef(0);
+    const openingFile = useRef(false);
     const text = (message: unknown) =>
         message instanceof Error ? message.message : String(message);
     useEffect(() => {
@@ -220,6 +253,8 @@ export default function Workspace() {
     });
     async function open(project: Project) {
         if (busy || (dirty && !(await save()))) return;
+        if (wordPreview.current && !(await wordPreview.current.flush())) return;
+        fileOperation.current++;
         try {
             await ext.leaveBeforeOpen(project.id);
             const [entries, source] = await Promise.all([
@@ -229,6 +264,13 @@ export default function Workspace() {
                 ),
             ]);
             setProject(project);
+            results.current = {};
+            positions.current = {};
+            setSourceTabs([project.main]);
+            setFileLoading(false);
+            openingFile.current = false;
+            setResultTabs([]);
+            setCompileTarget(project.main);
             setEngine(project.engine);
             setEntries(entries);
             setFile(project.main);
@@ -248,7 +290,7 @@ export default function Workspace() {
         }
     }
     async function openFile(entry: Entry) {
-        if (busy) return;
+        if (busy || wordExporting) return;
         if (entry.directory) {
             setFolder(entry.path);
             return;
@@ -271,21 +313,52 @@ export default function Workspace() {
             return;
         }
         if (dirty && !(await save())) return;
+        if (wordPreview.current && !(await wordPreview.current.flush())) return;
+        const operation = ++fileOperation.current;
+        const sourceRevision = revision.current;
+        openingFile.current = true;
+        setFileLoading(true);
         try {
             const source = await json<{ content: string }>(
                 `/projects/${project!.id}/file?path=${encodeURIComponent(entry.path)}`,
             );
+            if (operation !== fileOperation.current) return;
+            if (buildInFlight.current) return;
+            if (revision.current !== sourceRevision) return;
+            const editor = view.current;
+            if (editor && file)
+                positions.current[file] = {
+                    anchor: editor.state.selection.main.anchor,
+                    head: editor.state.selection.main.head,
+                    top: editor.scrollDOM.scrollTop,
+                    left: editor.scrollDOM.scrollLeft,
+                };
             setFile(entry.path);
+            revision.current++;
+            setSourceTabs((tabs) =>
+                tabs.includes(entry.path) ? tabs : [...tabs, entry.path],
+            );
             setContent(source.content);
             savedText.current = source.content;
             setDirty(false);
+            if (
+                /\.tex$/i.test(entry.path) &&
+                /^\s*\\documentclass(?:\s|\[|\{)/m.test(source.content)
+            )
+                activateTarget(entry.path);
             setFolder(
                 entry.path.includes("/")
                     ? entry.path.slice(0, entry.path.lastIndexOf("/"))
                     : "",
             );
+            return true;
         } catch (error) {
             setError(text(error));
+        } finally {
+            if (operation === fileOperation.current) {
+                openingFile.current = false;
+                setFileLoading(false);
+            }
         }
     }
     function change(value: string) {
@@ -295,6 +368,8 @@ export default function Workspace() {
         setContent(value);
         setDirty(value !== savedText.current);
         setStale(true);
+        for (const result of Object.values(results.current))
+            result.stale = true;
     }
     async function submit(event: React.FormEvent) {
         event.preventDefault();
@@ -352,6 +427,7 @@ export default function Workspace() {
     async function build() {
         if (
             !project ||
+            openingFile.current ||
             busy ||
             buildInFlight.current ||
             ext.readonly ||
@@ -370,42 +446,64 @@ export default function Workspace() {
         setBusy(true);
         setStale(true);
         setError("");
-        setLogs(`[BUILD] ${engine}\n`);
+        setLogs(`[BUILD] ${engine} | ${compileTarget}\n`);
         setNotice("Đang biên dịch…");
         let complete: Promise<void> = Promise.resolve();
         try {
-            await compile(project.id, engine, (event) => {
-                if (event.type === "output")
-                    setLogs((log) => (log + event.text).slice(-180000));
-                if (event.type === "error") {
-                    ext.setIssues(event.issues || []);
-                    setError(event.message || "Biên dịch thất bại.");
-                    setLogs((log) => log + `\n[ERROR] ${event.message}\n`);
-                    setNotice("Biên dịch chưa thành công.");
-                }
-                if (event.type === "done") {
-                    complete = (async () => {
-                        const response = await request(
-                            `/projects/${project.id}/preview/${event.snapshot}`,
-                        );
-                        setPdf(new Uint8Array(await response.arrayBuffer()));
-                        setSnapshot(event.snapshot || "");
-                        ext.setGeometry(event.geometry || []);
-                        void refreshActivity();
-                        const current =
-                            Boolean(event.current) &&
-                            ticket === revision.current;
-                        setStale(!current);
-                        setNotice(
-                            current
-                                ? `Biên dịch thành công · ${event.duration_ms} ms`
-                                : "Nguồn đã đổi. Cần biên dịch lại trước khi xuất.",
-                        );
-                    })();
-                    // Attach a handler immediately; the same promise is awaited below to report errors.
-                    void complete.catch(() => {});
-                }
-            });
+            await compile(
+                project.id,
+                engine,
+                (event) => {
+                    if (event.type === "output")
+                        setLogs((log) => (log + event.text).slice(-180000));
+                    if (event.type === "error") {
+                        ext.setIssues(event.issues || []);
+                        setError(event.message || "Biên dịch thất bại.");
+                        setLogs((log) => log + `\n[ERROR] ${event.message}\n`);
+                        setNotice("Biên dịch chưa thành công.");
+                    }
+                    if (event.type === "done") {
+                        complete = (async () => {
+                            const response = await request(
+                                `/projects/${project.id}/preview/${event.snapshot}`,
+                            );
+                            setPdf(
+                                new Uint8Array(await response.arrayBuffer()),
+                            );
+                            setSnapshot(event.snapshot || "");
+                            setResultTabs((tabs) =>
+                                tabs.some(
+                                    (tab) =>
+                                        tab.main === compileTarget &&
+                                        tab.format === "pdf",
+                                )
+                                    ? tabs
+                                    : [
+                                          ...tabs,
+                                          {
+                                              main: compileTarget,
+                                              format: "pdf",
+                                          },
+                                      ],
+                            );
+                            ext.setGeometry(event.geometry || []);
+                            void refreshActivity();
+                            const current =
+                                Boolean(event.current) &&
+                                ticket === revision.current;
+                            setStale(!current);
+                            setNotice(
+                                current
+                                    ? `Biên dịch thành công · ${event.duration_ms} ms`
+                                    : "Nguồn đã đổi. Cần biên dịch lại trước khi xuất.",
+                            );
+                        })();
+                        // Attach a handler immediately; the same promise is awaited below to report errors.
+                        void complete.catch(() => {});
+                    }
+                },
+                compileTarget,
+            );
             await complete;
         } catch (error) {
             setError(text(error));
@@ -416,7 +514,15 @@ export default function Workspace() {
         }
     }
     async function exportPdf() {
-        if (!project || !snapshot || stale || dirty || busy) return;
+        if (
+            !project ||
+            !snapshot ||
+            stale ||
+            dirty ||
+            busy ||
+            openingFile.current
+        )
+            return;
         try {
             if (window.pywebview?.api) {
                 const result = await window.pywebview.api.export_pdf(
@@ -433,7 +539,9 @@ export default function Workspace() {
                 const url = URL.createObjectURL(blob),
                     anchor = document.createElement("a");
                 anchor.href = url;
-                anchor.download = "main.pdf";
+                anchor.download = (
+                    compileTarget.split("/").pop() || "main.tex"
+                ).replace(/\.tex$/i, ".pdf");
                 anchor.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
             }
@@ -443,7 +551,15 @@ export default function Workspace() {
         }
     }
     async function exportWord() {
-        if (!project || !snapshot || stale || dirty || busy || wordExporting)
+        if (
+            !project ||
+            !snapshot ||
+            stale ||
+            dirty ||
+            busy ||
+            openingFile.current ||
+            wordExporting
+        )
             return;
         setWordExporting(true);
         setError("");
@@ -474,7 +590,9 @@ export default function Workspace() {
                 const url = URL.createObjectURL(await response.blob()),
                     anchor = document.createElement("a");
                 anchor.href = url;
-                anchor.download = "main.docx";
+                anchor.download = (
+                    compileTarget.split("/").pop() || "main.tex"
+                ).replace(/\.tex$/i, ".docx");
                 anchor.click();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
                 setNotice(t("Đã xuất Word từ PDF.", "Word exported from PDF."));
@@ -517,6 +635,7 @@ export default function Workspace() {
         busy,
         engine,
         snapshot,
+        compileTarget,
         stale,
         setProject,
         setProjects,
@@ -527,6 +646,7 @@ export default function Workspace() {
         setStale,
         setPdf,
         setSnapshot,
+        setCompileTarget,
         setNotice,
         setError,
         setLayout,
@@ -542,11 +662,96 @@ export default function Workspace() {
         revision,
         buildInFlight,
     });
+    useEffect(() => {
+        if (compileTarget && pdf && snapshot)
+            results.current[compileTarget] = {
+                pdf,
+                snapshot,
+                stale,
+                logs,
+                geometry: ext.geometry,
+            };
+    }, [compileTarget, pdf, snapshot, stale, logs, ext.geometry]);
+    useEffect(() => {
+        if (compileTarget && snapshot && previewTab === "word")
+            setResultTabs((tabs) =>
+                tabs.some(
+                    (tab) =>
+                        tab.main === compileTarget && tab.format === "word",
+                )
+                    ? tabs
+                    : [...tabs, { main: compileTarget, format: "word" }],
+            );
+    }, [compileTarget, snapshot, previewTab]);
+    function activateTarget(main: string) {
+        if (main === compileTarget) return;
+        const cached = results.current[main];
+        setCompileTarget(main);
+        setPdf(cached?.pdf || null);
+        setSnapshot(cached?.snapshot || "");
+        setStale(true);
+        setLogs(cached?.logs || "");
+        ext.setGeometry(cached?.geometry || []);
+        ext.setIssues([]);
+        setError("");
+    }
+    async function selectTarget(main: string) {
+        if (
+            busy ||
+            openingFile.current ||
+            wordExporting ||
+            main === compileTarget
+        )
+            return;
+        if (wordPreview.current && !(await wordPreview.current.flush())) return;
+        if (dirty && !(await save())) return;
+        activateTarget(main);
+    }
+    async function selectResult(tab: ResultTab) {
+        if (busy || openingFile.current || wordExporting) return;
+        if (wordPreview.current && !(await wordPreview.current.flush())) return;
+        if (dirty && !(await save())) return;
+        const entry = entries.find((item) => item.path === tab.main);
+        if (entry && file !== tab.main && !(await openFile(entry))) return;
+        activateTarget(tab.main);
+        setPreviewTab(tab.format);
+    }
+    async function closeSource(path: string) {
+        if (busy || openingFile.current || sourceTabs.length <= 1) return;
+        if (path === file) {
+            const next =
+                sourceTabs[sourceTabs.indexOf(path) - 1] ||
+                sourceTabs.find((item) => item !== path)!;
+            const entry = entries.find((item) => item.path === next);
+            if (!entry) return;
+            if (!(await openFile(entry))) return;
+        }
+        setSourceTabs((tabs) => tabs.filter((item) => item !== path));
+    }
+    async function closeResult(tab: ResultTab) {
+        if (busy || openingFile.current || wordExporting) return;
+        if (wordPreview.current && !(await wordPreview.current.flush())) return;
+        const remaining = resultTabs.filter(
+            (item) => item.main !== tab.main || item.format !== tab.format,
+        );
+        if (tab.main === compileTarget && tab.format === previewTab) {
+            if (remaining.length)
+                await selectResult(remaining[remaining.length - 1]);
+            else {
+                setPreviewTab("pdf");
+                setPdf(null);
+                setSnapshot("");
+                setStale(true);
+                ext.setGeometry([]);
+            }
+        }
+        setResultTabs(remaining);
+    }
     const uiLanguage = String(ext.settings.language || "vi"),
         t = translator(uiLanguage);
     const logEntries = useMemo(
-        () => parseAllLogs(ext.issues, logs, file, uiLanguage),
-        [ext.issues, logs, file, uiLanguage],
+        () => parseAllLogs(ext.issues, logs, compileTarget || file, uiLanguage),
+        [ext.issues, logs, compileTarget, file, uiLanguage],
     );
     const logCounts = useMemo(() => {
         const errors = logEntries.filter((i) => i.type === "error").length;
@@ -738,6 +943,14 @@ export default function Workspace() {
                 onClose={ext.closeHistory}
                 onRestore={(path, value) => {
                     setFile(path);
+                    setSourceTabs((tabs) =>
+                        tabs.includes(path) ? tabs : [...tabs, path],
+                    );
+                    if (
+                        /\.tex$/i.test(path) &&
+                        /^\s*\\documentclass(?:\s|\[|\{)/m.test(value)
+                    )
+                        activateTarget(path);
                     setContent(value);
                     savedText.current = value;
                     revision.current++;
@@ -752,7 +965,7 @@ export default function Workspace() {
             data-desktop-ready={ready && ext.loaded}
             className={`desktop-shell ${ext.focus ? "focus-mode" : ""} ${ext.detached ? "detached-pdf" : ""}`}
         >
-            <header className="app-header">
+            <header className={`app-header ${project ? "in-editor" : ""}`}>
                 <div className="brand">
                     <span className="brand-mark">
                         <Leaf size={23} />
@@ -766,17 +979,36 @@ export default function Workspace() {
                         <span className="header-divider" />
                         <button
                             className="project-breadcrumb"
+                            title={t(
+                                "Quay lại danh sách dự án (Thoát)",
+                                "Back to projects (Exit)",
+                            )}
+                            aria-label={t(
+                                "Quay lại danh sách dự án (Thoát)",
+                                "Back to projects (Exit)",
+                            )}
                             disabled={busy}
                             onClick={async () => {
-                                if (wordPreview.current && !(await wordPreview.current.flush())) return;
+                                if (
+                                    wordPreview.current &&
+                                    !(await wordPreview.current.flush())
+                                )
+                                    return;
                                 if (dirty && !(await save())) return;
                                 await ext.leaveBeforeOpen("");
                                 setProject(null);
                                 setProjects(await json<Project[]>("/projects"));
                             }}
                         >
-                            <ArrowLeft size={16} />
-                            {project.title}
+                            <span
+                                className="project-breadcrumb-back"
+                                title={t("Thoát ra ngoài", "Exit to projects")}
+                            >
+                                <ArrowLeft size={15} />
+                            </span>
+                            <span className="project-breadcrumb-title">
+                                {project.title}
+                            </span>
                         </button>
                         <div className="header-spacer" />
                         <span className="local-pill">
@@ -786,7 +1018,13 @@ export default function Workspace() {
                         <button
                             className="quiet"
                             disabled={busy}
-                            onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) await ext.showHistory(); }}
+                            onClick={async () => {
+                                if (
+                                    !wordPreview.current ||
+                                    (await wordPreview.current.flush())
+                                )
+                                    await ext.showHistory();
+                            }}
                         >
                             <Clock3 size={17} />
                             {t("Lịch sử", "History")}
@@ -829,7 +1067,11 @@ export default function Workspace() {
                                         <button
                                             key={value}
                                             onClick={async () => {
-                                                if (wordPreview.current && !(await wordPreview.current.flush())) return;
+                                                if (
+                                                    wordPreview.current &&
+                                                    !(await wordPreview.current.flush())
+                                                )
+                                                    return;
                                                 ext.layout(value);
                                                 setLayoutMenu(false);
                                             }}
@@ -1554,20 +1796,66 @@ export default function Workspace() {
                     >
                         {layout !== "pdf" && (
                             <section className="editor-column">
-                                <div className="file-tab">
-                                    <span>
-                                        <FileText size={14} />
-                                        {file}
-                                        {dirty && <i />}
-                                    </span>
-                                    <small>UTF-8 · LaTeX</small>
+                                <div
+                                    className="document-tabs source-tabs"
+                                    role="tablist"
+                                    aria-label={t(
+                                        "Các tệp đang mở",
+                                        "Open source files",
+                                    )}
+                                >
+                                    {sourceTabs.map((path) => (
+                                        <div
+                                            key={path}
+                                            className={`document-tab ${file === path ? "active" : ""}`}
+                                        >
+                                            <button
+                                                role="tab"
+                                                aria-selected={file === path}
+                                                title={path}
+                                                disabled={busy}
+                                                onClick={() => {
+                                                    const entry = entries.find(
+                                                        (item) =>
+                                                            item.path === path,
+                                                    );
+                                                    if (entry)
+                                                        void openFile(entry);
+                                                }}
+                                            >
+                                                <FileText size={14} />
+                                                <span>{path}</span>
+                                                {file === path && dirty && (
+                                                    <i className="unsaved-dot" />
+                                                )}
+                                            </button>
+                                            {sourceTabs.length > 1 && (
+                                                <button
+                                                    className="close-document-tab"
+                                                    aria-label={t(
+                                                        `Đóng ${path}`,
+                                                        `Close ${path}`,
+                                                    )}
+                                                    disabled={busy}
+                                                    onClick={() =>
+                                                        void closeSource(path)
+                                                    }
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))}
+                                    <small className="source-encoding">
+                                        UTF-8 · LaTeX
+                                    </small>
                                 </div>
                                 <EditorToolbar
                                     editor={view}
                                     project={project.id}
                                     file={file}
                                     language={uiLanguage}
-                                    readonly={ext.readonly}
+                                    readonly={ext.readonly || fileLoading}
                                     dirty={dirty}
                                     save={() => void save()}
                                     onError={setError}
@@ -1592,6 +1880,7 @@ export default function Workspace() {
                                 <div className="editor-review-row">
                                     <div className="editor-area">
                                         <CodeMirror
+                                            key={file}
                                             className="source-editor"
                                             value={content}
                                             height="100%"
@@ -1600,7 +1889,9 @@ export default function Workspace() {
                                                     ? "dark"
                                                     : "light"
                                             }
-                                            readOnly={ext.readonly}
+                                            readOnly={
+                                                ext.readonly || fileLoading
+                                            }
                                             extensions={[
                                                 latex,
                                                 reviewHighlights,
@@ -1611,6 +1902,32 @@ export default function Workspace() {
                                             onChange={change}
                                             onCreateEditor={(editor) => {
                                                 view.current = editor;
+                                                const saved =
+                                                    positions.current[file];
+                                                if (saved) {
+                                                    editor.dispatch({
+                                                        selection: {
+                                                            anchor: Math.min(
+                                                                saved.anchor,
+                                                                editor.state.doc
+                                                                    .length,
+                                                            ),
+                                                            head: Math.min(
+                                                                saved.head,
+                                                                editor.state.doc
+                                                                    .length,
+                                                            ),
+                                                        },
+                                                    });
+                                                    requestAnimationFrame(
+                                                        () => {
+                                                            editor.scrollDOM.scrollTop =
+                                                                saved.top;
+                                                            editor.scrollDOM.scrollLeft =
+                                                                saved.left;
+                                                        },
+                                                    );
+                                                }
                                             }}
                                             onUpdate={(update) => {
                                                 if (
@@ -1666,8 +1983,104 @@ export default function Workspace() {
                         )}
                         {layout !== "editor" && (
                             <section className="preview-column">
+                                {resultTabs.length > 0 && (
+                                    <div
+                                        className="document-tabs output-tabs"
+                                        role="tablist"
+                                        aria-label={t(
+                                            "Các bản xem trước",
+                                            "Compiled documents",
+                                        )}
+                                    >
+                                        {resultTabs.map((tab) => (
+                                            <div
+                                                key={tab.main + tab.format}
+                                                className={`document-tab ${compileTarget === tab.main && previewTab === tab.format ? "active" : ""}`}
+                                            >
+                                                <button
+                                                    role="tab"
+                                                    aria-selected={
+                                                        compileTarget ===
+                                                            tab.main &&
+                                                        previewTab ===
+                                                            tab.format
+                                                    }
+                                                    title={`${tab.main} → ${tab.format === "pdf" ? "PDF" : "Word"}`}
+                                                    disabled={
+                                                        busy || wordExporting
+                                                    }
+                                                    onClick={() =>
+                                                        void selectResult(tab)
+                                                    }
+                                                >
+                                                    <FileText size={14} />
+                                                    <span>
+                                                        {tab.main.replace(
+                                                            /\.tex$/i,
+                                                            tab.format === "pdf"
+                                                                ? ".pdf"
+                                                                : ".docx",
+                                                        )}
+                                                    </span>
+                                                </button>
+                                                <button
+                                                    className="close-document-tab"
+                                                    aria-label={t(
+                                                        `Đóng bản xem ${tab.main} ${tab.format}`,
+                                                        `Close preview ${tab.main} ${tab.format}`,
+                                                    )}
+                                                    disabled={
+                                                        busy || wordExporting
+                                                    }
+                                                    onClick={() =>
+                                                        void closeResult(tab)
+                                                    }
+                                                >
+                                                    <X size={13} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="compile-toolbar">
                                     <div className="inline-controls">
+                                        <select
+                                            className="compile-target-select"
+                                            aria-label={t(
+                                                "Tệp biên dịch",
+                                                "Compile file",
+                                            )}
+                                            title={compileTarget}
+                                            value={compileTarget}
+                                            disabled={
+                                                busy ||
+                                                fileLoading ||
+                                                wordExporting ||
+                                                ext.network.joined
+                                            }
+                                            onChange={(event) =>
+                                                void selectTarget(
+                                                    event.target.value,
+                                                )
+                                            }
+                                        >
+                                            {entries
+                                                .filter(
+                                                    (entry) =>
+                                                        !entry.directory &&
+                                                        /\.tex$/i.test(
+                                                            entry.path,
+                                                        ),
+                                                )
+                                                .map((entry) => (
+                                                    <option
+                                                        key={entry.path}
+                                                        value={entry.path}
+                                                    >
+                                                        {entry.path}
+                                                    </option>
+                                                ))}
+                                        </select>
                                         <select
                                             aria-label={localize(
                                                 "Engine biên dịch",
@@ -1692,7 +2105,11 @@ export default function Workspace() {
                                         </select>
                                         <button
                                             className="primary compile-button"
-                                            disabled={busy || ext.readonly}
+                                            disabled={
+                                                busy ||
+                                                fileLoading ||
+                                                ext.readonly
+                                            }
                                             onClick={() => void build()}
                                         >
                                             {busy ? (
@@ -1724,10 +2141,59 @@ export default function Workspace() {
                                                 )}
                                                 onClick={() => void ext.stop()}
                                             >
-                                                <Square size={15} />
+                                                <Square size={13} />
                                             </button>
                                         )}
-                                        {previewTab === "logs" ? (
+                                        <button
+                                            className={`logs-toggle-btn ${logBadgeClass} ${previewTab === "logs" ? "active" : ""}`}
+                                            title={t(
+                                                "Xem nhật ký biên dịch và lỗi",
+                                                "Logs and output files",
+                                            )}
+                                            aria-label={t(
+                                                "Nhật ký và lỗi",
+                                                "Logs and errors",
+                                            )}
+                                            onClick={async () => {
+                                                if (previewTab === "logs") {
+                                                    setPreviewTab("pdf");
+                                                } else {
+                                                    if (
+                                                        !wordPreview.current ||
+                                                        (await wordPreview.current.flush())
+                                                    ) {
+                                                        setPreviewTab("logs");
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <div className="logs-doc-icon">
+                                                <svg
+                                                    width="16"
+                                                    height="18"
+                                                    viewBox="0 0 18 20"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                    <path
+                                                        d="M3 2C2.44772 2 2 2.44772 2 3V17C2 17.5523 2.44772 18 3 18H15C15.5523 18 16 17.5523 16 17V7L11 2H3Z"
+                                                        fill="#ffffff"
+                                                        stroke="#b5c0cb"
+                                                        strokeWidth="1.2"
+                                                    />
+                                                    <path
+                                                        d="M11 2V7H16"
+                                                        stroke="#b5c0cb"
+                                                        strokeWidth="1.2"
+                                                        strokeLinejoin="round"
+                                                    />
+                                                </svg>
+                                                <span className="logs-badge-num">
+                                                    {logBadgeCount}
+                                                </span>
+                                            </div>
+                                        </button>
+                                        {previewTab === "logs" && (
                                             <button
                                                 className="back-to-pdf-btn"
                                                 title={t(
@@ -1743,145 +2209,163 @@ export default function Workspace() {
                                                     "Back to PDF",
                                                 )}
                                             </button>
-                                        ) : (
-                                            <button
-                                                className={`logs-toggle-btn ${logBadgeClass}`}
-                                                title={t(
-                                                    "Xem nhật ký biên dịch và lỗi",
-                                                    "Logs and output files",
-                                                )}
-                                                aria-label={t(
-                                                    "Nhật ký và lỗi",
-                                                    "Logs and errors",
-                                                )}
-                                                onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) setPreviewTab("logs"); }}
-                                            >
-                                                <div className="logs-doc-icon">
-                                                    <svg
-                                                        width="18"
-                                                        height="20"
-                                                        viewBox="0 0 18 20"
-                                                        fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg"
-                                                    >
-                                                        <path
-                                                            d="M3 2C2.44772 2 2 2.44772 2 3V17C2 17.5523 2.44772 18 3 18H15C15.5523 18 16 17.5523 16 17V7L11 2H3Z"
-                                                            fill="#ffffff"
-                                                            stroke="#b5c0cb"
-                                                            strokeWidth="1.2"
-                                                        />
-                                                        <path
-                                                            d="M11 2V7H16"
-                                                            stroke="#b5c0cb"
-                                                            strokeWidth="1.2"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    </svg>
-                                                    <span className="logs-badge-num">
-                                                        {logBadgeCount}
-                                                    </span>
-                                                </div>
-                                            </button>
                                         )}
-                                    </div>
-                                    <label className="check-row auto-compile">
-                                        <input
-                                            type="checkbox"
-                                            checked={Boolean(
-                                                ext.settings.autoCompile,
-                                            )}
-                                            onChange={(event) => {
-                                                const autoCompile =
-                                                    event.target.checked;
-                                                ext.setSettings((value) => ({
-                                                    ...value,
-                                                    autoCompile,
-                                                }));
-                                                void action("settings", {
-                                                    autoCompile,
-                                                });
-                                            }}
-                                        />
-                                        {t("Tự biên dịch", "Auto compile")}
-                                    </label>
-                                    <button
-                                        title="SyncTeX: source → PDF"
-                                        disabled={
-                                            stale || dirty || busy || !snapshot
-                                        }
-                                        onClick={() => void ext.forward()}
-                                    >
-                                        <ArrowRight size={17} />
-                                    </button>
-                                    <div className="download-options">
-                                        <button
-                                            title={t("Tải xuống", "Download")}
+                                        <div className="preview-toolbar-divider" />
+                                        <div
+                                            className="preview-mode-switch"
+                                            role="tablist"
                                             aria-label={t(
-                                                "Tải xuống",
-                                                "Download",
+                                                "Định dạng xem trước",
+                                                "Preview format",
                                             )}
-                                            aria-expanded={downloadMenu}
-                                            disabled={wordExporting}
-                                            onClick={() =>
-                                                setDownloadMenu(
-                                                    (value) => !value,
-                                                )
-                                            }
                                         >
-                                            <Download size={18} />
-                                        </button>
-                                        {downloadMenu && (
-                                            <div
-                                                className="download-menu"
-                                                role="menu"
-                                                onKeyDown={(e) => {
-                                                    if (e.key === "Escape")
-                                                        setDownloadMenu(false);
+                                            <button
+                                                role="tab"
+                                                aria-selected={
+                                                    previewTab === "pdf"
+                                                }
+                                                className={`preview-mode-tab ${previewTab === "pdf" ? "active" : ""}`}
+                                                onClick={async () => {
+                                                    if (
+                                                        !wordPreview.current ||
+                                                        (await wordPreview.current.flush())
+                                                    ) {
+                                                        setPreviewTab("pdf");
+                                                    }
                                                 }}
                                             >
-                                                <button
-                                                    role="menuitem"
-                                                    disabled={
-                                                        stale ||
-                                                        dirty ||
-                                                        !snapshot ||
-                                                        busy
-                                                    }
-                                                    onClick={() => {
-                                                        setDownloadMenu(false);
-                                                        void exportPdf();
+                                                PDF preview
+                                            </button>
+                                            <button
+                                                role="tab"
+                                                aria-selected={
+                                                    previewTab === "word"
+                                                }
+                                                className={`preview-mode-tab ${previewTab === "word" ? "active" : ""}`}
+                                                onClick={() =>
+                                                    setPreviewTab("word")
+                                                }
+                                            >
+                                                Word preview
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="compile-toolbar-right">
+                                        <label className="check-row auto-compile">
+                                            <input
+                                                type="checkbox"
+                                                checked={Boolean(
+                                                    ext.settings.autoCompile,
+                                                )}
+                                                onChange={(event) => {
+                                                    const autoCompile =
+                                                        event.target.checked;
+                                                    ext.setSettings(
+                                                        (value) => ({
+                                                            ...value,
+                                                            autoCompile,
+                                                        }),
+                                                    );
+                                                    void action("settings", {
+                                                        autoCompile,
+                                                    });
+                                                }}
+                                            />
+                                            {t("Tự biên dịch", "Auto compile")}
+                                        </label>
+                                        <button
+                                            className="compile-action-btn"
+                                            title="SyncTeX: source → PDF"
+                                            disabled={
+                                                stale ||
+                                                dirty ||
+                                                busy ||
+                                                !snapshot
+                                            }
+                                            onClick={() => void ext.forward()}
+                                        >
+                                            <ArrowRight size={15} />
+                                        </button>
+                                        <div className="download-options">
+                                            <button
+                                                className="compile-action-btn"
+                                                title={t(
+                                                    "Tải xuống",
+                                                    "Download",
+                                                )}
+                                                aria-label={t(
+                                                    "Tải xuống",
+                                                    "Download",
+                                                )}
+                                                aria-expanded={downloadMenu}
+                                                disabled={wordExporting}
+                                                onClick={() =>
+                                                    setDownloadMenu(
+                                                        (value) => !value,
+                                                    )
+                                                }
+                                            >
+                                                <Download size={15} />
+                                            </button>
+                                            {downloadMenu && (
+                                                <div
+                                                    className="download-menu"
+                                                    role="menu"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Escape")
+                                                            setDownloadMenu(
+                                                                false,
+                                                            );
                                                     }}
                                                 >
-                                                    Export PDF (.pdf)
-                                                </button>
-                                                <button
-                                                    role="menuitem"
-                                                    disabled={
-                                                        busy ||
-                                                        stale ||
-                                                        dirty ||
-                                                        !snapshot ||
-                                                        wordExporting
-                                                    }
-                                                    title={t(
-                                                        "Chuyển PDF bằng bộ chuyển đổi gốc ilovepdf-python",
-                                                        "Convert PDF using the original ilovepdf-python converter",
-                                                    )}
-                                                    onClick={() => {
-                                                        setDownloadMenu(false);
-                                                        void exportWord();
-                                                    }}
-                                                >
-                                                    Export Word (.docx)
-                                                </button>
-                                            </div>
-                                        )}
+                                                    <button
+                                                        role="menuitem"
+                                                        disabled={
+                                                            stale ||
+                                                            dirty ||
+                                                            !snapshot ||
+                                                            busy
+                                                        }
+                                                        onClick={() => {
+                                                            setDownloadMenu(
+                                                                false,
+                                                            );
+                                                            void exportPdf();
+                                                        }}
+                                                    >
+                                                        Export PDF (.pdf)
+                                                    </button>
+                                                    <button
+                                                        role="menuitem"
+                                                        disabled={
+                                                            busy ||
+                                                            stale ||
+                                                            dirty ||
+                                                            !snapshot ||
+                                                            wordExporting
+                                                        }
+                                                        title={t(
+                                                            "Chuyển PDF bằng bộ chuyển đổi gốc ilovepdf-python",
+                                                            "Convert PDF using the original ilovepdf-python converter",
+                                                        )}
+                                                        onClick={() => {
+                                                            setDownloadMenu(
+                                                                false,
+                                                            );
+                                                            void exportWord();
+                                                        }}
+                                                    >
+                                                        Export Word (.docx)
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                                 {previewTab === "logs" ? (
                                     <LogsView
                                         project={project}
-                                        file={file}
+                                        file={compileTarget || file}
                                         issues={ext.issues}
                                         logs={logs}
                                         setLogs={setLogs}
@@ -1945,35 +2429,6 @@ export default function Workspace() {
                                 ) : (
                                     <>
                                         <div
-                                            className="preview-tabs"
-                                            role="tablist"
-                                            aria-label={t(
-                                                "Định dạng xem trước",
-                                                "Preview format",
-                                            )}
-                                        >
-                                            <button
-                                                role="tab"
-                                                aria-selected={
-                                                    previewTab === "pdf"
-                                                }
-                                                onClick={async () => { if (!wordPreview.current || await wordPreview.current.flush()) setPreviewTab("pdf"); }}
-                                            >
-                                                PDF preview
-                                            </button>
-                                            <button
-                                                role="tab"
-                                                aria-selected={
-                                                    previewTab === "word"
-                                                }
-                                                onClick={() =>
-                                                    setPreviewTab("word")
-                                                }
-                                            >
-                                                Word preview
-                                            </button>
-                                        </div>
-                                        <div
                                             className="preview-format-panel"
                                             hidden={previewTab !== "pdf"}
                                         >
@@ -1991,9 +2446,15 @@ export default function Workspace() {
                                             hidden={previewTab !== "word"}
                                         >
                                             <WordPreview
-                                                key={project.id}
+                                                key={
+                                                    project.id +
+                                                    ":" +
+                                                    compileTarget
+                                                }
                                                 ref={wordPreview}
                                                 project={project.id}
+                                                main={compileTarget}
+                                                defaultMain={project.main}
                                                 language={uiLanguage}
                                                 sourceDirty={dirty}
                                                 snapshot={snapshot}

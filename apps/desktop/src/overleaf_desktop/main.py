@@ -166,8 +166,12 @@ class DesktopBridge:
             )
         return {"opened": True}
 
-    def detach_pdf(self, project: str):
+    def detach_pdf(self, project: str, main: str = ""):
         import webview
+        from urllib.parse import quote
+
+        if main:
+            self._compiler.store.path(project, main)
 
         if not self._address:
             return {"error": "Chưa có cửa sổ desktop."}
@@ -176,7 +180,7 @@ class DesktopBridge:
         child_bridge._primary_window = self._primary_window or self._window
         window = webview.create_window(
             "PDF — Overleaf Desktop",
-            self._address + "&project=" + project + "&pdf=true",
+            self._address + "&project=" + project + "&pdf=true&main=" + quote(main, safe=''),
             js_api=child_bridge,
             width=850,
             height=950,
@@ -231,7 +235,7 @@ class DesktopBridge:
             pdf = self._compiler.verified(project, snapshot)
             selected = self._window.create_file_dialog(
                 webview.FileDialog.SAVE,
-                save_filename="main.pdf",
+                save_filename=Path(pdf.main or "main.tex").stem + ".pdf",
                 file_types=("PDF files (*.pdf)",),
             )
             if not selected:
@@ -257,9 +261,10 @@ class DesktopBridge:
 
         try:
             data, revision = download(self._compiler, project, snapshot)
+            pdf = self._compiler.verified(project, snapshot)
             selected = self._window.create_file_dialog(
                 webview.FileDialog.SAVE,
-                save_filename="main.docx",
+                save_filename=Path(pdf.main or "main.tex").stem + ".docx",
                 file_types=("Word document (*.docx)",),
             )
             if not selected:
@@ -270,7 +275,7 @@ class DesktopBridge:
             if target.suffix.lower() != ".docx":
                 return {"error": "Tên tệp cần đuôi .docx."}
             self._compiler.verified(project, snapshot)
-            if revision and DocxWorkspace(self._compiler).status(project)['revision'] != revision:
+            if revision and DocxWorkspace(self._compiler, pdf.main).status(project)['revision'] != revision:
                 return {'error': 'Bản Word vừa đổi trong lúc chọn nơi lưu. Vui lòng xuất lại.'}
             atomic_write(target, data)
             return {"saved": True}

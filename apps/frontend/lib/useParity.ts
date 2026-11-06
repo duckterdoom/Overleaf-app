@@ -36,6 +36,7 @@ export type Core = {
     busy: boolean;
     engine: string;
     snapshot: string;
+    compileTarget: string;
     stale: boolean;
     setProject: Set<Project | null>;
     setProjects: Set<Project[]>;
@@ -46,6 +47,7 @@ export type Core = {
     setStale: Set<boolean>;
     setPdf: Set<Uint8Array | null>;
     setSnapshot: Set<string>;
+    setCompileTarget: Set<string>;
     setNotice: Set<string>;
     setError: Set<string>;
     setLayout: Set<string>;
@@ -55,7 +57,7 @@ export type Core = {
     save: () => Promise<boolean>;
     build: () => Promise<void>;
     open: (project: Project) => Promise<void>;
-    openFile: (entry: Entry) => Promise<void>;
+    openFile: (entry: Entry) => Promise<boolean | undefined>;
     editor: React.RefObject<EditorView | null>;
     saved: React.RefObject<string>;
     revision: React.RefObject<number>;
@@ -151,7 +153,11 @@ export default function useParity(core: Core) {
                     const project = projects.find(
                         (item) => item.id === route.project,
                     );
-                    if (project) await latest.current.open(project);
+                    if (project) {
+                        await latest.current.open(project);
+                        if (route.main)
+                            latest.current.setCompileTarget(route.main);
+                    }
                 }
             })
             .catch((error) => core.setError(errorText(error)));
@@ -255,7 +261,7 @@ export default function useParity(core: Core) {
             panel === "history"
         )
             return;
-        const key = `${core.project.id}|${core.engine}|${core.revision.current}`;
+        const key = `${core.project.id}|${core.compileTarget}|${core.engine}|${core.revision.current}`;
         if (lastAuto.current === key) return;
         timer.current = setTimeout(() => {
             if (!latest.current.buildInFlight.current)
@@ -267,6 +273,7 @@ export default function useParity(core: Core) {
     }, [
         core.content,
         core.engine,
+        core.compileTarget,
         core.busy,
         core.project?.id,
         settings.autoCompile,
@@ -276,7 +283,7 @@ export default function useParity(core: Core) {
     ]);
     function buildStarted() {
         const value = latest.current;
-        lastAuto.current = `${value.project?.id}|${value.engine}|${value.revision.current}`;
+        lastAuto.current = `${value.project?.id}|${value.compileTarget}|${value.engine}|${value.revision.current}`;
         setIssues([]);
     }
     async function stop() {
@@ -380,6 +387,7 @@ export default function useParity(core: Core) {
         async function poll() {
             if (loading) return;
             loading = true;
+            const requestedMain = latest.current.compileTarget;
             try {
                 const result = await json<{
                     signature: string;
@@ -387,8 +395,11 @@ export default function useParity(core: Core) {
                     snapshot: string | null;
                     dirty: boolean;
                     current: boolean;
-                }>(`/projects/${project}/watch`);
-                if (disposed) return;
+                }>(
+                    `/projects/${project}/watch?main=${encodeURIComponent(requestedMain)}`,
+                );
+                if (disposed || latest.current.compileTarget !== requestedMain)
+                    return;
                 const current = latest.current;
                 if (
                     watchSignature.current &&
@@ -402,6 +413,7 @@ export default function useParity(core: Core) {
                         );
                         if (
                             !disposed &&
+                            latest.current.file === current.file &&
                             value.content !== current.saved.current
                         ) {
                             if (!current.dirty && !networkRef.current.joined) {
@@ -616,7 +628,7 @@ export default function useParity(core: Core) {
     async function detach() {
         if (!core.project) return;
         try {
-            await native("detach_pdf", core.project.id);
+            await native("detach_pdf", core.project.id, core.compileTarget);
             layout("editor");
         } catch (error) {
             core.setError(errorText(error));

@@ -36,6 +36,7 @@ export type CompileEvent = {
     current?: boolean;
     duration_ms?: number;
     geometry?: PageGeometry[];
+    main?: string;
     issues?: {
         file: string;
         line: number;
@@ -87,10 +88,11 @@ export async function compile(
     project: string,
     engine: string,
     onEvent: (event: CompileEvent) => void,
+    main = "",
 ) {
     const response = await request(`/projects/${project}/compile`, {
         method: "POST",
-        body: JSON.stringify({ engine }),
+        body: JSON.stringify({ engine, main }),
     });
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();

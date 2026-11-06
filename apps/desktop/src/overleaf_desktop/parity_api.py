@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import shutil
 from pathlib import Path
+from urllib.parse import quote
 from fastapi import Request
 from fastapi.responses import Response
 from .store import Problem
@@ -40,28 +41,27 @@ def register(app, store, compiler):
     @app.get("/api/projects/{project}/pdf/{snapshot}/docx")
     def export_word(project: str, snapshot: str):
         from .docx_workspace import download
-
+        pdf = compiler.verified(project, snapshot)
         return Response(
             download(compiler, project, snapshot)[0],
             media_type=MIME,
-            headers={"Content-Disposition": 'attachment; filename="main.docx"'},
+            headers={"Content-Disposition": "attachment; filename*=UTF-8''" + quote(Path(pdf.main or 'main.tex').stem + '.docx')},
         )
 
     from .docx_workspace import DocxWorkspace
-    docx_workspace = DocxWorkspace(compiler)
-
     @app.post('/api/projects/{project}/docx-preview')
     def open_docx(project: str, data: dict):
-        return docx_workspace.open(project, data['snapshot'], data.get('reset', False), data.get('revision'))
+        pdf = compiler.preview(project, data['snapshot'])
+        return DocxWorkspace(compiler, pdf.main).open(project, data['snapshot'], data.get('reset', False), data.get('revision'))
 
     @app.get('/api/projects/{project}/docx-preview/{revision}')
-    def read_docx(project: str, revision: str):
-        return Response(docx_workspace.read(project, revision), media_type=MIME)
+    def read_docx(project: str, revision: str, main: str = ""):
+        return Response(DocxWorkspace(compiler, main).read(project, revision), media_type=MIME)
 
     @app.put('/api/projects/{project}/docx-preview/{revision}')
-    async def save_docx(project: str, revision: str, request: Request):
+    async def save_docx(project: str, revision: str, request: Request, main: str = ""):
         data = await request.body()
-        return docx_workspace.save(project, revision, data)
+        return DocxWorkspace(compiler, main).save(project, revision, data)
 
     @app.get("/api/projects/{project}/review")
     def get_review(project: str):
@@ -118,7 +118,7 @@ def register(app, store, compiler):
         )
 
     @app.get("/api/projects/{project}/watch")
-    def watch(project: str):
+    def watch(project: str, main: str = ""):
         entries = store.tree(project)
         signature = hashlib.sha256()
         for entry in entries:
@@ -127,10 +127,11 @@ def register(app, store, compiler):
             signature.update(
                 f"{entry['path']}:{stat.st_size}:{stat.st_mtime_ns}\n".encode()
             )
-        current = compiler.snapshots.get(project)
+        current = compiler.documents.get((project, main)) if main else compiler.snapshots.get(project)
         key = (signature.hexdigest(), current.id if current else None)
-        if project not in watch_cache or watch_cache[project][0] != key:
-            watch_cache[project] = (
+        watch_key = (project, main)
+        if watch_key not in watch_cache or watch_cache[watch_key][0] != key:
+            watch_cache[watch_key] = (
                 key,
                 bool(current and current.fingerprint == store.fingerprint(project)),
             )
@@ -139,7 +140,7 @@ def register(app, store, compiler):
             "files": entries,
             "snapshot": current.id if current else None,
             "dirty": project in compiler.dirty,
-            "current": watch_cache[project][1] and project not in compiler.dirty,
+            "current": watch_cache[watch_key][1] and project not in compiler.dirty,
         }
 
     @app.get("/api/projects/{project}/history")
@@ -168,16 +169,12 @@ def register(app, store, compiler):
     @app.get("/api/projects/{project}/preview/{snapshot}")
     def preview(project: str, snapshot: str):
         store.root(project)
-        result = compiler.snapshots.get(project)
-        if not result or result.id != snapshot:
-            raise Problem("PDF không còn trong phiên.", 404)
+        result = compiler.preview(project, snapshot)
         return Response(result.data, media_type="application/pdf")
 
     @app.get("/api/projects/{project}/geometry/{snapshot}")
     def geometry(project: str, snapshot: str):
-        result = compiler.snapshots.get(project)
-        if not result or result.id != snapshot:
-            raise Problem("Không tìm thấy PDF.", 404)
+        result = compiler.preview(project, snapshot)
         return result.geometry
 
     @app.post("/api/projects/{project}/upload/start")

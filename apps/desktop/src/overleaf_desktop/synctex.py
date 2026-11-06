@@ -10,8 +10,8 @@ from pathlib import Path
 from .store import Problem
 
 
-def index_bytes(working, main):
-    source = working / "build" / (Path(main).stem + ".synctex.gz")
+def index_bytes(working, main, output="build"):
+    source = working / output / (Path(main).stem + ".synctex.gz")
     if not source.is_file():
         return b""
     with gzip.open(source, "rb") as stream:

@@ -83,7 +83,9 @@ try {
     await page.locator(".save-source").click();
     // Edit Word directly in the workspace, then download the edited DOCX.
     await page.getByRole("tab", { name: "Word preview", exact: true }).click();
-    await page.getByRole("button", { name: "Đồng bộ chữ LaTeX", exact: true }).click();
+    await page
+        .getByRole("button", { name: "Đồng bộ chữ LaTeX", exact: true })
+        .click();
     const wordArea = page.getByRole("textbox", {
         name: "Nội dung Word",
         exact: true,
@@ -175,7 +177,9 @@ try {
     const rail = page.getByRole("navigation", {
         name: "Thanh công cụ workspace",
     });
-    await expect(rail.getByRole("button", { name: "Tệp và outline", exact: true })).toBeVisible();
+    await expect(
+        rail.getByRole("button", { name: "Tệp và outline", exact: true }),
+    ).toBeVisible();
     await rail.getByRole("button", { name: "Nhận xét", exact: true }).click();
     await expect(review).toBeVisible();
     await expect(page.locator(".file-sidebar")).toBeHidden();
@@ -265,11 +269,16 @@ try {
         .getByRole("dialog")
         .getByRole("button", { name: "Tạo", exact: true })
         .click();
-    await expect(page.locator(".file-tab")).toContainText("chapters/one.tex");
+    await expect(
+        page
+            .locator(".source-tabs")
+            .getByRole("tab", { name: "chapters/one.tex", exact: true }),
+    ).toHaveAttribute("aria-selected", "true");
     await page
         .locator(".cm-content")
         .fill("Unsaved nested content before rename");
     await page
+        .locator(".file-sidebar")
         .getByTitle("chapters/one.tex", { exact: true })
         .click({ button: "right" });
     await page
@@ -288,11 +297,15 @@ try {
     );
     await page.getByTitle("chapters", { exact: true }).click();
     await expect(
-        page.getByTitle("chapters/renamed.tex", { exact: true }),
+        page
+            .locator(".file-sidebar")
+            .getByTitle("chapters/renamed.tex", { exact: true }),
     ).toHaveCount(0);
     await page.getByTitle("chapters", { exact: true }).click();
     await expect(
-        page.getByTitle("chapters/renamed.tex", { exact: true }),
+        page
+            .locator(".file-sidebar")
+            .getByTitle("chapters/renamed.tex", { exact: true }),
     ).toBeVisible();
     const sidebarDivider = page.getByRole("separator", {
         name: "Điều chỉnh thanh thư mục",

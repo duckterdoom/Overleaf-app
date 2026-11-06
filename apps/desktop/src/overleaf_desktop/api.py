@@ -5,7 +5,7 @@ import secrets
 import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, quote
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response, StreamingResponse
@@ -33,6 +33,7 @@ class FileBody(BaseModel):
 
 class CompileBody(BaseModel):
     engine: str = "pdflatex"
+    main: str = Field(default="", max_length=512)
 
 
 def create_api(
@@ -170,7 +171,7 @@ def create_api(
 
     @app.post("/api/projects/{project}/compile")
     async def compile_project(project: str, body: CompileBody):
-        job = compiler.start(project, body.engine)
+        job = compiler.start(project, body.engine, body.main)
 
         async def events():
             try:
@@ -196,7 +197,7 @@ def create_api(
         return Response(
             result.data,
             media_type="application/pdf",
-            headers={"Content-Disposition": 'inline; filename="main.pdf"'},
+            headers={"Content-Disposition": "inline; filename*=UTF-8''" + quote(Path(result.main or "main.tex").stem + '.pdf')},
         )
 
     from .parity_api import register

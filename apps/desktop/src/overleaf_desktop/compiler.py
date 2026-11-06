@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import os
 import shutil
 import signal
@@ -37,6 +38,7 @@ class Snapshot:
     index: bytes = b""
     engine: str = "pdflatex"
     geometry: list = field(default_factory=list)
+    main: str = ""
 
 
 @dataclass
@@ -48,6 +50,7 @@ class Job:
     task: asyncio.Task | None = None
     executable: str = ""
     timeout: float = 120
+    main: str = "main.tex"
 
 
 class Compiler:
@@ -68,6 +71,7 @@ class Compiler:
         )
         self.active: Job | None = None
         self.snapshots: dict[str, Snapshot] = {}
+        self.documents: dict[tuple[str, str], Snapshot] = {}
         self.dirty = set()
         self.executable = find_latexmk(
             store.state.settings()["latexmkPath"] or executable
@@ -76,7 +80,7 @@ class Compiler:
             "compileTimeoutSeconds", timeout
         )
 
-    def start(self, project: str, engine: str) -> Job:
+    def start(self, project: str, engine: str, main: str = "") -> Job:
         self.store.info(project)
         if self.active:
             raise Problem(
@@ -84,7 +88,11 @@ class Compiler:
             )
         if engine not in {"pdflatex", "xelatex", "lualatex"}:
             raise Problem("Engine không hợp lệ.")
-        job = Job(project, engine, executable=self.executable, timeout=self.timeout)
+        main = main or self.store.info(project)["main"]
+        source = self.store.path(project, main)
+        if source.suffix.lower() != ".tex" or not source.is_file():
+            raise Problem("Chọn tệp nguồn .tex có trong dự án để biên dịch.")
+        job = Job(project, engine, executable=self.executable, timeout=self.timeout, main=main)
         self.active = job
         job.task = asyncio.create_task(self._run(job))
         return job
@@ -98,8 +106,21 @@ class Compiler:
             except asyncio.CancelledError:
                 pass
 
-    def verified(self, project: str, snapshot: str) -> Snapshot:
+    def preview(self, project: str, snapshot: str) -> Snapshot:
+        self.store.root(project)
         current = self.snapshots.get(project)
+        if not current or current.id != snapshot:
+            current = next((item for (owner, _), item in tuple(self.documents.items())
+                            if owner == project and item.id == snapshot), None)
+        if not current:
+            raise Problem("PDF không còn trong phiên.", 404)
+        return current
+
+    def verified(self, project: str, snapshot: str) -> Snapshot:
+        try:
+            current = self.preview(project, snapshot)
+        except Problem:
+            current = None
         if (
             not current
             or project in self.dirty
@@ -137,13 +158,26 @@ class Compiler:
         start = time.monotonic()
         try:
             # The last successful PDF may still be displayed by the UI but is no longer exportable.
-            self.snapshots.clear()
+            self.documents.pop((job.project, job.main), None)
+            previous = self.snapshots.get(job.project)
+            if previous and (previous.main or self.store.info(job.project)["main"]) == job.main:
+                self.snapshots.pop(job.project, None)
             fingerprint = await asyncio.to_thread(self.store.fingerprint, job.project)
             root = self.store.root(job.project)
-            output = root / "build"
+            relative_output = Path("build")
+            if job.main != self.store.info(job.project)["main"]:
+                relative_output /= "targets/" + hashlib.sha256(job.main.encode()).hexdigest()[:16]
+            output = root / relative_output
+            if not output.resolve().is_relative_to(root.resolve()):
+                raise Problem("Thư mục build phải nằm trong dự án.")
+            for directory in [output, *output.parents]:
+                if directory == root:
+                    break
+                if directory.is_symlink():
+                    raise Problem("Thư mục build không được chứa symbolic link.")
             if output.is_symlink():
                 raise Problem("Thư mục build không được là symbolic link.")
-            output.mkdir(exist_ok=True)
+            output.mkdir(parents=True, exist_ok=True)
             working = root
             if os.name == "nt" and not str(root).isascii():
                 staging = tempfile.TemporaryDirectory(prefix="overleaf-python-tex-")
@@ -166,11 +200,11 @@ class Compiler:
             # TeX needs matching nested auxiliary directories for include commands.
             for entry in self.store.tree(job.project):
                 if entry["directory"]:
-                    (working / "build" / entry["path"]).mkdir(
+                    (working / relative_output / entry["path"]).mkdir(
                         parents=True, exist_ok=True
                     )
-            (working / "build").mkdir(exist_ok=True)
-            main = self.store.info(job.project)["main"]
+            (working / relative_output).mkdir(parents=True, exist_ok=True)
+            main = job.main
             self.store.path(job.project, main)
             # latexmk remembers failed runs. Installing a missing package without
             # editing the source otherwise just repeats the old cached failure.
@@ -203,7 +237,7 @@ class Compiler:
                 "-file-line-error",
                 "-halt-on-error",
                 "-synctex=1",
-                "-outdir=build",
+                "-outdir=" + relative_output.as_posix(),
                 main,
                 cwd=working,
                 env=environment,
@@ -216,7 +250,7 @@ class Compiler:
                 ),
             )
             job.queue.put_nowait(
-                {"type": "started", "job": job.id, "engine": job.engine}
+                {"type": "started", "job": job.id, "engine": job.engine, "main": main}
             )
 
             async def pump():
@@ -245,7 +279,7 @@ class Compiler:
             if code != 0:
                 from .toolchain import explain
 
-                log_file = working / "build" / (Path(main).stem + ".log")
+                log_file = working / relative_output / (Path(main).stem + ".log")
                 diagnostics = (
                     log_file.read_text(encoding="utf-8", errors="replace")[
                         -4 * 1024 * 1024 :
@@ -275,14 +309,14 @@ class Compiler:
                 )
                 return
             name = Path(main).stem
-            log = working / "build" / f"{name}.log"
+            log = working / relative_output / f"{name}.log"
             if log.is_file() and "Missing character:" in log.read_text(
                 encoding="utf-8", errors="replace"
             ):
                 raise Problem(
                     "PDF thiếu ký tự. Kiểm tra font và engine trước khi xuất."
                 )
-            pdf = working / "build" / f"{name}.pdf"
+            pdf = working / relative_output / f"{name}.pdf"
             with pdf.open("rb") as source:
                 data = source.read(128 * 1024 * 1024 + 1)
             if not data.startswith(b"%PDF-") or len(data) > 128 * 1024 * 1024:
@@ -294,7 +328,7 @@ class Compiler:
             )
             from .synctex import index_bytes
 
-            index = await asyncio.to_thread(index_bytes, working, main)
+            index = await asyncio.to_thread(index_bytes, working, main, relative_output)
             if index:
                 atomic_write(output / (name + ".synctex.gz"), index)
             from io import BytesIO
@@ -313,8 +347,9 @@ class Compiler:
 
             geometry = await asyncio.to_thread(page_geometry)
             self.snapshots[job.project] = Snapshot(
-                job.id, fingerprint, data, index, job.engine, geometry
+                job.id, fingerprint, data, index, job.engine, geometry, main
             )
+            self.documents[(job.project, main)] = self.snapshots[job.project]
             failed.unlink(missing_ok=True)
             self.store.state.activity("compile")
             job.queue.put_nowait(
@@ -324,6 +359,7 @@ class Compiler:
                     "current": current,
                     "duration_ms": round((time.monotonic() - start) * 1000),
                     "geometry": geometry,
+                    "main": main,
                 }
             )
         except asyncio.CancelledError:

@@ -41,6 +41,8 @@ Windows kiểm tra cả khả năng chạy Python, không chỉ sự tồn tại
 
 Compile cần TeX Live/MacTeX/MiKTeX hoặc TinyTeX phù hợp hệ điều hành. Windows hiện có thể dùng `target/TinyTeX/bin/windows/latexmk.exe`; thư mục này là công cụ local, **không được Git đóng gói sẵn cho máy khác**. Chọn `latexmk` trong **Cài đặt → Biên dịch** nếu app chưa tìm thấy. Không chép TinyTeX Windows hay `.venv` Windows sang macOS.
 
+Mẫu ZIP **Universal manuscript template for Optica Publishing Group journals** cần thêm các gói và font ngoài TinyTeX tối thiểu. Trên Windows với TinyTeX local của dự án, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-optica-tex.ps1`, rồi bấm **Recompile**. Script cài `colortbl`, `newtx`, `silence`, `lastpage`, `cite`, font Courier và các dependency của mẫu; kiểm tra cả `.sty` lẫn font metrics sau khi cài. Cần mạng khi tải gói. Nếu dùng TeX hệ thống khác, cài các gói tương ứng bằng trình quản lý TeX đó.
+
 Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải dependency/package/import online cần mạng; soạn thảo và compile local hoạt động offline khi đã chuẩn bị đủ công cụ và gói TeX. Đây là bản chạy từ source, chưa có bộ cài độc lập `.exe`/`.app`/`.dmg` đã ký.
 
 ## Chức năng hiện có
@@ -50,6 +52,7 @@ Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải 
 - Import ZIP/thư mục/Word/Markdown/GitHub public HTTPS; tạo file/thư mục lồng nhau, upload nhiều file/thư mục, kéo thả/dán ảnh, copy từ dự án khác hoặc build output, tải từ HTTPS và nhập `.bib`.
 - Editor có outline kéo đổi chiều cao, toolbar Math/Link/Comment/Reference/Citation/Figure/Table/List/Indent, autosave, lịch sử phiên bản/nhãn/so sánh/khôi phục và bố cục split/editor/PDF/focus.
 - Compile thủ công hoặc Auto Compile, Stop, timeout tùy chỉnh, log và Error Explainer Anh/Việt; kiểm tra toolchain/package. Cài package trong app chỉ áp dụng cho TinyTeX đi kèm và cần người dùng xác nhận.
+- **Nhiều tài liệu trong một dự án:** chọn `.tex` ở ô **Tệp biên dịch** (ví dụ `ielts_report.tex`) rồi Recompile/F5/Ctrl+Enter. Mở file có `\documentclass` sẽ tự chọn file đó; mở file nội dung được include giữ nguyên file gốc đang chọn. Không đổi `main` mặc định của dự án. Hai dãy tab cho nguồn và các bản `tên-file.pdf`/`tên-file.docx`, có nút đóng; đổi tab lưu trước và giữ bản preview riêng. Word phân trang chỉnh sửa/lưu theo từng file; đồng bộ chữ LaTeX cũ vẫn chỉ áp dụng cho tệp chính. Tab/PDF cache nằm trong phiên làm việc, DOCX đã lưu được giữ trên đĩa. Báo cáo IELTS cần các gói `tcolorbox`, `environ`, `trimspaces` cùng bộ TeX thông dụng.
 - Preview PDF cuộn nhiều trang, mục lục/link, zoom, cửa sổ PDF riêng và SyncTeX hai chiều. Export dùng đúng snapshot bytes đang preview; nguồn thay đổi hoặc compile lỗi sẽ chặn export cho đến khi compile thành công.
 - Cộng tác `main.tex`: TCP/TLS, presence/cursor, offline queue, reconnect và RESYNC. Chưa đồng bộ toàn bộ cây file; room/queue nằm trong RAM, chưa có CRDT đầy đủ hoặc phân quyền theo tài khoản.
 

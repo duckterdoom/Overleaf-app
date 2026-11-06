@@ -21,6 +21,8 @@ type Metadata = {
 };
 type Props = {
     project: string;
+    main: string;
+    defaultMain: string;
     language: string;
     active: boolean;
     compiled: boolean;
@@ -55,6 +57,8 @@ export default forwardRef<WordPreviewHandle, Props>(
             [current, setCurrent] = useState<Metadata | null>(null),
             [pages, setPages] = useState(0);
         const route = `/projects/${props.project}/docx-preview`;
+        const revisionRoute = (revision: string) =>
+            route + "/" + revision + "?main=" + encodeURIComponent(props.main);
         const latest = useRef(props);
         latest.current = props;
 
@@ -77,7 +81,7 @@ export default forwardRef<WordPreviewHandle, Props>(
                     !documentFile
                 ) {
                     const response = await request(
-                        route + "/" + value.revision,
+                        revisionRoute(value.revision),
                     );
                     metadata.current = value;
                     setCurrent(value);
@@ -108,7 +112,7 @@ export default forwardRef<WordPreviewHandle, Props>(
                 setDocumentFile(null);
                 return;
             }
-            if (props.compiled && props.snapshot && !dirty) void open();
+            if (props.snapshot && !dirty) void open();
             else if (!props.snapshot && !requestedCompile.current) {
                 requestedCompile.current = true;
                 props.onCompile();
@@ -139,6 +143,19 @@ export default forwardRef<WordPreviewHandle, Props>(
                         documentMode: "editing",
                         contained: true,
                         telemetry: { enabled: false },
+                        ui: {
+                            comments: false,
+                        },
+                        modules: {
+                            comments: false,
+                        },
+                        zoom: {
+                            mode: "fit-width",
+                            fitWidth: {
+                                min: 25,
+                                max: 250,
+                            },
+                        },
                         workerUrls: {
                             document: new URL(
                                 "/superdoc-workers/document-worker.js",
@@ -204,7 +221,7 @@ export default forwardRef<WordPreviewHandle, Props>(
                     if (!(blob instanceof Blob))
                         throw Error("DOCX export did not return bytes");
                     const value = await json<Metadata>(
-                        route + "/" + metadata.current.revision,
+                        revisionRoute(metadata.current.revision),
                         {
                             method: "PUT",
                             headers: {
@@ -267,6 +284,15 @@ export default forwardRef<WordPreviewHandle, Props>(
                     </button>
                     <button
                         aria-pressed={legacy}
+                        disabled={props.main !== props.defaultMain}
+                        title={
+                            props.main !== props.defaultMain
+                                ? t(
+                                      "Đồng bộ chữ LaTeX hiện áp dụng cho tệp chính; bản Word phân trang vẫn chỉnh sửa được.",
+                                      "LaTeX text sync supports the project main file; paginated Word remains editable.",
+                                  )
+                                : undefined
+                        }
                         onClick={async () => {
                             if (await persist()) setLegacy(true);
                         }}
@@ -306,7 +332,13 @@ export default forwardRef<WordPreviewHandle, Props>(
                             >
                                 {t("Vừa chiều rộng", "Fit width")}
                             </button>
-                            <span>
+                            <span
+                                className="native-word-status"
+                                title={t(
+                                    "DOCX từ bộ chuyển đổi gốc, chỉnh sửa và lưu trực tiếp. Chỉnh sửa Word được giữ trong DOCX; không ghi đè mã LaTeX.",
+                                    "DOCX from the original converter, edited and saved directly. Word edits stay in DOCX and do not overwrite LaTeX.",
+                                )}
+                            >
                                 {loading
                                     ? t("Đang chuyển PDF…", "Converting PDF…")
                                     : !ready && documentFile
@@ -319,6 +351,13 @@ export default forwardRef<WordPreviewHandle, Props>(
                                 {pages > 0
                                     ? ` · ${pages} ${t("trang", "pages")}`
                                     : ""}
+                                <span
+                                    className="native-word-info-icon"
+                                    aria-label="info"
+                                >
+                                    {" "}
+                                    ℹ
+                                </span>
                             </span>
                         </>
                     )}
