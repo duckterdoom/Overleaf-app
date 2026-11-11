@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 from latex_backend.storage.store import REPO, Problem, atomic_write
+from latex_backend.storage.shared_files import shared_write
 
 MAX_BYTES = 500 * 1024 * 1024
 MAX_FILE = 100 * 1024 * 1024
@@ -207,6 +208,7 @@ class ProjectIO:
             raise Problem("Upload bị thiếu bytes.")
         batch["received"].add(name)
 
+    @shared_write
     def commit_upload(self, project, identifier):
         batch = self.batch(project, identifier)
         created, folders = [], []
@@ -295,6 +297,7 @@ class ProjectIO:
                 self.abort_upload(project, identifier)
             raise
 
+    @shared_write
     def copy_project_file(self, project, other, source, target, output=False):
         if output:
             root = self.store.root(other) / "build"
@@ -314,6 +317,7 @@ class ProjectIO:
         self.cancelled.clear()
         self.publish(value, destination)
 
+    @shared_write
     def download(self, project, url, name):
         self.cancelled.clear()
 

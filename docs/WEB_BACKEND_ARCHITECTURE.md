@@ -1,5 +1,7 @@
 # Backend web và lưu trữ trên server
 
+**Cập nhật 11/11/2026:** nhiều backend có home riêng có thể dùng chung database. Module `storage/shared_files.py` lưu source/ảnh/history/Word draft theo manifest CAS và chunk bất biến trong MongoDB; volume local là working copy để compile. Đăng ký storage theo node thay vì ép một đường dẫn toàn database. Xem [SHARED_MONGODB_FILES.md](SHARED_MONGODB_FILES.md). Các mô tả file chỉ ở volume và một storage binding độc quyền phía dưới là lịch sử trước cập nhật này. Identity/ACL/session đã dùng MongoDB, không còn SQLite ở runtime web.
+
 Cập nhật nguồn dữ liệu chính 10/11/2026: identity/session/ACL, project metadata, settings/activity, history metadata và review/IELTS dùng MongoDB; source/binary/artifact ở volume. Thêm `storage/mongo.py`, `mongo_store.py`, `migration.py`; xem [MONGODB_PRIMARY.md](MONGODB_PRIMARY.md) cho cấu hình Atlas và migration có backup. Các mốc SQLite/prototype dưới đây là lịch sử trước chuyển đổi này.
 
 Cập nhật chia sẻ 10/11/2026: `collaboration/sharing.py` lưu project ACL/link/invitation trong SQLite identity; `http/sharing_api.py` quản lý share và danh sách own/shared; gateway định tuyến request project về workspace owner sau kiểm quyền. Actor dùng ContextVar, không tráo session giữa user. Xem [WEB_PROJECT_SHARING.md](WEB_PROJECT_SHARING.md).

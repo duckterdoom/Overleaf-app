@@ -183,3 +183,35 @@ def test_connection_configuration_is_required_and_secrets_are_not_logged(tmp_pat
     with pytest.raises(MongoSetupError) as error:
         mongo.connect()
     assert 'secret-value' not in str(error.value)
+
+
+@pytest.mark.parametrize('code, message, auth_failure', [
+    (18, 'private-user secret-value', True),
+    (8000, 'bad auth : authentication failed private-user secret-value', True),
+    (8000, 'Atlas quota failure private-user secret-value', False),
+])
+def test_connection_auth_failure_is_specific_and_redacted(monkeypatch, code, message, auth_failure):
+    from pymongo.errors import OperationFailure
+    from latex_backend.storage import mongo
+    monkeypatch.setattr(mongo, 'settings', lambda: ('mongodb://private-user:secret-value@example.invalid', 'test'))
+    closed = []
+
+    class Client:
+        admin = None
+
+        def __init__(self, *args, **kwargs):
+            self.admin = self
+
+        def command(self, *args):
+            raise OperationFailure(message, code=code)
+
+        def close(self):
+            closed.append(True)
+
+    monkeypatch.setattr(mongo, 'MongoClient', Client)
+    with pytest.raises(MongoSetupError) as failure:
+        mongo.connect()
+    text = str(failure.value)
+    assert ('xác thực database user thất bại' in text) == auth_failure
+    assert 'secret-value' not in text and 'private-user' not in text
+    assert closed == [True]

@@ -2,7 +2,7 @@
 
 Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trùng và giới hạn job CPU chung giữa các workspace. Xem [hiệu năng và cấu hình cho server](docs/COMPILE_WORD_PERFORMANCE.md); tối ưu cache không thay thuật toán converter gốc.
 
-**Backend web dùng MongoDB làm nguồn dữ liệu chính.** Điền kết nối Atlas/server trong `config/mongodb.local.json` (file riêng, gitignore), rồi chuyển dữ liệu SQLite/JSON bằng `scripts\migrate-mongodb.bat --dry-run` / `--apply` trước khi chạy lại web. Xem [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). File TeX/ảnh/PDF/Word vẫn ở server volume; app không tự fallback SQLite khi MongoDB chưa sẵn sàng.
+**Backend web dùng MongoDB làm nguồn dữ liệu chính.** Điền kết nối Atlas/server trong `config/mongodb.local.json` (file riêng, gitignore). Nhiều máy dev có thể cùng dùng database; source/ảnh/history/Word draft được lưu theo phiên bản trong MongoDB rồi tải về working copy của mỗi backend để compile. Không đổi `storage_home` qua lại giữa các máy. Xem [dùng chung dữ liệu nhiều máy](docs/SHARED_MONGODB_FILES.md) và [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Dữ liệu SQLite/JSON cũ vẫn cần migrate có kiểm chứng; không chạy lại migration trên database đã chuyển xong.
 
 Web có **chia sẻ riêng tư theo lời mời** và **chia sẻ bằng liên kết**, quyền Viewer/Editor, quản lý/thu hồi quyền và danh sách Shared with you thật. Editor đồng bộ nội dung trực tiếp qua WebSocket bằng CodeMirror OT, kèm con trỏ có tên và avatar; thay đổi được lưu server trước khi xác nhận. Người nhận cần đăng nhập; lời mời hiện được owner tự copy/gửi, chưa có gửi email tự động. Xem [WEB_PROJECT_SHARING.md](docs/WEB_PROJECT_SHARING.md).
 
@@ -56,9 +56,9 @@ Không cần cài thư viện GUI cho bản web. Lần đầu cần mạng để
 | Compile | latexmk với pdfLaTeX, XeLaTeX hoặc LuaLaTeX; TeX cài trên máy hoặc TinyTeX đi kèm môi trường local |
 | PDF | PDF.js, pypdf và SyncTeX; PDF thật, export cùng bytes với preview |
 | Cộng tác | Server Python riêng: TCP/TLS, wire v1/v2, OT/Lamport, ACK và RESYNC |
-| Dữ liệu web | MongoDB/PyMongo cho identity/session/ACL/metadata/settings/history/review; source/binary/artifact trong server volume |
+| Dữ liệu web | MongoDB/PyMongo cho tài khoản/quyền/metadata và source/binary chia chunk; working copy/artifact/cache ở từng backend |
 
-Luồng local web: **trình duyệt → UI Next.js đã build → API/WebSocket Python cùng origin → MongoDB + file/TeX/PDF**. Desktop cũ dùng pywebview thay trình duyệt và còn module cộng tác TCP/TLS cũ. Web dùng quyền chia sẻ tài khoản và WebSocket; luồng OT hiện chạy một backend worker. Node.js dùng cho build; Python phục vụ UI/API/WebSocket khi chạy.
+Luồng local web: **trình duyệt → UI Next.js đã build → API/WebSocket Python cùng origin → MongoDB + working copy/TeX/PDF**. Desktop cũ giữ TCP/TLS để tương thích. Mỗi backend có OT riêng; source giữa các backend đồng bộ bằng shared manifests/CAS và polling, presence/chat vẫn trong từng backend. Mỗi process dùng home riêng. Node.js dùng để build, Python phục vụ UI/API/WebSocket.
 
 ## Chạy desktop cũ từ source (tùy chọn)
 
@@ -184,14 +184,14 @@ Không còn file alias `api.py`, `store.py`, `compiler.py`... ở root package. 
 
 ## Dữ liệu và chuyển từ Java
 
-**Web:** người vận hành cấu hình `LATEX_DATA_DIR` hoặc `--home`; dự án theo tài khoản nằm ở `<data-dir>/users/<user-id>/projects/<id>`. MongoDB quản lý ownership/metadata; source/binary vẫn trên volume. Không chọn/chuyển thư mục server trong giao diện. Các dự án desktop ngoài vùng này cần nén ZIP rồi upload; bản gốc không bị sửa. Cơ chế chọn thư mục/nhập Java qua đường dẫn dưới đây chỉ còn ở desktop cũ. Xem hướng dẫn MongoDB/migration trước khi khởi động web.
+**Web:** người vận hành cấu hình `LATEX_DATA_DIR` hoặc `--home`; working copy nằm ở `<data-dir>/users/<user-id>/projects/<id>`. MongoDB giữ ownership/metadata và source/binary đã publish; local copy dùng compile/cache. Không chọn/chuyển thư mục server trong giao diện. Dự án desktop ngoài vùng này cần nén ZIP rồi upload; bản gốc không bị sửa. Xem [shared storage nhiều máy](docs/SHARED_MONGODB_FILES.md) trước khi chuyển backend.
 
 ```powershell
 $env:LATEX_DATA_DIR = 'D:\Latex-data'
 .\scripts\run-python-web.bat --no-browser
 ```
 
-Khi publish, data-dir phải nằm trên ổ/volume bền vững và có backup. Bản hiện tại vẫn chỉ dành cho một workspace trên loopback; cần thêm session theo người dùng, phân quyền project và worker TeX cách ly trước khi public. Xem [cấu trúc và lộ trình backend](docs/WEB_BACKEND_ARCHITECTURE.md).
+Khi publish cần backup database cùng dữ liệu local cần giữ. Bản hiện tại vẫn bind loopback; cần hoàn thiện trusted proxy/HTTPS, presence phân tán và worker TeX cách ly trước khi public. Không chạy nhiều process ghi cùng data-dir. Xem [cấu trúc backend](docs/WEB_BACKEND_ARCHITECTURE.md).
 
 Home mặc định mới: `~/OverleafDesktopPython` (`C:\Users\<user>\OverleafDesktopPython` trên Windows). Có thể đổi bằng `OVERLEAF_PYTHON_HOME` hoặc tùy chọn `--home` khi chạy module. Dự án cũng có thể nằm ở thư mục ngoài do người dùng chọn.
 

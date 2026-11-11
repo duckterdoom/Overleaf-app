@@ -110,14 +110,29 @@ class LiveDocuments:
                             'updates': doc['updates'][version - start:]})
 
     async def handle(self, project, identifier, user, store, compiler, data):
+        if hasattr(store, 'refresh_shared'):
+            await self.external_edit(project, store, compiler, lambda: store.refresh_shared(project))
+        from latex_backend.storage.shared_files import CloudConflict
+        conflict = False
         async with self.edit_lock:
             # The gateway just validated this project; avoid redundant Atlas root
             # lookups for each nested path operation within this one edit request.
             context = authorized_project.set((store.owner, project))
             try:
                 return await self._handle(project, identifier, user, store, compiler, data)
+            except CloudConflict:
+                conflict = True
             finally:
                 authorized_project.reset(context)
+        if conflict:
+            # Another backend won the file CAS while this push was in flight.
+            # Publish its accepted source as OT updates; the browser rebases its
+            # still-unconfirmed changes and retries rather than losing text.
+            await self.external_edit(project, store, compiler, lambda: store.refresh_shared(project))
+            peer = self.presence.rooms[project][identifier]
+            doc = self.documents.get((project, data.get('file')))
+            if doc:
+                self.send_updates(peer, data['file'], doc, data.get('version', 0))
 
     async def external_edit(self, project, store, compiler, operation):
         """Commit a guarded Word edit and publish it as ordinary OT changes.

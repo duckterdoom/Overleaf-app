@@ -100,10 +100,15 @@ class Presence:
                     await asyncio.wait_for(ws.send_json(await queue.get()), timeout=10)
 
             async def watchdog():
+                last_authorized = 0.0
                 while True:
-                    await asyncio.sleep(5)
-                    current, _, _ = await authorize()
-                    member['name'] = current['name']
+                    await asyncio.sleep(1)
+                    if time.monotonic() - last_authorized >= 5:
+                        current, _, _ = await authorize()
+                        member['name'] = current['name']
+                        last_authorized = time.monotonic()
+                    if hasattr(store, 'refresh_shared'):
+                        await self.live.external_edit(project, store, compiler, lambda: store.refresh_shared(project))
                     self.publish(project)
 
             async def incoming():
@@ -158,7 +163,7 @@ class Presence:
         except (Problem, PyMongoError, ValueError, WebSocketDisconnect, TimeoutError, RuntimeError):
             try:
                 await ws.close(1008)
-            except RuntimeError:
+            except (RuntimeError, WebSocketDisconnect, OSError):
                 pass
         finally:
             if joined:

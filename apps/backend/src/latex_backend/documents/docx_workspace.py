@@ -7,6 +7,7 @@ import uuid
 import zipfile
 from latex_backend.storage.store import Problem, atomic_write
 from latex_backend.pdf_export.service import exporter
+from latex_backend.storage.shared_files import shared_write
 
 
 class DocxWorkspace:
@@ -51,6 +52,7 @@ class DocxWorkspace:
             raise Problem('Checksum DOCX không khớp.')
         return data
 
+    @shared_write
     def commit(self, project, data, metadata):
         if len(data) > 32 * 1024 * 1024:
             raise Problem('DOCX vượt giới hạn 32 MiB.')
@@ -95,6 +97,7 @@ class DocxWorkspace:
                 raise Problem('DOCX vừa được sửa ở cửa sổ khác.', 409)
             return self.commit(project, data, {'snapshot': snapshot, 'fingerprint': pdf.fingerprint, 'edited': False, 'main': pdf.main, 'text_baseline': True})
 
+    @shared_write
     def save(self, project, revision, data):
         with self.store.lock:
             current = self.status(project)

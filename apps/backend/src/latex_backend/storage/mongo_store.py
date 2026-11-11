@@ -11,6 +11,7 @@ from latex_backend.storage.state import State
 from latex_backend.storage.store import Store, Problem, atomic_write, TEXT_SUFFIXES
 from latex_backend.storage.history import History
 from latex_backend.auth.context import authorized_project
+from latex_backend.storage.shared_files import SharedFiles, shared_write
 
 
 class MongoState(State):
@@ -84,6 +85,15 @@ class MongoHistory(History):
         row = self.store.db.history.find_one({'_id': f'{self.store.owner}:{project}:{revision}'})
         if not row:
             raise Problem('Không tìm thấy revision.', 404)
+        if row.get('blob'):
+            folder = self.directory(project) / revision
+            folder.mkdir(parents=True, exist_ok=True)
+            target = folder / 'content.txt'
+            if target.is_symlink() or folder.is_symlink():
+                raise Problem('History không hỗ trợ symbolic link.', 403)
+            if not target.is_file():
+                from latex_backend.storage.store import atomic_write
+                atomic_write(target, self.store.shared_files.download(row['blob']))
         return copy.deepcopy(row['value'])
 
     def list(self, project):
@@ -91,6 +101,7 @@ class MongoHistory(History):
         rows = self.store.db.history.find({'owner_id': self.store.owner, 'project': project}).sort('time', -1)
         return [copy.deepcopy(row['value']) for row in rows]
 
+    @shared_write
     def capture(self, project, name, text, reason='Edited', author='Local'):
         # Parent writes the content payload and an export-side metadata mirror.
         # Its list/dedup operations dispatch to MongoDB methods above.
@@ -101,8 +112,11 @@ class MongoHistory(History):
 
     def persist(self, project, value):
         key = f"{self.store.owner}:{project}:{value['id']}"
+        path = self.store.root(project) / '.overleaf-history' / value['id'] / 'content.txt'
+        blob = {'sha256': value['sha256'], 'size': value['size']}
+        self.store.shared_files.upload(path, blob)
         self.store.db.history.replace_one({'_id': key}, {'_id': key, 'owner_id': self.store.owner,
-            'project': project, 'time': value['time'], 'value': value}, upsert=True)
+            'project': project, 'time': value['time'], 'value': value, 'blob': blob}, upsert=True)
 
     def label(self, project, revision, value):
         if len(value) > 120:
@@ -115,6 +129,7 @@ class MongoHistory(History):
 
 
 class MongoStore(Store):
+    @shared_write
     def save_live(self, project, name, content):
         """Persist acknowledged source without reloading history/settings per key.
 
@@ -143,13 +158,15 @@ class MongoStore(Store):
         home = home.expanduser().resolve()
         super().__init__(home, templates, managed=True, state=MongoState(home, database, owner), locations={})
         self.history, self.records = MongoHistory(self), MongoRecords(self)
+        self.shared_files = SharedFiles(self)
 
     def root(self, project):
-        root = super().root(project)
         if authorized_project.get() != (self.owner, project) and not self.db.projects.find_one({'_id': project, 'owner_id': self.owner, 'deleted': False}):
             raise Problem('Không tìm thấy dự án.', 404)
-        return root
+        self.shared_files.sync(project)
+        return super().root(project)
 
+    @shared_write
     def register(self, project, root):
         root = root.resolve()
         if root != (self.projects / project).resolve() or root.is_symlink():
@@ -171,6 +188,7 @@ class MongoStore(Store):
         row = self.db.projects.find_one({'_id': project, 'owner_id': self.owner, 'deleted': False})
         return {**row['metadata'], 'folder': '', 'storage': 'server'}
 
+    @shared_write
     def write_info(self, project, info):
         self.root(project)
         self.db.projects.update_one({'_id': project, 'owner_id': self.owner, 'deleted': False}, {'$set': {'metadata': self.clean(info)}})
@@ -179,11 +197,32 @@ class MongoStore(Store):
         result = []
         for row in self.db.projects.find({'owner_id': self.owner, 'deleted': False}):
             try:
-                super().root(row['_id'])
+                if not (self.projects / row['_id']).is_dir() and not self.db.project_files.find_one({'_id': row['_id'], 'owner_id': self.owner}, {'_id': 1}):
+                    continue
                 result.append({**row['metadata'], 'folder': '', 'storage': 'server'})
             except (OSError, ValueError, Problem):
                 continue
         return sorted(result, key=lambda item: item['updated'], reverse=True)
+
+    @shared_write
+    def save(self, project, name, content):
+        return super().save(project, name, content)
+
+    @shared_write
+    def add(self, project, name, directory):
+        return super().add(project, name, directory)
+
+    @shared_write
+    def rename_file(self, project, name, target):
+        return super().rename_file(project, name, target)
+
+    @shared_write
+    def delete_file(self, project, name):
+        return super().delete_file(project, name)
+
+    def refresh_shared(self, project):
+        changes = self.shared_files.sync(project, force=True)
+        return {'synced_files': list(set(changes) | self.shared_files.changed.pop(project, set()))}
 
     def delete_project(self, project):
         root = self.root(project)

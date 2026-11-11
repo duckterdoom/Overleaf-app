@@ -1,5 +1,7 @@
 # MongoDB là nguồn dữ liệu chính cho web Latex
 
+**Cập nhật 11/11/2026 — nhiều backend dùng chung database:** source, ảnh, history payload và Word draft hiện có shared manifests/chunks trong MongoDB; local volume là working copy để compile. Các node đăng ký home riêng, không đổi binding của nhau. Đã publish 7 dự án/198 tệp từ Admin và verify checksum. Xem [SHARED_MONGODB_FILES.md](SHARED_MONGODB_FILES.md). Các đoạn mô tả file chỉ ở local và chuyển binding độc quyền phía dưới là kiến trúc lịch sử trước cập nhật này. `--rebind-home` không còn là cách cho hai máy chạy song song; không chạy lệnh đó chỉ vì username Windows khác.
+
 **Đã cutover trên Atlas ngày 10/11/2026:** database `latex` giữ 3 tài khoản, 6 dự án, 28 bản lịch sử; migration complete, nguồn SQLite/JSON không đổi và có backup. Kiểm thử browser dùng PyMongo/Atlas thật với các collection tạm được namespace/guard trong cùng database, đã dọn sạch sau khi đạt các luồng accounts/sharing/PDF/Word/upload/ZIP. Chi tiết vận hành và artifact ở AI_Handoff mục 75. Không coi các kết quả mock của giai đoạn trước là bằng chứng live này.
 
 Backend web dùng **PyMongo + MongoDB** cho tài khoản, phiên, quyền chia sẻ, metadata dự án, cài đặt/hoạt động, metadata history, review và dữ liệu chấm IELTS. Không có fallback tự động về SQLite/JSON khi thiếu cấu hình hoặc mất kết nối.

@@ -1,10 +1,12 @@
 """MongoDB connection and indexes for the application, not the legacy prototype."""
 import json
 import os
+import hashlib
+import socket
 from pathlib import Path
 
 from pymongo import MongoClient
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, OperationFailure
 from latex_backend.core.config import REPO
 
 
@@ -34,12 +36,15 @@ def connect():
     client = None
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=8000, connectTimeoutMS=8000,
-                             socketTimeoutMS=20000, tz_aware=True, appname='LatexWeb')
+                             socketTimeoutMS=20000, tz_aware=True, appname='LatexWeb', readPreference='primary')
         client.admin.command('ping')
         return client, client[name]
-    except (PyMongoError, ValueError):
+    except (PyMongoError, ValueError) as error:
         if client is not None:
             client.close()
+        if isinstance(error, OperationFailure) and (error.code == 18 or
+                (error.code == 8000 and any(value in str(error).lower() for value in ('bad auth', 'authentication failed')))):
+            raise MongoSetupError('MongoDB đã phản hồi nhưng xác thực database user thất bại. Kiểm tra username/password, cluster và authSource trong config/mongodb.local.json hoặc LATEX_MONGO_URI. Dùng tài khoản database, không phải tài khoản Google/Atlas web. URI/secret không được in ra.') from None
         raise MongoSetupError('Không kết nối được MongoDB. Kiểm tra URI, database user, IP access list và mạng. URI/secret không được in ra.') from None
 
 
@@ -70,16 +75,18 @@ def indexes(db):
 def prepare(home: Path, db):
     home = home.expanduser().resolve()
     bound = db.app_config.find_one({'_id': 'storage_home'})
-    if bound and bound['path'] != str(home):
-        raise MongoSetupError('Database đang gắn với thư mục dữ liệu khác. Dùng database riêng hoặc làm quy trình chuyển storage home có kiểm chứng.')
     migration = db.migrations.find_one({'_id': 'sqlite_json_v1'})
     legacy = any((home / name).exists() for name in ('.auth/accounts.sqlite3', '.app/state.json', '.app/project-locations.json'))
     for name in ('projects', 'users'):
         folder = home / name
         if folder.is_dir() and any(folder.iterdir()):
             legacy = True
-    initialized = bound and bound.get('backend') == 'mongodb'
+    initialized = (bound and bound.get('backend') == 'mongodb') or (migration and migration.get('state') == 'complete')
     if (migration and migration.get('state') != 'complete') or (legacy and not migration and not initialized):
         raise MongoSetupError('Có dữ liệu SQLite/JSON cũ chưa chuyển. Dừng web rồi chạy script migrate-mongodb với --dry-run, sau đó --apply. Xem docs/MONGODB_PRIMARY.md.')
     indexes(db)
-    db.app_config.update_one({'_id': 'storage_home'}, {'$set': {'path': str(home), 'backend': 'mongodb'}}, upsert=True)
+    # Keep the original primary volume descriptor for migration/backups. Each
+    # backend registers its own working copy without stealing another binding.
+    db.app_config.update_one({'_id': 'storage_home'}, {'$setOnInsert': {'path': str(home), 'backend': 'mongodb'}}, upsert=True)
+    node = hashlib.sha256((socket.gethostname() + ':' + str(home)).encode()).hexdigest()[:24]
+    db.app_config.update_one({'_id': 'storage_node:' + node}, {'$set': {'path': str(home), 'host': socket.gethostname(), 'backend': 'mongodb', 'files': 'shared-v1'}}, upsert=True)

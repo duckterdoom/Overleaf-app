@@ -14,6 +14,7 @@ import io
 import zipfile
 from html.parser import HTMLParser
 from latex_backend.storage.store import Problem, REPO, atomic_write
+from latex_backend.storage.shared_files import shared_write
 
 LIMIT = 8 * 1024 * 1024
 MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -336,6 +337,7 @@ class Word:
             value["needsRefresh"] = value.get("converterVersion") != CONVERTER_VERSION
             return value
 
+    @shared_write
     def write(self, project, value):
         value = copy.deepcopy(value)
         value["html"] = sanitize(value["html"])
@@ -621,6 +623,7 @@ class Word:
                 },
             )
 
+    @shared_write
     def save(self, project, data):
         with self.lock:
             current = self.read(project)
