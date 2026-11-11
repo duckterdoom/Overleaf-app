@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
-import os
 import json
 import re
 import secrets
@@ -25,6 +24,7 @@ from latex_backend.storage.mongo_store import MongoStore
 from pymongo.errors import PyMongoError
 from latex_backend.collaboration.sharing import Sharing
 from latex_backend.auth.context import request_user, authorized_project
+from latex_backend.auth.google_config import settings as google_settings, GoogleSetupError
 
 COOKIE = 'latex_account'
 FLOW_COOKIE = 'latex_google_flow'
@@ -134,11 +134,18 @@ class WebAccounts:
             return app, store
 
     def google_config(self):
-        return os.environ.get('LATEX_GOOGLE_CLIENT_ID', ''), os.environ.get('LATEX_GOOGLE_CLIENT_SECRET', '')
+        try:
+            value = google_settings()
+        except GoogleSetupError as error:
+            raise Problem(str(error), 503) from None
+        return value.client_id, value.client_secret
 
     def callback_url(self, request):
         # Operator controls the public base URL; no arbitrary return URL is accepted.
-        base = os.environ.get('LATEX_PUBLIC_URL', str(request.base_url).rstrip('/')).rstrip('/')
+        try:
+            base = google_settings().public_url or str(request.base_url).rstrip('/')
+        except GoogleSetupError as error:
+            raise Problem(str(error), 503) from None
         parsed = urlsplit(base)
         if parsed.scheme != 'https' and not (parsed.scheme == 'http' and parsed.hostname in {'localhost', '127.0.0.1'}):
             raise Problem('LATEX_PUBLIC_URL cần HTTPS hoặc localhost.', 503)

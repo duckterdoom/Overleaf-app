@@ -4,6 +4,7 @@ No project/runtime is deleted, no interpreter is downloaded, and no database
 configuration is read. PATH shims represent broken/missing launchers.
 """
 import os
+import json
 from pathlib import Path
 import shutil
 import subprocess
@@ -124,3 +125,27 @@ def test_web_build_passes_validated_interpreter_to_uv(tmp_path):
     assert '--python "' + str(root / 'apps/backend/.venv/Scripts/python.exe') + '"' in arguments
     assert '--extra web-local' in arguments and '--frozen' in arguments
     assert (root / 'npm.txt').read_text().splitlines() == ['ci', 'run build']
+
+
+def test_google_import_on_fresh_clone_needs_no_backend_dependencies(tmp_path):
+    root, env = workspace(tmp_path, {'python': True})
+    shutil.copyfile(SCRIPTS / 'setup-google-auth.bat', root / 'scripts/setup-google-auth.bat')
+    package = SCRIPTS.parent / 'apps/backend/src/latex_backend'
+    for name in ('__init__.py', 'core/config.py', 'auth/__init__.py', 'auth/google_config.py'):
+        destination = root / 'apps/backend/src/latex_backend' / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(package / name, destination)
+    env['PATH'] += os.pathsep + str(Path(POWERSHELL).parent) + os.pathsep + str(Path(os.environ['SystemRoot']) / 'System32')
+    env['APPDATA'] = str(root / 'private profile')
+    for key in ('LATEX_GOOGLE_CLIENT_ID', 'LATEX_GOOGLE_CLIENT_SECRET', 'LATEX_PUBLIC_URL', 'LATEX_GOOGLE_CONFIG'):
+        env.pop(key, None)
+    download = root / 'team.json'
+    download.write_text(json.dumps({'web': {'client_id': 'fake-client', 'client_secret': 'fake-private-secret'}}))
+    for arguments in ([str(download)], ['--check']):
+        result = subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/cmd.exe'), '/d', '/c',
+                                 'scripts\\setup-google-auth.bat', *arguments], cwd=root, env=env,
+                                capture_output=True, text=True, timeout=90)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert 'fake-private-secret' not in result.stdout + result.stderr
+    assert (Path(env['APPDATA']) / 'Latex/google.local.json').is_file()
+    assert 'configured (user-file)' in result.stdout

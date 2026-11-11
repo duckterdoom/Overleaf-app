@@ -64,3 +64,6 @@ Desktop.ini
 # Persistent web data (set LATEX_DATA_DIR outside the source tree in production).
 /var/
 /config/mongodb.local.json
+/config/google.local.json
+# Google Cloud credential downloads must remain private.
+client_secret*.json

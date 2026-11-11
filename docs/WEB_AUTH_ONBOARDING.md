@@ -27,6 +27,41 @@ Nếu server cũ vẫn đang chạy, dừng bằng Ctrl+C ở terminal đó rồ
 
 ## Cấu hình Google
 
+### Dev clone về: lưu cấu hình một lần, các clone sau tự nhận (11/11/2026)
+
+Backend tự đọc Google OAuth từ file riêng, không cần nhập `$env:...` mỗi lần chạy. Nhóm dùng một OAuth client **Web application** dành cho development; không cần mỗi dev tạo lại client riêng nếu cùng dùng các callback đã đăng ký.
+
+Người quản lý nhóm chuẩn bị JSON tải từ Google Cloud hoặc file `config/google.local.json` theo `config/google.local.example.json`. Nếu ID/secret đang có trong terminal dùng để chạy web, có thể xuất file riêng mà không nhập lại và không in credential:
+
+```powershell
+.\scripts\setup-google-auth.bat --from-env --project
+```
+
+Lệnh trên cần hai biến credential đã được đặt trong terminal đó từ trước. Nếu chưa có, dùng JSON Web client tải từ Google Cloud. File thật đã gitignore; gửi cho dev qua kênh riêng, không commit vào repository. Google secret từng bị lộ cần thay trên Google Cloud trước khi phát cho nhóm.
+
+Dev nhận file và **import một lần cho tài khoản Windows**, không phải mỗi lần clone:
+
+```powershell
+.\scripts\setup-google-auth.bat "D:\private\google-team.json"
+.\scripts\run-python-web.bat
+```
+
+Mặc định import lưu tại `%APPDATA%\Latex\google.local.json`, nên clone mới/chuyển thư mục repository vẫn tự dùng lại. Nếu không muốn import, chỉ cần đặt file nhóm tại `config/google.local.json` trong clone rồi chạy web. Script chấp nhận cả JSON chuẩn Google Cloud dạng `{"web": {...}}` và dạng phẳng `client_id`/`client_secret`/`public_url`. OAuth client dạng Desktop/installed bị từ chối. Có `--replace` để chủ động thay file đã tồn tại; không ghi đè ngầm.
+
+Kiểm tra không lộ credential và không cần kết nối MongoDB/Google:
+
+```powershell
+.\scripts\setup-google-auth.bat --check
+```
+
+Thứ tự ưu tiên: cặp biến môi trường ID/secret đầy đủ → file chỉ định bằng `LATEX_GOOGLE_CONFIG` nếu có → `config/google.local.json` → file theo tài khoản máy. Không ghép ID và secret từ các nguồn khác nhau. `LATEX_PUBLIC_URL` ưu tiên trường `public_url`; để trống thì callback tự dùng host/cổng đang mở. Các URI thực tế vẫn phải được nhóm đăng ký một lần trên Google, ví dụ `http://127.0.0.1:8000/api/auth/google/callback` và cổng 8001 nếu cần. Khởi động lại backend sau khi đổi cấu hình để bắt đầu lượt OAuth mới; không cần build frontend chỉ để đổi config.
+
+macOS: `~/Library/Application Support/Latex/google.local.json`; Linux: `$XDG_CONFIG_HOME/latex/google.local.json` hoặc `~/.config/latex/google.local.json`. Có thể import bằng `python -m latex_backend.auth.google_config PATH_TO_JSON` trong môi trường đã cài backend.
+
+Git clone không tự mang secret sang một máy chưa bao giờ được cấp cấu hình. Cấp file một lần là bước cần thiết khi mỗi dev chạy backend riêng; sau đó chỉ chạy launcher như bình thường. MongoDB vẫn cần cấu hình riêng như trước, không được cấp tự động bởi file Google. Test cấu hình/file và callback dùng Google exchange mô phỏng, không thay thế việc kiểm tra consent/client thật trên Google Cloud.
+
+### Cấu hình Google Cloud và biến môi trường (vẫn hỗ trợ)
+
 Tạo OAuth client loại **Web application** trong dự án Google của bạn; cấu hình màn consent với các scope `openid email profile`. Khi ở chế độ thử nghiệm, thêm tài khoản thử nghiệm nếu cấu hình audience yêu cầu.
 
 Đăng ký Authorized redirect URI chính xác:

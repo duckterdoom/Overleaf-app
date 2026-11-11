@@ -31,6 +31,8 @@ Mở **http://127.0.0.1:8000/**; launcher tự mở trình duyệt. Dừng bằn
 
 MongoDB và công cụ TeX cần cấu hình riêng trên máy mới: nếu chưa có `config/mongodb.local.json`, copy từ `config/mongodb.local.example.json` rồi điền URI riêng theo [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Không commit URI/mật khẩu. `--build` chỉ chuẩn bị Python/UI rồi thoát; lệnh không có `--build` mới chạy backend và kết nối database. `run-python-server.bat` là server TCP cũ, không phải lệnh chạy web.
 
+**Google cho nhóm dev:** nhận JSON Google Web OAuth của nhóm qua kênh riêng, chạy `scripts\setup-google-auth.bat "D:\private\google-team.json"` **một lần trên mỗi tài khoản máy**. Các lần chạy và clone sau tự đọc cấu hình đã lưu, không cần nhập `$env:...`. Hoặc đặt file ngay tại `config/google.local.json` (gitignore). Người quản lý đã có biến Google trong terminal có thể tạo file chia sẻ riêng bằng `scripts\setup-google-auth.bat --from-env --project`. Kiểm tra bằng `scripts\setup-google-auth.bat --check`; hướng dẫn/callback/độ ưu tiên ở [WEB_AUTH_ONBOARDING.md](docs/WEB_AUTH_ONBOARDING.md). Không đặt secret thật trong Git.
+
 macOS/Linux:
 
 ```sh
