@@ -7,7 +7,7 @@ const python = path.resolve(process.argv[2]);
 const home = path.resolve(process.argv[3]);
 const server = spawn(
     python,
-    ["-X", "utf8", path.join(repo, "apps/desktop/tests/serve_ui.py"), home],
+    ["-X", "utf8", path.join(repo, "apps/backend/tests/serve_ui.py"), home],
     { cwd: repo, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] },
 );
 let serverErrors = "";

@@ -6,15 +6,15 @@ set "PYTHONUTF8=1"
 set "NEXT_TELEMETRY_DISABLED=1"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-python.ps1"
 if errorlevel 1 goto failed
-set "DESKTOP_PYTHON=%CD%\apps\desktop\.venv\Scripts\python.exe"
+set "DESKTOP_PYTHON=%CD%\apps\backend\.venv\Scripts\python.exe"
 "%DESKTOP_PYTHON%" -c "import sys; sys.exit(0 if sys.version_info >= (3,12) else 1)"
 if errorlevel 1 (
     echo Python 3.12+ is required. See docs\PYTHON_NEXTJS_MIGRATION.md.
     goto failed
 )
-"%DESKTOP_PYTHON%" -c "import fastapi, uvicorn, webview, PIL, pypdf, pdf2docx, pymupdf, docx, overleaf_desktop" > nul 2>&1
+"%DESKTOP_PYTHON%" -c "import fastapi, uvicorn, webview, PIL, pypdf, pdf2docx, pymupdf, docx, latex_backend" > nul 2>&1
 if not errorlevel 1 goto dependencies_ready
-"%DESKTOP_PYTHON%" -m pip install -e "apps/desktop[desktop]"
+"%DESKTOP_PYTHON%" -m pip install -e "apps/backend[desktop]"
 if errorlevel 1 goto failed
 :dependencies_ready
 if /i "%~1"=="--build" goto build_ui
@@ -34,9 +34,9 @@ popd
 :launch
 if /i "%~1"=="--build" exit /b 0
 if /i "%~1"=="--smoke" (
-    "%DESKTOP_PYTHON%" -X utf8 -m overleaf_desktop.main --smoke
+    "%DESKTOP_PYTHON%" -X utf8 -m latex_backend.entrypoints.desktop --smoke
 ) else (
-    "%DESKTOP_PYTHON%" -X utf8 -m overleaf_desktop.main
+    "%DESKTOP_PYTHON%" -X utf8 -m latex_backend.entrypoints.desktop
 )
 if errorlevel 1 goto failed
 exit /b 0

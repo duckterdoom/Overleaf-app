@@ -1,5 +1,218 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+## 83. Vùng bôi của chính mình phải nhìn thấy; bỏ vùng bôi remote (11/11/2026)
+
+User xác nhận selection đã tác dụng nhưng chính người kéo không thấy màu bôi, trong khi tài khoản kia thấy vùng bôi remote; yêu cầu bỏ remote range. Đã tái hiện và chụp ảnh trước sửa: đúng range BRAVO nhưng không có nền selection nhìn thấy. Nguyên nhân CSS cm-activeLine có background đục/important nằm trên selection layer CodeMirror; remote mark nằm trong lớp chữ nên lại thấy. Mục 82 sửa state/reselect nhưng chưa kiểm pixel hiển thị nên lọt lỗi này.
+
+- `page.tsx`: extension editorAttributes.compute theo selection đặt data-local-selection cục bộ, không phụ thuộc socket hay tài khoản khác.
+- CSS: khi có local range, active-line background transparent; selection layer có màu rõ cho light/dark/focus/blur. Giữ xử lý chọn chữ/multi-range gốc của CodeMirror. Bỏ CSS remote-selection.
+- `usePresence.ts`: chỉ vẽ remote caret/name, không tạo Decoration.mark remote range; gửi anchor=head. `presence.py` cũng thu gọn anchor=head với mọi client (kể cả client cũ), giữ identity/ACL/cursor và live text sync. Comment và highlight quote đã lưu vẫn chia sẻ như mục 82; đó không phải vùng kéo chọn live.
+
+Kiểm chứng bằng **ảnh render thực**, không chỉ state: `target/local-selection-before-20261111/local-selection-line.png` so với `target/local-selection-visible-20261111-01/local-selection-line.png`, pixel xanh theo predicate của test từ 2 lên 390. Đã xem ảnh trước/sau. Browser test thêm assert local attribute, remote-selection count=0 và pixel check bằng Pillow; backend test xác nhận range gửi lên bị thu gọn. Production build/TypeScript, **182 backend tests** và diff check đạt.
+
+Browser shared-review selection và caret/live-sync regression local đạt. Atlas thật `target/presence-atlas-74febb64b5457bc4/atlas-report.json` passed=true/cleaned=true, test drag/replace/delete và comment/reply/resolve/delete/viewer vẫn đạt. Dữ liệu test đã dọn, không đổi project/account thật. UI đã build; cần restart backend và Ctrl+F5 cả hai browser. Không commit/push hoặc tự dừng server thật.
+
+## 82. Sửa kéo chọn chữ và đồng bộ nhận xét giữa tài khoản (11/11/2026)
+
+User báo kéo bôi một đoạn khó, vùng chọn bị thành cả dòng/ảnh hưởng xóa và comment; editor khác tạo comment nhưng owner không thấy. Đã xác định `ReviewPanel` luôn mounted dù bị hidden, effect điều hướng phụ thuộc hàm translator mới ở mỗi render nên tự chọn lại quote cũ khi presence/poll/typing làm giao diện render. Panel cũng chỉ fetch review một lần theo route nên không nhận thay đổi mới.
+
+- `ReviewPanel.tsx`: memo translator; click vị trí thread là yêu cầu điều hướng **một lần**, tiêu thụ active rồi không chọn lại khi rerender. Giữ draft/reply khi refresh; chặn GET cũ ghi đè POST mới qua mutation generation. Mở panel/focus/reconnect sẽ tải review mới; không poll panel ẩn, nhưng notification vẫn refresh để cập nhật highlights. Panel mở fallback 5 giây editor / 1,5 giây viewer. Sửa dòng mô tả cũ “lưu local/chưa sync” cho web. Viewer read-only không có composer/reply và không thực hiện resolve/delete.
+- `page.tsx`: memo extensions/basicSetup và callback CodeMirror qua handler ref. Presence/comment render không còn reconfigure mouse selection liên tục. Vẫn lấy quote từ selection thật để thêm nhận xét; callback dùng state mới nhất và giữ OT/legacy cursor.
+- Backend `parity_api.update_review`: update qua thread giữ ContextVar principal và khóa Review; sau persist mới gọi notification. `WebAccounts.workspace` gắn callback vào tenant app; `Presence.review_changed` chỉ phát invalidation project qua queue, không phát comment text không qua ACL. `usePresence` nhận event và phát sự kiện theo project; reconnect cũng refresh review. GET/POST vẫn giữ quyền owner/editor/viewer hiện tại.
+
+Kiểm chứng: **182 backend tests passed**, production Next.js build/TypeScript và diff check đạt. `test_shared_review.py` kiểm tên thật, owner/editor thấy chung, notification, reply và viewer không ghi được. Browser mới `test-shared-review-selection.mjs` dùng Edge/Chrome thật, click thread cũ rồi kéo một phần từ trong lúc có remote OT update, thay/xóa đúng đoạn, comment đúng quote DELTA, reply/resolve/delete ở máy còn lại, viewer thấy comment mới sau khi panel đã mở và bị chặn ghi. Local đạt `target/shared-review-selection-20261111-01`; Atlas thật đạt `target/presence-atlas-a0f7491b9e3e52c7/atlas-report.json` passed/cleaned=true. Đã xem screenshot `shared-comment-reply.png`; dữ liệu test tách namespace/guard và đã dọn, không đổi project/account/comment thật.
+
+Regression sync gõ liên tục/offline/undo đạt `target/review-fix-live-regression-20261111`. Regression PDF 2 trang/export đúng byte, Word edit/export, upload/avatar và ZIP compile đạt `target/review-fix-documents-20261111-02`. Có điều chỉnh test-local-web dùng Ctrl+S + chờ disabled thay vì click nút Save đang bị disabled đúng do OT đã lưu quá nhanh; đây là sửa race của test, không đổi cơ chế lưu. Test so source DOM phải bỏ nhãn remote cursor để không nhầm tên người dùng là source text.
+
+Không cần migrate hoặc tạo lại comment đã lưu; mở lại panel sẽ đọc dữ liệu chung. UI đã build. User lưu bài → Ctrl+C server cũ trong terminal có Google env → `scripts\run-python-web.bat` → Ctrl+F5 cả Edge/Chrome. Không tự kill/restart server thật, không commit/push. Vẫn giới hạn một web worker như OT hiện tại.
+
+## 81. Tối ưu compile và PDF → Word, chuẩn bị điều phối job cho server (11/11/2026)
+
+Theo yêu cầu tăng tốc compile/convert khi sau này lên server, đã đọc pipeline thật và đối chiếu latexmk recorder/pdf2docx docs. Không sửa bundle converter gốc, không đổi engine/chế độ layout hoặc bật multiprocessing ép vào universal engine.
+
+- `compilation/compiler.py`: dùng lại snapshot PDF/SyncTeX/geometry/log khi source fingerprint, engine, executable và input recorder .fls không đổi; yêu cầu có recorder, không marker lỗi/dirty. Nguồn/dependency sửa/xóa, clean, đổi engine hoặc force bỏ qua fast cache. Replay log để giữ cảnh báo. `CompileBody.force` gọi latexmk -g. Giữ aux/fdb cho lượt incremental có sửa. Gộp các lookup/fingerprint trùng; ghi activity qua thread.
+- `pdf_export/service.py`: cache Word theo SHA256 PDF bytes + fingerprint bundle/worker/phiên bản thư viện, không phụ thuộc snapshot ID. RAM cache và cache riêng từng project `.overleaf-pdf-word-cache` có checksum/ZIP validation; giữ tối đa 4 file và 256 MiB mỗi project. Hỏng cache tự convert lại; không ghi đè Word draft đã edit. Gộp request trùng bằng lock có timeout; recheck verified PDF trước/sau conversion và cache hit. Không tạo worker khi có cache hợp lệ. Converter cập nhật cần restart backend để refresh signature.
+- `core/work_limits.py`: giới hạn toàn process mặc định 2 compile và 1 Word, cấu hình LATEX_MAX_COMPILE_JOBS/LATEX_MAX_WORD_JOBS (1–16). Compile đợi slot hủy được; Word đợi slot có timeout, releases slot khi lỗi/timeout. Vẫn một active compile/account và trạng thái RAM một API worker; không tự scale đa worker/Redis.
+- Tests mới `test_build_performance.py`: source/package đổi/xóa, force/clean invalidation, log replay, duplicate Word chỉ chạy worker một lần, cache disk khi snapshot ID mới, corrupt DOCX/metadata và slot cancellation. Sửa fixture ZIP trong `test_multidocument.py` dùng timestamp cố định để tránh so byte flake khi qua mốc 2 giây ZIP.
+
+Benchmark cuối dùng TeX/converter thật, fixture **4 trang** text/math/table/PNG, Store local không có RTT Atlas: compile đầu 572ms; chạy latexmk no-op như đường cũ 234ms; unchanged snapshot cache `[8,8,8]`ms; có sửa nguồn incremental 365ms. Word cold 626ms, RAM cache 3ms, disk cache exporter mới 4ms; DOCX cache giống byte và stale export bị chặn. Report `target/build-word-performance-20261111-final/benchmark.json`. Đây là cold/hit trên một fixture, không khẳng định cold compile/convert tài liệu lớn đã nhanh hơn hoặc tốc độ server tương đương.
+
+Kiểm chứng: toàn bộ **181 backend tests** đạt ở lượt tổng, sau đó chạy lại tests compile/Word cho các thay đổi nhỏ cuối; browser regression `target/build-word-browser-20261111` đạt lưu source, PDF 2 trang/export byte-identical, PDF tab, Word edit/export, uploads/avatar, ZIP import/compile. Tests manifest xác nhận 11 file converter gốc/figures giữ hash đúng. Hướng dẫn mới `docs/COMPILE_WORD_PERFORMANCE.md`, README có link.
+
+Chưa triển khai public server hoặc sửa deploy/python/compose.yaml (có nội dung user riêng). Launcher/host guard vẫn loopback. Khi lên Internet cần worker compile/convert cách ly CPU/RAM/filesystem/secrets và queue/artifact chung nếu scale; không chỉ tăng Uvicorn --workers vì OT/snapshot còn RAM. Không commit/push hoặc dừng server thật. Để dùng backend mới: user lưu bài, Ctrl+C server cũ, chạy `scripts\run-python-web.bat`; không cần build frontend vì lần này không đổi UI.
+
+## 80. Kiểm tra lại sau khi tiếp tục phiên làm việc (11/11/2026)
+
+User yêu cầu rà soát kỹ sau khi tạm dừng hôm trước. Đã kiểm lại file/code, startup script và trạng thái process; không reset Git, không sửa account/ACL/source dự án thật và không dừng server của user.
+
+- **Toàn bộ backend: 178 tests passed** (33,17 giây); chỉ có deprecation warnings thư viện. TypeScript, production Next.js build và git diff --check đều đạt.
+- Browser Edge–Chrome tách process: `target/resume-audit-20261111-presence` đạt lại cursor/avatar, xóa chữ, sửa đồng thời, undo/redo, offline pending, viewer, reload/disconnect. Bổ sung regression gõ liên tục từng phím (khác insertText một transaction) vào `test-presence.mjs`; lượt `target/resume-audit-20261111-burst` đạt, 128 ký tự burst hội tụ giữa hai editor.
+- Regression tài liệu `target/resume-audit-20261111-documents` đạt bootstrap/reload, lưu dự án, PDF thật 2 trang và export giống byte, PDF tab, Word edit/export, upload/binary preview/avatar, ZIP import/compile.
+- Đo Atlas thật lại bằng 1 warmup + 8 mẫu Edge–Chrome: **median 396 ms, P95 thực nghiệm/max 446 ms**, samples `[436,368,446,340,423,354,445,340]`. Report `target/presence-atlas-42f15ec88a422dc8/speed.json`; Atlas report passed/cleaned=true, collections test ngẫu nhiên có guard đã dọn. Số liệu mẫu nhỏ, không phải SLA hoặc benchmark nhiều người/tài liệu lớn. Không dùng số cũ 387 ms như thể là kết quả đo lần này.
+
+Phát hiện vận hành: **cổng 8000 đang có Python PID 71840**, process khởi động trước lần cập nhật `collaboration/live_documents.py` (đã đối chiếu LastWriteTime > StartTime). Python launcher không hot reload, nên server đang giữ code được import trước lần cập nhật. Không kill/restart từ tool vì user có thể còn bài chưa lưu và Google env ở terminal riêng. Để áp dụng: lưu bài → Ctrl+C trong terminal đang chạy server → `scripts\run-python-web.bat` → Ctrl+F5 cả Edge/Chrome. UI đã được build lại trong lượt này; --build chỉ build rồi thoát nếu user tự dùng. Qua các kiểm thử trên chưa phát hiện lỗi mới cần đổi implementation; thay đổi lần này chỉ mở rộng regression và ghi handoff.
+
+## 79. Tăng tốc đồng bộ: đo trước/sau với Edge–Chrome và Atlas (11/11/2026)
+
+Đã tối ưu theo yêu cầu sync chậm, giữ source nguyên tử + fsync, metadata/activity MongoDB trước ack và vẫn kiểm phiên/quyền mỗi push.
+
+- `liveSync.ts`: thay trailing debounce 60ms bằng batch 16ms không bị dời vô hạn khi gõ liên tục; dọn timer đúng khi disconnect/reconnect.
+- `useParity.ts`: khi OT đang hoạt động, bỏ HTTP editing/checkpoint trùng cho từng lần gõ; không GET toàn bộ source mà OT đã quản lý. Poll cây file/PDF mỗi 3 giây cho live editor, viewer vẫn 750ms. Nội dung vẫn truyền bằng WebSocket, không chờ poll.
+- `presence.py` / `web_accounts.py`: dùng workspace đã gắn với socket và kiểm session/ACL/project trên từng push, tránh định tuyến lại workspace owner liên tục. Các MongoDB lookup của HTTP gateway chạy bằng thread, không chặn event loop WebSocket.
+- `MongoStore.save_live`: chỉ ghi source, cập nhật metadata.updated và tăng activity; bỏ đọc lại toàn bộ lịch sử/settings cho mỗi phím. `LiveDocuments` gom history tối đa một checkpoint mới nhất mỗi tác giả/file trong khoảng 2 giây, giữ thứ tự cập nhật, flush khi rời và dừng server bình thường. Source đã ack không phụ thuộc checkpoint lịch sử đang chờ; hard-kill có thể mất checkpoint chưa ghi, không mất source đã xác nhận. Lỗi/quota history có cảnh báo sạch, không in URI.
+- Persistence chạy trong thread dưới khóa authority async tuần tự và kiểm lại source dưới store.lock để không đè thay đổi HTTP/external. Nếu socket ngắt khi đang ghi, hoàn tất commit/version/broadcast trước cleanup; test cancellation mới kiểm tra trường hợp này.
+
+Đo **cùng máy, localhost + Atlas, hai browser process Edge/Chrome**, 1 warmup và 8 mẫu luân phiên hai chiều, từ thao tác chèn đến DOM phía kia hiển thị:
+
+| Chỉ số | Trước | Sau |
+| --- | --- | --- |
+| Median | 1.740 ms | 387 ms |
+| P95 thực nghiệm (8 mẫu, tức mẫu lớn nhất) | 2.337 ms | 718 ms |
+
+Median giảm khoảng 78%, tương đương 4,5 lần nhanh hơn trong lượt đo; đây là mẫu nhỏ trên môi trường hiện tại, không phải SLA hoặc benchmark tải nhiều người. Dữ liệu gốc: `target/presence-atlas-0653258d7f5b7585/speed.json` và `target/presence-atlas-c198eb14fa9f0648/speed.json`. Report Atlas cuối passed/cleaned=true; collections test có prefix/guard đã dọn, không đổi account/dự án thật. Benchmark mới `apps/frontend/scripts/test-sync-speed.mjs`.
+
+Kiểm chứng: production build/TypeScript và diff check đạt; **26 backend tests** auth/sharing/Mongo/presence/live đạt; Edge–Chrome regression `target/sync-speed-regression-final` đạt cursor/avatar, xóa chữ, sửa đồng thời, undo/redo riêng người, offline pending + remote edits, viewer, reload và disconnect. Chưa benchmark nhiều người hoặc file lớn, vẫn một worker. UI đã build; user lưu bài, Ctrl+C server cũ, chạy `scripts\run-python-web.bat`, rồi Ctrl+F5 cả hai browser. --build vẫn chỉ build rồi thoát.
+
+## 78. Đồng bộ nội dung source trực tiếp bằng CodeMirror OT/WebSocket (10/11/2026)
+
+User thử xóa chữ n ở tài khoản editor nhưng owner không đổi. Nguyên nhân là các mục 76–77 chỉ có presence/cursor; nội dung vẫn phụ thuộc lưu/polling. Mục này **thay thế giới hạn chưa OT/realtime** của các mục cũ.
+
+Đã thêm `@codemirror/collab` và lockfile frontend. `lib/liveSync.ts` quản lý Compartment theo project/file/view/account, sendableUpdates/receiveUpdates, rebase thao tác local chưa xác nhận, undo/redo và chờ ack. `usePresence.ts` dùng cùng WebSocket cho sync-open/sync-push/sync-snapshot/sync-updates; heartbeat/cursor vẫn có. `page.tsx` đưa collab vào CodeMirror; nút Lưu/compile web chờ flush live, không PUT toàn file ghi đè. Callback cập nhật savedText/dirty/stale và không phát lại remote change thành local edit. `useParity.ts` không nạp toàn bộ source qua polling khi live authority đang quản lý editor.
+
+Backend `collaboration/live_documents.py`: authority version/epoch một worker, áp dụng ChangeSet JSON theo UTF-16 giống JavaScript (có tiếng Việt/emoji/multiline). Kiểm session/ACL mỗi push; clientID bị ràng buộc với user đăng nhập, history lấy tác giả từ server. Bản version cũ được trả các updates đã chấp nhận để CodeMirror rebase và thử lại, không overwrite bản mới. Lưu source + metadata/history trước khi broadcast/ack. Queue document đáng tin cậy 128 phần tử; presence không được xóa document message. Overflow ngắt để reconnect/catch up. Cache log giới hạn 4.096 thao tác/8 MiB mỗi file; giải phóng file không còn editor theo dõi. Bỏ query root lặp trong cùng edit sau khi gateway đã kiểm project.
+
+Kiểm chứng: 25 tests auth/sharing/Mongo/presence/live đạt; test mới `test_live_documents.py` kiểm xóa n, persistence, broadcast đúng client, stale push không overwrite, retry version mới, reopen và Unicode/malformed ChangeSet. Browser Edge+Chrome riêng đạt xóa chữ không nhấn Lưu, hai bên chèn đồng thời hội tụ, file switch, cursor/avatar, viewer, reload, undo/redo. Production build + TypeScript đạt. Regression tài liệu tại `target/live-sync-documents-01` đạt PDF 2 trang/export đúng byte, Word edit/export, upload/ảnh/avatar và ZIP compile. Kiểm live Atlas tách collections có guard tại `target/presence-atlas-75f8e6fdf10b0fb8` passed/cleaned=true; dữ liệu test đã dọn, không sửa hai account hay dự án thật. Test so sánh source DOM phải loại bỏ nhãn remote cursor, tránh so tên hai người khác nhau như thể là nội dung source.
+
+Lượt cuối sau tối ưu/context và bảo vệ chuyển room: `target/live-sync-offline-final` đạt cả pending khi ngắt socket/khôi phục mạng trong lúc phía kia sửa, undo/redo và convergence source (không tính nhãn cursor). Atlas thật lần cuối `target/presence-atlas-6dfc8092ff3852b7/atlas-report.json` passed=true, cleaned=true; đã dọn collections test. Đã xem screenshot `live-edits-synchronized.png`. Frontend production build và diff check đạt.
+
+Giới hạn: source tự lưu khi live đang kết nối dù tùy chọn autoSave cũ tắt; không cần bấm Lưu để truyền chữ. Viewer vẫn xem bản đã lưu bằng polling, không quảng bá presence. OT chưa áp dụng lên Word/DOCX/review/chat/cây file. Chưa nhiều worker/server: authority và replay log trong RAM, nội dung đã ack trên volume + metadata Mongo. Reconnect cùng epoch giữ/rebase pending; nếu server restart/ngoại lực đổi source hoặc không còn replay window để rebase an toàn thì giữ bản local và báo để sao chép/đối chiếu, không tự ghi đè. Chưa có offline queue bền qua reload/đóng browser.
+
+UI đã build; user cần lưu bài, Ctrl+C server cũ, chạy `scripts\run-python-web.bat` trong terminal giữ Google env rồi Ctrl+F5 cả Edge/Chrome. Nếu tự build lại: --build chỉ build rồi thoát, chạy thêm lần không --build. Không tự dừng/restart process thật từ tool.
+
+## 77. Sửa presence Edge/Chrome trên localhost (10/11/2026)
+
+User xác nhận cùng URL/cổng/dự án nhưng không thấy con trỏ, có lúc nhóm cộng tác chỉ hiện chính mình. Đọc Atlas xác nhận cùng shared project, quyền owner/editor hợp lệ; không thay account/session/ACL thật.
+
+- Backend `presence.py`: lấy room và thêm peer **sau await ws.accept()**. Code cũ lấy room trước handshake; peer cuối rời trong lúc accept chờ có thể xóa room, khiến peer mới nằm trong dict mồ côi. Test ASGI mới tái hiện chính xác race này. Publish snapshot copy từng member. Cache path đã validate để tránh query MongoDB mỗi lần di chuyển cursor.
+- Giữ cursor người khác khi chuyển cửa sổ: bỏ điều kiện peer.active khỏi bộ lọc vẽ. Focus vẫn là thông tin trạng thái. Bỏ timeout ứng dụng 45 giây khi chờ message, vì timer JS bị throttled trong tab nền; Uvicorn transport ping/pong phát hiện socket chết. Watchdog vẫn kiểm session/ACL mỗi 5 giây.
+- Nhóm avatar cạnh Lịch sử chỉ hiện **người khác**, không lặp lại avatar bản thân ở góc phải. Khi socket nối nhưng chưa có ai khác, báo “Chỉ bạn đang mở dự án”. Hover avatar báo nếu nội dung chưa khớp SHA-256; không vẽ offset sai vào bản khác nội dung.
+
+Kiểm chứng: 5 presence tests đạt, production Next.js build/TypeScript đạt. Browser regression dùng **hai tiến trình riêng Edge owner + Chrome editor**, con trỏ hai chiều, giữ qua window blur, ảnh profile thật, đổi file, buffer khác, viewer, reload/reconnect và disconnect. Mongo double đạt `target/presence-edge-chrome-fix-01`; Atlas thật đạt `target/presence-atlas-be8806f0511792b7`, `atlas-report.json` passed/cleaned=true. Collections test prefix ngẫu nhiên/guard đã dọn, không thay dự án thật. `test-presence.mjs` nhận factory Atlas qua LATEX_TEST_WEB_FACTORY.
+
+Giới hạn giữ nguyên: chưa CRDT/OT/live text merge; cần cùng file và nội dung khớp mới vẽ cursor. Nếu buffer khác do chưa lưu, lưu nguồn và để phía kia tải thay đổi. Presence vẫn một worker. **Python server đang chạy không tự reload:** user lưu bài → Ctrl+C terminal hiện tại → `scripts\run-python-web.bat` → Ctrl+F5 cả hai trình duyệt. UI đã build trong lần sửa này. `--build` chỉ build rồi thoát, cần chạy launcher thêm lần không có --build. Không dừng server thật/khởi động thay từ tool để giữ Google env ở terminal user.
+
+## 76. WebSocket: tên thật, avatar và con trỏ người đang chỉnh sửa (10/11/2026)
+
+Đã triển khai yêu cầu nhận biết người được chia sẻ đang sửa ở đâu trong **editor LaTeX**. Header hiển thị avatar cạnh trái Lịch sử; ảnh profile nếu có, fallback chữ đầu tên nếu không có. Hover cho biết tên tài khoản, file và trạng thái focus. Mỗi user một avatar dù mở nhiều tab; mỗi kết nối có con trỏ riêng. Trong cùng file và cùng nội dung, hiển thị caret màu + nhãn tên thật và nền vùng chọn. Đổi file, mất focus, đóng tab hoặc mất socket sẽ cập nhật/xóa dấu tương ứng. Người có quyền viewer không mở socket, không xuất hiện trong danh sách và không phát con trỏ. Không dùng tên ẩn danh.
+
+- Backend: `collaboration/presence.py`, gateway `http/web_accounts.py`; endpoint WebSocket `/api/projects/{id}/presence`; ảnh qua `/api/projects/{id}/sharing/avatar/{user}` chỉ cấp sau kiểm tra quyền dự án và user đang hiện diện. Identity/color do server tạo từ session đăng nhập, bỏ qua dữ liệu giả tên/id/color từ client. Kiểm tra Origin/Host, role, owner/editor; kiểm tra lại session/ACL mỗi 5 giây, ngắt khi logout/revoke/downgrade. Chặn path traversal/payload sai, giới hạn số kết nối/kích thước/tần suất, queue giữ snapshot mới nhất, heartbeat/reconnect và cleanup.
+- Frontend: `lib/usePresence.ts` dùng WebSocket và CodeMirror decorations, `components/PresenceAvatars.tsx`, tích hợp page/CSS. Throttle 80ms, heartbeat 15 giây, backoff reconnect tối đa 15 giây; SHA-256 nội dung khớp mới vẽ con trỏ, tránh hiển thị vị trí sai khi hai buffer chưa đồng bộ. Không gửi nội dung source hoặc email qua presence.
+- Kiểm chứng: frontend production build + TypeScript đạt; backend presence 4 tests đạt, nhóm auth/sharing/Mongo trước đó 18 tests đạt. Browser Edge 3 phiên độc lập đạt ở `target/presence-browser-04`: tên thật, ảnh profile decode được, caret/selection, đổi file, buffer khác thì ẩn, viewer không quảng bá, reload/reconnect, đóng tab cleanup, không pageerror. Đã xem ảnh `named-cursor-selection.png`. Test mới `tests/test_presence.py`, `scripts/test-presence.mjs`; dùng Mongo double/test home riêng, không đổi dữ liệu Atlas thật.
+
+Giới hạn rõ ràng: presence hiện trong RAM của **một web worker**; MongoDB vẫn là nguồn tài khoản/ACL, không lưu trạng thái online vào DB. Nhiều worker/server cần Redis pub/sub hoặc backend chia sẻ presence tương đương. Đây chưa phải CRDT/OT hoặc live text merge: nội dung tiếp tục dùng save/polling + expected/409, giữ bản sửa chưa lưu khi xung đột. Không vẽ cursor lên Word/PDF. Launcher/host guard vẫn loopback như trước. Muốn xem bản mới: lưu bài, dừng server cũ, chạy lại `scripts\run-python-web.bat --build` trong terminal có Google env; thử hai browser profile bằng hai tài khoản có quyền sửa.
+
+## 75. Atlas kết nối, migration dữ liệu thật và kiểm thử live đã hoàn tất (10/11/2026)
+
+**Thay thế trạng thái pending ở mục 74:** user đã điền URI vào config/mongodb.local.json và yêu cầu kiểm tra/kiểm thử. Kết nối Atlas tới database `latex` thành công, không in URI/password. Xác nhận cổng 8000 không có server đang chạy rồi thực hiện migration --apply; kết quả complete, source fingerprint vẫn `2f1d67df974160787430d1077b324633de6dbcc2f0af23a8ce9dd794cf59fb5a`, SourceFilesModified=false.
+
+**Dữ liệu thật:** users 3, sessions 1, shared_projects 1, invitations 0, link_visitors 0, user_state 3, projects 6, history 28, project_records 1. Backup tại `C:\Users\Admin\OverleafDesktopPython\.migration-backups\mongo-20261110-081302-95cea4ba`. Script đã đối chiếu từng document khi import, sau đó kiểm main source tồn tại, đọc/kiểm checksum đủ 28 revision payload, indexes email unique/session TTL và HTTP health trả database=mongodb qua factory chính. Source SQLite/JSON gốc không thay đổi. Root metadata/settings/ownership hiện đọc MongoDB; dữ liệu unassigned legacy giữ nguyên như trước, không gán nhầm user.
+
+**Live browser tests:** tài khoản Atlas không được dùng database khác ngoài `latex` (lần thử database tạm riêng bị từ chối trước khi tạo dữ liệu). Không tăng quyền hoặc sửa quyền Atlas. Thay bằng namespace collection tạm có prefix/nonce guard trong đúng database được cấp phép; production collection names/users/projects không đổi. Test helper `tests/atlas_namespace.py` và `run_atlas_namespace_web.py` dùng PyMongo/Atlas thật, không mongomock; chỉ chạy khi Node test harness được chỉ rõ factory và prefix/guard. Không có cờ test/fallback này trong launcher sản phẩm.
+
+Kết quả tại `target/atlas-scoped-live-20261110-3df89fbc/report.json`: accounts PASS (signup/onboarding/reload/student/tutor/private/log-out/in/Google config/error UI); sharing PASS (private invitation qua signup/role, viewer/editor permissions, shared list, link public/revoke, mobile/Escape); documents PASS (source/save, 2-page PDF byte-identical export, separate PDF tab, Word edit/export, upload/binary preview/avatar, ZIP import/compile). Ba namespace tạm đều cleaned=true bằng đúng prefix và guard đã tạo; số users/projects thật và fingerprint source giữ nguyên. Google OAuth thật không được chạy lại trong test tự động, nhưng Google sub/role/session cũ đã được migration giữ nguyên; các biến Google trong terminal của user không thay đổi.
+
+**Chạy lại app:** không tự khởi động persistent server từ tool vì môi trường tool không có Google client secret của terminal user. User chạy `scripts\run-python-web.bat` trong cùng PowerShell đã cấu hình Google để bật app trên 8000, tránh lại trùng cổng. URI Atlas đọc từ file private đã gitignore. Code main MongoDB và dữ liệu thật đều sẵn sàng; không còn chờ URI/migration. Không commit/push.
+
+---
+
+## 74. MongoDB là persistence chính của code web; cutover dữ liệu thật chờ URI Atlas (10/11/2026)
+
+**Trạng thái hiện tại:** user chọn hướng theo dõi trên MongoDB Atlas và đã xác nhận dừng web. User có cluster và sẽ điền `config/mongodb.local.json`. File local đã tạo và gitignore nhưng lần kiểm cuối `uri` vẫn rỗng. Vì vậy **chưa kết nối/migrate dữ liệu thật lên Atlas, chưa khởi động lại web**, không được báo đã cutover xong. Không khởi động Docker hoặc cài MongoDB local sau khi user chọn Atlas; không in URI/secret ra chat/log. Khi file được điền: chạy migrate --check, --dry-run rồi --apply, đối chiếu complete trước khi cho user chạy lại web trong terminal có Google env.
+
+**Code chính:** `storage/mongo.py` đọc LATEX_MONGO_URI/DB hoặc file private JSON, ping, indexes unique/partial/TTL và storage-home binding; lỗi thiếu cấu hình/mạng/migration pending dừng rõ ràng, không fallback SQLite. `auth/accounts.py` đã thay SQL bằng Mongo users/sessions, giữ id/email/Google sub/role/password hash/cookie contract, auth_version thu hồi token khi đổi mật khẩu. `collaboration/sharing.py` dùng Mongo policy/invitation/link visitors với grant/revoke/check quyền như trước. PyMongo chuyển thành dependency base; uv.lock cập nhật.
+
+`storage/mongo_store.py`: MongoStore/MongoState/MongoHistory/MongoRecords cho metadata projects, settings/activity, history labels/checksum, review và IELTS data. Source/binary/PDF/DOCX/revision payload vẫn filesystem volume; JSON manifest/sidecar không phải nguồn runtime canonical. Store được thêm injection state/locations và hook write_info để giữ desktop tương thích; WebAccounts/create_web_app compose MongoStore và repository mới. Desktop Store cũ vẫn file/JSON; M5 persistence.py cũ không phải main web path. MongoDB lỗi trong gateway/API trả 503 không lộ chi tiết secret. Actor và project authorization dùng ContextVar; không query Mongo lặp theo từng file trong cùng request compile/fingerprint, nhưng request mới vẫn kiểm quyền.
+
+**Migration:** `storage/migration.py`, CLI `entrypoints/migrate_mongodb.py`, wrapper `scripts/migrate-mongodb.bat`. Dry-run chỉ đọc SQLite/JSON; apply yêu cầu destination rỗng hoặc migration đúng fingerprint đang dở, snapshot SQLite bằng backup API, copy JSON/metadata/manifest vào `<home>/.migration-backups/mongo-*`, giữ source nguyên trạng. Giữ user ID/Google/roles/session digest/expiry/ACL/link token/invite token và metadata. Đối chiếu từng document + history checksum + fingerprint source không đổi trước marker complete; gián đoạn để in-progress (runtime không vào dữ liệu chuyển dở), có resume/idempotency; không ghi đè database khác. Root legacy projects không tự gán user. Rebind-home CLI hỗ trợ backend chuyển server nhưng giữ Atlas, yêu cầu volume đã copy và main/history được kiểm trước đổi binding.
+
+**Dữ liệu thật đã dry-run:** 3 users, 1 session, 1 shared policy, 0 invitations, 0 link visitors, 3 user_state, 6 projects, 28 history, 1 project_records. SourceFilesModified=false. Chưa apply vì thiếu URI. Tài khoản/project/history thực không được tạo giả trong Atlas để test.
+
+**Kiểm chứng:** 170 backend tests đạt (mongomock inject rõ bằng fixture, production không có mock/fallback flag). Test mới `test_mongodb_primary.py` kiểm fixture SQL/JSON thật, preserve credential/Google/cookie/role/ACL/history/review, source không đổi/backup, resume/idempotency, nonempty target refused, Mongo thắng JSON bị hỏng, require migration kể cả project không có state.json, outage503/redaction, rebind volume và metadata/counters thực ghi collections. Browser fixture riêng `tests/run_mongo_web.py` + Node harness LATEX_TEST_WEB_FACTORY: sharing đạt `target/mongodb-sharing-final`, PDF byte-identical export/Word edit/upload/ZIP đạt `target/mongodb-documents-final`. Đây là integration mock-backed, không phải Atlas live. Lock/diff check và pip check đạt. Không sửa frontend behavior mới ngoài harness.
+
+Docs: MONGODB_PRIMARY.md có hướng dẫn Atlas, config, migrate/check, collections, nguồn file volume và chuyển server; README/backend README và các docs auth/sharing/architecture/local web cập nhật override các mốc SQLite trước. Không chỉnh nội dung user có sẵn ở deploy/python/compose.yaml. Chưa commit/push.
+
+---
+
+## 73. Chia sẻ web Private/Public và Shared with you thật (10/11/2026)
+
+Thay hộp thoại cộng tác TCP/TLS trong **web** bằng `SharePanel.tsx`: tiêu đề project, mời một/nhiều email với quyền Viewer/Editor, danh sách owner/người được mời (pending/accepted), đổi quyền/thu hồi, copy invitation link; general access Riêng tư hoặc Bất kỳ ai có liên kết, chọn quyền, copy/reset link, trạng thái lỗi/thành công, song ngữ, mobile, focus trap và Escape. Desktop giữ NetworkPanel cũ; web chặn các action TCP connect/reconnect/edit/cursor. Nút Share mở với file hiện tại, không ép main.tex.
+
+Chia sẻ public ở đây là **người có link đăng nhập Latex rồi mở**, không anonymous PDF hoặc project công khai để tìm kiếm. Private invite phải có token và đăng nhập đúng email; chưa tích hợp SMTP/dịch vụ gửi mail, nên UI ghi rõ owner tự copy/gửi link lời mời. Không có tool gửi email thật trong đợt này.
+
+Backend thêm `collaboration/sharing.py`, `http/sharing_api.py`; dùng SQLite identity hiện có, bổ sung shared_projects/invitations/link_visitors. Mặc định private/Viewer. Owner quản lý ACL; editor không quản lý share hay xóa/đổi tên project owner; viewer chỉ đọc và có thể compile PDF, không ghi source/file/Word/review/history checkpoint. Shared request định tuyến về Store/Compiler owner sau khi kiểm quyền, chặn action đọc chéo project (copy-file) nếu chưa có kiểm ACL hai phía. `auth/context.py` và property State.session mang actor theo request/worker thread để history ghi đúng người sửa mà không ghi đè session owner toàn cục.
+
+Link reset/off làm mất quyền dựa trên link ở request sau; explicit invitation còn hiệu lực không bị xóa theo link. Revoke member xóa invitation/membership nhưng không triệt tiêu public link đang hoạt động nếu người đó cũng có link. Token sharing được lưu ở DB server để owner copy lại; không trả secret/membership list cho non-owner. Cookie/session hiện có không thay đổi.
+
+Frontend bootstrap giữ #share token trong sessionStorage qua login/Google/onboarding rồi POST accept và mở project. `/api/projects` trả own + shared đã được ACL cho phép; mục Shared with you của mục 72 **không còn placeholder**. ProjectCard hiển thị owner/quyền, ẩn quản lý project cho non-owner. Readonly facet của CodeMirror, add/upload controls và Word tab Viewer bị vô hiệu hóa. Permission header qua watch cập nhật UI khi owner đổi quyền. Viewer vẫn compile/xem PDF; đọc Word draft qua editor UI chưa hỗ trợ, dùng PDF. Server vẫn kiểm ghi dữ liệu độc lập với UI.
+
+Thêm expected source khi frontend save; backend so sánh dưới Store.lock và trả 409 nếu file đã đổi, giữ nội dung local chưa lưu để đối chiếu. Chưa phải CRDT/OT, chưa merge tự động, chưa bảo đảm concurrency cho toàn bộ DOCX/file APIs. Polling có sẵn tải external saved changes khi client không dirty. **Chưa triển khai đồng bộ gõ realtime/presence/chat WebSocket mới**; không coi Share dialog là hoàn thành realtime collaboration.
+
+Kiểm chứng: full backend **162 tests đạt**; sharing tests kiểm wrong-email, viewer/editor/owner, cross-project access, revoke/rotate/private/downgrade, ACL persistence và conflict409; bổ sung assert history actor Editor cũng đạt. Next production build + TypeScript đạt. Browser `test-web-sharing.mjs` đạt cuối ở `target/web-sharing-04`: owner/member/visitor, private invite qua đăng ký/chọn role, clipboard, viewer không gõ được/compile PDF được, nâng Editor lưu cùng source, shared list, public link + turn-off (private member còn quyền), mobile không chồng form và Escape. Đã xem screenshot private/public/mobile, sửa flex-shrink của form ở dialog mobile. Regression PDF/Word/upload/ZIP đạt ở `target/web-sharing-documents-01`. Docs: WEB_PROJECT_SHARING.md, README, auth/architecture cập nhật. diff check đạt.
+
+Backend người dùng đang chạy từ terminal đã cấu hình Google được giữ nguyên, không tự dừng để tránh mất ngữ cảnh. Cần lưu bài, Ctrl+C và chạy lại scripts/run-python-web.bat trong cùng terminal đó, rồi reload frontend để nạp API mới. Localhost link chỉ thử được trên cùng máy; chưa đổi loopback/public hosting/proxy isolation. Chưa commit/push.
+
+---
+
+## 72. Mục Được chia sẻ với bạn / Shared with you (10/11/2026)
+
+Thêm nút icon UsersRound vào thanh ngang trang chính, giữa Tất cả dự án và Thư viện mẫu, có active state/aria-current và bản dịch Anh/Việt. Chuyển mục xóa tìm kiếm cũ. Mục Shared hiện là khu vực chuẩn bị, số lượng 0, không hiển thị lẫn các dự án cá nhân; empty state nói rõ lời mời/cộng tác sẽ được bổ sung sau. Quay lại Tất cả dự án vẫn có danh sách, tìm kiếm và grid/list hiện có.
+
+Chỉ thay frontend page.tsx; chưa thêm API gửi lời mời, membership/ACL hay đồng bộ nhiều người. Khi triển khai backend phải lấy danh sách từ endpoint đã kiểm quyền thành viên, không đoán shared từ danh sách cá nhân ở client. Không thay quyền sở hữu hay vùng dữ liệu theo tài khoản. Production build/TypeScript đạt. Browser kiểm chuyển Shared/All, active state, không lẫn tài liệu cá nhân, tìm kiếm/grid-list/template, dark/mobile và editor tree/outline đạt tại `target/home-layout-1794284895356`.
+
+---
+
+## 71. Log nhiều cảnh báo bị ép thành đường viền, không đọc được (10/11/2026)
+
+Nguyên nhân: `.logs-list-container` là flex-column có chiều cao giới hạn, trong khi `.log-card` và `.raw-logs-section` dùng flex-shrink mặc định và overflow hidden. Khi có vài chục log, các card bị ép chiều cao gần bằng border; header/nội dung bị cắt mặc dù dữ liệu vẫn có.
+
+Sửa `globals.css`: card/raw section dùng flex 0 0 auto để cuộn theo chiều dọc; header tối thiểu 62px, nội dung dài xuống dòng, tăng font tiêu đề/message/raw log, filter tabs không co và có cuộn ngang. `LogsView.tsx`: header là button có aria-expanded/aria-controls, thao tác Enter/Space; luôn hiển thị message gốc khi mở, kể cả message trùng title. Thêm thanh số thông báo, Mở tất cả/Thu gọn chi tiết theo filter, Xem nhật ký thô trực tiếp và cuộn tới raw section. Raw header dùng button, giữ sao chép/tải .log và bộ lọc hiện có. Không thay parser, backend compile hoặc xóa log.
+
+Next production build + TypeScript đạt; diff check đạt. Test browser mới `apps/frontend/scripts/test-many-logs.mjs` tạo tài khoản/home riêng, compile tài liệu LaTeX thật có 120 PackageWarningNoLine khác nhau (tổng 123 gồm 3 cảnh báo locale môi trường). Kiểm card min-height/readable, container cuộn, mở cảnh báo đầu/cuối, Enter đóng/mở, mở tất cả/thu gọn, filter, mở raw giữ Warning 120, tải .log đủ nội dung, sáng/tối và không JS page error. Test đạt tại `target/many-logs-regression-02`; đã xem screenshot light. Frontend output đã build lại; người dùng lưu bài rồi reload browser để tải UI mới, không cần restart backend Google. Chưa commit/push.
+
+---
+
+## 70. Trang chính bỏ sidebar, điều hướng dự án nằm ngang (10/11/2026)
+
+Theo yêu cầu bố cục trang chính: bỏ hẳn JSX `.home-sidebar` (mục dự án, note và footer dư ở cạnh trái) và tab Dự án `.nav-current` cạnh logo ở home. Header giữ logo, trạng thái workspace, settings và profile. Không thay cấu trúc editor/file-sidebar/outline/activity-bar.
+
+`app/page.tsx` chuyển mục Tất cả dự án có số lượng sang nav ngang `.project-navigation` ngay trên danh sách, cạnh ô tìm kiếm và kiểu xem. Nút Tất cả dự án xóa bộ lọc tìm kiếm; Thư viện mẫu mở dialog mẫu/tạo dự án hiện có. Không thêm các mục chia sẻ/lưu trữ không có nghiệp vụ. Nút đổi kiểu xem danh sách/lưới hoạt động thật, có aria-pressed, mặc định danh sách ngang gọn dùng lại ProjectCard, giữ onOpen/onManage. Banner và ActivityHeatmap vẫn giữ phong cách cũ.
+
+CSS mới scope vào dashboard-home/home-project-tools/project-list; phần nội dung sử dụng chiều ngang trước đây bị sidebar chiếm. Thanh công cụ xuống dòng trên mobile; style dùng biến theme hiện tại. Không sửa backend hoặc dữ liệu tài khoản/dự án.
+
+Kiểm chứng: Next production build + TypeScript đạt, diff check đạt. Browser kiểm độc lập bằng home tạm `target/home-layout-1794283415213`: không có sidebar/header nav cũ, nav nằm trên project list, tìm kiếm/xóa lọc, mở thư viện mẫu, list/grid, sáng/tối/mobile không tràn ngang; vào editor vẫn có file-sidebar/outline/sidebar-divider và thu gọn/mở cây file được. Không có JS page error. Đã xem screenshot home desktop/mobile. Frontend static output đã build lại, server đang chạy sẽ phục vụ giao diện mới khi tải lại trang; không cần khởi động thêm server hoặc thay OAuth config. Chưa commit/push.
+
+---
+
+> **Cập nhật 10/11/2026 — Đăng nhập web, Google và chọn Tutor/Student:** luồng này đã tích hợp vào app thật, không chỉ prototype. Xem mục 69 ngay dưới và [WEB_AUTH_ONBOARDING.md](docs/WEB_AUTH_ONBOARDING.md). Các mục cũ mô tả phiên web dùng chung được thay thế bởi gateway tài khoản mới.
+
+## 69. Web account onboarding và Google sign-in (10/11/2026)
+
+**Đã code:** đăng ký email/mật khẩu, đăng nhập, hoàn thiện tên và chọn Student/Tutor sau đăng ký. Khi chưa chọn, API chặn vào workspace; reload/đăng nhập lại tiếp tục bước còn thiếu. Sau khi lưu, vai trò là thuộc tính tài khoản và mở trang dự án theo Student/Tutor; không tự chọn vai trò và không cho tự cấp Admin. Vai trò chính chưa đổi sau khi hoàn tất, chưa hỗ trợ một tài khoản chuyển nhiều vai trò.
+
+**Backend:** thêm `auth/accounts.py` dùng SQLite có sẵn trong Python cho identity, hash mật khẩu, Google sub, role và session token băm; không cần cài thêm DB server/Python. Đây chưa phải MongoDB integration. Session có expiry 12 giờ hoặc 30 ngày, revoke khi logout, rotate khi login; đổi mật khẩu thu hồi các phiên trước. `http/web_accounts.py` là ASGI gateway trước API hiện có: xác định user theo HttpOnly cookie, tạo Store/Compiler riêng ở `<home>/users/<id>`, kiểm Host/Origin, giới hạn auth body, rate limit. Bootstrap local cookie không cấp quyền người dùng. Lifespan dọn toàn bộ compiler/upload/network theo từng workspace khi tắt server. `core/application.py` nối gateway cho web; desktop giữ cơ chế cũ.
+
+**Google:** authorization code + PKCE S256 + cookie-bound state + nonce; google-auth kiểm ID token, audience/issuer/expiry và email_verified. Định danh bằng sub, không tự ghép tài khoản trùng email. Không lưu Google access/refresh token hoặc xin quyền Drive/Gmail. Callback lỗi/hủy về màn đăng nhập. Cần người vận hành cấu hình LATEX_GOOGLE_CLIENT_ID/SECRET và LATEX_PUBLIC_URL, đăng ký callback đúng; chưa có credential thật nên chỉ kiểm mô phỏng và kiểm Google-disabled UI, chưa nghiệm thu login Google thật. Google button bị disable có giải thích khi chưa cấu hình.
+
+**Frontend:** `RoleSelection.tsx` (thẻ radio Tutor/Student, tên, nút tiếp tục/đăng xuất, loading/error và bàn phím/mobile), `AuthView.tsx` (Google, password tối thiểu 8 khi đăng ký, lỗi OAuth, bỏ guest trên web), `Session` type và hook/page gate onboarding. Student/Tutor có tiêu đề không gian riêng và dùng các tính năng editor/PDF/Word đang có. Chưa xây backend quản lý lớp, giao/nộp/chấm bài theo lớp hoặc chia sẻ dự án nhiều người; không coi tiêu đề theo role là LMS hoàn chỉnh. Phần IELTS chi tiết trước vẫn là prototype độc lập.
+
+**Dữ liệu cũ:** tự import credential từ `.app/state.json` một lần, không dùng remembered session chung. Dự án cũ ở `<home>/projects` giữ nguyên và không tự gán cho tài khoản đầu tiên; operator cần xác định chủ sở hữu, nhập ZIP qua tài khoản đúng. Danh sách cá nhân mới có thể trống; không xóa dữ liệu cũ. Không migrate âm thầm vào MongoDB.
+
+**Dependency/docs:** thêm web/local dependency google-auth, requests, httpx; cập nhật uv.lock. Launcher Windows/shell kiểm các import này trước khi bỏ qua setup. README/backend README và kiến trúc/local web docs trỏ đến WEB_AUTH_ONBOARDING.md. Bản web vẫn bind loopback, chưa phải triển khai public/multi-worker; cần phần hạ tầng, quyền chia sẻ và compile isolation trước khi publish.
+
+**Kiểm chứng:** Next production build + TypeScript đạt. Full backend suite đạt 158 tests trước khi bổ sung thêm test Google token exchange/nonce; bộ auth cuối đạt 7 tests. Browser `test-web-accounts.mjs` đạt ở `target/web-account-onboarding-02`: đăng ký thật, reload pending, Student/Tutor hai browser context, giữ role khi login lại, private-project 404, mobile, Google disabled/error, không JS page error. Đã xem screenshot desktop/mobile và sửa role-card flex/mobile width. Regression `test-local-web.mjs` cập nhật đăng ký/chọn role và đọc vùng user, đạt ở `target/web-account-documents-01`: compile 2 trang, PDF export đúng bytes, PDF tab, Word edit/export, upload/image/avatar và ZIP import/compile. `pip check` đạt. Chưa commit/push.
+
+---
+
 > **Mới nhất — Khôi phục và nâng cấp icon mũi tên thoát dự án trong thanh Header (`ArrowLeft`) (06/11/2026):** sửa lỗi icon mũi tên quay lại bị đẩy lệch và ẩn mất khi tên dự án dài (do thuộc tính căn giữa mặc định của thẻ button); tách cấu trúc thành nút icon thoát chuyên dụng `.project-breadcrumb-back` với `flex-shrink: 0` cố định 24x24px, bo góc và hiệu ứng chuyển động trực quan khi hover, đi kèm phần tên dự án tự động thu gọn `text-overflow: ellipsis` từ đầu đến cuối; cho phép người dùng click thoát ra màn hình danh sách dự án dễ dàng và rõ ràng. Xem **mục 52**.
 
 > **Mới nhất — Sửa lỗi viền/nền và làm sáng icon thanh công cụ Word Preview ở chế độ tối (Dark Mode) (06/11/2026):** khắc phục triệt để lỗi phân tách nền trắng - tối trên thanh công cụ SuperDoc bằng cách cấu hình `min-width: 100%; width: max-content; background: var(--panel) !important;`; đồng bộ toàn bộ biến theme SuperDoc (`--sd-ui-*`) sang màu dark panel; làm sáng các icon, nhãn, thanh phân cách và ô chọn phông chữ sang tông màu bạc sáng (`#d8e2ec` / `#e2e8f0`) giúp hiển thị rõ nét, tương phản cao và mượt mà khi người dùng bật Dark Mode. Xem **mục 51**.
@@ -1512,3 +1725,122 @@ Regression cũ: `local-web-documents-regression-01` đạt nhiều root/source/P
 Changed the visible app name to Latex in the login screen, header, browser metadata/document title, desktop/PDF window titles and CLI descriptions. Removed the desktop/local-web suffix from the displayed brand. README and local-web guide headings now use Latex. Kept package identifiers, session keys, data folders, migration references and readiness markers for compatibility with existing projects and launch/test tooling. Updated the existing browser title assertion to Latex. Production build/TypeScript checked; no new unit tests for this presentation-only change.
 
 Browser verification: latex-brand-ui-01 passed with the browser title Latex and existing local-web workflows intact.
+
+## 57. Lưu dữ liệu web trên server và chia lại backend (07/11/2026)
+
+**Yêu cầu:** điều chỉnh cơ chế lưu cho web thay cho thao tác filesystem kiểu desktop; sắp xếp backend gọn theo chức năng, chuẩn bị cho publish.
+
+**Đã thực hiện:**
+
+- Web dùng `Store(managed=True)`: tạo và import luôn vào `<data-dir>/projects/<id>`. `Store.destination()` dùng chung cho create/import; không nhận `parent` khác rỗng. Đường dẫn được chỉ định bằng `--home` hoặc `LATEX_DATA_DIR` bởi người vận hành. Fallback biến môi trường/default cũ được giữ để không mất dự án hiện có.
+- API web chặn `project-move`, `import-path`, `migrate-java`, đổi `projectsDirectory`/`latexmkPath` và cài gói TeX qua browser. Setting mặc định desktop cũ không còn điều khiển thư mục lưu của web. Project trả `storage=server`, `folder` rỗng. Kiểm tên file import trước ghi temp, từ chối slash/backslash/colon/NUL. Upload ZIP vẫn giữ giới hạn size, kiểm path và dọn temp.
+- Giao diện bỏ trường chọn thư mục server ở tạo dự án, cài đặt, quản lý dự án; bỏ chọn executable và Java path migration trên web. Lưu editor/Word vẫn qua API; download vẫn lấy bản sao PDF/DOCX về máy. Nhãn storage/account/save đổi theo mode; nút guest trên web là tiếp tục không đăng nhập. Desktop native giữ chức năng chọn/move thư mục.
+- Dự án đã ở `<home>/projects/<id>` được giữ. Dự án desktop đăng ký ở thư mục ngoài không được phục vụ trong web; **không xóa/di chuyển bản gốc**. Nén ZIP rồi upload để đưa bản sao vào vùng managed. Dữ liệu vẫn là file/JSON/history trên server; chưa nối MongoDB UI.
+
+**Cấu trúc thực tế đã chuyển:** `core` (config/composition), `http` (API), `storage` (store/state/files/history/persistence), `compilation` (compiler/toolchain/explainer/synctex), `documents` (word/docx_workspace/ielts), `collaboration` (network/review). `pdf_export` và `resources` giữ riêng. `web.py`, `main.py`, `console.py` là entry/adapter. Các file cũ cùng tên tại root là module alias đến triển khai mới, giữ import và monkeypatch identity; không có hai bản logic. Internal import đã chuyển sang package chức năng. Giữ đường dẫn `apps/desktop` và tên distribution/import để không phá launcher/venv. Converter gốc `pdf_export/original` không thay đổi.
+
+**Kiến trúc lựa chọn:** modular monolith FastAPI. Tách dữ liệu khỏi source và có application factory ở `core/application.py`. Chưa thêm microservice hoặc lớp repository trống; bước sau có thể tách compile worker và nối Mongo metadata theo tenant. Chi tiết từng folder, volume dữ liệu và cấu hình: `docs/WEB_BACKEND_ARCHITECTURE.md`; README và LOCAL_WEB đã cập nhật. Thêm `/var/` vào gitignore để tránh commit data-dir mẫu.
+
+**Kiểm chứng:** full backend **152 pytest đạt** (148 cũ + 4 kiểm thử managed storage). Kiểm lưu và mở lại bằng Store/backend mới; upload ZIP managed; từ chối browser-supplied path/settings/move/import-server-path; project external không bị đọc hoặc xóa; alias tương thích. Next production build/TypeScript đạt. Browser production `target/server-storage-web-02` chạy bằng clean web env không pywebview: xác nhận không còn trường thư mục ở settings/new/manage, tạo/lưu, reload, PDF 2 trang/export cùng bytes, tab PDF riêng, Word edit/export cùng bytes, upload ảnh/binary/avatar và ZIP import/compile. Lượt `server-storage-web-01` cũng đạt luồng cũ trước khi bổ sung kiểm tra field. CLI networking cũ `python -m overleaf_desktop.network --help` vẫn chạy. `git diff --check` đạt, chỉ có thông báo chuẩn hóa CRLF/LF.
+
+**Giới hạn publish:** đây vẫn là một workspace/process trên loopback. Cookie bootstrap và account state chưa phải session riêng theo từng user/browser; chưa có owner/membership/permission cho project. Trước public phải hoàn thiện các phần này, worker TeX cách ly/quota, giới hạn outbound và HTTPS. MongoDB hiện chỉ là repository prototype; không khai báo đã migrate. Không sửa `deploy/python/compose.yaml` vì đã có thay đổi riêng trước lượt này; file đó chưa được dùng để publish web. Chưa commit/push.
+
+## 58. Chuyển vật lý sang apps/backend, bỏ lớp alias (07/11/2026)
+
+Người dùng phản hồi cấu trúc ở mục 57 vẫn rối vì còn `apps/desktop`, package cũ và nhiều alias. Đã tiếp tục chuyển **toàn bộ thư mục Python sang `apps/backend`**, package thành **`src/latex_backend`**, distribution thành `latex-backend`. Root package chỉ còn `__init__.py` và các thư mục `entrypoints`, `core`, `http`, `storage`, `compilation`, `documents`, `collaboration`, `pdf_export`, `resources`. Không còn alias `store.py`, `compiler.py`, `api.py`... ở root. `web.py`, `main.py`, `console.py` chuyển thành `entrypoints/web.py`, `entrypoints/desktop.py`, `entrypoints/console.py`.
+
+Đã cập nhật import và monkeypatch target trong source/test, đường dẫn test server trong các browser scripts, module subprocess PDF→DOCX, package-data, lock, tất cả launcher Python `.bat`/`.sh`, `ensure-python.ps1`, Dockerfile networking và hướng dẫn deploy. Lệnh launcher quen thuộc vẫn dùng được; lệnh Python trực tiếp mới là `python -m latex_backend.entrypoints.web`, console entry mới `latex-web`. Các tên console entry cũ còn giữ như tên lệnh tương thích, không giữ source alias. Runtime/venv đã chuyển cùng thư mục và editable install đã cài lại vào đường dẫn mới. Clean web env đã sync frozen sang distribution mới. Không sửa dữ liệu dự án hoặc source bundle converter gốc.
+
+Cập nhật README, thêm `apps/backend/README.md`, sửa tài liệu kiến trúc, LOCAL_WEB, migration, PDF export và cleanup plan theo đường dẫn mới. Các ghi chú ở mục 55–57 về việc giữ đường dẫn/package/alias là lịch sử và được thay thế bởi mục này. `deploy/python/compose.yaml` có thay đổi riêng của người dùng vẫn không bị sửa.
+
+Kiểm chứng: **152 pytest đạt** từ `apps/backend/tests`; production browser `target/backend-restructure-web-01` đạt tạo/lưu/reload, PDF 2 trang/export exact bytes, tab PDF, Word edit/export, upload/binary/avatar và ZIP import/compile trong clean env không pywebview. Launcher Windows `scripts/run-python-web.bat --help` thực sự sync/import/chạy thành công. `uv lock --check` đạt; các launcher `.sh` đạt bash syntax check. Frontend UI không đổi trong bước này nên dùng lại production build đã đạt ở mục 57. Xác nhận `apps/desktop` không còn tồn tại và root package không còn alias. Chưa commit/push. Giới hạn single workspace/session và yêu cầu trước public ở mục 57 vẫn áp dụng.
+
+## 59. Thiết kế Writing theo Writing.pdf và prototype tương tác (07/11/2026)
+
+Đã đọc `D:\download\Writing.pdf`: 4 trang; trang 1 là yêu cầu nghiệp vụ, trang 2–4 là sơ đồ UI raster. Đã trích text và render/xem cả các trang UI, không chỉ đọc text extraction. Bằng chứng đọc ở `target/writing-design/extracted.txt`, `page-1.png` đến `page-4.png`; không sao chép PDF gốc vào repository.
+
+**Bản thiết kế:** `docs/WRITING_PRODUCT_DESIGN.md`, gồm mapping trang/mã GV01–GV08, SV01–SV08, SV-W01–SV-W04; đề xuất Admin; vai trò/quyền theo resource; assignment/class/group và workspace riêng cho từng assignee; wizard giao bài; rubric phân cấp, checkpoint và các chế độ tính điểm; workflow draft/submission/assessment/publish; thời gian, nộp lại, invitation, review và cộng tác. Chỉ ra nguyên tắc văn bản → xem trước LaTeX → xác nhận → compile, không tự đồng bộ hai chiều và không lấy DOCX từ PDF làm canonical rich-text document. Thiết kế submission bất biến gắn revision/artifact hash/rubric version và chỉ trả điểm đã công bố.
+
+Thiết kế cũng đối chiếu code hiện có (`documents/ielts.py`, review, compile/PDF/Word, Store, Mongo prototype và TCP/TLS), đề xuất module identity/education/assessment/submissions/jobs, schema/index Mongo, API/events, worker/artifact storage, lỗi biên, 20 tiêu chí nghiệm thu và lộ trình 6 giai đoạn. Đã kiểm tài liệu chính thức IELTS, MongoDB PyMongo Async, Yjs bindings và FastAPI WebSocket; link nguồn đặt trong tài liệu. Các folder/library trong phần đề xuất chưa được tạo/cài như tính năng thật.
+
+**Prototype độc lập:** `docs/prototypes/writing/index.html`, `styles.css`, `app.js`, `README.md`. Mở HTML trực tiếp bằng browser; có 21 màn hình theo bản đồ: 8 giảng viên + 8 sinh viên + 4 bước văn bản/LaTeX + 1 Admin đề xuất. Có wizard, lời mời demo, rubric editor, sửa văn bản, góp ý/resolve, chuyển source minh họa, preflight/nộp, chấm điểm, công bố, student results, role switch, reset và lưu localStorage. Role switch chỉ phục vụ duyệt thiết kế; không phải cơ chế phân quyền production.
+
+**Giới hạn rõ trên UI/tài liệu:** không gửi email, không CRDT/cộng tác thật, không compile hoặc xuất PDF/DOCX thật; tờ giấy là HTML có nhãn minh họa. Một số policy/formatting chỉ minh họa, prototype giữ snapshot lần nộp gần nhất; sản phẩm thật phải lưu đủ attempts. Không thay đổi runtime application/API hoặc dữ liệu project của người dùng trong đợt thiết kế này. README đã thêm liên kết tới bản thiết kế và prototype.
+
+**Kiểm chứng:** thêm `apps/frontend/scripts/test-writing-design.mjs`, chạy Edge headless đạt wizard/invite; viết/chuyển LaTeX/nộp; working copy đổi không làm đổi submission snapshot; source stale chặn nộp PDF demo; chưa publish không có kết quả; nhập 3 tiêu chí ra 8/10, đủ điểm; publish rồi sinh viên xem đúng phản hồi; reload; duyệt tất cả 21 màn; viewport 390px không tràn ngang. Đã xem ảnh screenshot desktop màn viết/chấm và mobile. Ảnh ở `target/writing-design/teacher-dashboard.png`, `student-writing.png`, `teacher-grading.png`, `student-feedback.png`, `mobile-writing.png`. Không chạy lại full backend/build vì chỉ thêm tài liệu/prototype độc lập và script kiểm thử, không sửa app runtime. Chưa triển khai nghiệp vụ Writing lên server, chưa commit/push.
+
+## 60. Chỉnh prototype Writing bám giao diện chính (07/11/2026)
+
+Theo phản hồi người dùng, bản mẫu ban đầu trông giống dashboard riêng nên khó hình dung tích hợp. Đã đọc phần header/rail/sidebar/editor/preview/statusbar và tokens sáng/tối trong `apps/frontend/app/globals.css`, đối chiếu cấu trúc `page.tsx` cùng screenshot ứng dụng thật `target/backend-restructure-web-01/local-web-word.png`.
+
+Cập nhật prototype tại `docs/prototypes/writing`: thêm `workspace.css`/`workspace.js` làm lớp trình bày theo workspace hiện có; thay logo tự thiết kế bằng lá + Latex, header 42px, rail icon SVG tối rộng 46px, sidebar chuẩn 270px, statusbar gọn. Giữ vị trí Lịch sử/Cộng tác/Bố cục, tab main.tex/main.pdf/main.docx, toolbar editor tối, source có số dòng, Build output và preview giấy trắng. Bản mẫu mở ở GV01 để thấy editor trước; Writing dùng cùng shell, chuyển menu/nội dung theo vai trò. Bỏ banner lớn phía trên và thẻ thống kê cồng kềnh ở danh sách; giảm padding/bo góc, dùng phông/token theo ứng dụng. Thêm Sáng/Tối; role/map/reset demo chuyển xuống footer. Key localStorage demo v2 độc lập với bản mẫu cũ, không liên quan dữ liệu app.
+
+Không sửa UI production hoặc backend. Khung source/PDF ở màn mở đầu vẫn là minh họa có ghi rõ, không giả compile hoặc Word thật. Các nút header bổ sung giữ vị trí giao diện nhưng mở giải thích prototype; không gọi API ứng dụng. README prototype và phần giao diện trong WRITING_PRODUCT_DESIGN đã cập nhật.
+
+Kiểm thử `test-writing-design.mjs` được mở rộng: kiểm đúng header 42px/rail 46px, khung editor mặc định, các luồng nghiệp vụ demo cũ, tất cả 21 màn, chuyển light/dark, viewport mobile không tràn ngang và nội dung main cuộn được. Screenshot mới ở `target/writing-design/current-workspace.png`, `current-workspace-dark.png`, `teacher-grading-dark.png` cùng các ảnh màn viết/chấm/kết quả. Đã xem trực quan các screenshot và sửa tương phản nút rail/bài nộp khi dark. Chưa commit/push.
+
+## 61. Đính chính thiết kế: IELTS Writing là trung tâm (07/11/2026)
+
+Người dùng cho biết thiết kế vẫn hiểu sai và yêu cầu phù hợp IELTS Writing. Đã chuyển prototype từ luồng Research Introduction/paper sang **luyện và chấm IELTS cá nhân**; giữ shell Latex theo mục 60. Mặc định Học viên → Luyện viết → Task 2, không mở source LaTeX hay Research Introduction.
+
+Đã thay script prototype bằng `ielts.js` và bố trí `ielts.css`; bỏ `app.js`/`workspace.js` nghiên cứu cũ, vẫn dùng styles/workspace.css chung. Chọn Academic/General Training: Task 1 Academic có biểu đồ tự biên soạn, General Training là thư; Task 2 là essay. Đề trái, answer phải, lưu riêng task, word counter, chế độ một task hoặc đủ hai task, countdown demo. Nộp trực tiếp văn bản, không ép chuyển LaTeX/compile PDF. Thiếu từ cảnh báo; task trống không nộp được; snapshot tách working copy.
+
+Giảng viên có Giao bài IELTS, Bài nộp, Tiêu chí IELTS; màn chấm theo học viên, bài nộp chỉ đọc, TA/TR/CC/LR/GRA, band và feedback theo tiêu chí. TA của GT chú trọng thư thay vì ép overview biểu đồ. Điểm ban đầu null, lưu nháp khác công bố. Một task chỉ có task band; đủ cả hai mới có Writing band ước tính, dùng raw task means và trọng số 1:2 trước làm tròn 0.5 theo policy demo. Không tự nhận quy trình chấm chính thức hoặc chấm AI. LaTeX/PDF/Word chuyển thành tùy chọn xuất phiếu, không phải trung tâm IELTS.
+
+Thêm `docs/IELTS_WRITING_DESIGN.md`, cập nhật README/prototype README, đánh dấu WRITING_PRODUCT_DESIGN là thiết kế tổng quát cũ để tham khảo mở rộng. Đã đối chiếu thông tin task/time/criteria/weight với trang IELTS.org chính thức và đặt nguồn trong tài liệu. Không sửa code app production hoặc backend trong đợt thiết kế.
+
+Kiểm thử mới `test-ielts-writing-design.mjs`; lệnh cũ `test-writing-design.mjs` là alias. Edge headless đạt Academic chart, GT letter, Task 2 essay, counter, lưu đổi task, thiếu từ vẫn có thể nộp sau cảnh báo, nộp không LaTeX, immutable demo snapshot, band null/partial guard, draft không hiện ở results, chấm và công bố, task band riêng, Writing 1:2 cho hai task, countdown chung, reload, sáng/tối và mobile cuộn/không tràn. Ảnh tại `target/ielts-writing-design/` gồm student-task1/student-task2/student-answer/teacher-grading/student-feedback/student-dark/student-mobile. Đã xem ảnh màn Task 1, bài essay và chấm; thu gọn feedback từng tiêu chí thành details để bốn band dễ nhìn. Dữ liệu/đồng hồ chỉ ở browser, giữ bản nộp gần nhất; chưa có server, phân quyền thực, export thật hoặc lịch sử đầy đủ. Chưa commit/push.
+
+## 62. Góc nhìn Tutor mở trực tiếp (07/11/2026)
+
+Thêm `docs/prototypes/writing/tutor.html` mở `index.html#role=tutor`, đổi nhãn lựa chọn Giảng viên thành Tutor (Giảng viên). `tutor.js` bổ sung tổng quan Tutor, danh sách học viên/bài viết, số chờ chấm/đã trả lấy từ demo, menu Giao bài IELTS/Bài nộp & chấm/Tiêu chí IELTS. Chọn Tutor ở footer mở tổng quan thay vì vào ngay danh sách nộp. Vẫn giữ kiểu workspace hiện có.
+
+Có nút Mở bài chấm mẫu: nếu chưa có submission thì yêu cầu xác nhận tạo essay snapshot tự biên soạn với band null để xem màn chấm; không thay working copy của học viên. Nếu đã có submission thì mở bản đó, không tạo lại hoặc mất điểm nháp. Tất cả vẫn là prototype localStorage, không tạo quyền role hoặc bài nộp trên server. Cập nhật README prototype và thiết kế IELTS.
+
+Kiểm thử mới `test-tutor-design.mjs` đạt mở shortcut, tổng quan, bài mẫu, giữ draft học viên và điểm khi mở lại, mobile. Kiểm thử IELTS cũ cũng đạt sau cập nhật điều hướng Tutor. Đã xem ảnh `target/ielts-tutor-design/tutor-overview.png`; có ảnh màn chấm `tutor-grading.png`. Không sửa production app/backend, chưa commit/push.
+
+## 63. Kết hợp IELTS với LaTeX trong màn làm/chấm (07/11/2026)
+
+Theo yêu cầu giữ ứng dụng LaTeX, thêm `latex-ielts.js` vào prototype. Màn làm bài và Tutor chấm có tabs Văn bản / LaTeX source / PDF preview; band và nhận xét IELTS vẫn giữ ở cột bên phải. Học viên có bước xác nhận tạo/cập nhật source từ văn bản; source có escape ký tự, có thể chỉnh như nhánh trình bày. Prototype vẫn lấy văn bản làm nội dung chấm chính và không giả đồng bộ hai chiều. Khi nộp, kèm source của snapshot phù hợp nội dung; Tutor đọc source bản nộp, không lấy working copy sau nộp. Preview giấy có nhãn rõ chưa compile thật.
+
+Tutor có Tạo phiếu LaTeX, tải source .tex thật chứa học viên, task, TA/TR/CC/LR/GRA, band/nhận xét và trạng thái nháp/công bố. Preamble XeLaTeX/fontspec/TeX Gyre Termes, hỗ trợ tiếng Việt. Xuất PDF/Word thật qua pipeline app vẫn cần tích hợp API, chưa có trong prototype. Đã cập nhật thiết kế IELTS và prototype README: IELTS là nghiệp vụ chấm, LaTeX là công cụ soạn/trình bày/xuất phiếu; chế độ LaTeX canonical đầy đủ cần source revision, trích nội dung và kiểm freshness riêng, không coi là đã triển khai.
+
+Kiểm thử `test-latex-ielts-design.mjs` đạt văn bản→escaped TeX, source gắn submission, Tutor đổi source/PDF mock giữ cột band và tải phiếu .tex. Bộ test IELTS và Tutor hiện có cũng đạt. Ảnh ở `target/latex-ielts-design/tutor-latex-and-band.png`, `tutor-pdf-and-band.png`. Đã compile **thật** file tải xuống `ielts-feedback.tex` bằng latexmk -xelatex trong TinyTeX: thành công, tạo `target/latex-ielts-design/build/ielts-feedback.pdf` 1 trang; đây là phiếu draft kiểm chứng, không phải PDF preview tích hợp. Không sửa runtime app/backend hoặc publish; chưa commit/push.
+
+## 64. Checklist chấm theo phần và nghiên cứu các dạng IELTS (07/11/2026)
+
+Theo yêu cầu khung giống chat, thêm bố cục màn chấm: bài nộp bên trái → góp ý/checklist theo phần ở giữa → bốn band IELTS ở khung cuối. Đã nghiên cứu nguồn chính IELTS.org (band descriptors PDF, Writing resources, Academic/GT formats, question prompts), British Council assessment, IDP Task 1/Task 2. Tài liệu `docs/IELTS_SECTION_CHECKLISTS.md` ghi nguồn, cấu trúc và checklist đề xuất; phân biệt hướng dẫn sư phạm với tiêu chí/band chính thức, không coi số tick là band và không ép số câu/đoạn.
+
+Catalog prototype `rubric-catalog.js`: 21 hồ sơ gồm 8 Academic Task 1 (line/bar/pie/table/mixed/process/map/diagram), 3 GT (formal/semiformal/informal), 10 Task 2 (opinion/discussion/advantages/outweigh/causes-solutions/problems-solutions/causes-effects/two-part/positive-negative/custom). GT có 8 chức năng thư. Checklist Intro, Overview, Body n, Conclusion hoặc Opening/Closing/Toàn bài; mã liên quan TA/TR/CC/LR/GRA. Không khẳng định taxonomy này là danh sách chính thức khép kín; custom dùng cho đề kết hợp.
+
+`section-review.js`/`.css`: thẻ Tutor dạng góp ý, checkbox và năm trạng thái, notes theo phần, chọn quote, gán nhiều đoạn cho một phần hoặc một đoạn nhiều phần, thêm Body. Phân chia paragraph chỉ là gợi ý; chưa gán không kết luận thiếu phần. Tick không thay band. Dữ liệu scope theo attempt/time/task/profile/catalog version; đổi hồ sơ giữ dữ liệu cũ. Công bố clone góp ý theo phần; học viên chỉ thấy bản đã công bố, sửa draft sau đó không đổi phản hồi cũ. Report LaTeX thêm nhận xét/checklist đã xem. Văn bản/source/PDF tabs giữ lại, không giả annotation PDF/SyncTeX thật.
+
+Đã cập nhật prototype README và thiết kế IELTS. Kiểm thử `test-section-review-design.mjs` đạt cả 21 hồ sơ, 8 chức năng thư, intro/body/overview, tách tick khỏi band, quote, gán đoạn, thêm Body, reload, publish và tính bất biến phản hồi, sáng/tối/mobile/cuộn. Ba regression IELTS/Tutor/LaTeX cũng đạt sau thay đổi. Đã xem screenshot `target/ielts-section-review/tutor-introduction-checklist.png` và `task1-overview-checklist.png`; có dark letter screenshot. Chỉ thay prototype/tài liệu/tests, chưa nối production API/backend, chưa commit/push.
+
+Kiểm thêm xuất phiếu sau công bố: source có notes/checklist đã công bố, không chứa chỉnh sửa PRIVATE NEW DRAFT. File `target/ielts-section-review/section-feedback.tex` đã compile thật bằng latexmk -xelatex thành `build/section-feedback.pdf`. Prototype vẫn không tự compile PDF trong browser; đây là kiểm chứng source tải xuống.
+
+## 65. Thẻ comment bên lề theo đoạn, ưu tiên diện tích bài viết (07/11/2026)
+
+Theo yêu cầu giao diện gọn như comment Google Docs, thêm `inline-comments.js`/`.css` vào prototype. Thay khung checklist giữa cố định bằng thẻ nhỏ nằm cạnh đoạn tương ứng, bài viết rộng hơn. Mặc định thẻ thu gọn; bấm đoạn hoặc heading thẻ để mở một checklist, tô vàng đoạn đang góp ý. Giữ checkbox/status/notes/evidence từ catalog hiện có, không lặp toàn đoạn vào thẻ. Bài và thẻ dùng chung scroll; ResizeObserver tính vị trí theo anchor và đẩy thẻ sau để không chồng lên nhau. Cấu hình profile/phân phần thu vào nút, có thêm Body. Các phần chưa gán đoạn nằm cuối lề, không giả anchor chính xác.
+
+Band IELTS chuyển thành panel mở bằng Tổng kết band, có nút × và Esc, trả focus về nút mở khi đóng. Mặc định panel đóng để không chiếm chiều ngang của bài. Mobile thẻ xếp sau tài liệu, panel band tránh che thanh điều hướng. Văn bản/source/PDF và phiếu LaTeX, publish/frozen feedback vẫn giữ; chưa làm PDF geometry annotation thật. Chỉ đổi prototype, không sửa app runtime/backend.
+
+Kiểm thử mới `test-inline-comments-design.mjs`: vùng tài liệu >780px ở viewport 1700, thẻ gắn đoạn, chỉ một thẻ mở, notes/checklist giữ khi đổi đoạn, không chồng thẻ, mở/đóng band bằng Esc, config/thêm Body, sáng/tối/mobile. Đã xem ảnh `target/ielts-inline-comments/reading-with-margin-comments.png`, `introduction-comment-open.png`; có body/dark/mobile screenshot. Các test IELTS/Tutor/LaTeX và section-review được cập nhật theo luồng mở panel/thẻ và chạy đạt, giữ kiểm 21 hồ sơ, quote, publish và export. README prototype và tài liệu checklist cập nhật bố cục mới, mục 64 là lịch sử bố cục cũ. Chưa commit/push.
+
+## 66. Bài mẫu Task 1 mở trực tiếp cho Tutor (07/11/2026)
+
+Thêm `tutor-task1.html` → mở prototype ở bài chấm mẫu Task 1 Academic, cùng `task1-demo.js`. Có biểu đồ cột Car/Bus/Bicycle năm 2000/2020, bài tự biên soạn 175 từ/4 đoạn đúng số liệu, các thẻ Introduction/Overview/Body 1/Body 2 và TA/CC/LR/GRA ban đầu null. Source LaTeX lấy từ bài mẫu. Đề và chart nằm trong details ở màn chấm để Tutor đối chiếu ngay; có thể thu gọn.
+
+Thêm nút Thử Task 1 · biểu đồ ở tổng quan/danh sách/màn chấm Tutor. Chuyển bài giữ các phiên demo trong key localStorage riêng; Về bài trước khôi phục working copy/submission/điểm trước đó. Mở lại Task 1 giữ góp ý/band của Task 1, không gán điểm Task 2 sang. Không ảnh hưởng app/backend hay dữ liệu server.
+
+`test-task1-demo.mjs` đạt chart/bài mẫu, thẻ Overview và không ép Conclusion, TA null rồi lưu được, giữ band TR Task 2 khi quay lại, shortcut/restored Task 1. Regression Tutor/inline comments/section-review cũng đạt. Ảnh `target/ielts-task1-demo/task1-reading.png`, `task1-overview-comment.png`. Prototype README cập nhật lệnh mở Task 1; chưa commit/push.
+
+## 68. Existing official Python 3.15.2 local web environment (09/11/2026)
+
+User requested no additional Python installation. Verified installed Python 3.15.2 and its venv launcher have valid Authenticode signatures. Created target/official-python-web-env and installed project libraries without altering the blocked apps/backend/.venv or Windows security policy. Added scripts/setup-installed-python-web.ps1 to reproduce setup with existing py -3; run-python-web.bat prefers this environment when present. Added web-local extra with MongoDB client and WebSockets using Uvicorn core/h11; existing web extra remains unchanged. Local app does not use YAML config/server reload. PyYAML lacks a Python 3.15 wheel in the checked index and source build encountered a Cython policy block. Updated uv.lock and startup docs. Pip setup follows pyproject constraints, not exact lock versions; pip check passed. Original converter and PDF/DOCX core pins preserved.
+
+Actual launcher started at http://127.0.0.1:8000/; HTTP 200. Browser test-local-web.mjs passed with separate home target/python315-localweb-check-01: cookie/reload, create/save, 2-page PDF and exact export, PDF tab, Word edit/export, upload/image/avatar, ZIP import/compile. Main server left running. Automatic browser-opening command was rejected by tool policy; user can open the local URL directly. This entry supersedes the startup-blocked status below; no additional interpreter was installed.
+
+## 67. Windows App Control blocks Python startup (09/11/2026)
+
+Confirmed CodeIntegrity/Operational Event 3077 blocks apps/backend/.venv/Scripts/python.exe; Authenticode reports NotSigned. Failure occurs before the application starts. Updated scripts/ensure-python.ps1 to recognize policy-related launch exceptions, report the exact blocked path and stop without changing security settings or replacing the runtime. Added docs/WINDOWS_PYTHON_STARTUP.md with policy review and approved-runtime guidance. Actual launcher verification returns exit code 1 with the new actionable message. Server startup remains blocked until the device administrator approves the required runtime/dependencies; application runtime tests could not run in this environment.

@@ -6,7 +6,7 @@ Cập nhật 05/11/2026 theo yêu cầu giữ nguyên thiết kế ở `D:\ilove
 
 **PDF snapshot đang preview → script convert_pdf2docx.py nguyên bản → DOCX**.
 
-Ba file `convert_pdf2docx.py`, `universal_converter.py`, `build_perfect_docx.py` được sao chép nguyên byte vào `apps/desktop/src/overleaf_desktop/pdf_export/original/`, cùng 8 ảnh trong `extracted_figures`. Không sửa logic, thông số font/cột, header/footer, caption hoặc engine của các file này. Bản engine universal đã chỉnh sửa trong lần tích hợp trước đã gỡ khỏi runtime.
+Ba file `convert_pdf2docx.py`, `universal_converter.py`, `build_perfect_docx.py` được sao chép nguyên byte vào `apps/backend/src/latex_backend/pdf_export/original/`, cùng 8 ảnh trong `extracted_figures`. Không sửa logic, thông số font/cột, header/footer, caption hoặc engine của các file này. Bản engine universal đã chỉnh sửa trong lần tích hợp trước đã gỡ khỏi runtime.
 
 Worker gọi `convert_pdf_to_word(...)` **không truyền engine override**, vì vậy giữ thứ tự của bản gốc:
 

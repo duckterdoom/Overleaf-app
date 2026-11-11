@@ -1,5 +1,5 @@
 import { json, request } from "./api";
-export type Session = { name: string; email: string; offline: boolean };
+export type Session = { name: string; email: string; offline: boolean; id?: string; role?: "student" | "tutor" | null; needsRole?: boolean; provider?: "password" | "google" };
 export type Settings = Record<string, string | number | boolean>;
 export type Boot = {
     session: Session | null;
@@ -60,12 +60,9 @@ export async function chooseDirectory(
     language: string,
 ): Promise<string | null> {
     if (window.pywebview?.api) return window.pywebview.api.pick_directory();
-    return window.prompt(
-        language === "en"
-            ? "Folder path on this local server:"
-            : "Nhập đường dẫn thư mục trên máy chạy local web:",
-        current,
-    );
+    throw new Error(language === "en"
+        ? "Project storage is managed by the server. Upload a folder or ZIP instead."
+        : "Thư mục lưu do server quản lý. Hãy tải lên thư mục hoặc tệp ZIP.");
 }
 export async function native(
     name: string,

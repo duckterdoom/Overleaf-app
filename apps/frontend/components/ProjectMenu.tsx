@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { X, FolderOpen } from "lucide-react";
 import { action, errorText, translator, chooseDirectory } from "../lib/parity";
-import type { Project } from "../lib/api";
+import { isServerStorage, type Project } from "../lib/api";
 export default function ProjectMenu({
     project,
     language,
@@ -99,6 +99,7 @@ export default function ProjectMenu({
                     >
                         {t("Lưu thông tin", "Save details")}
                     </button>
+                    {!isServerStorage() && <>
                     <label>
                         {t("Thư mục hiện tại", "Current folder")}
                         <input readOnly value={project.folder || ""} />
@@ -139,6 +140,8 @@ export default function ProjectMenu({
                     >
                         {t("Chuyển thư mục lưu", "Move project folder")}
                     </button>
+                    </>}
+                    {isServerStorage() && <p className="help-text">{t("Dự án được lưu trên server. Dùng tải xuống để lưu bản sao về máy của bạn.", "This project is stored on the server. Download a copy to keep it on your computer.")}</p>}
                     <button
                         className="danger"
                         disabled={busy}
@@ -150,8 +153,8 @@ export default function ProjectMenu({
                         <div className="restore-confirm">
                             <p>
                                 {t(
-                                    "Chuyển dự án vào thùng rác local?",
-                                    "Move this project to local trash?",
+                                    "Chuyển dự án vào thùng rác?",
+                                    "Move this project to trash?",
                                 )}
                             </p>
                             <button

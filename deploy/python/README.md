@@ -2,7 +2,7 @@
 
 Đây là server TCP/TLS cộng tác tương ứng M3/M4, **không phải API file/compile local** của cửa sổ desktop. Không cần Java, frontend, bộ TeX hay pywebview trên server.
 
-Từ root repository, tạo Python 3.12+ venv và cài `pip install ./apps/desktop`, sau đó:
+Từ root repository, tạo Python 3.12+ venv và cài `pip install ./apps/backend`, sau đó:
 
 ```sh
 export OVERLEAF_HOST=0.0.0.0

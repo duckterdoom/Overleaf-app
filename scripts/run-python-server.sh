@@ -1,4 +1,4 @@
 #!/bin/sh
 set -eu
 cd "$(dirname "$0")/.."
-exec apps/desktop/.venv/bin/python -m overleaf_desktop.network "$@"
+exec apps/backend/.venv/bin/python -m latex_backend.collaboration.network "$@"

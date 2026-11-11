@@ -2,9 +2,9 @@
 setlocal
 cd /d "%~dp0.."
 set "PYTHONUTF8=1"
-if not exist apps\desktop\.venv\Scripts\python.exe (
-  echo Create Python 3.12+ venv: python -m venv apps\desktop\.venv
-  echo Then: apps\desktop\.venv\Scripts\python.exe -m pip install -e apps/desktop
+if not exist apps\backend\.venv\Scripts\python.exe (
+  echo Create Python 3.12+ venv: python -m venv apps\backend\.venv
+  echo Then: apps\backend\.venv\Scripts\python.exe -m pip install -e apps/backend
   exit /b 1
 )
-apps\desktop\.venv\Scripts\python.exe -X utf8 -m overleaf_desktop.network %*
+apps\backend\.venv\Scripts\python.exe -X utf8 -m latex_backend.collaboration.network %*

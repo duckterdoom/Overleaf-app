@@ -1,4 +1,7 @@
 export type Project = {
+    permission?: "owner" | "editor" | "viewer";
+    shared?: boolean;
+    ownerName?: string;
     id: string;
     title: string;
     engine: string;
@@ -6,6 +9,7 @@ export type Project = {
     updated: string;
     language: string;
     folder?: string;
+    storage?: "server" | "local";
     icon?: string;
     color?: string;
 };
@@ -49,6 +53,8 @@ export type CompileEvent = {
 let token = "";
 let launchRoute: Record<string, string> = {};
 let sessionReady: Promise<void> | null = null;
+let serverStorage = true;
+export function isServerStorage() { return serverStorage; }
 export function getLaunchRoute() {
     return launchRoute;
 }
@@ -56,6 +62,7 @@ export function bootstrap() {
     if (sessionReady) return sessionReady;
     const params = new URLSearchParams(location.hash.slice(1));
     launchRoute = Object.fromEntries(params);
+    if (params.get("share")) sessionStorage.setItem("latex_pending_share", params.get("share")!);
     token =
         params.get("session") ||
         sessionStorage.getItem("overleaf_session") ||
@@ -63,18 +70,19 @@ export function bootstrap() {
     if (token) sessionStorage.setItem("overleaf_session", token);
     history.replaceState(null, "", location.pathname);
     sessionReady = (async () => {
-        if (params.get("session")) return; // Existing desktop/test launch links.
+        if (params.get("session")) { serverStorage = false; return; } // Desktop launch links.
         const response = await fetch("/api/web/session", {
             method: "POST",
             credentials: "same-origin",
             headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (response.ok) {
+            serverStorage = true;
             token = "";
             sessionStorage.removeItem("overleaf_session");
             return;
         }
-        if (token && [404, 405].includes(response.status)) return; // Desktop static server has no web bootstrap route.
+        if (token && [404, 405].includes(response.status)) { serverStorage = false; return; }
         throw new Error(
             "Không tạo được phiên local web. Tải lại trang từ địa chỉ launcher hiển thị.",
         );
@@ -101,6 +109,9 @@ export async function request(path: string, options: RequestInit = {}) {
                     : `Yêu cầu thất bại (${response.status})`),
         );
     }
+    const permission = response.headers.get("x-latex-permission");
+    const project = path.match(/^\/projects\/([0-9a-f]{32})(?:\/|$)/)?.[1];
+    if (project && permission) window.dispatchEvent(new CustomEvent("latex-project-permission", { detail: { project, permission } }));
     return response;
 }
 export async function json<T>(path: string, options?: RequestInit): Promise<T> {

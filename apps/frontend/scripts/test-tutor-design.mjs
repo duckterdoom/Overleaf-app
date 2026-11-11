@@ -1,0 +1,36 @@
+import {chromium, expect} from '@playwright/test';
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
+const repo=path.resolve('../..'),out=path.join(repo,'target/ielts-tutor-design');
+fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({channel:'msedge',headless:true});
+try {
+  const page=await browser.newPage({viewport:{width:1600,height:1000}}),errors=[];
+  page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(pathToFileURL(path.join(repo,'docs/prototypes/writing/index.html')).href);
+  await page.getByRole('textbox',{name:'Bài viết Task 2'}).fill('DRAFT TO PRESERVE');
+  await page.goto(pathToFileURL(path.join(repo,'docs/prototypes/writing/tutor.html')).href);
+  await expect(page.getByRole('heading',{name:'Không gian Tutor',exact:true})).toBeVisible();
+  await expect(page.locator('#role')).toHaveValue('teacher');
+  await page.screenshot({path:path.join(out,'tutor-overview.png')});
+  await page.getByRole('button',{name:'Mở bài chấm mẫu',exact:true}).first().click();
+  await page.getByRole('dialog').getByRole('button',{name:'Mở bài mẫu',exact:true}).click();
+  await page.getByRole('button',{name:'Tổng kết band',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Chấm IELTS Writing',exact:true})).toBeVisible();
+  await expect(page.getByRole('combobox',{name:'Band TR',exact:true})).toHaveValue('');
+  await page.getByRole('combobox',{name:'Band TR',exact:true}).selectOption('7');
+  await page.screenshot({path:path.join(out,'tutor-grading.png')});
+  await page.locator('#role').selectOption('student');
+  await expect(page.getByRole('textbox',{name:'Bài viết Task 2'})).toHaveValue('DRAFT TO PRESERVE');
+  await page.locator('#role').selectOption('teacher');
+  await expect(page.getByRole('heading',{name:'Không gian Tutor',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Mở bài chấm',exact:true}).click();
+  await page.getByRole('button',{name:'Tổng kết band',exact:true}).click();
+  await expect(page.getByRole('combobox',{name:'Band TR',exact:true})).toHaveValue('7');
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('[data-route="tutor"]').click();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+  expect(errors).toEqual([]);
+  console.log('TUTOR_DESIGN_OK direct entry; overview; sample grading; preserves learner draft and existing assessment; mobile');
+} finally {await browser.close()}

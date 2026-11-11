@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import { FolderOpen, Upload, LoaderCircle, FileArchive } from "lucide-react";
 import type { Project } from "../lib/api";
-import { request } from "../lib/api";
+import { request, isServerStorage } from "../lib/api";
 import {
     action,
     native,
@@ -414,7 +414,7 @@ export default function NewProjectExtras({
 
     return (
         <div className="new-project-extras">
-            <label>
+            {!isServerStorage() && <label>
                 {t("Thư mục cha lưu dự án", "Parent folder for project")}
                 <div className="inline-controls">
                     <input
@@ -439,7 +439,8 @@ export default function NewProjectExtras({
                         <FolderOpen size={17} />
                     </button>
                 </div>
-            </label>
+            </label>}
+            {isServerStorage() && <p className="help-text">{t("Dự án mới và tệp nhập được lưu trên server; không cần chọn thư mục lưu trên máy.", "New projects and imported files are saved on the server; no local destination is needed.")}</p>}
 
             <div className="inline-controls">
                 <label>

@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { StreamLanguage } from "@codemirror/language";
 import { stex } from "@codemirror/legacy-modes/mode/stex";
-import { EditorView } from "@codemirror/view";
+import { EditorView, type ViewUpdate } from "@codemirror/view";
 import {
     ArrowLeft,
     ArrowRight,
@@ -11,7 +11,6 @@ import {
     Braces,
     Check,
     ChevronRight,
-    Circle,
     Clock3,
     Code2,
     Download,
@@ -33,6 +32,7 @@ import {
     Settings2,
     Square,
     Terminal,
+    UsersRound,
     X,
 } from "lucide-react";
 import PdfViewer from "../components/PdfViewer";
@@ -40,6 +40,7 @@ import WordPreview from "../components/WordDocxPreview";
 import type { WordPreviewHandle } from "../lib/word-preview";
 import {
     bootstrap,
+    isServerStorage,
     compile,
     json,
     request,
@@ -51,6 +52,7 @@ import {
 } from "../lib/api";
 
 import AuthView from "../components/AuthView";
+import RoleSelection from "../components/RoleSelection";
 import SettingsPanel from "../components/SettingsPanel";
 import ProfilePanel from "../components/ProfilePanel";
 import HistoryPanel from "../components/HistoryPanel";
@@ -58,6 +60,7 @@ import ActivityHeatmap from "../components/ActivityHeatmap";
 import EditorToolbar from "../components/EditorToolbar";
 import AddFilesPanel from "../components/AddFilesPanel";
 import NetworkPanel from "../components/NetworkPanel";
+import SharePanel from "../components/SharePanel";
 import ProjectMenu from "../components/ProjectMenu";
 import ProjectCard from "../components/ProjectCard";
 import NewProjectExtras from "../components/NewProjectExtras";
@@ -70,7 +73,13 @@ import { localize } from "../lib/i18n";
 import { orderedTree } from "../lib/fileTree";
 import ReviewPanel, { type ReviewAnchor } from "../components/ReviewPanel";
 import { reviewHighlights } from "../lib/reviewHighlights";
+import usePresence, { presenceHighlights } from "../lib/usePresence";
+import PresenceAvatars from "../components/PresenceAvatars";
+import { LiveSync } from "../lib/liveSync";
 const latex = StreamLanguage.define(stex);
+const localSelectionVisibility = EditorView.editorAttributes.compute(['selection'], state => ({
+    'data-local-selection': state.selection.ranges.some(range => !range.empty) ? 'true' : 'false',
+}));
 type Dialog = "project" | "file" | "folder" | null;
 type ResultTab = { main: string; format: "pdf" | "word" };
 type DocumentResult = {
@@ -102,6 +111,8 @@ export default function Workspace() {
     const [search, setSearch] = useState(""),
         [category, setCategory] = useState(""),
         [templateSearch, setTemplateSearch] = useState("");
+    const [projectView, setProjectView] = useState<"list" | "grid">("list");
+    const [projectFilter, setProjectFilter] = useState<"all" | "shared">("all");
     const [dialog, setDialog] = useState<Dialog>(null),
         [name, setName] = useState(""),
         [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
@@ -174,6 +185,22 @@ export default function Workspace() {
         view = useRef<EditorView | null>(null),
         logPane = useRef<HTMLPreElement>(null);
     const savedText = useRef("");
+    const liveRef = useRef<LiveSync | null>(null);
+    if (!liveRef.current) liveRef.current = new LiveSync({
+        saved: () => savedText.current, dirty: () => false, synced: () => {}, error: setError,
+    });
+    const live = liveRef.current;
+    live.callbacks = {
+        saved: () => savedText.current, dirty: () => dirty,
+        synced: (value, pending) => {
+            savedText.current = value;
+            if (view.current) setContent(view.current.state.doc.toString());
+            setDirty(pending);
+            setStale(true);
+            for (const result of Object.values(results.current)) result.stale = true;
+        },
+        error: setError,
+    };
     const buildInFlight = useRef(false);
     const fileOperation = useRef(0);
     const openingFile = useRef(false);
@@ -193,7 +220,7 @@ export default function Workspace() {
                 setProjects(projects);
                 setCatalog(catalog);
                 setReady(true);
-                setNotice("Local workspace · Sẵn sàng");
+                setNotice(isServerStorage() ? "Web workspace · Sẵn sàng" : "Local workspace · Sẵn sàng");
             })
             .catch((error) => {
                 setError(text(error));
@@ -219,11 +246,12 @@ export default function Workspace() {
     async function save() {
         if (!project || !file) return true;
         if (ext.readonly) return !dirty;
+        if (isServerStorage()) return live.flush();
         const ticket = revision.current;
         try {
             await json(`/projects/${project.id}/file`, {
                 method: "PUT",
-                body: JSON.stringify({ path: file, content }),
+                body: JSON.stringify({ path: file, content, expected: savedText.current }),
             });
             savedText.current = content;
             await action("editing", {
@@ -233,7 +261,7 @@ export default function Workspace() {
             void refreshActivity();
             if (ticket === revision.current) {
                 setDirty(false);
-                setNotice("Đã lưu thay đổi trên máy.");
+                setNotice(isServerStorage() ? "Đã lưu thay đổi trên server." : "Đã lưu thay đổi trên máy.");
             }
             return ticket === revision.current;
         } catch (error) {
@@ -287,7 +315,7 @@ export default function Workspace() {
             setLogs("");
             setError("");
             setFolder("");
-            setNotice("Dữ liệu được lưu trên máy của bạn.");
+            setNotice(isServerStorage() ? "Dữ liệu được lưu trên server." : "Dữ liệu được lưu trên máy của bạn.");
         } catch (error) {
             setError(text(error));
         }
@@ -366,7 +394,7 @@ export default function Workspace() {
     }
     function change(value: string) {
         if (ext.readonly) return;
-        ext.changed(value, content);
+        if (!live.applying) ext.changed(value, content);
         revision.current++;
         setContent(value);
         setDirty(value !== savedText.current);
@@ -433,7 +461,7 @@ export default function Workspace() {
             openingFile.current ||
             busy ||
             buildInFlight.current ||
-            ext.readonly ||
+            (ext.readonly && project.permission !== "viewer") ||
             ext.detached
         )
             return;
@@ -664,7 +692,28 @@ export default function Workspace() {
         saved: savedText,
         revision,
         buildInFlight,
+        live,
     });
+    const presence = usePresence(project?.id, file, ext.session?.id,
+        ready && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live);
+    const editorHandlers = useRef({ change, update: (_: ViewUpdate) => {} });
+    editorHandlers.current = { change, update: (update) => {
+        if (update.docChanged) live.changed();
+        if (update.selectionSet || update.docChanged || update.focusChanged) presence.update();
+        if (update.selectionSet && ext.network.joined) {
+            const head = update.state.selection.main.head;
+            const line = update.state.doc.lineAt(head);
+            void action('network-cursor', { line: line.number, column: head - line.from });
+        }
+    }};
+    const onEditorChange = useCallback((value: string) => editorHandlers.current.change(value), []);
+    const onEditorUpdate = useCallback((update: ViewUpdate) => editorHandlers.current.update(update), []);
+    // Presence snapshots must not reconfigure CodeMirror's mouse-selection
+    // handlers in the middle of a drag.
+    const editorExtensions = useMemo(() => [latex, reviewHighlights, presenceHighlights, localSelectionVisibility, live.extension,
+        ...(ext.settings.wordWrap ? [EditorView.lineWrapping] : [])], [live, ext.settings.wordWrap]);
+    const editorSetup = useMemo(() => ({ lineNumbers: true, foldGutter: true,
+        autocompletion: true, closeBrackets: Boolean(ext.settings.autoClose), searchKeymap: true }), [ext.settings.autoClose]);
     useEffect(() => {
         if (compileTarget && pdf && snapshot)
             results.current[compileTarget] = {
@@ -900,7 +949,9 @@ export default function Workspace() {
                 `${item.title.vi} ${item.title.en} ${item.description.vi} ${item.tags.join(" ")}`,
             ).includes(fold(templateSearch)),
     );
-    const filtered = projects.filter((item) =>
+    // The server resolves ACLs before including shared projects in this list.
+    const visibleProjects = projectFilter === "shared" ? projects.filter(item => item.shared) : projects;
+    const filtered = visibleProjects.filter((item) =>
         fold(item.title).includes(fold(search)),
     );
 
@@ -937,6 +988,8 @@ export default function Workspace() {
                 />
             </main>
         );
+    if (ext.session.needsRole)
+        return <main data-desktop-ready="true"><RoleSelection session={ext.session} language={uiLanguage} onDone={ext.authenticated} onLogout={ext.logout} /></main>;
     if (project && ext.panel === "history")
         return (
             <HistoryPanel
@@ -1014,8 +1067,11 @@ export default function Workspace() {
                         <div className="header-spacer" />
                         <span className="local-pill">
                             <span />
-                            {localize("Trên máy của bạn", uiLanguage)}
+                            {t(isServerStorage() ? "Lưu trên server" : "Trên máy của bạn", isServerStorage() ? "Saved on server" : "On your computer")}
                         </span>
+                        {isServerStorage() && !ext.readonly && <PresenceAvatars project={project.id}
+                            peers={presence.peers} connected={presence.connected} language={uiLanguage}
+                            selfId={ext.session?.id} file={file} digest={presence.digest} />}
                         <button
                             className="quiet"
                             disabled={busy}
@@ -1034,7 +1090,7 @@ export default function Workspace() {
                             className="quiet"
                             onClick={() => void ext.connect()}
                         >
-                            {ext.network.joined
+                            {isServerStorage() ? <><UsersRound size={17} />{t("Chia sẻ", "Share")}</> : ext.network.joined
                                 ? (ext.network.online ? "● " : "○ ") +
                                   ext.network.members.length +
                                   " · " +
@@ -1130,12 +1186,9 @@ export default function Workspace() {
                     </>
                 ) : (
                     <>
-                        <span className="nav-current">
-                            {localize("Dự án", uiLanguage)}
-                        </span>
                         <div className="header-spacer" />
                         <span className="local-pill">
-                            <span /> Local workspace
+                            <span /> {isServerStorage() ? "Web workspace" : "Local workspace"}
                         </span>
                     </>
                 )}
@@ -1166,52 +1219,7 @@ export default function Workspace() {
                 </div>
             )}
             {!project ? (
-                <div className="dashboard">
-                    <aside className="home-sidebar">
-                        <p className="eyebrow">
-                            {localize("KHÔNG GIAN LÀM VIỆC", uiLanguage)}
-                        </p>
-                        <button className="side-active">
-                            <Folder size={18} />
-                            {localize("Tất cả dự án", uiLanguage)}
-                            <span>{projects.length}</span>
-                        </button>
-                        <div className="sidebar-note">
-                            <div className="note-icon">
-                                <Leaf size={19} />
-                            </div>
-                            <strong>
-                                {localize(
-                                    "Tập trung vào điều bạn viết.",
-                                    uiLanguage,
-                                )}
-                            </strong>
-                            <p>
-                                {localize(
-                                    "Tài liệu, bộ biên dịch và PDF đều ở trên máy của bạn.",
-                                    uiLanguage,
-                                )}
-                            </p>
-                            <div>
-                                <Circle size={7} fill="currentColor" />
-                                {localize(
-                                    "Không cần tài khoản cloud",
-                                    uiLanguage,
-                                )}
-                            </div>
-                        </div>
-                        <footer>
-                            <div className="avatar">
-                                {ext.session?.name.slice(0, 1)}
-                            </div>
-                            <div>
-                                <strong>{ext.session?.name}</strong>
-                                <small>
-                                    {localize("Dữ liệu local", uiLanguage)}
-                                </small>
-                            </div>
-                        </footer>
-                    </aside>
+                <div className="dashboard dashboard-home">
                     <section className="projects-main">
                         <div className="page-heading">
                             <div>
@@ -1222,7 +1230,7 @@ export default function Workspace() {
                                     )}
                                 </p>
                                 <h1>
-                                    {localize("Dự án của bạn", uiLanguage)}
+                                    {ext.session.role === "tutor" ? t("Không gian Tutor", "Tutor workspace") : ext.session.role === "student" ? t("Không gian học viên", "Student workspace") : localize("Dự án của bạn", uiLanguage)}
                                     <span>.</span>
                                 </h1>
                                 <p>
@@ -1315,11 +1323,24 @@ export default function Workspace() {
                             activity={ext.activity}
                             language={uiLanguage}
                         />
-                        <div className="project-tools">
-                            <h2>
-                                {localize("Tất cả dự án", uiLanguage)}
-                                <span>{projects.length}</span>
-                            </h2>
+                        <div className="project-tools home-project-tools">
+                            <nav className="project-navigation" aria-label={t("Điều hướng dự án", "Project navigation")}>
+                                <button className={projectFilter === "all" ? "project-navigation-active" : ""} aria-current={projectFilter === "all" ? "page" : undefined} onClick={() => { setProjectFilter("all"); setSearch(""); }}>
+                                    <Folder size={17} />
+                                    {localize("Tất cả dự án", uiLanguage)}
+                                    <span className="project-count">{projects.length}</span>
+                                </button>
+                                <button className={projectFilter === "shared" ? "project-navigation-active" : ""} aria-current={projectFilter === "shared" ? "page" : undefined} onClick={() => { setProjectFilter("shared"); setSearch(""); }}>
+                                    <UsersRound size={17} />
+                                    {t("Được chia sẻ với bạn", "Shared with you")}
+                                    <span className="project-count">{projects.filter(item => item.shared).length}</span>
+                                </button>
+                                <button onClick={() => { setSelectedTemplate(null); setName(""); setDialog("project"); }}>
+                                    <BookOpen size={17} />
+                                    {t("Thư viện mẫu", "Template library")}
+                                </button>
+                            </nav>
+                            <div className="project-list-controls">
                             <div className="search-input">
                                 <Search size={16} />
                                 <input
@@ -1337,10 +1358,14 @@ export default function Workspace() {
                                     }
                                 />
                             </div>
-                            <Grid2X2 size={18} />
+                            <div className="project-view-toggle" role="group" aria-label={t("Kiểu hiển thị dự án", "Project view")}>
+                                <button title={t("Dạng danh sách", "List view")} aria-label={t("Dạng danh sách", "List view")} aria-pressed={projectView === "list"} onClick={() => setProjectView("list")}><List size={18} /></button>
+                                <button title={t("Dạng lưới", "Grid view")} aria-label={t("Dạng lưới", "Grid view")} aria-pressed={projectView === "grid"} onClick={() => setProjectView("grid")}><Grid2X2 size={18} /></button>
+                            </div>
+                            </div>
                         </div>
                         {filtered.length ? (
-                            <div className="project-grid">
+                            <div className={`project-grid ${projectView === "list" ? "project-list" : ""}`}>
                                 {filtered.map((item) => (
                                     <ProjectCard
                                         key={item.id}
@@ -1348,16 +1373,17 @@ export default function Workspace() {
                                         language={uiLanguage}
                                         onOpen={() => void open(item)}
                                         onManage={() => ext.setManage(item)}
+                                        canManage={!item.shared}
                                     />
                                 ))}
                             </div>
                         ) : (
                             <div className="empty-projects">
                                 <div>
-                                    <FolderPlus size={28} strokeWidth={1.3} />
+                                    {projectFilter === "shared" ? <UsersRound size={28} strokeWidth={1.3} /> : <FolderPlus size={28} strokeWidth={1.3} />}
                                 </div>
                                 <h3>
-                                    {search
+                                    {projectFilter === "shared" ? t("Chưa có tài liệu được chia sẻ", "No shared documents yet") : search
                                         ? localize(
                                               "Không tìm thấy dự án",
                                               uiLanguage,
@@ -1368,7 +1394,7 @@ export default function Workspace() {
                                           )}
                                 </h3>
                                 <p>
-                                    {search
+                                    {projectFilter === "shared" ? t("Mở liên kết chia sẻ hoặc lời mời từ chủ sở hữu để thêm tài liệu vào đây.", "Open a sharing link or an invitation from the owner to add a document here.") : search
                                         ? localize(
                                               "Thử tìm bằng một tên khác.",
                                               uiLanguage,
@@ -1382,7 +1408,7 @@ export default function Workspace() {
                         )}
                         <div className="home-bottom">
                             <span>
-                                <Check size={13} /> LaTeX local
+                                <Check size={13} /> {isServerStorage() ? "LaTeX server" : "LaTeX local"}
                             </span>
                             <span>
                                 <BookOpen size={13} />
@@ -1492,6 +1518,7 @@ export default function Workspace() {
                         <div className="file-actions">
                             <button
                                 title={localize("Thêm tệp", uiLanguage)}
+                                disabled={ext.readonly}
                                 onClick={() => {
                                     ext.setPanel("add-file");
                                 }}
@@ -1500,6 +1527,7 @@ export default function Workspace() {
                             </button>
                             <button
                                 title={localize("Thêm thư mục", uiLanguage)}
+                                disabled={ext.readonly}
                                 onClick={() => {
                                     ext.setPanel("add-folder");
                                 }}
@@ -1508,6 +1536,7 @@ export default function Workspace() {
                             </button>
                             <button
                                 title={t("Tải lên", "Upload")}
+                                disabled={ext.readonly}
                                 onClick={() => ext.setPanel("add-upload")}
                             >
                                 <Download size={17} />
@@ -1572,6 +1601,7 @@ export default function Workspace() {
                                             }
                                             onContextMenu={async (event) => {
                                                 event.preventDefault();
+                                                if (ext.readonly) return;
                                                 if (dirty && !(await save()))
                                                     return;
                                                 setFileAction(entry);
@@ -1680,6 +1710,8 @@ export default function Workspace() {
                             key={project.id}
                             project={project.id}
                             file={file}
+                            visible={sidePanel === 'review'}
+                            readonly={ext.readonly}
                             source={content}
                             language={uiLanguage}
                             editor={view}
@@ -1893,16 +1925,11 @@ export default function Workspace() {
                                             readOnly={
                                                 ext.readonly || fileLoading
                                             }
-                                            extensions={[
-                                                latex,
-                                                reviewHighlights,
-                                                ...(ext.settings.wordWrap
-                                                    ? [EditorView.lineWrapping]
-                                                    : []),
-                                            ]}
-                                            onChange={change}
+                                            extensions={editorExtensions}
+                                            onChange={onEditorChange}
                                             onCreateEditor={(editor) => {
                                                 view.current = editor;
+                                                presence.update();
                                                 const saved =
                                                     positions.current[file];
                                                 if (saved) {
@@ -1930,41 +1957,8 @@ export default function Workspace() {
                                                     );
                                                 }
                                             }}
-                                            onUpdate={(update) => {
-                                                if (
-                                                    update.selectionSet &&
-                                                    ext.network.joined
-                                                )
-                                                    void action(
-                                                        "network-cursor",
-                                                        {
-                                                            line: update.state.doc.lineAt(
-                                                                update.state
-                                                                    .selection
-                                                                    .main.head,
-                                                            ).number,
-                                                            column:
-                                                                update.state
-                                                                    .selection
-                                                                    .main.head -
-                                                                update.state.doc.lineAt(
-                                                                    update.state
-                                                                        .selection
-                                                                        .main
-                                                                        .head,
-                                                                ).from,
-                                                        },
-                                                    );
-                                            }}
-                                            basicSetup={{
-                                                lineNumbers: true,
-                                                foldGutter: true,
-                                                autocompletion: true,
-                                                closeBrackets: Boolean(
-                                                    ext.settings.autoClose,
-                                                ),
-                                                searchKeymap: true,
-                                            }}
+                                            onUpdate={onEditorUpdate}
+                                            basicSetup={editorSetup}
                                         />
                                     </div>
                                 </div>
@@ -2109,7 +2103,7 @@ export default function Workspace() {
                                             disabled={
                                                 busy ||
                                                 fileLoading ||
-                                                ext.readonly
+                                                (ext.readonly && project.permission !== "viewer")
                                             }
                                             onClick={() => void build()}
                                         >
@@ -2242,6 +2236,8 @@ export default function Workspace() {
                                                 aria-selected={
                                                     previewTab === "word"
                                                 }
+                                                disabled={project.permission === "viewer"}
+                                                title={project.permission === "viewer" ? t("Quyền chỉ xem: sử dụng PDF preview.", "View-only access: use PDF preview.") : undefined}
                                                 className={`preview-mode-tab ${previewTab === "word" ? "active" : ""}`}
                                                 onClick={() =>
                                                     setPreviewTab("word")
@@ -2521,7 +2517,7 @@ export default function Workspace() {
                     {project
                         ? `${file} · ${dirty ? localize("Chưa lưu", uiLanguage) : localize("Đã lưu", uiLanguage)}`
                         : localize(
-                              "Tài liệu của bạn · Lưu trên máy",
+                              isServerStorage() ? "Tài liệu của bạn · Lưu trên server" : "Tài liệu của bạn · Lưu trên máy",
                               uiLanguage,
                           )}
                 </span>
@@ -2568,6 +2564,7 @@ export default function Workspace() {
                     onClose={() => ext.setPanel(null)}
                 />
             )}
+            {ext.panel === "share" && project && <SharePanel project={project} language={uiLanguage} onClose={() => ext.setPanel(null)} />}
             {ext.manage && (
                 <ProjectMenu
                     project={ext.manage}
@@ -2579,7 +2576,7 @@ export default function Workspace() {
                     }}
                 />
             )}
-            {fileAction && project && (
+            {fileAction && project && !ext.readonly && (
                 <FileActionsPanel
                     project={project.id}
                     entry={fileAction}
@@ -2873,7 +2870,7 @@ export default function Workspace() {
                                                         )
                                                         .join(", ")}
                                                 </p>
-                                                {preflight.bundled ? (
+                                                {preflight.bundled && !isServerStorage() ? (
                                                     <button
                                                         className="primary"
                                                         type="button"
@@ -2949,7 +2946,7 @@ export default function Workspace() {
                                 <span>
                                     {dialog === "project"
                                         ? localize(
-                                              "Dữ liệu được tạo trên máy của bạn.",
+                                              isServerStorage() ? "Dữ liệu được tạo trên server." : "Dữ liệu được tạo trên máy của bạn.",
                                               uiLanguage,
                                           )
                                         : localize(

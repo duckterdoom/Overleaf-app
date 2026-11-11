@@ -32,8 +32,7 @@ const server = spawn(
     [
         "-X",
         "utf8",
-        "-m",
-        "overleaf_desktop.web",
+        ...(process.env.LATEX_TEST_WEB_FACTORY ? [path.resolve(process.env.LATEX_TEST_WEB_FACTORY)] : ["-m", "latex_backend.entrypoints.web"]),
         "--home",
         home,
         "--port",
@@ -74,9 +73,16 @@ try {
             auth.push(r.url());
     });
     await page.goto(url);
-    await page
-        .getByRole("button", { name: "Tiếp tục ngoại tuyến", exact: true })
-        .click();
+    await page.getByRole("button", { name: "Đăng ký", exact: true }).click();
+    await page.getByLabel("Tên hiển thị", { exact: true }).fill("Browser Student");
+    await page.getByLabel("Email", { exact: true }).fill("browser-student@example.com");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("browser-password");
+    await page.getByRole("button", { name: "Đăng ký", exact: true }).click();
+    await page.getByRole("radio", { name: /Student/ }).check();
+    await page.getByRole("button", { name: "Vào không gian của tôi", exact: true }).click();
+    await expect(page.getByRole("heading", { name: /Không gian học viên/ })).toBeVisible();
+    const identity = await page.evaluate(async () => (await (await fetch("/api/session")).json()).session);
+    const workspaceHome = path.join(home, "users", identity.id);
     await expect(page).toHaveTitle("Latex");
     expect(await page.evaluate(() => Boolean(window.pywebview))).toBe(false);
     expect(
@@ -92,7 +98,15 @@ try {
     );
     expect(cookie?.httpOnly).toBe(true);
     expect(cookie?.sameSite).toBe("Strict");
+    await page.getByRole("button", { name: "Cài đặt", exact: true }).click();
+    const settings = page.getByRole("dialog");
+    await settings.getByRole("button", { name: "Dự án", exact: true }).click();
+    await expect(settings.getByText("Thư mục dự án mặc định", { exact: true })).toHaveCount(0);
+    await expect(settings.getByText(/Dữ liệu được lưu trên server/)).toBeVisible();
+    await settings.getByRole("button", { name: "Đóng", exact: true }).click();
     await page.getByRole("button", { name: "Dự án mới", exact: true }).click();
+    await expect(page.getByText("Thư mục cha lưu dự án", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/Dự án mới và tệp nhập được lưu trên server/)).toBeVisible();
     await page
         .getByRole("textbox", { name: "Tên dự án", exact: true })
         .fill("Local web browser project");
@@ -103,7 +117,10 @@ try {
         .fill(
             "\\documentclass{article}\n\\begin{document}\nLOCAL WEB ARTICLE\n\\newpage\nSECOND WEB PAGE\n\\end{document}\n",
         );
-    await page.locator(".save-source").click();
+    // Live OT may acknowledge the edit before Playwright clicks Save, making
+    // that button correctly disabled. Ctrl+S exercises flush in either state.
+    await page.keyboard.press('Control+s');
+    await expect(page.locator('.save-source')).toBeDisabled();
     await page.locator(".compile-button").click();
     await expect(page.locator(".pdf-sheet")).toHaveCount(2, { timeout: 30000 });
     await expect(page.locator(".compile-button")).toBeEnabled();
@@ -113,13 +130,13 @@ try {
         .getByRole("menuitem", { name: "Export PDF (.pdf)", exact: true })
         .click();
     const pdf = await pdfDownload;
-    const project = fs.readdirSync(home + "/projects")[0];
+    const project = fs.readdirSync(path.join(workspaceHome, "projects"))[0];
     expect(
         fs
             .readFileSync(await pdf.path())
             .equals(
                 fs.readFileSync(
-                    path.join(home, "projects", project, "build/main.pdf"),
+                    path.join(workspaceHome, "projects", project, "build/main.pdf"),
                 ),
             ),
     ).toBe(true);
@@ -156,7 +173,7 @@ try {
         .getByRole("menuitem", { name: "Export Word (.docx)", exact: true })
         .click();
     const word = await wordDownload;
-    const draftRoot = path.join(home, "projects", project, ".overleaf-docx");
+    const draftRoot = path.join(workspaceHome, "projects", project, ".overleaf-docx");
     const metadata = JSON.parse(
         fs.readFileSync(draftRoot + "/current.json", "utf8"),
     );
@@ -200,6 +217,11 @@ try {
         .click();
     await page.reload();
     await expect(page.locator(".project-card-open").first()).toBeVisible();
+    await page.locator(".project-manage").first().click();
+    const manage = page.getByRole("dialog");
+    await expect(manage.getByText("Thư mục cha mới", { exact: true })).toHaveCount(0);
+    await expect(manage.getByText(/Dự án được lưu trên server/)).toBeVisible();
+    await manage.getByRole("button", { name: "Đóng", exact: true }).click();
     await page.getByRole("button", { name: "Dự án mới", exact: true }).click();
     await page
         .getByRole("dialog")

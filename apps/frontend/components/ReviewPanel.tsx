@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { EditorView } from "@codemirror/view";
-import { json } from "../lib/api";
+import { isServerStorage, json } from "../lib/api";
 import { errorText, translator } from "../lib/parity";
 import { setReviewHighlights } from "../lib/reviewHighlights";
 
@@ -26,6 +26,8 @@ export default function ReviewPanel({
     onDraft,
     onClose,
     openFile,
+    visible,
+    readonly,
 }: {
     project: string;
     file: string;
@@ -36,8 +38,11 @@ export default function ReviewPanel({
     onDraft: (value: ReviewAnchor | null) => void;
     onClose: () => void;
     openFile: (path: string) => Promise<void>;
+    visible: boolean;
+    readonly: boolean;
 }) {
-    const t = translator(language);
+    const t = useMemo(() => translator(language), [language]);
+    const mutation = useRef(0);
     const [threads, setThreads] = useState<Thread[]>([]),
         [text, setText] = useState(""),
         [reply, setReply] = useState<Record<string, string>>({}),
@@ -48,18 +53,42 @@ export default function ReviewPanel({
         [active, setActive] = useState<Thread | null>(null);
     const route = `/projects/${project}/review`;
     useEffect(() => {
-        let alive = true;
-        json<Thread[]>(route)
-            .then((v) => {
-                if (alive) setThreads(v);
-            })
-            .catch((e) => {
+        let alive = true, loading = false, repeat = false;
+        let signature = '';
+        async function refresh(force = false) {
+            if ((!visible && !force) || !alive) return;
+            if (loading) { repeat = true; return; }
+            loading = true;
+            const version = mutation.current;
+            try {
+                const value = await json<Thread[]>(route);
+                const next = JSON.stringify(value);
+                if (alive && mutation.current === version && signature !== next) {
+                    signature = next;
+                    setThreads(value);
+                }
+            } catch (e) {
                 if (alive) setError(errorText(e));
-            });
+            } finally {
+                loading = false;
+                if (repeat && alive) { repeat = false; void refresh(true); }
+            }
+        }
+        const changed = (event: Event) => {
+            if ((event as CustomEvent).detail?.project === project) void refresh(true);
+        };
+        const focused = () => { if (visible) void refresh(); };
+        void refresh(true);
+        const poll = visible ? setInterval(() => void refresh(), readonly ? 1500 : 5000) : undefined;
+        window.addEventListener('latex-review-changed', changed);
+        window.addEventListener('focus', focused);
         return () => {
             alive = false;
+            clearInterval(poll);
+            window.removeEventListener('latex-review-changed', changed);
+            window.removeEventListener('focus', focused);
         };
-    }, [route]);
+    }, [route, project, visible, readonly]);
     useEffect(() => {
         const view = editor.current;
         if (!view) return;
@@ -85,6 +114,9 @@ export default function ReviewPanel({
     }, [threads, file, source, editor]);
     useEffect(() => {
         if (!active || active.file !== file) return;
+        // A thread click is a one-shot navigation request. Never reselect its
+        // quote on polling, presence, typing or a later mouse drag.
+        setActive(null);
         const view = editor.current;
         if (!view) return;
         const doc = view.state.doc.toString();
@@ -114,15 +146,18 @@ export default function ReviewPanel({
         });
     }, [active, file, editor, t]);
     async function update(data: object) {
+        if (readonly) return false;
+        mutation.current++;
         setBusy(true);
         setError("");
         try {
-            setThreads(
-                await json<Thread[]>(route, {
+            const value = await json<Thread[]>(route, {
                     method: "POST",
                     body: JSON.stringify(data),
-                }),
-            );
+                });
+            mutation.current++;
+            setThreads(value);
+            window.dispatchEvent(new CustomEvent('latex-review-changed', { detail: { project } }));
             return true;
         } catch (e) {
             setError(errorText(e));
@@ -165,14 +200,14 @@ export default function ReviewPanel({
                 {t("Hiện đã giải quyết", "Show resolved")}
             </label>
             <small>
-                {t(
+                {isServerStorage() ? t('Nhận xét được chia sẻ với người có quyền truy cập dự án.', 'Comments are shared with project members.') : t(
                     "Lưu trên máy; chưa đồng bộ nhận xét qua phòng cộng tác.",
                     "Stored locally; review threads are not synced to collaboration rooms.",
                 )}
             </small>
             {error && <p role="alert">{error}</p>}
             <div className="review-threads">
-                {draft && (
+                {draft && !readonly && (
                     <form
                         onSubmit={async (e) => {
                             e.preventDefault();
@@ -253,7 +288,7 @@ export default function ReviewPanel({
                                 </div>
                             ))}
                             <button
-                                disabled={busy}
+                                disabled={busy || readonly}
                                 onClick={() =>
                                     void update({
                                         operation: "resolve",
@@ -267,7 +302,7 @@ export default function ReviewPanel({
                                     : t("Đánh dấu đã giải quyết", "Resolve")}
                             </button>
                             <button
-                                disabled={busy}
+                                disabled={busy || readonly}
                                 onClick={() => {
                                     if (
                                         confirm(
@@ -285,7 +320,7 @@ export default function ReviewPanel({
                             >
                                 {t("Xóa", "Delete")}
                             </button>
-                            {!item.resolved && (
+                            {!item.resolved && !readonly && (
                                 <form
                                     onSubmit={async (e) => {
                                         e.preventDefault();

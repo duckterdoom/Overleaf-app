@@ -1,0 +1,33 @@
+import {chromium,expect} from '@playwright/test';
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
+const repo=path.resolve('../..'),out=path.join(repo,'target/ielts-inline-comments');fs.mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({channel:'msedge',headless:true});
+try{
+ const page=await browser.newPage({viewport:{width:1700,height:1050}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(pathToFileURL(path.join(repo,'docs/prototypes/writing/tutor.html')).href);
+ await page.getByRole('button',{name:'Mở bài chấm mẫu',exact:true}).first().click();await page.getByRole('dialog').getByRole('button',{name:'Mở bài mẫu',exact:true}).click();
+ await expect(page.locator('.floating-band-panel')).toBeHidden();await expect(page.locator('.paragraph-comment-card')).toHaveCount(5);
+ const doc=await page.locator('.inline-review-document').boundingBox();expect(doc.width).toBeGreaterThan(780);
+ await page.screenshot({path:path.join(out,'reading-with-margin-comments.png')});
+ await page.locator('[data-review-part="intro"]').click();await expect(page.locator('.paragraph-comment-card.is-open')).toHaveCount(1);
+ await page.locator('[data-review-check="scope"]').check();await page.locator('#section-feedback').fill('Introduction: quan điểm đã rõ; cần rút gọn cách dẫn nhập.');
+ await expect(page.locator('.selected-review-paragraph')).toHaveCount(1);await page.screenshot({path:path.join(out,'introduction-comment-open.png')});
+ await page.locator('[data-review-part="body-1"]').click();await expect(page.locator('.paragraph-comment-card.is-open')).toHaveCount(1);
+ await expect(page.locator('[data-comment-id="intro"] .comment-card-preview')).toContainText('quan điểm đã rõ');
+ await page.locator('#section-feedback').fill('Body 1: thêm một ví dụ cụ thể.');
+ await page.locator('[data-review-check="main-idea"]').check();
+ await page.locator('.grade-response').evaluate(el=>el.scrollTop=0);
+ await page.screenshot({path:path.join(out,'body-comment-open.png')});
+ await page.getByRole('button',{name:'Tổng kết band',exact:true}).click();await expect(page.getByRole('combobox',{name:'Band TR',exact:true})).toBeVisible();
+ await page.getByRole('combobox',{name:'Band TR',exact:true}).selectOption('7');await page.keyboard.press('Escape');await expect(page.locator('.floating-band-panel')).toBeHidden();
+ await page.getByRole('button',{name:'Dạng bài & phân phần',exact:true}).click();await expect(page.locator('#review-profile')).toBeVisible();
+ await page.getByRole('button',{name:'＋ Thêm phần Body',exact:true}).click();await expect(page.locator('[data-comment-id="body-3"]')).toBeVisible();
+ await page.locator('[data-review-part="intro"]').click();await expect(page.locator('[data-review-check="scope"]')).toBeChecked();
+ const nonOverlap=await page.locator('.paragraph-comment-card').evaluateAll(cards=>cards.every((card,i)=>i===0||card.getBoundingClientRect().top>=cards[i-1].getBoundingClientRect().bottom));expect(nonOverlap).toBe(true);
+ await page.getByRole('button',{name:'Sáng / Tối',exact:true}).click();await page.screenshot({path:path.join(out,'comments-dark.png')});
+ await page.setViewportSize({width:390,height:844});await expect(page.locator('.paragraph-comment-card').first()).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ await page.screenshot({path:path.join(out,'comments-mobile.png'),fullPage:true});expect(errors).toEqual([]);
+ console.log('INLINE_COMMENTS_OK wide document; anchored cards; one expanded card; checks/notes persist; no overlap; collapsible band and Esc; profile/body controls; dark/mobile');
+}finally{await browser.close()}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useId } from "react";
 import {
     ChevronRight,
     ChevronDown,
@@ -332,6 +332,8 @@ export default function LogsView({
     const [copied, setCopied] = useState(false);
     const [otherMenuOpen, setOtherMenuOpen] = useState(false);
     const otherMenuRef = useRef<HTMLDivElement>(null);
+    const rawSectionRef = useRef<HTMLDivElement>(null);
+    const panelId = useId();
 
     const parsedItems = useMemo(
         () => parseAllLogs(issues, logs, file, uiLanguage),
@@ -359,6 +361,22 @@ export default function LogsView({
             return parsedItems.filter((i) => i.type === "info");
         return parsedItems;
     }, [parsedItems, activeTab]);
+
+    const allExpanded = filteredItems.length > 0 && filteredItems.every(item => expandedIds.has(item.id));
+    function toggleAll() {
+        setExpandedIds(previous => {
+            const next = new Set(previous);
+            for (const item of filteredItems) {
+                if (allExpanded) next.delete(item.id);
+                else next.add(item.id);
+            }
+            return next;
+        });
+    }
+    function showRawLogs() {
+        setRawLogsOpen(true);
+        requestAnimationFrame(() => rawSectionRef.current?.scrollIntoView({ block: "nearest" }));
+    }
 
     const toggleExpand = (id: string) => {
         setExpandedIds((prev) => {
@@ -451,6 +469,14 @@ export default function LogsView({
                 </button>
             </div>
 
+            <div className="logs-detail-tools">
+                <span>{isEn ? `${filteredItems.length} messages` : `${filteredItems.length} thông báo`}</span>
+                <button type="button" disabled={!filteredItems.length} onClick={toggleAll}>
+                    {allExpanded ? (isEn ? "Collapse details" : "Thu gọn chi tiết") : (isEn ? "Expand all details" : "Mở tất cả chi tiết")}
+                </button>
+                <button type="button" onClick={showRawLogs}>{isEn ? "View raw logs" : "Xem nhật ký thô"}</button>
+            </div>
+
             {/* List of issues & warnings */}
             <div className="logs-list-container">
                 {filteredItems.length === 0 && (
@@ -471,8 +497,11 @@ export default function LogsView({
                             key={item.id}
                             className={`log-card log-${item.type} ${isOpen ? "open" : ""}`}
                         >
-                            <div
+                            <button
+                                type="button"
                                 className="log-card-header"
+                                aria-expanded={isOpen}
+                                aria-controls={`${panelId}-${item.id}`}
                                 onClick={() => toggleExpand(item.id)}
                             >
                                 <span className="log-chevron">
@@ -484,7 +513,7 @@ export default function LogsView({
                                 </span>
                                 <div className="log-title-group">
                                     <strong className={`log-title text-${item.type}`}>
-                                        {item.title}
+                                        {item.title || item.message || (isEn ? "Compiler message" : "Thông báo biên dịch")}
                                     </strong>
                                     <div className="log-location">
                                         /{item.file}
@@ -494,11 +523,11 @@ export default function LogsView({
                                 <span className="log-card-sparkle" title="AI / Assist">
                                     <Sparkles size={14} />
                                 </span>
-                            </div>
+                            </button>
 
                             {isOpen && (
-                                <div className="log-card-body">
-                                    {item.message && item.message !== item.title && (
+                                <div className="log-card-body" id={`${panelId}-${item.id}`}>
+                                    {item.message && (
                                         <pre className="log-msg-code">{item.message}</pre>
                                     )}
                                     {item.why && (
@@ -538,12 +567,9 @@ export default function LogsView({
                 })}
 
                 {/* Raw logs accordion matching Image 4 */}
-                <div className={`raw-logs-section ${rawLogsOpen ? "open" : ""}`}>
-                    <div
-                        className="raw-logs-header"
-                        onClick={() => setRawLogsOpen((v) => !v)}
-                    >
-                        <div className="raw-logs-title-wrap">
+                <div ref={rawSectionRef} className={`raw-logs-section ${rawLogsOpen ? "open" : ""}`}>
+                    <div className="raw-logs-header">
+                        <button type="button" className="raw-logs-title-wrap" aria-expanded={rawLogsOpen} aria-controls={`${panelId}-raw`} onClick={() => setRawLogsOpen((v) => !v)}>
                             <span className="raw-logs-chevron">
                                 {rawLogsOpen ? (
                                     <ChevronDown size={16} />
@@ -552,7 +578,7 @@ export default function LogsView({
                                 )}
                             </span>
                             <strong>{isEn ? "Raw logs" : "Nhật ký thô"}</strong>
-                        </div>
+                        </button>
                         {rawLogsOpen && (
                             <div
                                 className="raw-logs-actions"
@@ -586,7 +612,7 @@ export default function LogsView({
                         )}
                     </div>
                     {rawLogsOpen && (
-                        <pre ref={logPaneRef} className="build-output-raw">
+                        <pre ref={logPaneRef} id={`${panelId}-raw`} className="build-output-raw">
                             {logs ||
                                 (isEn
                                     ? "Compilation logs will appear here."

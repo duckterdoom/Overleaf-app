@@ -17,8 +17,8 @@ const seed = spawnSync(
         `
 import sys
 from pathlib import Path
-from overleaf_desktop.store import Store
-from overleaf_desktop.ielts import IeltsManager
+from latex_backend.storage.store import Store
+from latex_backend.documents.ielts import IeltsManager
 s=Store(Path(sys.argv[1]))
 p=s.create('Multiple document tabs',language='en')
 s.save(p['id'],'main.tex',r'\\documentclass{article}\\begin{document}MAIN DOCUMENT ORIGINAL\\end{document}')
@@ -34,7 +34,7 @@ const server = spawn(
     [
         "-X",
         "utf8",
-        path.join(repo, "apps/desktop/tests/serve_ui.py"),
+        path.join(repo, "apps/backend/tests/serve_ui.py"),
         home,
         "--existing",
     ],

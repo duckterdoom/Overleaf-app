@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { X, FolderOpen, Check, LoaderCircle } from "lucide-react";
+import { isServerStorage } from "../lib/api";
 import {
     action,
     chooseDirectory,
@@ -193,7 +194,7 @@ export default function SettingsPanel({
                         )}
                         {tab === "compile" && (
                             <>
-                                <label>
+                                {!isServerStorage() && <label>
                                     latexmk
                                     <input
                                         value={String(draft.latexmkPath)}
@@ -208,7 +209,8 @@ export default function SettingsPanel({
                                             )
                                         }
                                     />
-                                </label>
+                                </label>}
+                                {isServerStorage() && <p className="help-text">{t("Bộ TeX và các gói được quản trị viên cấu hình trên server.", "The server operator configures TeX and its packages.")}</p>}
                                 <label>
                                     {t(
                                         "Timeout (giây; 0 = không giới hạn)",
@@ -275,7 +277,7 @@ export default function SettingsPanel({
                         )}
                         {tab === "projects" && (
                             <>
-                                <label>
+                                {!isServerStorage() && <label>
                                     {t(
                                         "Thư mục dự án mặc định",
                                         "Default project folder",
@@ -322,7 +324,8 @@ export default function SettingsPanel({
                                             <FolderOpen size={18} />
                                         </button>
                                     </div>
-                                </label>
+                                </label>}
+                                {isServerStorage() && <p className="help-text">{t("Dữ liệu được lưu trên server. Tải lên ZIP hoặc thư mục để nhập dự án; tải xuống để lấy bản sao về máy.", "Data is saved on the server. Upload a ZIP or folder to import; download to keep a local copy.")}</p>}
                                 <label>
                                     {t("Trường / cơ quan", "Affiliation")}
                                     <input
@@ -335,6 +338,7 @@ export default function SettingsPanel({
                                         }
                                     />
                                 </label>
+                                {!isServerStorage() && <>
                                 <button
                                     className="secondary"
                                     disabled={busy}
@@ -368,6 +372,7 @@ export default function SettingsPanel({
                                         "Select your old OverleafDesktop folder. Copies projects, accounts and history without editing the originals.",
                                     )}
                                 </p>
+                                </>}
                             </>
                         )}
                         {error && (

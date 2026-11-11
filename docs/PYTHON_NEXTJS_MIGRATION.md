@@ -25,10 +25,10 @@ Launcher tạo venv/cài dependency nếu thiếu; `--build` cài frontend từ 
 Cài môi trường kiểm thử đúng Python lock:
 
 ```sh
-uv sync --project apps/desktop --extra desktop --extra dev --extra mongo --frozen
+uv sync --project apps/backend --extra desktop --extra dev --extra mongo --frozen
 ```
 
-Nếu dùng pip thay uv: `python -m pip install -e "apps/desktop[desktop,dev,mongo]"`. Launcher thông thường chỉ cài desktop, MongoDB là tùy chọn.
+Nếu dùng pip thay uv: `python -m pip install -e "apps/backend[desktop,dev,mongo]"`. Launcher thông thường chỉ cài desktop, MongoDB là tùy chọn.
 
 ## Chức năng đã chuyển
 
@@ -55,7 +55,7 @@ Comment hiện mở Review: nhận xét gắn đoạn chọn/dòng, tô sáng đ
 ## Cấu trúc và bàn giao
 
 ```text
-apps/desktop/src/overleaf_desktop/
+apps/backend/src/latex_backend/
   main.py                 cửa sổ, native dialogs, buffer khi đóng, PDF detach/export
   api.py, parity_api.py   API local, session token, watch, action routes, upload/install
   store.py                project/catalog/path/template/file/fingerprint
@@ -119,7 +119,7 @@ Room và offline queue ở RAM như Java: chưa lưu bền vững qua restart, c
 Lệnh test:
 
 ```sh
-python -m pytest apps/desktop/tests -q
+python -m pytest apps/backend/tests -q
 cd apps/frontend
 npm run typecheck
 node scripts/test-snippets.mjs
@@ -127,7 +127,7 @@ node scripts/test-workspace.mjs <venv-python-absolute> <fresh-test-home>
 node scripts/test-features.mjs <venv-python-absolute> <fresh-test-home>
 ```
 
-Native helpers trong apps/desktop/tests: smoke_compile.py, smoke_cancel.py, smoke_parity.py (--matrix), smoke_imports.py, smoke_java_interop.py. Các helper dùng home test mới, không dùng dữ liệu thật. Xem tên script trước khi chạy: cần TeX, Pandoc, OpenSSL/Git hoặc Java server classes tương ứng.
+Native helpers trong apps/backend/tests: smoke_compile.py, smoke_cancel.py, smoke_parity.py (--matrix), smoke_imports.py, smoke_java_interop.py. Các helper dùng home test mới, không dùng dữ liệu thật. Xem tên script trước khi chạy: cần TeX, Pandoc, OpenSSL/Git hoặc Java server classes tương ứng.
 
 Nguồn tích hợp: [Next.js static export](https://nextjs.org/docs/app/guides/static-exports), [pywebview](https://pywebview.flowrl.com/), [FastAPI](https://fastapi.tiangolo.com/), [PDF.js](https://mozilla.github.io/pdf.js/). Bản wheel backend cũng đã build và kiểm đủ 438 template asset/28 error rules; đây chưa phải installer có UI/runtime. Source Java được giữ để đối chiếu; bản mới không gọi JVM để thực hiện chức năng.
 

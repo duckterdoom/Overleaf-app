@@ -18,7 +18,7 @@ __pycache__/
 .ruff_cache/
 *.egg-info/
 apps/frontend/out/
-apps/desktop/build/
+apps/backend/build/
 apps/frontend/public/pdf.worker.min.mjs
 apps/frontend/public/superdoc-workers/
 *.tsbuildinfo
@@ -60,3 +60,7 @@ Desktop.ini
 
 # Local secrets (copy config.properties.example)
 **/src/main/resources/config.properties
+
+# Persistent web data (set LATEX_DATA_DIR outside the source tree in production).
+/var/
+/config/mongodb.local.json

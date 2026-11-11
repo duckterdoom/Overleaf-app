@@ -2,13 +2,30 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Set-Location -LiteralPath $repoRoot
 $env:PYTHONUTF8 = '1'
-$venvRoot = Join-Path $repoRoot 'apps/desktop/.venv'
+$venvRoot = Join-Path $repoRoot 'apps/backend/.venv'
 $venvPython = Join-Path $venvRoot 'Scripts/python.exe'
 
 function Test-DesktopPython([string] $candidate) {
     $ErrorActionPreference = 'Continue'
     if (-not (Test-Path -LiteralPath $candidate)) { return $false }
-    & $candidate -c 'import sys; sys.exit(0 if sys.version_info >= (3,12) else 1)' *> $null
+    try {
+        & $candidate -c 'import sys; sys.exit(0 if sys.version_info >= (3,12) else 1)' *> $null
+    } catch {
+        $launchError = $_
+        $cause = $launchError.Exception
+        $policyBlocked = $false
+        while ($null -ne $cause) {
+            if (($cause -is [System.ComponentModel.Win32Exception] -and $cause.NativeErrorCode -in @(4551, 1260, 577)) -or
+                $cause.Message -match 'Application Control policy|blocked by group policy') {
+                $policyBlocked = $true
+            }
+            $cause = $cause.InnerException
+        }
+        if ($policyBlocked) {
+            throw "Windows Application Control blocked Python: $candidate. Ask your administrator to review the CodeIntegrity/Operational block event and approve the required Python runtime according to your device policy. Setup has stopped; no security settings were changed. See docs/WINDOWS_PYTHON_STARTUP.md."
+        }
+        throw $launchError
+    }
     return $LASTEXITCODE -eq 0
 }
 

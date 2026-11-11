@@ -11,7 +11,7 @@ const server = spawn(
     [
         "-X",
         "utf8",
-        path.join(repo, "apps/desktop/tests/serve_ui.py"),
+        path.join(repo, "apps/backend/tests/serve_ui.py"),
         home,
         "--existing",
     ],

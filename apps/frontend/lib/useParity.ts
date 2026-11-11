@@ -7,8 +7,10 @@ import {
     type SetStateAction,
 } from "react";
 import type { EditorView } from "@codemirror/view";
+import type { LiveSync } from "./liveSync";
 import {
     getLaunchRoute,
+    isServerStorage,
     json,
     request,
     type Project,
@@ -29,6 +31,7 @@ import {
 } from "./parity";
 type Set<T> = Dispatch<SetStateAction<T>>;
 export type Core = {
+    live: LiveSync;
     project: Project | null;
     file: string;
     content: string;
@@ -125,9 +128,29 @@ export default function useParity(core: Core) {
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null),
         watchSignature = useRef(""),
         loadingSnapshot = useRef("");
-    const readonly =
+    const readonly = core.project?.permission === "viewer" ||
         network.joined && (network.resyncing || core.file !== "main.tex");
+    async function acceptSharedLink() {
+        const token = sessionStorage.getItem("latex_pending_share");
+        if (!token || !isServerStorage()) return false;
+        sessionStorage.removeItem("latex_pending_share");
+        try {
+            const project = await json<Project>("/shares/accept", { method: "POST", body: JSON.stringify({ token }) });
+            latest.current.setProjects(await json<Project[]>("/projects"));
+            await latest.current.open(project);
+        } catch (error) { latest.current.setError(errorText(error)); }
+        return true;
+    }
     const lang = String(settings.language || "vi");
+    useEffect(() => {
+        const updatePermission = (event: Event) => {
+            const { project, permission } = (event as CustomEvent).detail;
+            if (!["owner", "editor", "viewer"].includes(permission)) return;
+            latest.current.setProject(current => current && current.id === project && current.permission !== permission ? { ...current, permission } : current);
+        };
+        window.addEventListener("latex-project-permission", updatePermission);
+        return () => window.removeEventListener("latex-project-permission", updatePermission);
+    }, []);
     async function refreshSession() {
         const value = await json<Boot>("/session");
         setSession(value.session);
@@ -148,7 +171,8 @@ export default function useParity(core: Core) {
                 );
                 core.setLanguage(String(boot.settings.language));
                 setLoaded(true);
-                if (route.project) {
+                if (boot.session && !boot.session.needsRole && await acceptSharedLink()) return;
+                if (route.project && boot.session && !boot.session.needsRole) {
                     const projects = await json<Project[]>("/projects");
                     const project = projects.find(
                         (item) => item.id === route.project,
@@ -213,7 +237,7 @@ export default function useParity(core: Core) {
             ).catch(() => {});
     }, [core.project, core.file, core.content, core.dirty]);
     useEffect(() => {
-        if (!core.project || readonly || detached || panel === "history")
+        if (!core.project || core.live.active || readonly || detached || panel === "history")
             return;
         const value = core.content,
             project = core.project.id,
@@ -345,6 +369,10 @@ export default function useParity(core: Core) {
     function changed(value: string, base: string) {
         const current = latest.current;
         if (!current.project) return;
+        // Live OT already persists/broadcasts this change; local stale state and
+        // the server's source fingerprint protect PDF export. Don't route an
+        // extra authenticated HTTP request through Atlas for every keystroke.
+        if (current.live.active) return;
         void action("editing", {
             project: current.project.id,
             dirty: value !== current.saved.current,
@@ -383,9 +411,11 @@ export default function useParity(core: Core) {
         if (!core.project) return;
         let disposed = false,
             loading = false;
+        let lastPoll = 0;
         const project = core.project.id;
         async function poll() {
-            if (loading) return;
+            if (loading || (latest.current.live.active && Date.now() - lastPoll < 3000)) return;
+            lastPoll = Date.now();
             loading = true;
             const requestedMain = latest.current.compileTarget;
             try {
@@ -407,7 +437,7 @@ export default function useParity(core: Core) {
                 ) {
                     current.setEntries(result.files);
                     current.setStale(true);
-                    try {
+                    if (!current.live.active) try {
                         const value = await json<{ content: string }>(
                             `/projects/${project}/file?path=${encodeURIComponent(current.file)}`,
                         );
@@ -416,7 +446,7 @@ export default function useParity(core: Core) {
                             latest.current.file === current.file &&
                             value.content !== current.saved.current
                         ) {
-                            if (!current.dirty && !networkRef.current.joined) {
+                            if (!current.live.active && !current.dirty && !networkRef.current.joined) {
                                 current.saved.current = value.content;
                                 current.revision.current++;
                                 current.setContent(value.content);
@@ -426,7 +456,7 @@ export default function useParity(core: Core) {
                                         ? "Loaded external changes."
                                         : "Đã nạp thay đổi từ bên ngoài.",
                                 );
-                            } else
+                            } else if (!current.live.active)
                                 current.setNotice(
                                     lang === "en"
                                         ? "File changed outside the editor; your unsaved text is preserved."
@@ -477,6 +507,7 @@ export default function useParity(core: Core) {
                 if (!disposed) latest.current.setError(errorText(error));
             } finally {
                 loading = false;
+        let lastPoll = 0;
             }
         }
         void poll();
@@ -634,6 +665,7 @@ export default function useParity(core: Core) {
     }
     async function connect() {
         if (!(await core.save())) return;
+        if (isServerStorage()) { setPanel("share"); return; }
         if (core.file !== "main.tex")
             await core.openFile({
                 path: "main.tex",
@@ -653,13 +685,16 @@ export default function useParity(core: Core) {
     }
     async function authenticated(value: Session) {
         setSession(value);
+        if (value.needsRole) { core.setProjects([]); return; }
+        await refreshSession();
         core.setProjects(await json<Project[]>("/projects"));
         setActivity(await action<Activity>("activity"));
+        await acceptSharedLink();
     }
     async function logout() {
         if (!(await core.save())) return;
         await sendQueue.current;
-        setNetwork(await action<Network>("network-leave"));
+        if (!session?.needsRole) setNetwork(await action<Network>("network-leave"));
         await action("logout");
         setSession(null);
         core.setProject(null);

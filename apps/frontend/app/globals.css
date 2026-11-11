@@ -2140,6 +2140,41 @@ p {
     font-size: 10px;
     color: #5d7952;
 }
+/* Home navigation lives above projects; editor side panels use separate classes. */
+.dashboard-home .projects-main { padding: 36px clamp(24px, 5vw, 96px) 20px; }
+.dashboard-home .home-project-tools { justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.project-navigation { display: flex; gap: 8px; min-width: 0; flex-wrap: wrap; }
+.project-navigation button { gap: 9px; padding: 11px 14px; border-radius: 7px; color: var(--muted); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.project-navigation button:hover { background: var(--soft); color: var(--ink); }
+.project-navigation .project-navigation-active { background: var(--soft); color: var(--green); box-shadow: inset 0 -2px var(--green); }
+.project-count { background: var(--panel); color: var(--muted); padding: 2px 7px; border: 1px solid var(--line); border-radius: 5px; font-size: 11px; }
+.project-list-controls { display: flex; align-items: center; gap: 12px; }
+.project-view-toggle { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 7px; gap: 2px; }
+.project-view-toggle button { width: 32px; height: 32px; border-radius: 4px; color: var(--muted); }
+.project-view-toggle button[aria-pressed="true"] { background: var(--soft); color: var(--green); }
+.project-grid.project-list { grid-template-columns: minmax(0, 1fr); gap: 9px; }
+.project-list .project-card { min-width: 0; }
+.project-list .project-card-open { display: flex; align-items: center; padding: 15px 58px 15px 18px; gap: 16px; }
+.project-list .card-document { width: 42px; height: 46px; border-radius: 6px; flex-shrink: 0; }
+.project-list .card-document svg { width: 25px; height: 25px; }
+.project-list .card-document > span, .project-list .project-card-body > span { display: none; }
+.project-list .project-card-body { display: flex; align-items: center; justify-content: space-between; gap: 20px; flex: 1; padding: 0; min-width: 0; }
+.project-list .project-card h3 { text-align: left; font-size: 14px; }
+.project-list .project-card p { flex-shrink: 0; margin: 0; font-size: 12px; }
+.project-list .project-manage { top: 50%; transform: translateY(-50%); }
+.shared-project-label { display: block; color: var(--muted); font-size: 11px; margin-top: 7px; }
+.project-list .shared-project-label { max-width: 200px; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+    .dashboard-home .projects-main { padding: 24px 16px 16px; }
+    .dashboard-home .page-heading { align-items: flex-start; flex-wrap: wrap; gap: 18px; }
+    .dashboard-home .page-heading h1 { font-size: 30px; }
+    .dashboard-home .home-project-tools { align-items: stretch; flex-direction: column; gap: 12px; }
+    .project-navigation button { font-size: 12px; padding: 10px; }
+    .project-list-controls .search-input { flex: 1; min-width: 0; }
+    .project-list-controls .search-input input { width: 100%; min-width: 0; }
+    .project-list .project-card-open { gap: 12px; padding-left: 12px; }
+    .project-list .project-card-body { flex-direction: column; align-items: flex-start; gap: 7px; }
+}
 .statusbar {
     height: 25px;
     flex-shrink: 0;
@@ -3135,6 +3170,7 @@ p {
     border-bottom: 1px solid #283340;
     height: 42px;
     flex-shrink: 0;
+    overflow-x: auto;
 }
 
 :root[data-mode="light"] .logs-filter-bar {
@@ -3156,6 +3192,7 @@ p {
     cursor: pointer;
     transition: color 0.15s, border-color 0.15s;
     position: relative;
+    flex-shrink: 0;
 }
 
 :root[data-mode="light"] .logs-filter-tab {
@@ -3207,6 +3244,10 @@ p {
 }
 
 /* Scrollable cards list */
+.logs-detail-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 9px 16px; border-bottom: 1px solid var(--line); flex-shrink: 0; font-size: 12px; }
+.logs-detail-tools > span { margin-right: auto; }
+.logs-detail-tools button { padding: 6px 9px; border: 1px solid currentColor; border-radius: 5px; font-size: 12px; }
+.logs-detail-tools button:disabled { opacity: .45; cursor: default; }
 .logs-list-container {
     flex: 1;
     overflow-y: auto;
@@ -3234,6 +3275,7 @@ p {
 
 /* Individual Issue Card */
 .log-card {
+    flex: 0 0 auto;
     border: 1px solid #2d3846;
     border-radius: 6px;
     background: #232d39;
@@ -3262,7 +3304,15 @@ p {
     padding: 12px 14px;
     cursor: pointer;
     user-select: none;
+    width: 100%;
+    min-height: 62px;
+    justify-content: flex-start;
+    text-align: left;
+    color: inherit;
+    background: transparent;
+    border: 0;
 }
+.log-card-header:focus-visible, .raw-logs-title-wrap:focus-visible { outline: 2px solid #00a877; outline-offset: -3px; }
 
 .log-card-header:hover {
     background: rgba(255, 255, 255, 0.03);
@@ -3288,7 +3338,7 @@ p {
 }
 
 .log-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
     line-height: 1.4;
     word-break: break-word;
@@ -3322,6 +3372,7 @@ p {
     font-size: 11px;
     font-family: "Cascadia Code", Consolas, monospace;
     color: #94a3b8;
+    overflow-wrap: anywhere;
 }
 
 :root[data-mode="light"] .log-location {
@@ -3343,7 +3394,8 @@ p {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    font-size: 12px;
+    font-size: 13px;
+    overflow-wrap: anywhere;
 }
 
 :root[data-mode="light"] .log-card-body {
@@ -3357,7 +3409,9 @@ p {
     padding: 8px 10px;
     border-radius: 4px;
     font-family: "Cascadia Code", Consolas, monospace;
-    font-size: 11px;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
     overflow-x: auto;
     white-space: pre-wrap;
     margin: 0;
@@ -3434,6 +3488,7 @@ p {
 
 /* Collapsible Raw logs section */
 .raw-logs-section {
+    flex: 0 0 auto;
     border: 1px solid #2d3846;
     border-radius: 6px;
     background: #232d39;
@@ -3470,6 +3525,9 @@ p {
     font-size: 13px;
     font-weight: 600;
     color: #e2e8f0;
+    background: transparent;
+    border: 0;
+    text-align: left;
 }
 
 :root[data-mode="light"] .raw-logs-title-wrap {
@@ -3513,7 +3571,8 @@ p {
 }
 
 .build-output-raw {
-    font: 11px/1.6 "Cascadia Code", Consolas, monospace;
+    font: 13px/1.6 "Cascadia Code", Consolas, monospace;
+    overflow-wrap: anywhere;
     background: #141a21;
     color: #d1d5db;
     padding: 12px 14px;
@@ -4432,3 +4491,104 @@ p {
     background: var(--soft);
 }
 
+/* Account onboarding follows the existing Latex theme and remains keyboard accessible. */
+.google-signin { display: grid; gap: 12px; margin: 20px 0; }
+.google-signin small, .role-account, .role-privacy { color: var(--muted); font-size: 13px; line-height: 1.65; }
+.google-button { width: 100%; justify-content: center; gap: 12px; }
+.auth-divider { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.role-card { max-width: 570px; width: 100%; }
+.role-options { border: 0; padding: 0; margin: 6px 0; display: grid; gap: 12px; }
+.role-options legend { font-size: 13px; margin-bottom: 12px; color: var(--muted); }
+.auth-card .role-option { display: flex; flex-direction: row; align-items: center; text-align: left; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; transition: border-color .15s, background .15s; }
+.auth-card .role-option.selected { border-color: var(--green); background: var(--soft); box-shadow: 0 0 0 1px var(--green); }
+.auth-card .role-option:focus-within { outline: 2px solid var(--green); outline-offset: 3px; }
+.auth-card .role-option input { width: 17px; height: 17px; flex-shrink: 0; accent-color: var(--green); }
+.role-option strong, .role-option small { display: block; }
+.role-option strong { font-size: 16px; margin-bottom: 5px; }
+.role-option small { font-size: 13px; line-height: 1.6; font-weight: 400; color: var(--muted); }
+.role-icon { color: var(--green); flex-shrink: 0; }
+.role-privacy { margin: 0; }
+.share-modal { width: 700px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 40px); display: flex; flex-direction: column; }
+.share-modal header { gap: 16px; flex-shrink: 0; }
+.share-heading { display: flex; gap: 14px; align-items: center; min-width: 0; }
+.share-heading-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--soft); color: var(--green); flex-shrink: 0; }
+.share-heading p { font-size: 10px; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 6px; }
+.share-modal .share-heading h2 { font-family: inherit; font-size: 18px; line-height: 1.45; overflow-wrap: anywhere; }
+.share-body { padding: 24px 28px; overflow: auto; min-height: 0; display: flex; flex-direction: column; gap: 18px; }
+.share-body > * { flex-shrink: 0; }
+.share-body h3 { font-size: 14px; font-weight: 600; }
+.share-invite { display: grid; gap: 10px; }
+.share-modal .share-invite { flex: 0 0 auto; min-height: auto; overflow: visible; }
+.share-modal .share-invite > label { margin: 0; display: block; }
+.share-invite label { font-size: 13px; font-weight: 600; }
+.share-invite-controls { display: flex; gap: 8px; }
+.share-invite-controls input { flex: 1; min-width: 0; }
+.share-modal input, .share-modal select { padding: 10px 11px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font-size: 12px; }
+.share-modal select { cursor: pointer; }
+.share-invite small, .share-general small, .share-person small { color: var(--muted); font-size: 12px; line-height: 1.65; }
+.share-section-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.share-section-heading button, .share-link-field button { color: var(--green); font-size: 12px; }
+.share-members { max-height: 230px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; flex-shrink: 0; }
+.share-person { display: flex; gap: 10px; padding: 13px 14px; align-items: center; border-bottom: 1px solid var(--line); }
+.share-person:last-child { border-bottom: 0; }
+.share-person-avatar { width: 34px; height: 34px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; background: var(--soft); color: var(--green); font-size: 13px; }
+.share-person-text { flex: 1; min-width: 0; }
+.share-person-text strong { display: block; font-size: 12px; overflow-wrap: anywhere; }
+.share-person-text small { display: block; overflow-wrap: anywhere; font-size: 11px; }
+.share-person > button { width: 28px; height: 28px; flex-shrink: 0; color: var(--muted); }
+.share-owner-label, .share-no-members { color: var(--muted); font-size: 12px; }
+.share-no-members { padding: 12px 14px; }
+.share-general { display: flex; gap: 12px; align-items: flex-start; padding: 16px; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; }
+.share-general.link-enabled { border-color: var(--green); }
+.share-access-icon { color: var(--green); padding-top: 7px; }
+.share-general-setting { flex: 1; min-width: 0; }
+.share-general-setting select { max-width: 100%; margin-bottom: 7px; width: 100%; }
+.share-general-setting small { display: block; }
+.share-link-field { display: flex; gap: 10px; align-items: center; }
+.share-link-field input { flex: 1; min-width: 0; }
+.share-link-field button { flex-shrink: 0; }
+.share-notice { display: flex; gap: 8px; font-size: 12px; line-height: 1.65; color: var(--muted); }
+.share-notice svg { flex-shrink: 0; margin-top: 2px; }
+.share-status, .share-loading { display: flex; align-items: center; gap: 7px; font-size: 12px; line-height: 1.6; color: var(--green); }
+.share-status svg { flex-shrink: 0; }
+.share-modal footer { justify-content: space-between; flex-shrink: 0; gap: 12px; }
+@media (max-width: 600px) {
+    .share-body { padding: 18px; }
+    .share-modal header, .share-modal footer { padding: 18px; }
+    .share-invite-controls { flex-wrap: wrap; }
+    .share-invite-controls input { flex-basis: 100%; }
+    .share-person { flex-wrap: wrap; }
+    .share-person-text { flex-basis: calc(100% - 50px); }
+    .share-general { flex-wrap: wrap; }
+    .share-general > select { margin-left: 34px; }
+    .share-modal footer button { font-size: 11px; padding: 10px; }
+}
+@media (max-width: 700px) { .auth-screen { grid-template-columns: 1fr; } .auth-screen .auth-intro { display: none; } .role-card { max-width: 100%; padding: 24px; } .role-option { gap: 10px; } .role-icon { display: none; } }
+
+/* Authenticated editor presence: these decorations never change source text. */
+.presence-avatars { display: flex; align-items: center; gap: 5px; max-width: 240px; flex-wrap: wrap; }
+.presence-person { position: relative; display: inline-flex; align-items: center; justify-content: center; width: 31px; height: 31px; border: 2px solid; border-radius: 50%; background: var(--surface, #edf2ec); color: var(--text, #244638); font-size: 11px; font-weight: 700; }
+.presence-person img { position: absolute; inset: 1px; width: 25px; height: 25px; border-radius: 50%; object-fit: cover; }
+.presence-person i { position: absolute; right: -2px; bottom: -1px; width: 8px; height: 8px; border: 1px solid white; border-radius: 50%; }
+.presence-connecting { font-size: 11px; color: var(--muted, #718078); }
+.remote-cursor { position: relative; display: inline; border-left: 2px solid var(--peer-color); margin-left: -1px; margin-right: -1px; pointer-events: none; }
+.remote-cursor-label { position: absolute; bottom: 100%; left: -2px; padding: 1px 5px; border-radius: 3px 3px 3px 0; background: var(--peer-color); color: white; font: 11px/16px system-ui, sans-serif; white-space: nowrap; z-index: 5; }
+/* CodeMirror draws the local selection BELOW the text. An opaque active-line
+   background covers it, even though the range is correct. Reveal that layer
+   while selecting, including when a review highlight lies over the text. */
+.source-editor .cm-editor[data-local-selection="true"] .cm-activeLine {
+    background: transparent !important;
+}
+.source-editor .cm-editor .cm-selectionBackground {
+    background: #aacdf5 !important;
+}
+.source-editor .cm-editor.cm-focused .cm-selectionBackground {
+    background: #85b8f5 !important;
+}
+:root[data-mode="dark"] .source-editor .cm-editor .cm-selectionBackground {
+    background: #354f70 !important;
+}
+:root[data-mode="dark"] .source-editor .cm-editor.cm-focused .cm-selectionBackground {
+    background: #2b65ad !important;
+}

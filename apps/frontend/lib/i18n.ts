@@ -1,5 +1,11 @@
 // Legacy workspace strings retained as keys while both desktop languages share UI components.
 const english: Record<string, string> = {
+    "Web workspace · Sẵn sàng": "Web workspace · Ready",
+    "Đã lưu thay đổi trên server.": "Saved on server.",
+    "Dữ liệu được lưu trên server.": "Your data is stored on the server.",
+    "Tài liệu, bộ biên dịch và PDF được xử lý trên server.": "Documents, compilation and PDFs are handled by the server.",
+    "Tài liệu của bạn · Lưu trên server": "Your documents · Stored on server",
+    "Dữ liệu được tạo trên server.": "Files are created on the server.",
     "Đang kết nối…": "Connecting…",
     "Local workspace · Sẵn sàng": "Local workspace · Ready",
     "Không kết nối được backend. Mở lại ứng dụng desktop.":

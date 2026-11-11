@@ -18,11 +18,13 @@ export default function ProjectCard({
     language,
     onOpen,
     onManage,
+    canManage = true,
 }: {
     project: Project;
     language: string;
     onOpen: () => void;
     onManage: () => void;
+    canManage?: boolean;
 }) {
     const t = translator(language),
         Icon =
@@ -43,7 +45,7 @@ export default function ProjectCard({
             className="project-card"
             onContextMenu={(event) => {
                 event.preventDefault();
-                onManage();
+                if (canManage) onManage();
             }}
         >
             <button className="project-card-open" onClick={onOpen}>
@@ -63,6 +65,7 @@ export default function ProjectCard({
                 </div>
                 <div className="project-card-body">
                     <h3>{project.title}</h3>
+                    {project.shared && <small className="shared-project-label">{project.ownerName} · {project.permission === "editor" ? t("Chỉnh sửa", "Editor") : t("Chỉ xem", "Viewer")}</small>}
                     <p>
                         <Clock3 size={13} />
                         {new Date(project.updated).toLocaleDateString(
@@ -75,13 +78,13 @@ export default function ProjectCard({
                     </span>
                 </div>
             </button>
-            <button
+            {canManage && <button
                 className="project-manage"
                 title={t("Quản lý dự án", "Manage project")}
                 onClick={onManage}
             >
                 <MoreHorizontal size={18} />
-            </button>
+            </button>}
         </article>
     );
 }

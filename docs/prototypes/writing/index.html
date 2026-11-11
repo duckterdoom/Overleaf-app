@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Latex · IELTS Writing</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="workspace.css">
+  <link rel="stylesheet" href="ielts.css">
+  <link rel="stylesheet" href="section-review.css">
+  <link rel="stylesheet" href="inline-comments.css">
+</head>
+<body>
+  <header class="topbar app-header in-editor">
+    <a class="brand" href="#"><span class="brand-mark" data-icon="leaf"></span><strong>Latex</strong></a>
+    <span class="top-divider"></span><span class="project-name"><span class="back-mark" data-icon="back"></span>IELTS Writing · Practice 01</span>
+    <nav class="workspace-switch" aria-label="Khu vực"><button data-action="editor">Editor</button><button class="active" data-action="practice">IELTS Writing</button></nav>
+    <span class="server-status"><i></i>Lưu trên server</span>
+    <div class="header-actions"><button data-action="history" title="Lịch sử"><span data-icon="history"></span><span>Lịch sử</span></button><button data-action="participants">Cộng tác</button><button data-action="layout"><span data-icon="layout"></span><span>Bố cục</span></button></div>
+    <span id="avatar" class="avatar">GV</span>
+  </header>
+  <div class="shell">
+    <nav class="rail workspace-activity-bar" aria-label="Thanh chức năng">
+      <button title="Editor và tệp" aria-label="Editor và tệp" data-action="editor"><span data-icon="file"></span></button>
+      <button title="Review" aria-label="Review" data-action="review"><span data-icon="review"></span></button>
+      <button title="Chat" aria-label="Chat" data-action="chat"><span data-icon="chat"></span></button>
+      <button class="active" title="IELTS Writing" aria-label="IELTS Writing" data-action="practice"><span data-icon="graduation"></span></button>
+      <button class="rail-bottom" title="Hướng dẫn bản mẫu" aria-label="Hướng dẫn bản mẫu" data-action="help"><span data-icon="help"></span></button>
+    </nav>
+    <aside id="sidebar"></aside>
+    <main id="main"></main>
+  </div>
+  <footer class="design-footer statusbar"><span id="screen-label"></span><div><span class="prototype-label">Bản mẫu IELTS · lưu trên trình duyệt, chưa có API</span><label class="role-label">Vai trò <select id="role" aria-label="Vai trò"><option value="student">Học viên</option><option value="teacher">Giảng viên</option><option value="admin">Admin</option></select></label><label>Màn hình <select id="screen-map" aria-label="Bản đồ màn hình"></select></label><button data-action="appearance" title="Đổi sáng/tối">Sáng / Tối</button><button data-action="reset">↺ Reset demo</button></div></footer>
+  <dialog id="modal"><div id="modal-body"></div></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="ielts.js"></script>
+  <script src="tutor.js"></script>
+  <script src="latex-ielts.js"></script>
+  <script src="rubric-catalog.js"></script>
+  <script src="section-review.js"></script>
+  <script src="inline-comments.js"></script>
+  <script src="task1-demo.js"></script>
+</body>
+</html>

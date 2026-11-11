@@ -1,6 +1,6 @@
 # Kế hoạch dọn mã Java sau chuyển sang Python + Next.js
 
-Ngày lập: 03/11/2026. **Tài liệu chuẩn bị; chưa xóa file hoặc thư mục nào.** Bản chạy chính là `apps/desktop` + `apps/frontend`. Mục tiêu là bỏ source/build/launcher Java khi đã xác nhận bản mới đủ dùng, giữ dữ liệu và tài nguyên liên quan.
+Ngày lập: 03/11/2026. **Tài liệu chuẩn bị; chưa xóa file hoặc thư mục nào.** Bản chạy chính là `apps/backend` + `apps/frontend`. Mục tiêu là bỏ source/build/launcher Java khi đã xác nhận bản mới đủ dùng, giữ dữ liệu và tài nguyên liên quan.
 
 ## 1. Điều kiện trước khi dọn
 
@@ -38,7 +38,7 @@ Java `src/main/resources/config.properties` hoặc keystore có thể bị Git i
 
 | File / nhóm | Hành động |
 | --- | --- |
-| `apps/desktop/tests/smoke_java_interop.py` | Helper hiện gọi JDK và `modules/common/target/classes`, `modules/server/target/classes`. Lưu kết quả rồi chuyển thành kiểm thử tương thích tùy chọn có fixture bên ngoài, hoặc bỏ helper khi không còn nhu cầu; không mô tả nó còn chạy được sau khi xóa Java |
+| `apps/backend/tests/smoke_java_interop.py` | Helper hiện gọi JDK và `modules/common/target/classes`, `modules/server/target/classes`. Lưu kết quả rồi chuyển thành kiểm thử tương thích tùy chọn có fixture bên ngoài, hoặc bỏ helper khi không còn nhu cầu; không mô tả nó còn chạy được sau khi xóa Java |
 | `docs/AI_Handoff.md` | Giữ lịch sử, ghi thêm mốc dọn và đường dẫn mới; các đoạn Java cũ là lịch sử, không cần xóa toàn bộ |
 | `docs/JAVA_PYTHON_PARITY.md` | Giữ làm bằng chứng; ghi rõ source Java đã lưu ở backup/commit nào |
 | Các tài liệu Java trong `docs/` | Chuyển sang nhóm tài liệu lịch sử hoặc thêm nhãn Java; các hướng dẫn cũ như `MACOS.md` không thay thế hướng dẫn Python |
@@ -49,9 +49,9 @@ Các hàm `import_java`/`migrate_java` trong Python **cần giữ** để nhập
 
 ## 4. Phải giữ
 
-- `apps/desktop/`, `apps/frontend/`, các manifest/lockfile và test Python/TypeScript.
+- `apps/backend/`, `apps/frontend/`, các manifest/lockfile và test Python/TypeScript.
 - `scripts/run-python-desktop.*`, `run-python-server.*`, `run-python-console.*`; `Overleaf Python Desktop.command`; `deploy/python/`.
-- `apps/desktop/src/overleaf_desktop/resources/`: toàn bộ template, ảnh/font đi kèm và rule giải thích lỗi; runtime không đọc asset Java.
+- `apps/backend/src/latex_backend/resources/`: toàn bộ template, ảnh/font đi kèm và rule giải thích lỗi; runtime không đọc asset Java.
 - `LICENSE-TEMPLATES.md`, `examples/`, README và các tài liệu bàn giao/yêu cầu. Không xóa tài liệu chỉ vì mô tả công nghệ cũ.
 - Dữ liệu người dùng, `.tex`, `.bib`, `.sty`, `.cls`, ảnh và PDF gốc. Các file `.sty`/`.cls` là LaTeX, không phải Java `.class`.
 - **Không xóa toàn bộ `target/`**: hiện có TinyTeX, Pandoc, Python/uv/runtime và báo cáo/PDF kiểm thử. Đặc biệt `target/TinyTeX` đang phục vụ compile trên máy này; xóa sẽ làm mất công cụ và package/font vừa cài.
