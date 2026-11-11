@@ -93,14 +93,40 @@ class DocxWorkspace:
             self.compiler.verified(project, snapshot)
             if (self.status(project) or {}).get('revision') != ticket:
                 raise Problem('DOCX vừa được sửa ở cửa sổ khác.', 409)
-            return self.commit(project, data, {'snapshot': snapshot, 'fingerprint': pdf.fingerprint, 'edited': False, 'main': pdf.main})
+            return self.commit(project, data, {'snapshot': snapshot, 'fingerprint': pdf.fingerprint, 'edited': False, 'main': pdf.main, 'text_baseline': True})
 
     def save(self, project, revision, data):
         with self.store.lock:
             current = self.status(project)
             if not current or current['revision'] != revision:
                 raise Problem('DOCX đã thay đổi ở cửa sổ khác.', 409)
-            return self.commit(project, data, {**current, 'edited': True})
+            from latex_backend.documents.docx_sync import plan
+            before = self.read(project, revision)
+            originals = {}
+            try:
+                updates = plan(self.store, project, self.main or self.store.info(project)['main'], before, data)
+                baseline = current.get('text_baseline', not current['edited'])
+                if updates and not baseline:
+                    raise Problem('Bản Word cũ có chỉnh sửa chưa đồng bộ LaTeX. Tải bản Word để giữ nội dung, rồi tạo lại từ PDF trước khi dùng đồng bộ chữ.', 409)
+                if updates and current['stale']:
+                    raise Problem('LaTeX đã đổi trong lúc sửa Word. Bản Word được giữ để đối chiếu; tạo lại từ PDF trước khi đồng bộ. Không ghi đè nguồn.', 409)
+                originals = {name: self.store.read(project, name) for name in updates}
+                for name, text in updates.items():
+                    self.store.save(project, name, text)
+                return self.commit(project, data, {
+                    **current, 'edited': True,
+                    'fingerprint': self.store.fingerprint(project) if updates else current['fingerprint'],
+                    'synced_files': list(updates),
+                    'sync_state': 'synced' if updates else 'word-only',
+                    'text_baseline': baseline,
+                })
+            except Exception:
+                for name, text in originals.items():
+                    self.store.save(project, name, text)
+                # Preserve the incoming draft even if the browser is closed.
+                if len(data) <= 32 * 1024 * 1024:
+                    atomic_write(self.folder(project) / 'conflict.docx', data)
+                raise
 
 
 def download(compiler, project, snapshot):

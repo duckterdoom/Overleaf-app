@@ -58,6 +58,7 @@ import ProfilePanel from "../components/ProfilePanel";
 import HistoryPanel from "../components/HistoryPanel";
 import ActivityHeatmap from "../components/ActivityHeatmap";
 import EditorToolbar from "../components/EditorToolbar";
+import DocumentOutline from "../components/DocumentOutline";
 import AddFilesPanel from "../components/AddFilesPanel";
 import NetworkPanel from "../components/NetworkPanel";
 import SharePanel from "../components/SharePanel";
@@ -181,6 +182,7 @@ export default function Workspace() {
         );
     }, [entries, file]);
     const outlinePane = useRef<HTMLDivElement>(null);
+    const outlineCursor = useRef<(position: number) => void>(() => {});
     const revision = useRef(0),
         view = useRef<EditorView | null>(null),
         logPane = useRef<HTMLPreElement>(null);
@@ -468,6 +470,12 @@ export default function Workspace() {
         ext.buildStarted();
         buildInFlight.current = true;
         setBusy(true);
+        if (wordPreview.current && !(await wordPreview.current.flush())) {
+            buildInFlight.current = false;
+            setBusy(false);
+            setNotice("Chưa đồng bộ được Word sang LaTeX. Kiểm tra thông báo trong Word preview.");
+            return;
+        }
         if (!(await save())) {
             buildInFlight.current = false;
             setBusy(false);
@@ -698,6 +706,7 @@ export default function Workspace() {
         ready && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live);
     const editorHandlers = useRef({ change, update: (_: ViewUpdate) => {} });
     editorHandlers.current = { change, update: (update) => {
+        if (update.selectionSet || update.docChanged) outlineCursor.current(update.state.selection.main.head);
         if (update.docChanged) live.changed();
         if (update.selectionSet || update.docChanged || update.focusChanged) presence.update();
         if (update.selectionSet && ext.network.joined) {
@@ -928,19 +937,6 @@ export default function Workspace() {
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", end);
     }
-    const outline = useMemo(() => {
-        let offset = 0;
-        return content.split("\n").flatMap((line) => {
-            const start = offset;
-            offset += line.length + 1;
-            const match = line.match(
-                /\\(chapter|section|subsection)\*?\{([^}]+)\}/,
-            );
-            return match
-                ? [{ title: match[2], start, sub: match[1] === "subsection" }]
-                : [];
-        });
-    }, [content]);
     const templates = catalog.templates.filter(
         (item) =>
             (!category || item.category === category) &&
@@ -1659,43 +1655,8 @@ export default function Workspace() {
                                 aria-orientation="horizontal"
                                 onPointerDown={resizeOutline}
                             />
-                            <div className="outline-panel">
-                                <div className="outline-heading">
-                                    {localize("CẤU TRÚC TÀI LIỆU", uiLanguage)}
-                                </div>
-                                <div className="outline">
-                                    {outline.length ? (
-                                        outline.map((item, index) => (
-                                            <button
-                                                key={index}
-                                                style={{
-                                                    paddingLeft: item.sub
-                                                        ? 28
-                                                        : 15,
-                                                }}
-                                                onClick={() => {
-                                                    view.current?.dispatch({
-                                                        selection: {
-                                                            anchor: item.start,
-                                                        },
-                                                        scrollIntoView: true,
-                                                    });
-                                                    view.current?.focus();
-                                                }}
-                                            >
-                                                {item.title}
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <p>
-                                            {localize(
-                                                "Thêm section để thấy cấu trúc.",
-                                                uiLanguage,
-                                            )}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
+                            <DocumentOutline key={`${project.id}:${file}`} source={content}
+                                editor={view} cursor={outlineCursor} language={uiLanguage} />
                         </div>
                         <div className="folder-target">
                             {localize("Thư mục:", uiLanguage)}
@@ -2466,6 +2427,16 @@ export default function Workspace() {
                                                     !dirty
                                                 }
                                                 onSynced={async () => {
+                                                    // Native Word commits are broadcast as OT updates.
+                                                    // Do not replace a collab document through React props;
+                                                    // that would echo the remote edit as a new local edit.
+                                                    if (live.active) {
+                                                        setStale(true);
+                                                        for (const result of Object.values(results.current)) result.stale = true;
+                                                        setNotice("Đã đồng bộ Word sang LaTeX. Compile lại để cập nhật PDF.");
+                                                        if (ext.settings.autoCompile) setTimeout(() => void build(), 0);
+                                                        return;
+                                                    }
                                                     if (dirty) return;
                                                     const ticket =
                                                         revision.current;
@@ -2494,6 +2465,7 @@ export default function Workspace() {
                                                         setNotice(
                                                             "Đã đồng bộ Word sang LaTeX. Compile lại để cập nhật PDF.",
                                                         );
+                                                        if (ext.settings.autoCompile) setTimeout(() => void build(), 0);
                                                     }
                                                 }}
                                                 saveSource={async () =>

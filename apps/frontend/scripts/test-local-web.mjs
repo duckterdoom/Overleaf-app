@@ -165,8 +165,21 @@ try {
         .first()
         .click();
     await page.keyboard.press("Home");
-    await page.keyboard.type("WEB_EDIT ");
-    await expect(page.locator(".native-word-host")).toContainText("WEB_EDIT");
+    await page.keyboard.type("WORDREVISION ");
+    await expect(page.locator(".native-word-host")).toContainText("WORDREVISION");
+    // Compile must flush Word even before its debounce expires, then use the
+    // updated TeX. Checking DOCX bytes alone missed the old independent draft.
+    await page.locator(".compile-button").click();
+    await expect(page.locator(".compile-button")).toBeEnabled({ timeout: 30000 });
+    await expect(page.locator(".cm-content")).toContainText("WORDREVISION");
+    const sourceAfterWord = fs.readFileSync(path.join(workspaceHome, "projects", project, "main.tex"), "utf8");
+    expect(sourceAfterWord).toContain("WORDREVISION");
+    const pdfText = spawnSync(python, ["-X", "utf8", "-c",
+        "import pymupdf,sys; print(''.join(p.get_text() for p in pymupdf.open(sys.argv[1])))",
+        path.join(workspaceHome, "projects", project, "build/main.pdf")],
+        {cwd: repo, windowsHide: true, encoding: "utf8"});
+    if (pdfText.status) throw Error(pdfText.stderr);
+    expect(pdfText.stdout).toContain("WORDREVISION");
     await page.locator(".download-options > button").click();
     const wordDownload = page.waitForEvent("download");
     await page
@@ -186,6 +199,20 @@ try {
             ),
     ).toBe(true);
     await page.screenshot({ path: home + "/local-web-word.png" });
+    await page.locator('.auto-compile input').check();
+    await page.locator('.superdoc-line').filter({hasText: 'WORDREVISION'}).first().click();
+    await page.keyboard.press('Home');
+    await page.keyboard.type('AUTOWORD ');
+    await expect(page.locator('.cm-content')).toContainText('AUTOWORD', {timeout: 15000});
+    await expect.poll(() => {
+        const result = spawnSync(python, ['-X', 'utf8', '-c',
+            "import pymupdf,sys; print(''.join(p.get_text() for p in pymupdf.open(sys.argv[1])))",
+            path.join(workspaceHome, 'projects', project, 'build/main.pdf')],
+            {cwd: repo, windowsHide: true, encoding: 'utf8'});
+        return result.status === 0 && result.stdout.includes('AUTOWORD');
+    }, {timeout: 30000}).toBe(true);
+    await expect(page.locator('.compile-button')).toBeEnabled({timeout: 30000});
+    await page.locator('.auto-compile input').uncheck();
     await page
         .locator(".file-sidebar")
         .getByRole("button", { name: "Tải lên", exact: true })
@@ -236,7 +263,7 @@ try {
     expect(errors).toEqual([]);
     await page.screenshot({ path: home + "/local-web-home.png" });
     console.log(
-        "LOCAL_WEB_OK cookie bootstrap/reload; no native bridge; project/save; 2-page PDF and exact export; PDF tab; Word edit/export; upload/binary preview/avatar; ZIP import/compile",
+        "LOCAL_WEB_OK cookie bootstrap/reload; no native bridge; project/save; 2-page PDF and exact export; PDF tab; Word edit -> LaTeX -> compiled PDF -> DOCX export; upload/binary preview/avatar; ZIP import/compile",
     );
 } catch (e) {
     console.error(stderr.slice(-4000));

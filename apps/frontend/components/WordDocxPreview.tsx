@@ -18,6 +18,8 @@ type Metadata = {
     edited: boolean;
     stale: boolean;
     snapshot: string;
+    sync_state?: "synced" | "word-only";
+    synced_files?: string[];
 };
 type Props = {
     project: string;
@@ -45,6 +47,7 @@ export default forwardRef<WordPreviewHandle, Props>(
             readyRef = useRef(false),
             edit = useRef(0),
             savedEdit = useRef(0),
+            failedEdit = useRef(-1),
             queue = useRef<Promise<unknown>>(Promise.resolve()),
             opening = useRef(false),
             requestedCompile = useRef(false);
@@ -87,6 +90,7 @@ export default forwardRef<WordPreviewHandle, Props>(
                     setCurrent(value);
                     edit.current = 0;
                     savedEdit.current = 0;
+                    failedEdit.current = -1;
                     setDirty(false);
                     setDocumentFile(
                         new File([await response.blob()], "main.docx", {
@@ -199,6 +203,7 @@ export default forwardRef<WordPreviewHandle, Props>(
         }, [documentFile, legacy, props.active]);
 
         function persist(): Promise<boolean> {
+            let attemptedEdit = -1;
             const operation = queue.current
                 .catch(() => {})
                 .then(async () => {
@@ -215,6 +220,8 @@ export default forwardRef<WordPreviewHandle, Props>(
                             ),
                         );
                     const ticket = edit.current;
+                    attemptedEdit = ticket;
+                    if (!(await latest.current.saveSource())) return false;
                     const blob = await instance.current.export({
                         triggerDownload: false,
                     });
@@ -234,17 +241,21 @@ export default forwardRef<WordPreviewHandle, Props>(
                     metadata.current = value;
                     setCurrent(value);
                     savedEdit.current = ticket;
+                    failedEdit.current = -1;
                     setDirty(edit.current !== ticket);
+                    setError("");
+                    if (value.synced_files?.length) await latest.current.onSynced();
                     return true;
                 });
             queue.current = operation;
             return operation.catch((e) => {
+                failedEdit.current = attemptedEdit;
                 setError(errorText(e));
                 return false;
             });
         }
         useEffect(() => {
-            if (!dirty || legacy) return;
+            if (!dirty || legacy || failedEdit.current === edit.current) return;
             const timer = setTimeout(() => {
                 void persist();
             }, 1000);
@@ -344,8 +355,8 @@ export default forwardRef<WordPreviewHandle, Props>(
                             <span
                                 className="native-word-status"
                                 title={t(
-                                    "DOCX từ bộ chuyển đổi gốc, chỉnh sửa và lưu trực tiếp. Chỉnh sửa Word được giữ trong DOCX; không ghi đè mã LaTeX.",
-                                    "DOCX from the original converter, edited and saved directly. Word edits stay in DOCX and do not overwrite LaTeX.",
+                                    "Chỉnh sửa chữ được đồng bộ về LaTeX khi xác định được đúng đoạn nguồn. Định dạng Word được lưu riêng trong DOCX.",
+                                    "Text edits sync to uniquely matched LaTeX source. Word formatting is saved separately in DOCX.",
                                 )}
                             >
                                 {loading
@@ -355,7 +366,9 @@ export default forwardRef<WordPreviewHandle, Props>(
                                       : dirty
                                         ? t("Chưa lưu Word", "Unsaved Word")
                                         : ready
-                                          ? t("Đã lưu Word", "Word saved")
+                                          ? current?.sync_state === "synced"
+                                              ? t("Đã đồng bộ LaTeX", "LaTeX synced")
+                                              : t("Đã lưu Word", "Word saved")
                                           : ""}
                                 {pages > 0
                                     ? ` · ${pages} ${t("trang", "pages")}`
@@ -377,8 +390,8 @@ export default forwardRef<WordPreviewHandle, Props>(
                     <>
                         <p className="native-word-note">
                             {t(
-                                "DOCX từ bộ chuyển đổi gốc, chỉnh sửa và lưu trực tiếp. Chỉnh sửa Word được giữ trong DOCX; không ghi đè mã LaTeX.",
-                                "DOCX from the original converter, edited and saved directly. Word edits stay in DOCX and do not overwrite LaTeX.",
+                                "Sửa chữ trong Word để đồng bộ về LaTeX; biên dịch lại để cập nhật PDF. Công thức, bố cục và định dạng Word không tự chuyển thành lệnh LaTeX. Thay đổi không xác định được nguồn sẽ được báo để đối chiếu.",
+                                "Edit Word text to sync back to LaTeX; recompile to update PDF. Equations, layout and Word formatting do not become LaTeX commands automatically. Unmatched changes are reported for review.",
                             )}
                         </p>
                         {(current?.stale || props.sourceDirty) && (
@@ -390,9 +403,16 @@ export default forwardRef<WordPreviewHandle, Props>(
                             </p>
                         )}
                         {error && (
-                            <p className="word-error" role="alert">
-                                {error}
-                            </p>
+                            <div className="word-error" role="alert">
+                                <p>{error}</p>
+                                <button disabled={!ready} onClick={async () => {
+                                    try {
+                                        await instance.current?.export({triggerDownload: true});
+                                    } catch (failure) { setError(errorText(failure)); }
+                                }}>
+                                    {t("Tải bản Word đang sửa", "Download current Word draft")}
+                                </button>
+                            </div>
                         )}
                         {!documentFile && !loading && (
                             <div className="native-word-empty">

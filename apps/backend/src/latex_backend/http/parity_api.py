@@ -31,8 +31,14 @@ def register(app, store, compiler):
         return word.read(project)
 
     @app.post("/api/projects/{project}/word")
-    def save_word(project: str, data: dict):
-        return word.save(project, data)
+    async def save_word(project: str, data: dict):
+        def operation():
+            result = word.save(project, data)
+            return {**result, 'synced_files': sorted({anchor['file'] for anchor in (result.get('sync') or {}).values()})}
+        authority = getattr(app.state, 'live_documents', None)
+        if authority:
+            return await authority.external_edit(project, store, compiler, operation)
+        return await asyncio.to_thread(operation)
 
     @app.post("/api/projects/{project}/word/generate")
     def generate_word(project: str, data: dict):
@@ -61,7 +67,11 @@ def register(app, store, compiler):
     @app.put('/api/projects/{project}/docx-preview/{revision}')
     async def save_docx(project: str, revision: str, request: Request, main: str = ""):
         data = await request.body()
-        return DocxWorkspace(compiler, main).save(project, revision, data)
+        operation = lambda: DocxWorkspace(compiler, main).save(project, revision, data)
+        authority = getattr(app.state, 'live_documents', None)
+        if authority:
+            return await authority.external_edit(project, store, compiler, operation)
+        return await asyncio.to_thread(operation)
 
     @app.get("/api/projects/{project}/review")
     def get_review(project: str):

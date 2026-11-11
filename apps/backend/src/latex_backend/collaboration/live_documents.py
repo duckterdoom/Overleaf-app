@@ -7,6 +7,8 @@ import secrets
 import json
 import asyncio
 import logging
+import difflib
+import re
 import anyio
 from pymongo.errors import PyMongoError
 from latex_backend.auth.context import request_user, authorized_project
@@ -116,6 +118,58 @@ class LiveDocuments:
                 return await self._handle(project, identifier, user, store, compiler, data)
             finally:
                 authorized_project.reset(context)
+
+    async def external_edit(self, project, store, compiler, operation):
+        """Commit a guarded Word edit and publish it as ordinary OT changes.
+
+        Keep the epoch, so concurrent local keystrokes rebase instead of being
+        discarded by a full-document snapshot/reset.
+        """
+        async with self.edit_lock:
+            task = asyncio.create_task(asyncio.to_thread(operation))
+            cancelled = False
+            try:
+                result = await asyncio.shield(task)
+            except asyncio.CancelledError:
+                with anyio.CancelScope(shield=True):
+                    result = await task
+                cancelled = True
+            for path in result.get('synced_files', []):
+                doc = self.documents.get((project, path))
+                if doc is None:
+                    continue
+                content = (await asyncio.to_thread(store.read, project, path)).replace('\r\n', '\n').replace('\r', '\n')
+                if doc['text'] == content:
+                    continue
+                changes = []
+                units = lambda value: len(value.encode('utf-16-le')) // 2
+                before_tokens = re.findall(r'\S+|\s+', doc['text'])
+                after_tokens = re.findall(r'\S+|\s+', content)
+                for tag, a, b, c, d in difflib.SequenceMatcher(None, before_tokens, after_tokens).get_opcodes():
+                    length = units(''.join(before_tokens[a:b]))
+                    inserted = ''.join(after_tokens[c:d])
+                    changes.append(length if tag == 'equal' else [length, *inserted.split('\n')])
+                update = {'changes': changes, 'clientID': 'word:' + secrets.token_hex(8)}
+                version = doc['version']
+                doc['text'] = content
+                doc['version'] += 1
+                doc['updates'].append(update)
+                doc['bytes'] += len(json.dumps(update).encode())
+                while len(doc['updates']) > 4096 or doc['bytes'] > 8 * 1024 * 1024:
+                    doc['bytes'] -= len(json.dumps(doc['updates'].pop(0)).encode())
+                event = {'type': 'sync-updates', 'file': path, 'epoch': doc['epoch'],
+                         'from': version, 'version': doc['version'], 'updates': [update]}
+                for peer in list(self.presence.rooms.get(project, {}).values()):
+                    if peer.get('live', (None,))[0] == path:
+                        if peer['queue'].full():
+                            peer['overflow'] = True
+                        else:
+                            self.deliver(peer, event)
+            if result.get('synced_files'):
+                compiler.dirty.discard(project)
+            if cancelled:
+                raise asyncio.CancelledError
+            return result
 
 
     async def _handle(self, project, identifier, user, store, compiler, data):

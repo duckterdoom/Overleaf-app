@@ -2,9 +2,12 @@
 setlocal
 cd /d "%~dp0.."
 set "PYTHONUTF8=1"
-if not exist apps\backend\.venv\Scripts\python.exe (
-  echo Create Python 3.12+ venv: python -m venv apps\backend\.venv
-  echo Then: apps\backend\.venv\Scripts\python.exe -m pip install -e apps/backend
-  exit /b 1
-)
-apps\backend\.venv\Scripts\python.exe -X utf8 -m latex_backend.collaboration.network %*
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0ensure-python.ps1"
+if errorlevel 1 exit /b 1
+set "SERVER_PYTHON=%CD%\apps\backend\.venv\Scripts\python.exe"
+"%SERVER_PYTHON%" -c "import latex_backend.collaboration.network" > nul 2>&1
+if not errorlevel 1 goto launch
+"%SERVER_PYTHON%" -m pip install -e apps/backend
+if errorlevel 1 exit /b 1
+:launch
+"%SERVER_PYTHON%" -X utf8 -m latex_backend.collaboration.network %*

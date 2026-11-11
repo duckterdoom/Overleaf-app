@@ -125,6 +125,7 @@ class WebAccounts:
                 compiler = Compiler(store, self.latexmk)
                 app = create_api(store, compiler, self.token, web=True)
                 app.state.review_changed = self.presence.review_changed
+                app.state.live_documents = self.presence.live
                 app.state.compiler = compiler
                 await self.stack.enter_async_context(app.router.lifespan_context(app))
                 self.tenants[user['id']] = (app, store)

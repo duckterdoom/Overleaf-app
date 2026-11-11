@@ -15,7 +15,7 @@ where uv > nul 2>&1
 if errorlevel 1 goto sync_pip
 set "WEB_UV=uv"
 :sync_uv
-"%WEB_UV%" sync --project apps/backend --frozen --extra web --inexact
+call "%WEB_UV%" sync --project apps/backend --python "%WEB_PYTHON%" --frozen --extra web-local --inexact
 if errorlevel 1 goto failed
 goto dependencies_ready
 :installed_python
@@ -29,9 +29,9 @@ if not errorlevel 1 goto dependencies_ready
 if errorlevel 1 goto failed
 goto dependencies_ready
 :sync_pip
-"%WEB_PYTHON%" -c "import google.auth, httpx, requests, fastapi, uvicorn, httptools, websockets, pymongo, PIL, pypdf, pdf2docx, pymupdf, docx, latex_backend.entrypoints.web; from importlib.metadata import version; assert tuple(map(int,version('fastapi').split('.')[:2])) >= (0,162); assert tuple(map(int,version('uvicorn').split('.')[:2])) >= (0,54)" > nul 2>&1
+"%WEB_PYTHON%" -c "import google.auth, httpx, requests, fastapi, uvicorn, websockets, pymongo, PIL, pypdf, pdf2docx, pymupdf, docx, latex_backend.entrypoints.web; from importlib.metadata import version; assert tuple(map(int,version('fastapi').split('.')[:2])) >= (0,162); assert tuple(map(int,version('uvicorn').split('.')[:2])) >= (0,54)" > nul 2>&1
 if not errorlevel 1 goto dependencies_ready
-"%WEB_PYTHON%" -m pip install -e "apps/backend[web]"
+"%WEB_PYTHON%" -m pip install -e "apps/backend[web-local]"
 if errorlevel 1 goto failed
 :dependencies_ready
 if /i "%~1"=="--build" goto build_ui

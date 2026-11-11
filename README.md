@@ -27,6 +27,10 @@ Windows, tại root repository:
 
 Mở **http://127.0.0.1:8000/**; launcher tự mở trình duyệt. Dừng bằng **Ctrl+C** ở terminal. Nếu cổng đang bận, dùng `scripts\run-python-web.bat --port 8001`. Để chỉ chạy server: thêm `--no-browser`.
 
+**Máy Windows vừa clone:** không cần lệnh `py` nếu `python` đã chạy được phiên bản 3.12+. Script tự thử `python` → `python3` → `py -3`, dùng Python đang cài để tạo môi trường và cài thư viện. Không copy `.venv`, `target` hay `node_modules` từ máy khác. Chỉ khi không tìm thấy Python tương thích mới thử tải runtime qua `uv` nếu có. Có thể chỉ rõ Python đã cài bằng `$env:LATEX_PYTHON = 'C:\duong-dan\python.exe'` trước khi chạy hai lệnh trên. Xem [xử lý lỗi Python khi clone](docs/WINDOWS_PYTHON_STARTUP.md).
+
+MongoDB và công cụ TeX cần cấu hình riêng trên máy mới: nếu chưa có `config/mongodb.local.json`, copy từ `config/mongodb.local.example.json` rồi điền URI riêng theo [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Không commit URI/mật khẩu. `--build` chỉ chuẩn bị Python/UI rồi thoát; lệnh không có `--build` mới chạy backend và kết nối database. `run-python-server.bat` là server TCP cũ, không phải lệnh chạy web.
+
 macOS/Linux:
 
 ```sh
@@ -74,7 +78,7 @@ sh scripts/run-python-desktop.sh
 
 `--build` chuẩn bị dependency và build UI rồi thoát; lệnh tiếp theo mở ứng dụng. Launcher tự tạo `apps/backend/.venv` nếu thiếu. Sau khi sửa frontend, chạy lại `--build`. macOS cũng có launcher `Overleaf Python Desktop.command`.
 
-Windows kiểm tra cả khả năng chạy Python, không chỉ sự tồn tại của `.venv`. Nếu runtime do uv quản lý bị mất, `scripts/ensure-python.ps1` khôi phục Python vào `target/python-runtimes` khi có uv và kết nối mạng; môi trường cần tạo lại sẽ được đổi tên để giữ bản dự phòng. Không xóa thư mục runtime này khi đang dùng `.venv` tương ứng.
+Windows kiểm tra cả khả năng chạy Python, không chỉ sự tồn tại của `.venv`. Nếu môi trường hỏng, `scripts/ensure-python.ps1` ưu tiên Python đã cài trên máy; nếu không có mới dùng uv để chuẩn bị Python tại `target/python-runtimes`. Môi trường cần tạo lại được đổi tên thành `.venv.backup-...` để giữ bản dự phòng. Không xóa thư mục runtime khi `.venv` còn tham chiếu đến nó.
 
 Compile cần TeX Live/MacTeX/MiKTeX hoặc TinyTeX phù hợp hệ điều hành. Windows hiện có thể dùng `target/TinyTeX/bin/windows/latexmk.exe`; thư mục này là công cụ local, **không được Git đóng gói sẵn cho máy khác**. Chọn `latexmk` trong **Cài đặt → Biên dịch** nếu app chưa tìm thấy. Không chép TinyTeX Windows hay `.venv` Windows sang macOS.
 
