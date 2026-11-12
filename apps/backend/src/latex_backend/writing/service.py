@@ -37,6 +37,42 @@ class Writing:
     def __init__(self, gateway):
         self.gateway, self.db = gateway, gateway.database
 
+    def settings(self, user):
+        project = user.get('writingProject')
+        if not project:
+            raise Problem('Mở dự án trước khi cấu hình tiêu chí.', 400)
+        row = self.db.writing_project_settings.find_one({'_id': project})
+        return {'revision': row['revision'] if row else 0,
+                'catalog': copy.deepcopy(row['catalog'] if row else CATALOG)}
+
+    def save_settings(self, user, data):
+        self.role(user, 'tutor')
+        if user.get('projectPermission') not in {'owner', 'editor'}:
+            raise Problem('Cần quyền chỉnh sửa dự án.', 403)
+        current = self.settings(user)
+        catalog = copy.deepcopy(CATALOG)
+        if set(data['checks']) != set(catalog):
+            raise Problem('Cần giữ đủ các dạng bài của dự án.')
+        for key, sections in data['checks'].items():
+            if set(sections) - {'intro','overview','body','conclusion','closing','whole'}:
+                raise Problem('Phần chấm không hợp lệ.')
+            for checks in sections.values():
+                if len(checks) > 40 or len({c['id'] for c in checks}) != len(checks):
+                    raise Problem('Tối đa 40 mục mỗi phần; mã tiêu chí không trùng nhau.')
+            catalog[key]['checks'] = sections
+        project = user['writingProject']
+        row = {'_id': project, 'catalog': catalog, 'revision': data['revision'] + 1}
+        if current['revision'] != data['revision']:
+            raise Problem('Cấu hình đã đổi. Tải lại trước khi lưu.', 409)
+        if data['revision'] == 0:
+            try:
+                self.db.writing_project_settings.insert_one(row)
+            except DuplicateKeyError:
+                raise Problem('Cấu hình đã đổi. Tải lại trước khi lưu.', 409)
+        elif not self.db.writing_project_settings.replace_one({'_id':project,'revision':data['revision']}, row).matched_count:
+            raise Problem('Cấu hình đã đổi. Tải lại trước khi lưu.', 409)
+        return {'revision': row['revision'], 'catalog': catalog}
+
     @staticmethod
     def role(user, role):
         if user.get('role') != role:
@@ -131,7 +167,7 @@ class Writing:
 
     def assignment(self, user, key):
         row = self.db.writing_assignments.find_one({'_id': key})
-        if not self.scoped(user, row):
+        if not self.scoped(user, row) or row.get('deleted'):
             raise Problem('Không tìm thấy bài tập.', 404)
         if self.tutor(user, row) or row.get('practiceOwner') == user['id']:
             return row
@@ -151,7 +187,17 @@ class Writing:
                 '$or': [{'published': True, 'practiceOwner': None}, {'practiceOwner': user['id']}]})}
         else:
             query['projectId'] = None
+        query['deleted'] = {'$ne': True}
         return [public(row) for row in self.db.writing_assignments.find(query).sort('createdAt', -1)]
+
+    def delete_assignment(self, user, key, revision):
+        row = self.assignment(user, key)
+        if not self.tutor(user, row):
+            raise Problem('Chỉ Tutor được xóa bài tập.', 403)
+        if not self.db.writing_assignments.update_one({'_id': key, 'revision': revision},
+                {'$set': {'deleted': True}, '$inc': {'revision': 1}}).matched_count:
+            raise Problem('Bài tập đã thay đổi. Tải lại trước khi xóa.', 409)
+        return {'deleted': True}
 
     def save_assignment(self, user, data, key=None):
         practice = data.pop('practice', False)
@@ -166,11 +212,24 @@ class Writing:
         tasks = sorted(set(data['tasks']))
         if not tasks or any(task not in (1, 2) for task in tasks):
             raise Problem('Chọn Task 1, Task 2 hoặc cả hai.')
+        from latex_backend.writing.prompts import metadata
+        attachments = {}
+        for number, asset_id in data.get('promptFiles', {}).items():
+            if int(number) not in tasks:
+                raise Problem('Tệp đề không thuộc task được chọn.', 403)
+            asset = self.db.writing_prompt_files.find_one({'_id': asset_id, 'projectId': user.get('writingProject')})
+            if not asset:
+                raise Problem('Tệp đề không thuộc dự án này.', 404)
+            if user['role'] != 'tutor' and (not practice or asset['ownerId'] != user['id']):
+                raise Problem('Chọn tệp đề của bạn cho bài luyện cá nhân.', 403)
+            attachments[number] = metadata(asset)
+        data['promptFiles'] = attachments
+        data['rubricCatalog'] = self.settings(user)['catalog'] if user.get('writingProject') else copy.deepcopy(CATALOG)
         for task in tasks:
             profile = CATALOG.get(data['profiles'].get(str(task), ''))
             if not profile or profile['task'] != task or (task == 1 and profile['family'] != data['variant']):
                 raise Problem('Dạng bài không phù hợp với task/Academic/General Training.')
-            if (data['published'] or practice) and not data['prompts'].get(str(task), '').strip():
+            if (data['published'] or practice) and not data['prompts'].get(str(task), '').strip() and str(task) not in attachments:
                 raise Problem('Nhập đề cho từng task được giao.')
         if data.get('imageId'):
             image = self.db.writing_assets.find_one({'_id': data['imageId'], 'ownerId': user['id']})
@@ -184,7 +243,9 @@ class Writing:
         current = None
         if key:
             current = self.assignment(user, key)
-            if not self.tutor(user, current) or current['published']:
+            if not self.tutor(user, current) or (current['published'] and (
+                    self.db.writing_drafts.count_documents({'assignmentId': key}) or
+                    self.db.writing_submissions.count_documents({'assignmentId': key}))):
                 raise Problem('Bài đã giao được giữ nguyên; hãy tạo bài tập mới.', 409)
         version = data.pop('revision', 0)
         key = key or identifier()
@@ -291,7 +352,7 @@ class Writing:
                 raise Problem('Cần đúng bốn tiêu chí IELTS của task.')
             if any(v is not None and (not math.isfinite(v) or not 0 <= v <= 9 or v * 2 != int(v * 2)) for v in grade['scores'].values()):
                 raise Problem('Band phải từ 0 đến 9, bước 0.5 hoặc chưa chấm.')
-            profile = CATALOG.get(grade['profile'])
+            profile = row['assignment'].get('rubricCatalog', CATALOG).get(grade['profile'])
             if not profile or profile['task'] != int(task) or (task == '1' and profile['family'] != row['assignment']['variant']):
                 raise Problem('Dạng bài chấm không phù hợp.')
             paragraphs = re.split(r'\n\s*\n', row['answers'][task].strip())
@@ -354,7 +415,7 @@ class Writing:
                 raise Problem('Kết quả vừa được công bố ở cửa sổ khác.', 409) from None
         return public(result)
 
-    def latex(self, user, assignment=None, submission=None, report=False):
+    def latex(self, user, assignment=None, submission=None, report=False, task_number=None):
         result = None
         if submission:
             view = self.review(user, submission)
@@ -372,18 +433,28 @@ class Writing:
                  r'\setlength{\parindent}{0pt}\setlength{\parskip}{8pt}', r'\begin{document}',
                  r'\section*{' + tex_escape(task['title']) + '}', r'\textit{IELTS Writing practice - not an official examination result.}']
         for number in task['tasks']:
+            if task_number is not None and number != task_number:
+                continue
             key = str(number)
-            lines += [r'\section*{Task ' + key + '}', r'\subsection*{Question}', tex_escape(task['prompts'][key])]
+            lines += [r'\section*{Task ' + key + '}', r'\subsection*{Question}', tex_escape(task['prompts'].get(key, ''))]
+            attachment = task.get('promptFiles', {}).get(key)
+            if attachment and attachment['kind'] in {'pdf', 'image'}:
+                extension = 'pdf' if attachment['kind'] == 'pdf' else 'png'
+                for page in range(1, (attachment.get('pages') or 1) + 1):
+                    option = f',page={page}' if extension == 'pdf' else ''
+                    lines += [r'\begin{center}\includegraphics[width=.9\linewidth,height=.8\textheight,keepaspectratio' + option + ']{question-task-' + key + '.' + extension + r'}\end{center}']
             if number == 1 and task.get('imageId'):
                 lines += [r'\begin{center}\includegraphics[width=.85\linewidth]{prompt-image}\end{center}']
             lines += [r'\subsection*{Answer}', tex_escape(answers.get(key, ''))]
             if result:
                 grade = result['tasks'][key]
                 lines += [r'\subsection*{Tutor feedback}', 'Estimated task band: ' + str(result['taskBands'][key])]
+                if grade.get('overall'):
+                    lines += [tex_escape(grade['overall'])]
                 for code, score in grade['scores'].items():
                     lines += [r'\paragraph{' + code + ': ' + str(score) + '}', tex_escape(grade['notes'].get(code, ''))]
                 for section in grade['sections']:
-                    checks = CATALOG[grade['profile']]['checks'].get(section['kind'], [])
+                    checks = task.get('rubricCatalog', CATALOG)[grade['profile']]['checks'].get(section['kind'], [])
                     reviewed = [(check, section['checks'].get(check['id'])) for check in checks
                                 if section['checks'].get(check['id']) not in (None, 'unreviewed')]
                     if section['note'] or section['quote'] or reviewed:

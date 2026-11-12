@@ -1,5 +1,7 @@
 # Latex — Python + Next.js
 
+**Bộ đề IELTS có sẵn:** chọn **Dự án mới → Đề mẫu IELTS Writing**. Chỉ một template chứa đủ 21 dạng Task 1/2, hình LaTeX sửa được, từng tệp câu hỏi riêng để compile và giao bài, cùng khung bài làm. Xem [hướng dẫn template IELTS](docs/IELTS_PROJECT_TEMPLATES.md).
+
 Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trùng và giới hạn job CPU chung giữa các workspace. Xem [hiệu năng và cấu hình cho server](docs/COMPILE_WORD_PERFORMANCE.md); tối ưu cache không thay thuật toán converter gốc.
 
 **Backend web dùng MongoDB làm nguồn dữ liệu chính.** Điền kết nối Atlas/server trong `config/mongodb.local.json` (file riêng, gitignore). Nhiều máy dev có thể cùng dùng database; source/ảnh/history/Word draft được lưu theo phiên bản trong MongoDB rồi tải về working copy của mỗi backend để compile. Không đổi `storage_home` qua lại giữa các máy. Xem [dùng chung dữ liệu nhiều máy](docs/SHARED_MONGODB_FILES.md) và [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Dữ liệu SQLite/JSON cũ vẫn cần migrate có kiểm chứng; không chạy lại migration trên database đã chuyển xong.
@@ -7,6 +9,8 @@ Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trù
 Web có **chia sẻ riêng tư theo lời mời** và **chia sẻ bằng liên kết**, quyền Viewer/Editor, quản lý/thu hồi quyền và danh sách Shared with you thật. Editor đồng bộ nội dung trực tiếp qua WebSocket bằng CodeMirror OT, kèm con trỏ có tên và avatar; thay đổi được lưu server trước khi xác nhận. Người nhận cần đăng nhập; lời mời hiện được owner tự copy/gửi, chưa có gửi email tự động. Xem [WEB_PROJECT_SHARING.md](docs/WEB_PROJECT_SHARING.md).
 
 **Chia sẻ dùng chung cho LaTeX và IELTS:** trong hộp thoại Chia sẻ, chủ sở hữu chọn/đổi vai trò **Tutor hoặc Học viên** riêng cho mỗi thành viên, độc lập với quyền xem/chỉnh sửa. Vai trò chỉ áp dụng trong dự án, không đổi tài khoản toàn hệ thống. Tutor được cấp quyền chỉnh sửa có thể chấm bài trong dự án; Học viên chỉ xem bài nộp/kết quả của mình. Dữ liệu IELTS cũ có nút đưa vào dự án sau xác nhận. Xem [phạm vi quyền IELTS](docs/IELTS_WRITING_WEB.md).
+
+IELTS giữ cùng kết nối hiện diện của dự án với editor: avatar có tên/vai trò vẫn hiện khi chuyển giữa hai phần. Tutor giao đề **từ tệp có sẵn trong dự án** (.tex, PDF, ảnh, TXT/Markdown), có thể chọn trang riêng cho Task 1/2. Học viên xem bản PDF/ảnh của đề ngay trong màn làm bài; thời lượng và hạn nộp vẫn dùng cấu hình Tutor đã đặt. Bản đề được chốt khi giao, không đổi theo lần sửa file sau đó.
 
 Đăng ký/đăng nhập web đã có bước chọn **Tutor hoặc Student**, phiên riêng và vùng dự án riêng theo tài khoản. Google sign-in được tích hợp nhưng cần cấu hình OAuth client của bạn trước khi sử dụng. Xem [luồng tài khoản và cấu hình Google](docs/WEB_AUTH_ONBOARDING.md). Dự án chung cũ được giữ nguyên, không tự gán cho tài khoản mới.
 

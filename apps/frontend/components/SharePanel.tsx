@@ -8,7 +8,7 @@ type Permission = "viewer" | "editor";
 type WorkspaceRole = "tutor" | "student";
 type Sharing = {
     permission: "owner" | Permission;
-    owner: { name: string; email: string };
+    owner: { name: string; email: string; workspaceRole: WorkspaceRole };
     mode: "private" | "link";
     linkPermission: Permission;
     linkToken: string | null;
@@ -88,7 +88,9 @@ export default function SharePanel({ project, language, onClose }: { project: Pr
                     </form>}
                     <div className="share-section-heading"><h3>{t("Người có quyền truy cập", "People with access")}</h3>{owner && <button onClick={() => members.current?.scrollIntoView({ block: "nearest" })}>{t("Quản lý quyền", "Manage access")}</button>}</div>
                     <div className="share-members" ref={members}>
-                        <div className="share-person"><span className="share-person-avatar">{data.owner.name.slice(0, 1).toUpperCase()}</span><div className="share-person-text"><strong>{data.owner.name}</strong><small>{data.owner.email}</small></div><span className="share-owner-label">{t("Chủ sở hữu", "Owner")}</span></div>
+                        <div className="share-person"><span className="share-person-avatar">{data.owner.name.slice(0, 1).toUpperCase()}</span><div className="share-person-text"><strong>{data.owner.name}</strong><small>{data.owner.email}</small></div><span className="share-owner-label">{t("Chủ sở hữu", "Owner")}</span>
+                            {owner && <select disabled={busy} aria-label={t("Vai trò chủ sở hữu trong dự án", "Owner role in this project")} value={data.owner.workspaceRole} onChange={e => void update(route, 'PATCH', {mode: data.mode, permission: data.linkPermission, ownerRole: e.target.value})}><option value="tutor">Tutor</option><option value="student">{t("Học viên", "Student")}</option></select>}
+                        </div>
                         {data.members.map(member => <div className="share-person" key={member.id}><span className="share-person-avatar"><UsersRound size={17} /></span><div className="share-person-text"><strong>{member.email}</strong><small>{member.status === "pending" ? t("Đang chờ chấp nhận lời mời", "Invitation pending") : t("Đã tham gia", "Joined")}</small></div>
                             <select disabled={busy} aria-label={`${t("Quyền của", "Permission for")} ${member.email}`} value={member.permission} onChange={e => void update(route + "/members/" + member.id, "PATCH", { permission: e.target.value })}><option value="viewer">{t("Chỉ xem", "Viewer")}</option><option value="editor">{t("Chỉnh sửa", "Editor")}</option></select>
                             <select disabled={busy} aria-label={`${t("Vai trò của", "Role for")} ${member.email}`} value={member.workspaceRole} onChange={e => void update(route + "/members/" + member.id, "PATCH", { workspaceRole: e.target.value })}><option value="student">{t("Học viên", "Student")}</option><option value="tutor">Tutor</option></select>

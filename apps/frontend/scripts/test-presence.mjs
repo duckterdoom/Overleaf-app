@@ -64,7 +64,7 @@ try {
     expect((await member.request.post(url + 'api/avatar', { data: avatar, headers: { 'Content-Type': 'image/png' } })).ok()).toBe(true);
     expect((await member.request.post(url + 'api/shares/accept', { data: { token: link } })).ok()).toBe(true);
     await a.goto(url); await a.locator('.project-card-open').click();
-    await b.goto(url); await b.locator('.project-card-open').click();
+    await b.goto(url); await b.locator('.project-card-open').filter({hasText:'Presence test'}).click();
     await expect(a.locator('.presence-person')).toHaveCount(1);
     await expect(b.locator('.presence-person')).toHaveCount(1);
     await expect.poll(() => a.locator('.presence-person img').evaluateAll(nodes => nodes.filter(n => n.naturalWidth > 0).length)).toBe(1);
@@ -139,6 +139,35 @@ try {
     }
     await expect.poll(async () => (await sourceText(a)) === (await sourceText(b))).toBe(true);
     await a.screenshot({ path: path.join(home, 'live-edits-synchronized.png') });
+    // Every project has its own room, including when both source files are main.tex.
+    const second = await (await owner.request.post(url+'api/projects',{data:{title:'Second presence project'}})).json();
+    const secondLink = (await (await owner.request.patch(url+`api/projects/${second.id}/sharing`,{data:{mode:'link',permission:'editor'}})).json()).linkToken;
+    expect((await member.request.post(url+'api/shares/accept',{data:{token:secondLink}})).ok()).toBe(true);
+    async function switchProject(page,title){
+        await page.getByRole('button',{name:'Quay lại danh sách dự án (Thoát)',exact:true}).click();
+        await page.locator('.project-card-open').filter({hasText:title}).click();
+        await expect(page.locator('.cm-content')).toBeVisible();
+    }
+    for(let turn=0;turn<2;turn++){
+        await switchProject(a,'Second presence project');
+        await expect(a.locator('.presence-person')).toHaveCount(0);
+        await expect(b.locator('.presence-person')).toHaveCount(0);
+        await switchProject(b,'Second presence project');
+        for(const page of[a,b])await expect(page.locator('.presence-person')).toHaveCount(1);
+        await b.locator('.cm-content').click();await b.keyboard.press('Control+End');
+        await b.keyboard.insertText(`\n% SECOND_PROJECT_${turn}\n`);
+        await expect(a.locator('.cm-content')).toContainText(`SECOND_PROJECT_${turn}`);
+        await expect(a.locator('.remote-cursor-label')).toHaveText('Actual Editor');
+        await switchProject(a,'Presence test');
+        await expect(a.locator('.presence-person')).toHaveCount(0);
+        await switchProject(b,'Presence test');
+        for(const page of[a,b]){
+            await expect(page.locator('.presence-person')).toHaveCount(1);
+            await expect(page.locator('.cm-content')).not.toContainText('SECOND_PROJECT_');
+        }
+        await b.locator('.cm-content').click();await b.keyboard.press('Control+Home');
+        await expect(a.locator('.remote-cursor-label')).toHaveText('Actual Editor');
+    }
     // Viewer never connects or advertises an editing cursor/avatar.
     const invitation = await (await owner.request.post(route + '/invitations', { data: { emails: ['reader@example.com'], permission: 'viewer' } })).json();
     await signup(reader, 'reader@example.com', 'Only Reader');
@@ -150,7 +179,7 @@ try {
     await expect(r.locator('.cm-content')).toContainText('MEMBER_SIMULTANEOUS');
     await expect(a.locator('.presence-person')).toHaveCount(1);
     await b.reload();
-    await b.locator('.project-card-open').click();
+    await b.locator('.project-card-open').filter({hasText:'Presence test'}).click();
     await expect(b.locator('.cm-content')).toContainText('MEMBER_SIMULTANEOUS');
     await expect(a.locator('.presence-person')).toHaveCount(1);
     await b.bringToFront(); await b.locator('.cm-content').click();

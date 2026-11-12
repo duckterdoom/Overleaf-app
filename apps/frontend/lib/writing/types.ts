@@ -18,6 +18,8 @@ export type Classroom = {
     students?: { id: string; name: string }[];
 };
 export type Assignment = {
+    rubricCatalog?: Record<string, Profile>;
+    promptFiles?: Record<string, PromptFile>;
     id: string;
     title: string;
     classId: string | null;
@@ -35,6 +37,10 @@ export type Assignment = {
     published: boolean;
     revision: number;
     createdAt: string;
+};
+export type PromptFile = {
+    id: string; sourcePath: string; projectId: string; kind: 'pdf' | 'image' | 'text'; mime: string;
+    digest: string; pages: number | null; firstPage: number; lastPage: number | null; text?: string;
 };
 export type Draft = {
     revision: number;

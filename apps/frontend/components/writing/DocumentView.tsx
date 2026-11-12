@@ -16,6 +16,7 @@ export default function DocumentView({
     beforeAction,
     language,
     sourceSignal,
+    focused = false,
 }: {
     assignmentId?: string;
     submissionId?: string;
@@ -26,6 +27,7 @@ export default function DocumentView({
     beforeAction: () => Promise<boolean>;
     language: string;
     sourceSignal: string;
+    focused?: boolean;
 }) {
     const { json, request } = useWritingApi();
     const [tab, setTab] = useState<"text" | "source" | "pdf">("text"),
@@ -60,7 +62,7 @@ export default function DocumentView({
         setError("");
         const ticket = latestSignal.current;
         try {
-            const data = await json<{ source: string; project: Project }>(
+            const data = await json<{ source: string; project: Project; pdf?:string; artifact?:boolean }>(
                 "/writing/latex",
                 {
                     method: "POST",
@@ -72,6 +74,11 @@ export default function DocumentView({
                     }),
                 },
             );
+            if(data.artifact && data.pdf){
+                setSource(data.source);
+                setPdf(Uint8Array.from(atob(data.pdf),c=>c.charCodeAt(0)));
+                setPdfSignal(ticket);setTab('pdf');return;
+            }
             if (open) {
                 await onOpenProject(data.project);
                 return;
@@ -111,6 +118,7 @@ export default function DocumentView({
         if (next === "pdf" && (!pdf || pdfSignal !== sourceSignal))
             await makeProject();
     }
+    if (focused) return <div className="writing-document-view writing-focused-document">{children}</div>;
     return (
         <div className="writing-document-view">
             <div

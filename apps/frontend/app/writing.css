@@ -8,6 +8,14 @@
     overflow: hidden;
     font-size: 15px;
 }
+.writing-project-prompt { padding: 16px; border: 1px solid var(--line); border-radius: 8px; display: grid; gap: 12px; background: var(--soft); }
+.writing-project-prompt > p { color: var(--muted); line-height: 1.65; font-size: 13px; }
+.writing-prompt-options { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+.writing-prompt-options label { flex: 1; min-width: 100px; }
+.writing-prompt-document { min-width: 0; width: 100%; }
+.writing-prompt-pdf { height: 500px; min-height: 250px; display: flex; overflow: hidden; border: 1px solid var(--line); border-radius: 7px; }
+.writing-prompt-pdf > * { flex: 1; min-width: 0; min-height: 0; }
+.writing-prompt-log { white-space: pre-wrap; max-height: 200px; overflow: auto; padding: 12px; font-size: 12px; }
 .writing-layout {
     flex: 1;
     min-height: 0;
@@ -551,16 +559,41 @@
 }
 .writing-practice-panes {
     display: grid;
-    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.25fr);
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 1fr);
     flex: 1;
     min-height: 420px;
 }
 .writing-question {
-    padding: 28px;
+    padding: 12px;
     overflow: auto;
     border-right: 1px solid var(--line);
     line-height: 1.9;
 }
+.writing-focused-prompt .writing-notice,
+.writing-focused-prompt .preview-toolbar,
+.writing-focused-prompt .pdf-toolbar,
+.writing-focused-prompt .pdf-viewer > header { display: none; }
+.writing-focused-prompt .writing-prompt-pdf { height: auto; min-height: 560px; border: 0; border-radius: 0; overflow:visible; }
+.writing-focused-prompt .pdf-viewer { overflow:visible; }
+.writing-focused-prompt .pdf-scroll { overflow:visible; flex:none; padding:0; }
+.writing-focused-prompt .pdf-link { pointer-events:none; }
+@media (min-width: 901px) {
+    .writing-main:has(.writing-focused-document) { overflow:hidden; padding:12px; }
+    .writing-main:has(.writing-focused-document) > .writing-page-heading { display:none; }
+    .writing-practice:has(.writing-focused-document) { min-height:0; height:calc(100dvh - 180px); flex:none; }
+    .writing-focused-document { min-height:0; }
+    .writing-focused-document .writing-practice-panes { min-height:0; overflow:hidden; }
+    .writing-focused-document .writing-question { min-height:0; overflow:auto; }
+    .writing-focused-document .writing-answer textarea { min-height:0; }
+}
+.writing-focused-prompt .pdf-pages { padding: 0; }
+.writing-focused-prompt .pdf-sheet { box-shadow: none; }
+.writing-rubric-edit-row { display:flex; align-items:center; gap:10px; margin:10px 0; }
+.writing-rubric-edit-row textarea { flex:1; min-height:70px; }
+.writing-project-rubrics fieldset { padding:12px; margin:12px 0; border:1px solid var(--line); }
+.writing-question:has(.writing-focused-prompt) > .writing-eyebrow,
+.writing-question:has(.writing-focused-prompt) > h2,
+.writing-question:has(.writing-focused-prompt) > .writing-question-note { display:none; }
 .writing-question h2 {
     font-size: 20px;
     line-height: 1.5;
@@ -708,6 +741,18 @@
     min-height: 0;
     flex: 1;
 }
+.writing-grading-mode .writing-page-heading,
+.writing-grading-mode .writing-sidebar-note { display:none; }
+.writing-grading-mode .writing-main { padding:10px; gap:8px; overflow:hidden; }
+.writing-grading-mode .writing-focused-document { min-height:0; height:calc(100dvh - 145px); flex:none; }
+.writing-grading-mode .writing-review-scroll { min-height:0; padding:12px 12px 50px; }
+.writing-grading-mode .writing-paper-grid { max-width:none; padding:16px; column-gap:20px; }
+.writing-grading-mode .writing-document-toolbar { padding:6px 12px; gap:8px; }
+.writing-grading-mode .writing-review-meta { padding:5px 12px; }
+.writing-grading-mode .writing-profile-select { padding:0 12px 6px; gap:8px; }
+.writing-grading-mode .writing-profile-select small { display:none; }
+.writing-grading-mode .writing-paper-title { padding-bottom:8px; margin-bottom:8px; }
+.writing-grading-mode .writing-paragraph p { font-size:19px; line-height:1.8; }
 .writing-document-toolbar {
     display: flex;
     align-items: center;

@@ -24,6 +24,7 @@ import {
 } from "../../lib/writing/types";
 import { CommutingChart } from "./AssignmentForm";
 import { useWritingApi } from "../../lib/writing/context";
+import PromptDocument from './PromptDocument';
 
 const states: Record<string, string> = {
     unreviewed: "Chưa xem",
@@ -65,6 +66,7 @@ export default function ReviewPaper({
 }) {
     const { assetUrl } = useWritingApi();
     const assignment = submission.assignment;
+    const projectCatalog = assignment.rubricCatalog || catalog;
     const bandRef = useRef<HTMLElement>(null);
     const [task, setTask] = useState(assignment.tasks[0]),
         [active, setActive] = useState<number | null>(null),
@@ -149,7 +151,7 @@ export default function ReviewPaper({
         const item = section(index),
             open = active === index;
         const checks =
-            catalog[grade?.profile || assignment.profiles[String(task)]]
+            projectCatalog[grade?.profile || assignment.profiles[String(task)]]
                 ?.checks[item.kind] || [];
         const met = checks.filter(
             (check) => item.checks[check.id] === "met",
@@ -374,7 +376,7 @@ export default function ReviewPaper({
                     {assignment.variant === "academic"
                         ? "Academic"
                         : "General Training"}{" "}
-                    · {catalog[assignment.profiles[String(task)]]?.label}
+                    · {projectCatalog[assignment.profiles[String(task)]]?.label}
                 </span>
                 <strong>{submission.wordCounts[String(task)]} từ</strong>
             </div>
@@ -414,6 +416,7 @@ export default function ReviewPaper({
                             TASK {task} · BẢN NỘP KHÔNG THAY ĐỔI
                         </span>
                         <p>{assignment.prompts[String(task)]}</p>
+                        {assignment.promptFiles?.[String(task)] && <details><summary>Xem đề bài Task {task}</summary><PromptDocument focused file={assignment.promptFiles[String(task)]}/></details>}
                         {task === 1 &&
                             assignment.imageId &&
                             (assignment.imageId === "sample-commuting" ? (

@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "originalPractice": true,
+  "profiles": [
+    {
+      "id": "line",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-line.tex",
+      "bodyFile": "questions/task1-line.tex"
+    },
+    {
+      "id": "bar",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-bar.tex",
+      "bodyFile": "questions/task1-bar.tex"
+    },
+    {
+      "id": "pie",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-pie.tex",
+      "bodyFile": "questions/task1-pie.tex"
+    },
+    {
+      "id": "table",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-table.tex",
+      "bodyFile": "questions/task1-table.tex"
+    },
+    {
+      "id": "mixed",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-mixed.tex",
+      "bodyFile": "questions/task1-mixed.tex"
+    },
+    {
+      "id": "process",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-process.tex",
+      "bodyFile": "questions/task1-process.tex"
+    },
+    {
+      "id": "map",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-map.tex",
+      "bodyFile": "questions/task1-map.tex"
+    },
+    {
+      "id": "diagram",
+      "task": 1,
+      "variant": "academic",
+      "questionFile": "question-task1-diagram.tex",
+      "bodyFile": "questions/task1-diagram.tex"
+    },
+    {
+      "id": "formal",
+      "task": 1,
+      "variant": "general",
+      "questionFile": "question-task1-formal.tex",
+      "bodyFile": "questions/task1-formal.tex"
+    },
+    {
+      "id": "semiformal",
+      "task": 1,
+      "variant": "general",
+      "questionFile": "question-task1-semiformal.tex",
+      "bodyFile": "questions/task1-semiformal.tex"
+    },
+    {
+      "id": "informal",
+      "task": 1,
+      "variant": "general",
+      "questionFile": "question-task1-informal.tex",
+      "bodyFile": "questions/task1-informal.tex"
+    },
+    {
+      "id": "opinion",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-opinion.tex",
+      "bodyFile": "questions/task2-opinion.tex"
+    },
+    {
+      "id": "discussion",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-discussion.tex",
+      "bodyFile": "questions/task2-discussion.tex"
+    },
+    {
+      "id": "advantages",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-advantages.tex",
+      "bodyFile": "questions/task2-advantages.tex"
+    },
+    {
+      "id": "outweigh",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-outweigh.tex",
+      "bodyFile": "questions/task2-outweigh.tex"
+    },
+    {
+      "id": "cause_solution",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-cause-solution.tex",
+      "bodyFile": "questions/task2-cause-solution.tex"
+    },
+    {
+      "id": "problem_solution",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-problem-solution.tex",
+      "bodyFile": "questions/task2-problem-solution.tex"
+    },
+    {
+      "id": "cause_effect",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-cause-effect.tex",
+      "bodyFile": "questions/task2-cause-effect.tex"
+    },
+    {
+      "id": "two_part",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-two-part.tex",
+      "bodyFile": "questions/task2-two-part.tex"
+    },
+    {
+      "id": "positive_negative",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-positive-negative.tex",
+      "bodyFile": "questions/task2-positive-negative.tex"
+    },
+    {
+      "id": "custom",
+      "task": 2,
+      "variant": "either",
+      "questionFile": "question-task2-custom.tex",
+      "bodyFile": "questions/task2-custom.tex"
+    }
+  ]
+}

@@ -1,6 +1,11 @@
 {
   "categories": [
     {
+      "id": "ielts",
+      "en": "IELTS Writing",
+      "vi": "IELTS Writing · Đề luyện viết"
+    },
+    {
       "id": "journal",
       "en": "Journal articles",
       "vi": "Bài báo khoa học"
@@ -47,6 +52,7 @@
     }
   ],
   "templates": [
+    "ielts/ielts-complete-bank",
     "journal/research-article",
     "journal/conference-paper",
     "journal/review-article",

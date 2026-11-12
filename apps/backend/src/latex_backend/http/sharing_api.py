@@ -10,6 +10,7 @@ class ShareSettings(BaseModel):
     permission: str = 'viewer'
     rotate: bool = False
     workspaceRole: Literal['tutor', 'student'] | None = None
+    ownerRole: Literal['tutor', 'student'] | None = None
 
 
 class Invite(BaseModel):
@@ -29,6 +30,10 @@ class Member(BaseModel):
 
 def register_sharing(gateway):
     app, sharing = gateway.auth, gateway.sharing
+
+    def changed(project, result):
+        gateway.presence.access_changed(project)
+        return result
 
     def user(request):
         principal = gateway.principal(request)
@@ -65,13 +70,13 @@ def register_sharing(gateway):
     async def configure(project: str, data: ShareSettings, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.configure(project, principal['id'], data.mode, data.permission, data.rotate, data.workspaceRole)
+        return changed(project, sharing.configure(project, principal['id'], data.mode, data.permission, data.rotate, data.workspaceRole, data.ownerRole))
 
     @app.post('/api/projects/{project}/sharing/invitations')
     async def invite(project: str, data: Invite, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.invite(project, principal['id'], data.emails, data.permission, data.workspaceRole)
+        return changed(project, sharing.invite(project, principal['id'], data.emails, data.permission, data.workspaceRole))
 
     @app.patch('/api/projects/{project}/sharing/members/{identifier}')
     async def update_member(project: str, identifier: str, data: Member, request: Request):
@@ -79,16 +84,17 @@ def register_sharing(gateway):
         await gateway.project_workspace(project, principal)
         if data.permission is None and data.workspaceRole is None:
             raise Problem('Chọn quyền hoặc vai trò cần thay đổi.')
-        return sharing.member(project, principal['id'], identifier, data.permission, data.workspaceRole)
+        return changed(project, sharing.member(project, principal['id'], identifier, data.permission, data.workspaceRole))
 
     @app.delete('/api/projects/{project}/sharing/members/{identifier}')
     async def remove_member(project: str, identifier: str, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.member(project, principal['id'], identifier)
+        return changed(project, sharing.member(project, principal['id'], identifier))
 
     @app.post('/api/shares/accept')
     async def accept(data: Accept, request: Request):
         principal = user(request)
         identifier = sharing.accept(data.token, principal)
+        gateway.presence.access_changed(identifier)
         return await gateway.project_info(identifier, principal)

@@ -6,7 +6,9 @@ import {
     catalog,
     type Assignment,
     type Classroom,
+    type PromptFile,
 } from "../../lib/writing/types";
+import ProjectPromptPicker from './ProjectPromptPicker';
 
 export function CommutingChart() {
     return (
@@ -117,7 +119,14 @@ export default function AssignmentForm({
     const [busy, setBusy] = useState(false),
         [error, setError] = useState("");
     const tasks = mode.split(",").map(Number);
+    const [promptFiles,setPromptFiles]=useState<Record<string,PromptFile>>(initial?.promptFiles || {});
+    const [imports,setImports]=useState<Set<number>>(new Set());
+    const [promptGeneration,setPromptGeneration]=useState(0);
     async function save(published: boolean) {
+        if(tasks.some(task=>!promptFiles[String(task)])){
+            setError('Chọn và lấy tệp đề từ editor cho từng Task trước khi lưu/giao bài.');return;
+        }
+        if(imports.size){setError('Chờ lấy tệp đề hoàn tất trước khi giao bài.');return;}
         setBusy(true);
         setError("");
         try {
@@ -133,6 +142,7 @@ export default function AssignmentForm({
                         prompts,
                         profiles,
                         imageId: imageId || null,
+                        promptFiles: Object.fromEntries(tasks.filter(t=>promptFiles[String(t)]).map(t=>[String(t),promptFiles[String(t)].id])),
                         dueAt: due
                             ? new Date(due).toISOString()
                             : initial?.dueAt || null,
@@ -168,6 +178,8 @@ export default function AssignmentForm({
         }
     }
     function sample() {
+        setPromptFiles({});
+        setPromptGeneration(v=>v+1);
         setTitle(title || "IELTS Writing · Luyện tập");
         setPrompts({
             "1":
@@ -198,9 +210,7 @@ export default function AssignmentForm({
                             : "Tạo bài tập IELTS"}
                     </h2>
                 </div>
-                <button type="button" onClick={sample}>
-                    Dùng đề luyện mẫu
-                </button>
+
             </div>
             <p className="writing-muted">
                 Đề mẫu do nhóm tự biên soạn; không phải đề thi IELTS chính thức.
@@ -296,52 +306,13 @@ export default function AssignmentForm({
                                 ))}
                         </select>
                     </label>
-                    <label>
-                        Đề bài tiếng Anh
-                        <textarea
-                            aria-label={`Đề Task ${task}`}
-                            required
-                            value={prompts[String(task)] || ""}
-                            rows={5}
-                            onChange={(e) =>
-                                setPrompts({
-                                    ...prompts,
-                                    [task]: e.target.value,
-                                })
-                            }
-                        />
-                    </label>
-                    {task === 1 && variant === "academic" && (
-                        <div className="writing-image-upload">
-                            <label>
-                                Hình biểu đồ / bản đồ / quy trình
-                                <input
-                                    type="file"
-                                    accept="image/png,image/jpeg,image/webp"
-                                    disabled={busy}
-                                    onChange={(e) =>
-                                        void upload(e.target.files?.[0])
-                                    }
-                                />
-                            </label>
-                            {imageId === "sample-commuting" ? (
-                                <CommutingChart />
-                            ) : imageId ? (
-                                <img
-                                    src={assetUrl(imageId)}
-                                    alt="Hình đề Task 1"
-                                />
-                            ) : null}
-                            {imageId && (
-                                <button
-                                    type="button"
-                                    onClick={() => setImageId("")}
-                                >
-                                    Bỏ hình
-                                </button>
-                            )}
-                        </div>
-                    )}
+                    {<ProjectPromptPicker key={`${task}:${promptGeneration}`} task={task} value={promptFiles[String(task)]} onBusyChange={pending=>setImports(old=>{
+                        const next=new Set(old); if(pending)next.add(task);else next.delete(task);return next;
+                    })} onChange={file=>{
+                        setPromptFiles(old=>{const next={...old};if(file)next[String(task)]=file;else delete next[String(task)];return next;});
+                        if(file)setPrompts(old=>({...old,[task]:file.kind==='text' ? file.text || '' : ''}));
+                        if(file && task===1)setImageId('');
+                    }}/>}
                 </fieldset>
             ))}
             <div className="writing-form-grid">
@@ -394,7 +365,7 @@ export default function AssignmentForm({
                         Lưu đề nháp
                     </button>
                 )}
-                <button type="submit" className="primary" disabled={busy}>
+                <button type="submit" className="primary" disabled={busy || imports.size > 0}>
                     {busy
                         ? "Đang lưu…"
                         : practice

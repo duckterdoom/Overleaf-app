@@ -101,6 +101,7 @@ const fold = (text: string) =>
 
 export default function Workspace() {
     const [appMode,setAppMode]=useState<'editor'|'writing'>('editor');
+    const [writingLocation, setWritingLocation] = useState('IELTS Writing');
     const writingLeave = useRef<(() => Promise<boolean>) | null>(null);
     const [ready, setReady] = useState(false),
         [projects, setProjects] = useState<Project[]>([]),
@@ -708,7 +709,7 @@ export default function Workspace() {
         live,
     });
     const presence = usePresence(project?.id, file, ext.session?.id,
-        ready && appMode==='editor' && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live);
+        ready && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live, appMode, writingLocation);
     const editorHandlers = useRef({ change, update: (_: ViewUpdate) => {} });
     editorHandlers.current = { change, update: (update) => {
         if (update.selectionSet || update.docChanged) outlineCursor.current(update.state.selection.main.head);
@@ -1260,6 +1261,7 @@ export default function Workspace() {
                     {workspaceTools}
                     <WritingProjectContext.Provider value={project?.id || null}>
                         <WritingWorkspace key={project?.id} session={ext.session} language={uiLanguage} beforeLeaveRef={writingLeave}
+                            onLocationChange={setWritingLocation}
                             onOpenProject={async value=>{setAppMode('editor');await refreshProjects();await open(value);}}/>
                     </WritingProjectContext.Provider>
                 </div>
@@ -1316,10 +1318,8 @@ export default function Workspace() {
                                     )}
                                 </h2>
                                 <p>
-                                    {localize(
-                                        "Bắt đầu với trang trống, hoặc chọn từ 29 mẫu tài liệu",
-                                        uiLanguage,
-                                    )}
+                                    {t(`Bắt đầu với trang trống, hoặc chọn từ ${catalog.templates.length} mẫu tài liệu`,
+                                        `Start with a blank page or choose from ${catalog.templates.length} templates`)}
                                     <br />
                                     {localize(
                                         "có sẵn bằng tiếng Việt và tiếng Anh.",
@@ -1457,7 +1457,7 @@ export default function Workspace() {
                             </span>
                             <span>
                                 <BookOpen size={13} />
-                                {localize("29 mẫu tài liệu", uiLanguage)}
+                                {t(`${catalog.templates.length} mẫu tài liệu`, `${catalog.templates.length} document templates`)}
                             </span>
                             <span>
                                 <Code2 size={13} />
@@ -1859,7 +1859,7 @@ export default function Workspace() {
                                 <div className="editor-review-row">
                                     <div className="editor-area">
                                         <CodeMirror
-                                            key={file}
+                                            key={`${project.id}:${file}`}
                                             className="source-editor"
                                             value={content}
                                             height="100%"
@@ -2660,6 +2660,13 @@ export default function Workspace() {
                                             );
                                         }}
                                     />
+                                    <div className="template-ielts-intro">
+                                        <button type="button" onClick={() => {setCategory("ielts");setTemplateSearch("");setTag("");}}>
+                                            <GraduationCap size={18}/>{t("Đề mẫu IELTS Writing", "IELTS Writing practice templates")}
+                                        </button>
+                                        <span>{t("Task 1 Academic / General Training, Task 2 và đề luyện 60 phút. Có sẵn đề LaTeX, biểu đồ và khung bài làm.",
+                                            "Task 1 Academic / General Training, Task 2 and 60-minute mocks. Includes LaTeX questions, visuals and answer sheets.")}</span>
+                                    </div>
                                     <div className="template-filters">
                                         <div className="search-input">
                                             <Search size={15} />
@@ -2808,6 +2815,10 @@ export default function Workspace() {
                                             </button>
                                         ))}
                                     </div>
+                                    {selectedTemplate?.category === "ielts" && <p className="template-ielts-help">
+                                        {t("Sau khi tạo: compile main.tex để xem bộ đề. Tutor mở IELTS Writing → Giao bài IELTS, chọn question-task1-*.tex / question-task2-*.tex từ dự án. GUIDE.md có hướng dẫn; answers.tex là khung bài làm tùy chọn. Đề luyện tự biên soạn, không phải đề thi chính thức.",
+                                            "After creating: compile main.tex to view the paper. In IELTS Writing → Assign IELTS, Tutors select question-task1-*.tex / question-task2-*.tex from the project. See GUIDE.md for instructions; answers.tex is an optional answer sheet. Original practice material, not an official exam paper.")}
+                                    </p>}
                                     {preflight &&
                                         preflight.missing.length > 0 && (
                                             <div

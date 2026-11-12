@@ -8,8 +8,10 @@ export function useWritingApi() {
     const path = (value: string) => project && value.startsWith("/writing/")
         ? `${value}${value.includes("?") ? "&" : "?"}projectId=${encodeURIComponent(project)}` : value;
     return {
+        project,
         json: <T,>(value: string, options?: RequestInit) => json<T>(path(value), options),
         request: (value: string, options?: RequestInit) => request(path(value), options),
         assetUrl: (id: string) => `/api${path(`/writing/assets/${encodeURIComponent(id)}`)}`,
+        promptUrl: (id: string) => `/api${path(`/writing/prompt-files/${encodeURIComponent(id)}`)}`,
     };
 }

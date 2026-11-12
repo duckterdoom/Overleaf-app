@@ -29,6 +29,8 @@ import {
 import AssignmentForm, { CommutingChart } from "./AssignmentForm";
 import ReviewPaper from "./ReviewPaper";
 import DocumentView from "./DocumentView";
+import PromptDocument from './PromptDocument';
+import ProjectRubrics from './ProjectRubrics';
 
 type Screen =
     | "overview"
@@ -60,11 +62,13 @@ export default function WritingWorkspace({
     session,
     language,
     beforeLeaveRef,
+    onLocationChange,
     onOpenProject,
 }: {
     session: Session;
     language: string;
     beforeLeaveRef: React.MutableRefObject<(() => Promise<boolean>) | null>;
+    onLocationChange?: (location: string) => void;
     onOpenProject: (p: Project) => Promise<void>;
 }) {
     const { json, assetUrl } = useWritingApi();
@@ -73,12 +77,14 @@ export default function WritingWorkspace({
             classes: [],
             assignments: [],
             submissions: [],
-            role: session.role || "",
+            role: "",
+            permission: "viewer",
         });
     const tutor = overview.role === "tutor";
-    const readonly = overview.permission === "viewer";
-    const roleRef = useRef(session.role);
+    const readonly = !overview.role || overview.permission === "viewer";
+    const roleRef = useRef<Session['role']>(null);
     const [recovery, setRecovery] = useState("");
+    const [inspect, setInspect] = useState<Assignment | null>(null);
     const [loading, setLoading] = useState(true),
         [busy, setBusy] = useState(false),
         [error, setError] = useState(""),
@@ -112,12 +118,18 @@ export default function WritingWorkspace({
         reviewSaved = useRef(0),
         reviewQueue = useRef<Promise<boolean>>(Promise.resolve(true));
     const [filterAssignment, setFilterAssignment] = useState("");
+    const reloadSequence = useRef(0);
+    const reloading = useRef(false);
     draftRef.current = draft;
     activeRef.current = active;
     reviewRef.current = review;
-    async function reload() {
+    async function reload(force = false) {
+        if (reloading.current && !force) return;
+        reloading.current = true;
+        const sequence = ++reloadSequence.current;
         try {
             const data = await json<Overview>("/writing/overview");
+            if (sequence !== reloadSequence.current) return;
             if ((roleRef.current !== data.role || data.permission === 'viewer') &&
                 (edit.current !== saved.current || reviewEdits.current !== reviewSaved.current)) {
                 setRecovery(JSON.stringify({answers: draftRef.current?.answers, latexSources: draftRef.current?.latexSources,
@@ -130,10 +142,11 @@ export default function WritingWorkspace({
                 setDirty(false); setReviewDirty(false);
                 edit.current = saved.current; reviewEdits.current = reviewSaved.current;
                 roleRef.current = data.role as Session['role'];
-                setNotice("Vai trò dự án đã cập nhật; nội dung đã lưu vẫn được giữ trên server.");
+                setNotice("Đã xác nhận vai trò dự án; nội dung đã lưu vẫn được giữ trên server.");
             }
             setOverview(data);
         } catch (error) {
+            if (sequence !== reloadSequence.current) return;
             if ([401, 403, 404].includes((error as {status?: number}).status || 0)) {
                 if (edit.current !== saved.current || reviewEdits.current !== reviewSaved.current)
                     setRecovery(JSON.stringify({answers: draftRef.current?.answers, latexSources: draftRef.current?.latexSources,
@@ -145,6 +158,8 @@ export default function WritingWorkspace({
                 setError(errorText(error));
             }
             throw error;
+        } finally {
+            if (sequence === reloadSequence.current) reloading.current = false;
         }
     }
     useEffect(() => {
@@ -152,13 +167,16 @@ export default function WritingWorkspace({
             .catch((e) => setError(errorText(e)))
             .finally(() => setLoading(false));
         const timer = setInterval(() => void reload().catch(() => {}), 5000);
-        return () => clearInterval(timer);
+        return () => { clearInterval(timer); ++reloadSequence.current; reloading.current = false; };
     }, []);
     useEffect(() => {
-        const update = () => void reload().catch((e) => setError(errorText(e)));
+        const update = () => void reload(true).catch((e) => setError(errorText(e)));
         window.addEventListener("latex-sharing-updated", update);
         return () => window.removeEventListener("latex-sharing-updated", update);
     }, []);
+    useEffect(() => {
+        onLocationChange?.(`IELTS Writing · ${screenTitles[screen]}${screen === 'practice' || screen === 'grading' ? ` · Task ${task}` : ''}`);
+    }, [screen, task, onLocationChange]);
     useEffect(() => {
         const timer = setInterval(() => setTime(Date.now()), 1000);
         return () => clearInterval(timer);
@@ -345,6 +363,7 @@ export default function WritingWorkspace({
             setTask(assignment.tasks[0]);
             clockOffset.current =
                 new Date(data.serverNow).getTime() - Date.now();
+            setTime(Date.now());
             setScreen("practice");
         });
     }
@@ -450,7 +469,7 @@ export default function WritingWorkspace({
         if (!view) return;
         await execute(async () => {
             if (!(await beforeLeave())) return;
-            const response = await json<{ project: Project }>(
+            const response = await json<{ project?: Project; pdf?:string }>(
                 "/writing/latex",
                 {
                     method: "POST",
@@ -461,7 +480,12 @@ export default function WritingWorkspace({
                     }),
                 },
             );
-            await onOpenProject(response.project);
+            if(response.pdf){
+                const bytes=Uint8Array.from(atob(response.pdf),c=>c.charCodeAt(0));
+                const link=document.createElement('a');const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+                link.href=url;link.download=report?'ielts-feedback.pdf':'ielts-submission.pdf';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+                setNotice('Đã lưu phiếu trong dự án và tải PDF. Không tạo dự án mới.');
+            }else if(response.project) await onOpenProject(response.project);
         });
     }
     const remaining = draft?.deadline
@@ -503,15 +527,15 @@ export default function WritingWorkspace({
     });
     return (
         <section
-            className="writing-shell writing-module"
+            className={`writing-shell writing-module${screen==='grading'?' writing-grading-mode':''}`}
             data-writing-ready={!loading}
         >
             <div className="writing-layout">
                 <aside className="writing-sidebar">
                     <span className="writing-eyebrow">
-                        KHÔNG GIAN {tutor ? "TUTOR" : "HỌC VIÊN"}
+                        {loading || !overview.role ? "ĐANG XÁC NHẬN VAI TRÒ DỰ ÁN" : `KHÔNG GIAN ${tutor ? "TUTOR" : "HỌC VIÊN"}`}
                     </span>
-                    {navigation.map(([id, label, Icon]) => (
+                    {(loading || !overview.role ? [] : navigation).map(([id, label, Icon]) => (
                         <button
                             key={id}
                             disabled={readonly && id === "create"}
@@ -582,7 +606,7 @@ export default function WritingWorkspace({
                             {error}
                         </div>
                     )}
-                    <div className="writing-notice">Vai trò trong dự án: <strong>{tutor ? "Tutor" : "Học viên"}</strong> · {readonly ? "Chỉ xem — liên hệ chủ sở hữu để được cấp quyền chỉnh sửa." : "Có quyền chỉnh sửa"}. Quyền dùng chung với editor LaTeX.</div>
+                    {overview.role && <div className="writing-notice">Vai trò trong dự án: <strong>{tutor ? "Tutor" : "Học viên"}</strong> · {readonly ? "Chỉ xem — liên hệ chủ sở hữu để được cấp quyền chỉnh sửa." : "Có quyền chỉnh sửa"}. Quyền dùng chung với editor LaTeX.</div>}
                     {recovery && <div className="writing-notice">Quyền/vai trò vừa thay đổi. Bạn có thể giữ bản sửa chưa được lưu: <button onClick={() => {
                         const url = URL.createObjectURL(new Blob([recovery], {type: 'application/json'}));
                         const link = document.createElement('a'); link.href = url; link.download = 'ielts-unsaved-recovery.json'; link.click();
@@ -849,6 +873,21 @@ export default function WritingWorkspace({
                             )}
                             {screen === "assignments" && (
                                 <>
+                                    {tutor && inspect && <section className="writing-card">
+                                        <h2>{inspect.title}</h2>
+                                        <button onClick={()=>setInspect(null)}>Đóng chi tiết đề</button>
+                                        {inspect.tasks.map(number=><div key={number}>
+                                            <h3>Task {number}</h3>
+                                            {inspect.promptFiles?.[String(number)] ? <PromptDocument file={inspect.promptFiles[String(number)]} language={language}/> : <p>{inspect.prompts[String(number)] || 'Đề cũ chưa có tệp từ editor. Sửa bài để chọn tệp đề.'}</p>}
+                                        </div>)}
+                                        <h3>Theo dõi học viên</h3>
+                                        <table><thead><tr><th>Học viên</th><th>Trạng thái</th><th>Bản nộp</th></tr></thead><tbody>
+                                            {(overview.classes.find(c=>c.id===inspect.classId)?.students || []).map(person=>{
+                                                const submissions=overview.submissions.filter(s=>s.assignmentId===inspect.id && s.studentId===person.id);
+                                                return <tr key={person.id}><td>{person.name}</td><td>{submissions.length?'Đã nộp':'Chưa nộp'}</td><td>{submissions.length}</td></tr>;
+                                            })}
+                                        </tbody></table>
+                                    </section>}
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
@@ -919,6 +958,16 @@ export default function WritingWorkspace({
                                                             : "Mở bài viết"}
                                                         <ArrowRight size={15} />
                                                     </button>
+                                                    {tutor && <div>
+                                                        <button onClick={()=>{setInspect(a);}}>Xem đề và học viên</button>
+                                                        {!readonly && <>
+                                                            <button onClick={()=>{setEditing(a);setScreen('create');}}>Sửa bài tập</button>
+                                                            <button onClick={async()=>{
+                                                                if(!window.confirm('Xóa bài tập khỏi danh sách? Bản nộp và kết quả đã có vẫn được giữ.'))return;
+                                                                try{await json(`/writing/assignments/${a.id}?revision=${a.revision}`,{method:'DELETE'});setInspect(null);await reload();}catch(e){setError(errorText(e));}
+                                                            }}>Xóa bài tập</button>
+                                                        </>}
+                                                    </div>}
                                                 </article>
                                             ))}
                                         </div>
@@ -1015,6 +1064,7 @@ export default function WritingWorkspace({
                                             </button>
                                         </div>
                                         <DocumentView
+                                            focused
                                             assignmentId={active.id}
                                             sourceOverride={
                                                 draft.latexSources[
@@ -1052,6 +1102,7 @@ export default function WritingWorkspace({
                                                             ]
                                                         }
                                                     </div>
+                                                    {active.promptFiles?.[String(task)] && <PromptDocument focused file={active.promptFiles[String(task)]} language={language}/>}
                                                     {task === 1 &&
                                                         active.imageId &&
                                                         (active.imageId ===
@@ -1206,6 +1257,7 @@ export default function WritingWorkspace({
                                                 )}{" "}
                                                 từ
                                             </h3>
+                                            {active.promptFiles?.[String(n)] && <PromptDocument focused file={active.promptFiles[String(n)]} language={language}/>}
                                             {countWords(
                                                 draft.answers[String(n)] || "",
                                             ) < (n === 1 ? 150 : 250) && (
@@ -1367,6 +1419,7 @@ export default function WritingWorkspace({
                             )}
                             {screen === "grading" && view && (
                                 <DocumentView
+                                    focused
                                     key={view.submission.id}
                                     submissionId={view.submission.id}
                                     beforeAction={async () =>
@@ -1395,7 +1448,7 @@ export default function WritingWorkspace({
                                 </DocumentView>
                             )}
                             {screen === "rubric" && (
-                                <div className="writing-rubric-grid">
+                                <><ProjectRubrics editable={tutor&&!readonly}/><div className="writing-rubric-grid">
                                     {Object.entries(catalog).map(([id, p]) => (
                                         <article
                                             className="writing-card"
@@ -1417,7 +1470,7 @@ export default function WritingWorkspace({
                                             </p>
                                         </article>
                                     ))}
-                                </div>
+                                </div></>
                             )}
                         </>
                     )}

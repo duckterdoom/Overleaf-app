@@ -15,8 +15,10 @@ export default function PresenceAvatars({ project, peers, connected, language, s
         {people.map(peer => {
             const sessions = peers.filter(p => p.userId === peer.userId);
             const active = sessions.find(p => p.active) || peer;
-            const different = active.file === file && active.digest && digest && active.digest !== digest;
-            const title = `${peer.name} · ${active.active ? (vi ? "Đang chỉnh sửa" : "Editing") : (vi ? "Đang mở" : "Viewing editor")} ${active.file}${different ? (vi ? " · Nội dung chưa đồng bộ; con trỏ sẽ hiện lại khi hai bản khớp." : " · Unsynchronized text; cursor resumes when documents match.") : ""}`;
+            const different = active.context !== 'writing' && active.file === file && active.digest && digest && active.digest !== digest;
+            const position = active.context === 'writing' ? (active.location || 'IELTS Writing') : active.file;
+            const role = active.workspaceRole === 'tutor' ? 'Tutor' : active.workspaceRole === 'student' ? (vi ? 'Học viên' : 'Student') : '';
+            const title = `${peer.name}${role ? ' · ' + role : ''} · ${active.active ? (vi ? "Đang hoạt động" : "Active") : (vi ? "Đang mở" : "Viewing")} ${position}${different ? (vi ? " · Nội dung chưa đồng bộ; con trỏ sẽ hiện lại khi hai bản khớp." : " · Unsynchronized text; cursor resumes when documents match.") : ""}`;
             return <span key={peer.userId} className="presence-person" style={{ borderColor: peer.color }} title={title} aria-label={title}>
                 <span>{peer.name.trim().split(/\s+/).slice(-2).map(part => part[0]).join("").toUpperCase()}</span>
                 {/* Only authorized project members can request another editor's avatar. */}

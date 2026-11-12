@@ -21,6 +21,17 @@ class Title(Model):
     title: str = Field(min_length=1, max_length=160)
 
 
+class RubricCheck(Model):
+    id: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,80}$')
+    text: str = Field(min_length=1, max_length=1000)
+    codes: list[Literal['TA','TR','CC','LR','GRA']] = Field(min_length=1, max_length=5)
+
+
+class RubricSettings(Model):
+    revision: int = Field(ge=0)
+    checks: dict[str, dict[str, list[RubricCheck]]]
+
+
 class Join(Model):
     code: str = Field(min_length=1, max_length=30)
 
@@ -29,9 +40,10 @@ class Assignment(Title):
     classId: str | None = None
     variant: Literal['academic', 'general'] = 'academic'
     tasks: list[Literal[1, 2]] = Field(min_length=1, max_length=2)
-    prompts: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=20000)]]
+    prompts: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=20000)]] = Field(default_factory=dict)
     profiles: dict[Literal['1', '2'], str]
     imageId: str | None = None
+    promptFiles: dict[Literal['1', '2'], str] = Field(default_factory=dict, max_length=2)
     dueAt: datetime | None = None
     durationMinutes: int | None = Field(default=None, ge=1, le=180)
     allowLate: bool = True
@@ -88,6 +100,13 @@ class Latex(Model):
     useDraftSource: bool = False
 
 
+class PromptImport(Model):
+    path: str = Field(min_length=1, max_length=1024)
+    snapshot: str | None = Field(default=None, max_length=100)
+    firstPage: int = Field(default=1, ge=1, le=100)
+    lastPage: int | None = Field(default=None, ge=1, le=100)
+
+
 def register_writing(gateway):
     api, service = gateway.auth, Writing(gateway)
     gateway.writing = service
@@ -114,9 +133,45 @@ def register_writing(gateway):
                 'submissions': service.submissions(current), 'role': current['role'],
                 'permission': current.get('projectPermission', 'owner'), 'legacy': service.legacy(current)}
 
+    @api.get('/api/writing/settings')
+    def writing_settings(request: Request):
+        return service.settings(user(request))
+
+    @api.put('/api/writing/settings')
+    def save_writing_settings(data: RubricSettings, request: Request):
+        return service.save_settings(user(request), data.model_dump())
+
     @api.post('/api/writing/import-legacy')
     def import_legacy(request: Request):
         return service.import_legacy(user(request))
+
+    @api.post('/api/writing/prompt-import')
+    async def import_prompt(data: PromptImport, request: Request):
+        import asyncio
+        from latex_backend.writing.prompts import capture
+        current = user(request)
+        if not current.get('writingProject'):
+            raise Problem('Mở dự án chứa đề trước khi nhập.', 400)
+        app, store, _ = await gateway.project_workspace(current['writingProject'], current)
+        return await asyncio.to_thread(capture, gateway, current, store, app.state.compiler, data)
+
+    @api.get('/api/writing/prompt-files/{key}')
+    def prompt_file(key: str, request: Request):
+        current = user(request)
+        row = gateway.database.writing_prompt_files.find_one({'_id': key})
+        if not row or row['projectId'] != current.get('writingProject'):
+            raise Problem('Không tìm thấy tệp đề trong dự án.', 404)
+        allowed = current['role'] == 'tutor' or row.get('ownerId') == current['id']
+        if not allowed:
+            for assignment in gateway.database.writing_assignments.find({'projectId': row['projectId'], '$or': [
+                    {'promptFiles.1.id': key}, {'promptFiles.2.id': key}]}):
+                try:
+                    service.assignment(current, assignment['id']); allowed = True; break
+                except Problem:
+                    pass
+        if not allowed:
+            raise Problem('Đề chưa được giao cho bạn.', 404)
+        return Response(bytes(row['data']), media_type=row['mime'], headers={'Cache-Control': 'private, no-store'})
 
     @api.post('/api/writing/classes')
     def create_class(data: Title, request: Request):
@@ -133,6 +188,15 @@ def register_writing(gateway):
     @api.put('/api/writing/assignments/{key}')
     def update_assignment(key: str, data: Assignment, request: Request):
         return service.save_assignment(user(request), data.model_dump(mode='json'), key)
+
+    @api.get('/api/writing/assignments/{key}')
+    def get_assignment(key: str, request: Request):
+        from latex_backend.writing.service import public
+        return public(service.assignment(user(request), key))
+
+    @api.delete('/api/writing/assignments/{key}')
+    def delete_assignment(key: str, request: Request, revision: int):
+        return service.delete_assignment(user(request), key, revision)
 
     @api.get('/api/writing/assignments/{key}/draft')
     def draft(key: str, request: Request):
@@ -155,8 +219,15 @@ def register_writing(gateway):
         return service.save_review(user(request), key, data.model_dump())
 
     @api.post('/api/writing/submissions/{key}/publish')
-    def publish(key: str, data: Publish, request: Request):
-        return service.publish(user(request), key, data.revision, data.reason)
+    async def publish(key: str, data: Publish, request: Request):
+        import asyncio
+        current=user(request)
+        result=await asyncio.to_thread(service.publish,current,key,data.revision,data.reason)
+        if current.get('writingProject'):
+            from latex_backend.writing.results import write_results
+            _,store,_=await gateway.project_workspace(current['writingProject'],current)
+            result['resultFiles']=await asyncio.to_thread(write_results,gateway,service,current,store,key,result)
+        return result
 
     @api.post('/api/writing/assets')
     async def upload_image(request: Request):
@@ -212,6 +283,9 @@ def register_writing(gateway):
             source = own_draft['latexSources'].get(str(assignment['tasks'][0])) or source
         if not data.createProject:
             return {'source': source, 'notice': 'LaTeX là nhánh trình bày; sửa source không tự đổi văn bản dùng để chấm.'}
+        if current.get('writingProject'):
+            from latex_backend.writing.artifacts import render
+            return await render(gateway, current, assignment, source, data.report, data.submissionId)
         _, store = await gateway.workspace(current)
         # Always generate escaped LaTeX from canonical answers, not executable
         # student-supplied source in the Tutor's account.
@@ -231,6 +305,14 @@ def register_writing(gateway):
                     with store.shared_files.edit(project['id']):
                         atomic_write(store.path(project['id'], 'prompt-image.png'), payload)
             gateway.sharing.register(project['id'], current['id'])
+            for task, attachment in assignment.get('promptFiles', {}).items():
+                if attachment['kind'] in {'pdf', 'image'}:
+                    record = gateway.database.writing_prompt_files.find_one({'_id': attachment['id']})
+                    if not record:
+                        raise Problem('Tệp đề không còn khả dụng.', 409)
+                    extension = 'pdf' if attachment['kind'] == 'pdf' else 'png'
+                    with store.shared_files.edit(project['id']):
+                        atomic_write(store.path(project['id'], 'question-task-' + task + '.' + extension), bytes(record['data']))
             return store.info(project['id'])
         project = await asyncio.to_thread(create)
         return {'source': source, 'project': project}

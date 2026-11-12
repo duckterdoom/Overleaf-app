@@ -44,6 +44,12 @@ class Presence:
             if not peer['queue'].full():
                 peer['queue'].put_nowait({'type': 'review-changed', 'project': project})
 
+    def access_changed(self, project):
+        for peer in self.rooms.get(project, {}).values():
+            peer['access_dirty'] = True
+            if not peer['queue'].full():
+                peer['queue'].put_nowait({'type': 'access-changed', 'project': project})
+
     async def serve(self, scope, receive, send, project):
         ws = WebSocket(scope, receive, send)
         origin = urlsplit(ws.headers.get('origin', ''))
@@ -60,6 +66,7 @@ class Presence:
             app, store, permission = await self.gateway.project_workspace(project, user)
             if permission not in {'owner', 'editor'}:
                 raise Problem('Editor permission required', 403)
+            user = {**user, 'workspaceRole': await asyncio.to_thread(self.gateway.sharing.workspace_role, project, user['id'])}
             return user, store, app.state.compiler
 
         async def validate_bound():
@@ -87,7 +94,8 @@ class Presence:
                 return await ws.close(1008)
             member = {'connectionId': identifier, 'userId': user['id'], 'name': user['name'],
                       'color': COLORS[int(hashlib.sha256(user['id'].encode()).hexdigest()[:8], 16) % len(COLORS)],
-                      'file': '', 'anchor': 0, 'head': 0, 'digest': '', 'active': False}
+                      'file': '', 'anchor': 0, 'head': 0, 'digest': '', 'active': False,
+                      'context': 'editor', 'location': '', 'workspaceRole': user['workspaceRole']}
             queue = asyncio.Queue(maxsize=128)
             room[identifier] = {'member': member, 'queue': queue}
             joined = True
@@ -103,9 +111,12 @@ class Presence:
                 last_authorized = 0.0
                 while True:
                     await asyncio.sleep(1)
-                    if time.monotonic() - last_authorized >= 5:
+                    if room.get(identifier, {}).pop('access_dirty', False) or time.monotonic() - last_authorized >= 5:
                         current, _, _ = await authorize()
                         member['name'] = current['name']
+                        if member['workspaceRole'] != current['workspaceRole']:
+                            member['workspaceRole'] = current['workspaceRole']
+                            self.access_changed(project)
                         last_authorized = time.monotonic()
                     if hasattr(store, 'refresh_shared'):
                         await self.live.external_edit(project, store, compiler, lambda: store.refresh_shared(project))
@@ -125,6 +136,21 @@ class Presence:
                     if not isinstance(data, dict):
                         raise Problem('Invalid presence')
                     if data.get('type') == 'ping':
+                        continue
+                    if data.get('type') == 'activity':
+                        if len(raw) > 4096:
+                            raise Problem('Presence message too large', 413)
+                        now = time.monotonic()
+                        if now - last < .04:
+                            continue
+                        last = now
+                        await validate_bound()
+                        location = data.get('location', '')
+                        if data.get('context') != 'writing' or not isinstance(location, str) or len(location) > 160:
+                            raise Problem('Invalid workspace activity')
+                        member.update(context='writing', location=location, file='', anchor=0, head=0, digest='',
+                                      active=data.get('active') is True)
+                        self.publish(project)
                         continue
                     if data.get('type') in {'sync-open', 'sync-push'}:
                         # Revalidate write permission/session on every live edit.
@@ -153,7 +179,7 @@ class Presence:
                     # Selection ranges stay private to the selecting browser;
                     # share only the caret, including for older clients.
                     member.update(file=path, digest=digest, anchor=head, head=head,
-                                  active=data.get('active') is True)
+                                  active=data.get('active') is True, context='editor', location='')
                     self.publish(project)
 
             tasks = [asyncio.create_task(fn()) for fn in [outgoing, watchdog, incoming]]

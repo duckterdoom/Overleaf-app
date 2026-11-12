@@ -110,6 +110,7 @@ def test_join_during_last_disconnect_does_not_create_orphan_room():
         async def workspace(project, principal):
             return SimpleNamespace(state=SimpleNamespace(compiler=None)), None, 'editor'
         hub = Presence(SimpleNamespace(accounts=SimpleNamespace(resolve=lambda token: user),
+                                       sharing=SimpleNamespace(workspace_role=lambda project, identifier: 'tutor'),
                                        project_workspace=workspace))
         hub.rooms['project'] = {'previous': {}}
         initial = True

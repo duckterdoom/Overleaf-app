@@ -37,7 +37,8 @@ class Sharing:
         if not self.access(project, user_id):
             raise Problem('Bạn không có quyền truy cập dự án.', 404)
         if self.owner(project) == user_id:
-            return self.accounts.user(user_id)['role']
+            settings = self.db.shared_projects.find_one({'project': project})
+            return settings.get('ownerRole') or self.accounts.user(user_id)['role']
         member = self.db.invitations.find_one({'project': project, 'user_id': user_id})
         visitor = self.db.link_visitors.find_one({'project': project, 'user_id': user_id})
         return (member or visitor or {}).get('workspaceRole') or self.accounts.user(user_id)['role']
@@ -48,38 +49,52 @@ class Sharing:
             raise Problem('Không tìm thấy dự án hoặc bạn không có quyền truy cập.', 404)
         row = self.db.shared_projects.find_one({'project': project})
         owner = self.accounts.user(row['owner'])
-        result = {'permission': permission, 'owner': {'name': owner['name'], 'email': owner['email']},
+        result = {'permission': permission, 'owner': {'name': owner['name'], 'email': owner['email'],
+            'workspaceRole': self.workspace_role(project, row['owner'])},
             'mode': row['mode'], 'linkPermission': row['permission'], 'linkRole': row.get('workspaceRole', 'student'),
             'workspaceRole': self.workspace_role(project, user_id), 'linkToken': None, 'members': []}
         if permission == 'owner':
             result['linkToken'] = row.get('token')
-            result['members'] = [{'id': item['_id'], 'email': item['email'], 'permission': item['permission'],
-                'workspaceRole': item.get('workspaceRole') or (self.accounts.user(item['user_id'])['role'] if item.get('user_id') else 'student'),
-                'status': 'accepted' if item.get('user_id') else 'pending', 'inviteToken': item['token']}
-                for item in self.db.invitations.find({'project': project}).sort('email', 1)]
-            invited = {item.get('user_id') for item in self.db.invitations.find({'project': project})}
+            invitations = list(self.db.invitations.find({'project': project}).sort('email', 1))
+            invited = {item.get('user_id') for item in invitations}
+            visitors = []
             if row['mode'] == 'link':
                 for visitor in self.db.link_visitors.find({'project': project, 'token': row.get('token')}):
                     if visitor['user_id'] in invited or visitor['user_id'] == row['owner']:
                         continue
                     account = self.accounts.user(visitor['user_id'])
                     if account:
-                        result['members'].append({'id': 'link-' + visitor['user_id'], 'email': account['email'],
-                            'permission': visitor.get('permission', row['permission']),
-                            'workspaceRole': visitor.get('workspaceRole', row.get('workspaceRole', 'student')),
-                            'status': 'accepted', 'inviteToken': None})
+                        visitors.append((visitor, account))
+            visitor_emails = {account['email'] for _, account in visitors}
+            for item in invitations:
+                if not item.get('user_id') and item['email'] in visitor_emails:
+                    continue  # Show the already-active person once, with their real grant.
+                identifier = item.get('user_id')
+                result['members'].append({'id': item['_id'], 'email': item['email'],
+                    'permission': self.access(project, identifier) if identifier else item['permission'],
+                    'workspaceRole': self.workspace_role(project, identifier) if identifier else item.get('workspaceRole', 'student'),
+                    'status': 'accepted' if identifier else 'pending', 'inviteToken': item['token']})
+            for visitor, account in visitors:
+                pending = next((i for i in invitations if i['email'] == account['email']), None)
+                result['members'].append({'id': 'link-' + account['id'], 'email': account['email'],
+                    'permission': self.access(project, account['id']), 'workspaceRole': self.workspace_role(project, account['id']),
+                    'status': 'accepted', 'inviteToken': pending['token'] if pending else None})
         return result
 
     def require_owner(self, project, user_id):
         if self.access(project, user_id) != 'owner':
             raise Problem('Chỉ chủ sở hữu được quản lý chia sẻ.', 403)
 
-    def configure(self, project, user_id, mode, permission, rotate=False, workspace_role=None):
+    def configure(self, project, user_id, mode, permission, rotate=False, workspace_role=None, owner_role=None):
         self.require_owner(project, user_id)
         if mode not in {'private', 'link'} or permission not in {'viewer', 'editor'}:
             raise Problem('Thiết lập chia sẻ không hợp lệ.')
         row = self.db.shared_projects.find_one({'project': project})
         values = {'mode': mode, 'permission': permission}
+        if owner_role is not None:
+            if owner_role not in {'tutor', 'student'}:
+                raise Problem('Vai trò chủ sở hữu không hợp lệ.')
+            values['ownerRole'] = owner_role
         if workspace_role is not None:
             if workspace_role not in {'tutor', 'student'}:
                 raise Problem('Vai trò dự án không hợp lệ.')
@@ -105,6 +120,10 @@ class Sharing:
             self.db.invitations.update_one({'project': project, 'email': email}, {
                 '$set': {'permission': permission, 'workspaceRole': workspace_role}, '$setOnInsert': {'_id': secrets.token_hex(16),
                 'project': project, 'email': email, 'token': secrets.token_urlsafe(32)}}, upsert=True)
+            account = self.db.users.find_one({'email': email})
+            if account:
+                self.db.link_visitors.update_many({'project': project, 'user_id': account['id']},
+                    {'$set': {'permission': permission, 'workspaceRole': workspace_role}})
         return self.info(project, user_id)
 
     def member(self, project, user_id, identifier, permission=None, workspace_role=None, remove=False):
@@ -115,6 +134,7 @@ class Sharing:
             collection = self.db.link_visitors
             settings = self.db.shared_projects.find_one({'project': project})
             query = {'project': project, 'user_id': identifier[5:], 'token': settings.get('token')}
+        person = collection.find_one(query)
         if remove or (permission is None and workspace_role is None):
             found = collection.delete_one(query).deleted_count
         elif permission not in {None, 'viewer', 'editor'} or workspace_role not in {None, 'tutor', 'student'}:
@@ -126,6 +146,13 @@ class Sharing:
             if workspace_role is not None:
                 values['workspaceRole'] = workspace_role
             found = collection.update_one(query, {'$set': values}).matched_count
+            if found:
+                account = self.accounts.user(person['user_id']) if person.get('user_id') else self.db.users.find_one({'email': person['email']})
+                if account:
+                    # A per-person choice applies to all of that person's grants;
+                    # otherwise a public editor link can silently override Viewer.
+                    self.db.invitations.update_many({'project': project, 'email': account['email']}, {'$set': values})
+                    self.db.link_visitors.update_many({'project': project, 'user_id': account['id']}, {'$set': values})
         if not found:
             raise Problem('Không tìm thấy thành viên.', 404)
         return self.info(project, user_id)

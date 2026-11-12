@@ -18,6 +18,7 @@ type Link = {
     dest: string | unknown[];
 };
 function Sheet({
+    reading = false,
     pdf,
     page,
     width,
@@ -29,6 +30,7 @@ function Sheet({
     inverse,
     language,
 }: {
+    reading?: boolean;
     pdf: PDFDocumentProxy;
     page: number;
     width: number;
@@ -45,6 +47,7 @@ function Sheet({
     const [visible, setVisible] = useState(false),
         [links, setLinks] = useState<Link[]>([]);
     const [error, setError] = useState("");
+    const [readingHeight,setReadingHeight] = useState<number | null>(null);
     const [highlight, setHighlight] = useState<{ x: number; y: number } | null>(
         null,
     );
@@ -67,11 +70,11 @@ function Sheet({
     useEffect(() => {
         const observer = new IntersectionObserver(
             ([entry]) => setVisible(entry.isIntersecting),
-            { root: root.current, rootMargin: "180px" },
+            { root: reading ? null : root.current, rootMargin: "180px" },
         );
         if (wrapper.current) observer.observe(wrapper.current);
         return () => observer.disconnect();
-    }, [root]);
+    }, [root, reading]);
     useEffect(() => {
         let disposed = false,
             task: RenderTask | undefined;
@@ -91,7 +94,7 @@ function Sheet({
             const ratio = Math.max(
                 0.25,
                 Math.min(
-                    devicePixelRatio || 1,
+                    reading ? 2 : devicePixelRatio || 1,
                     2,
                     Math.sqrt(10_000_000 / (width * height)),
                 ),
@@ -102,6 +105,26 @@ function Sheet({
             task = source.render({ canvas: canvas.current, viewport });
             await task.promise;
             if (disposed) return;
+            if(reading && canvas.current){
+                // Trim only white margins, retaining all ink (including figures/footer).
+                const target=canvas.current, ctx=target.getContext('2d')!;
+                const w=target.width,h=target.height,pixels=ctx.getImageData(0,0,w,h).data;
+                let left=w,right=0,top=h,bottom=0;
+                for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+                    const i=(y*w+x)*4;
+                    if(pixels[i+3]>20 && Math.min(pixels[i],pixels[i+1],pixels[i+2])<235){
+                        left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
+                    }
+                }
+                if(right>left && bottom>top){
+                    left=Math.max(0,left-18);top=Math.max(0,top-18);right=Math.min(w,right+19);bottom=Math.min(h,bottom+19);
+                    const copy=document.createElement('canvas');copy.width=right-left;copy.height=bottom-top;
+                    copy.getContext('2d')!.drawImage(target,left,top,copy.width,copy.height,0,0,copy.width,copy.height);
+                    target.width=copy.width;target.height=copy.height;ctx.drawImage(copy,0,0);
+                    setReadingHeight(width*copy.height/copy.width);
+                }
+                return;
+            }
             const annotations = await source.getAnnotations();
             const css = source.getViewport({ scale });
             setLinks(
@@ -136,13 +159,13 @@ function Sheet({
                 canvas.current.height = 0;
             }
         };
-    }, [pdf, page, visible, width, height]);
+    }, [pdf, page, visible, width, height, reading]);
     return (
         <div
             ref={wrapper}
             data-pdf-page={page}
             className="pdf-sheet"
-            style={{ width, height }}
+            style={{ width, height: readingHeight || height }}
             onDoubleClick={async (event) => {
                 if (
                     !inverse ||
@@ -166,10 +189,11 @@ function Sheet({
             <canvas
                 ref={canvas}
                 aria-label={`${language === "en" ? "PDF page" : "Trang PDF"} ${page + 1}`}
-                style={{ width, height }}
+                style={{ width, height: readingHeight || height }}
             />
             {links.map((link, i) => (
                 <button
+                    type="button"
                     key={i}
                     aria-label={
                         language === "en"
@@ -200,6 +224,7 @@ function Sheet({
 }
 
 export default function PdfViewer({
+    reading = false,
     data,
     stale,
     geometry = [],
@@ -207,6 +232,7 @@ export default function PdfViewer({
     onInverse,
     language = "vi",
 }: {
+    reading?: boolean;
     data: Uint8Array | null;
     stale: boolean;
     geometry?: PageGeometry[];
@@ -336,6 +362,7 @@ export default function PdfViewer({
                 </span>
                 <div className="inline-controls">
                     <button
+                        type="button"
                         title={
                             language === "en" ? "Back" : "Quay lại vị trí trước"
                         }
@@ -353,6 +380,7 @@ export default function PdfViewer({
                         ↶
                     </button>
                     <button
+                        type="button"
                         title={t("Trang trước", "Previous page")}
                         onClick={() => navigate(Math.max(0, page - 1))}
                     >
@@ -360,6 +388,7 @@ export default function PdfViewer({
                     </button>
                     <span>{pdf ? `${page + 1} / ${pdf.numPages}` : "—"}</span>
                     <button
+                        type="button"
                         title={t("Trang sau", "Next page")}
                         onClick={() =>
                             navigate(Math.min(sizes.length - 1, page + 1))
@@ -368,6 +397,7 @@ export default function PdfViewer({
                         <ChevronDown size={16} />
                     </button>
                     <button
+                        type="button"
                         title={t("Thu nhỏ", "Zoom out")}
                         onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
                     >
@@ -375,6 +405,7 @@ export default function PdfViewer({
                     </button>
                     <span>{Math.round(zoom * 100)}%</span>
                     <button
+                        type="button"
                         title={t("Phóng to", "Zoom in")}
                         onClick={() => setZoom(Math.min(2, zoom + 0.1))}
                     >
@@ -430,7 +461,7 @@ export default function PdfViewer({
                                   )}
                         </h3>
                         <p>
-                            {t(
+                            {data ? t("Đang chuẩn bị các trang PDF…", "Preparing PDF pages…") : t(
                                 "Bấm Biên dịch để xem tài liệu tại đây.",
                                 "Recompile to preview your document here.",
                             )}
@@ -440,6 +471,7 @@ export default function PdfViewer({
                 {pdf &&
                     sizes.map((size, index) => (
                         <Sheet
+                            reading={reading}
                             key={index}
                             pdf={pdf}
                             language={language}

@@ -144,13 +144,34 @@ export default function useParity(core: Core) {
     const lang = String(settings.language || "vi");
     useEffect(() => {
         const updatePermission = (event: Event) => {
-            const { project, permission } = (event as CustomEvent).detail;
+            const { project, permission, workspaceRole } = (event as CustomEvent).detail;
             if (!["owner", "editor", "viewer"].includes(permission)) return;
-            latest.current.setProject(current => current && current.id === project && current.permission !== permission ? { ...current, permission } : current);
+            latest.current.setProject(current => current && current.id === project && (current.permission !== permission || workspaceRole && current.workspaceRole !== workspaceRole)
+                ? { ...current, permission, ...(workspaceRole ? {workspaceRole} : {}) } : current);
         };
         window.addEventListener("latex-project-permission", updatePermission);
         return () => window.removeEventListener("latex-project-permission", updatePermission);
     }, []);
+    useEffect(() => {
+        let stopped = false, sequence = 0;
+        const project = core.project?.id;
+        if (!project || !isServerStorage()) return;
+        const refresh = async (event?: Event) => {
+            if (event && (event as CustomEvent).detail?.project !== project) return;
+            const ticket = ++sequence;
+            try {
+                const access = await json<{permission: Project['permission']; workspaceRole: Project['workspaceRole']}>(`/projects/${project}/sharing`);
+                if (!stopped && ticket === sequence) window.dispatchEvent(new CustomEvent('latex-project-permission', {detail: {project, ...access}}));
+            } catch (error) {
+                if (!stopped && ticket === sequence && [401, 403, 404].includes((error as {status?: number}).status || 0))
+                    window.dispatchEvent(new CustomEvent('latex-project-permission', {detail: {project, permission: 'viewer'}}));
+            }
+        };
+        void refresh();
+        window.addEventListener('latex-sharing-updated', refresh);
+        const timer = setInterval(() => void refresh(), 5000);
+        return () => { stopped = true; clearInterval(timer); window.removeEventListener('latex-sharing-updated', refresh); };
+    }, [core.project?.id]);
     async function refreshSession() {
         const value = await json<Boot>("/session");
         setSession(value.session);

@@ -6,6 +6,7 @@ import type { LiveSync } from "./liveSync";
 export type Peer = {
     connectionId: string; userId: string; name: string; color: string;
     file: string; anchor: number; head: number; digest: string; active: boolean;
+    context?: "editor" | "writing"; location?: string; workspaceRole?: "tutor" | "student";
 };
 const setPeers = StateEffect.define<Peer[]>();
 class Cursor extends WidgetType {
@@ -41,12 +42,13 @@ export const presenceHighlights = StateField.define<DecorationSet>({
 });
 
 export default function usePresence(project: string | undefined, file: string,
-    userId: string | undefined, enabled: boolean, editor: RefObject<EditorView | null>, live: LiveSync) {
+    userId: string | undefined, enabled: boolean, editor: RefObject<EditorView | null>, live: LiveSync,
+    context: "editor" | "writing" = "editor", locationLabel = "IELTS Writing") {
     const [peers, setMembers] = useState<Peer[]>([]);
     const [connected, setConnected] = useState(false);
     const [digest, setDigest] = useState("");
-    const current = useRef({ file, userId });
-    current.current = { file, userId };
+    const current = useRef({ file, userId, context, locationLabel });
+    current.current = { file, userId, context, locationLabel };
     const socket = useRef<WebSocket | null>(null);
     const members = useRef<Peer[]>([]);
     const sequence = useRef(0);
@@ -54,7 +56,13 @@ export default function usePresence(project: string | undefined, file: string,
     const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
     const renderAndSend = useCallback(async (send = true) => {
         const view = editor.current, ws = socket.current;
-        if (!view || !ws || ws.readyState !== WebSocket.OPEN || !current.current.file) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        if (current.current.context === "writing") {
+            if (send) ws.send(JSON.stringify({type: "activity", context: "writing", location: current.current.locationLabel,
+                active: document.hasFocus() && !document.hidden}));
+            return;
+        }
+        if (!view || !current.current.file) return;
         live.bind(ws, current.current.file, view, current.current.userId || "");
         const ticket = ++sequence.current;
         const text = view.state.doc.toString(), path = current.current.file;
@@ -71,13 +79,16 @@ export default function usePresence(project: string | undefined, file: string,
         if (send) ws.send(JSON.stringify({ type: "cursor", file: path, digest, anchor: selection.head,
             head: selection.head, active: view.hasFocus && !document.hidden }));
         view.dispatch({ effects: setPeers.of(members.current.filter(peer => peer.userId !== current.current.userId
-            && peer.file === path && peer.digest === digest)) });
+            && peer.context !== "writing" && peer.file === path && peer.digest === digest)) });
     }, [editor, live]);
     const update = useCallback(() => {
         clearTimeout(timer.current);
         timer.current = setTimeout(() => { void renderAndSend(); }, 80);
     }, [renderAndSend]);
-    useEffect(() => { update(); }, [file, update]);
+    useEffect(() => {
+        if (context === "writing") { live.disconnect(); setDigest(""); }
+        update();
+    }, [file, context, locationLabel, update, live]);
     useEffect(() => {
         if (!enabled || !project || !userId) return;
         let stopped = false, retry: ReturnType<typeof setTimeout>;
@@ -90,29 +101,35 @@ export default function usePresence(project: string | undefined, file: string,
             const ws = new WebSocket(`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/api/projects/${project}/presence`);
             socket.current = ws;
             ws.onopen = () => {
+                if (stopped || socket.current !== ws) { ws.close(); return; }
                 backoff = 1000; setConnected(true); update();
                 window.dispatchEvent(new CustomEvent('latex-review-changed', { detail: { project } }));
             };
             ws.onmessage = event => {
-                if (stopped) return;
+                if (stopped || socket.current !== ws) return;
                 const data = JSON.parse(event.data);
+                if (data.type === 'access-changed' && data.project === project) {
+                    window.dispatchEvent(new CustomEvent('latex-sharing-updated', {detail: {project}}));
+                    return;
+                }
                 if (data.type === 'review-changed' && data.project === project) {
                     window.dispatchEvent(new CustomEvent('latex-review-changed', { detail: { project } }));
                     return;
                 }
                 if (data.type.startsWith("sync-")) {
-                    if (data.file === current.current.file && live.view === editor.current) live.message(data);
+                    if (current.current.context === "editor" && data.file === current.current.file && live.view === editor.current) live.message(data);
                     update();
                     return;
                 }
                 if (data.type === "presence") {
+                    if (data.project !== project) return;
                     members.current = data.members;
                     setMembers(data.members);
                     void renderAndSend(false);
                 }
             };
             ws.onclose = () => {
-                if (stopped) return;
+                if (stopped || socket.current !== ws) return;
                 clear();
                 live.disconnect();
                 retry = setTimeout(connect, backoff);
