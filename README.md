@@ -6,17 +6,19 @@ Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trù
 
 Web có **chia sẻ riêng tư theo lời mời** và **chia sẻ bằng liên kết**, quyền Viewer/Editor, quản lý/thu hồi quyền và danh sách Shared with you thật. Editor đồng bộ nội dung trực tiếp qua WebSocket bằng CodeMirror OT, kèm con trỏ có tên và avatar; thay đổi được lưu server trước khi xác nhận. Người nhận cần đăng nhập; lời mời hiện được owner tự copy/gửi, chưa có gửi email tự động. Xem [WEB_PROJECT_SHARING.md](docs/WEB_PROJECT_SHARING.md).
 
+**Chia sẻ dùng chung cho LaTeX và IELTS:** trong hộp thoại Chia sẻ, chủ sở hữu chọn/đổi vai trò **Tutor hoặc Học viên** riêng cho mỗi thành viên, độc lập với quyền xem/chỉnh sửa. Vai trò chỉ áp dụng trong dự án, không đổi tài khoản toàn hệ thống. Tutor được cấp quyền chỉnh sửa có thể chấm bài trong dự án; Học viên chỉ xem bài nộp/kết quả của mình. Dữ liệu IELTS cũ có nút đưa vào dự án sau xác nhận. Xem [phạm vi quyền IELTS](docs/IELTS_WRITING_WEB.md).
+
 Đăng ký/đăng nhập web đã có bước chọn **Tutor hoặc Student**, phiên riêng và vùng dự án riêng theo tài khoản. Google sign-in được tích hợp nhưng cần cấu hình OAuth client của bạn trước khi sử dụng. Xem [luồng tài khoản và cấu hình Google](docs/WEB_AUTH_ONBOARDING.md). Dự án chung cũ được giữ nguyên, không tự gán cho tài khoản mới.
 
-Thiết kế hiện tại tập trung vào **IELTS Writing**: [thiết kế IELTS](docs/IELTS_WRITING_DESIGN.md) và [prototype tương tác](docs/prototypes/writing/index.html). Task 1/Task 2, đề bài, vùng viết và chấm bốn tiêu chí nằm trong khung workspace. Đây là bản mẫu độc lập, chưa tích hợp nghiệp vụ vào ứng dụng. [Thiết kế Writing tổng quát trước](docs/WRITING_PRODUCT_DESIGN.md) được giữ để tham khảo phần mở rộng về sau.
+**IELTS Writing là module trong workspace dự án:** mở một dự án rồi nhấn icon mũ tốt nghiệp ở thanh trái. Header dự án và cả bốn icon Tệp/Nhận xét/Chat/IELTS được giữ nguyên; dùng các icon để chuyển chức năng, không có header riêng cho IELTS. Tutor tạo lớp, giao Task 1/Task 2, chấm từng đoạn bằng thẻ checklist và công bố band; Student tham gia bằng mã lớp, viết/lưu nháp/nộp bài và đọc phản hồi. Dữ liệu thật lưu MongoDB theo tài khoản, bản nộp giữ nguyên nội dung tại thời điểm nộp. Có Văn bản / LaTeX source / PDF preview và mở bài/phiếu phản hồi trong editor LaTeX. Xem [hướng dẫn sử dụng và giới hạn](docs/IELTS_WRITING_WEB.md). [Prototype](docs/prototypes/writing/index.html) và [thiết kế](docs/IELTS_WRITING_DESIGN.md) được giữ để đối chiếu; app không chạy iframe prototype hay lấy điểm demo.
 
 Bản web lưu dự án, source, lịch sử và Word draft **trên server chạy Python**. Trình duyệt upload dữ liệu và tải bản sao về; người dùng không chọn đường dẫn lưu vật lý của server. Cấu trúc backend và cấu hình dữ liệu: [WEB_BACKEND_ARCHITECTURE.md](docs/WEB_BACKEND_ARCHITECTURE.md).
 
-Ứng dụng soạn thảo LaTeX chạy trong trình duyệt, backend **Python/FastAPI** chạy trên máy local và phục vụ cả giao diện **Next.js** lẫn API tại cùng địa chỉ. Có thể dùng editor, tab nhiều tài liệu, PDF/Word preview, compile và upload mà không cài pywebview/WebView2. Web tách tài khoản/dự án cá nhân, dùng MongoDB cho identity/session/ACL/metadata; chưa phải dịch vụ public Internet hoặc hệ thống quản lý lớp hoàn chỉnh. Đường chạy desktop cũ được giữ để tương thích.
+Ứng dụng soạn thảo LaTeX chạy trong trình duyệt, backend **Python/FastAPI** chạy trên máy local và phục vụ cả giao diện **Next.js** lẫn API tại cùng địa chỉ. Có thể dùng editor, tab nhiều tài liệu, PDF/Word preview, compile và upload mà không cài pywebview/WebView2. Web tách tài khoản/dự án cá nhân, dùng MongoDB cho identity/session/ACL/metadata và nghiệp vụ IELTS; chưa phải dịch vụ public Internet. Đường chạy desktop cũ được giữ để tương thích.
 
 ## Chạy local web
 
-Cần Python **3.12+**, Node.js **22.13+** để build và bộ TeX có `latexmk` để compile. Đóng app desktop cũ trước khi dùng cùng thư mục dữ liệu.
+Cần Python **3.12+** và Node.js **22.13+** để build. Launcher tự kiểm tra bộ TeX; máy thiếu công cụ/package sẽ tải TinyTeX riêng cho dự án, chuẩn bị gói và kiểm tra compile trước khi chạy web. Lần đầu cần mạng và dung lượng cho bộ TeX; không cần R hay cài LaTeX thủ công. Đóng app desktop cũ trước khi dùng cùng thư mục dữ liệu. Xem [chuẩn bị TeX cho dev/test và server](docs/TEX_RUNTIME_SETUP.md).
 
 Windows, tại root repository:
 
@@ -29,7 +31,7 @@ Mở **http://127.0.0.1:8000/**; launcher tự mở trình duyệt. Dừng bằn
 
 **Máy Windows vừa clone:** không cần lệnh `py` nếu `python` đã chạy được phiên bản 3.12+. Script tự thử `python` → `python3` → `py -3`, dùng Python đang cài để tạo môi trường và cài thư viện. Không copy `.venv`, `target` hay `node_modules` từ máy khác. Chỉ khi không tìm thấy Python tương thích mới thử tải runtime qua `uv` nếu có. Có thể chỉ rõ Python đã cài bằng `$env:LATEX_PYTHON = 'C:\duong-dan\python.exe'` trước khi chạy hai lệnh trên. Xem [xử lý lỗi Python khi clone](docs/WINDOWS_PYTHON_STARTUP.md).
 
-MongoDB và công cụ TeX cần cấu hình riêng trên máy mới: nếu chưa có `config/mongodb.local.json`, copy từ `config/mongodb.local.example.json` rồi điền URI riêng theo [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Không commit URI/mật khẩu. `--build` chỉ chuẩn bị Python/UI rồi thoát; lệnh không có `--build` mới chạy backend và kết nối database. `run-python-server.bat` là server TCP cũ, không phải lệnh chạy web.
+MongoDB vẫn cần kết nối riêng của nhóm trên máy mới theo [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md); không commit URI/mật khẩu. Bộ TeX được launcher tự chuẩn bị, không copy `target/TinyTeX` từ máy khác. `--build` chuẩn bị Python/TeX/UI rồi thoát; lệnh không có `--build` mới chạy backend và kết nối database. `run-python-server.bat` là server TCP cũ, không phải lệnh chạy web.
 
 **Google cho nhóm dev:** nhận JSON Google Web OAuth của nhóm qua kênh riêng, chạy `scripts\setup-google-auth.bat "D:\private\google-team.json"` **một lần trên mỗi tài khoản máy**. Các lần chạy và clone sau tự đọc cấu hình đã lưu, không cần nhập `$env:...`. Hoặc đặt file ngay tại `config/google.local.json` (gitignore). Người quản lý đã có biến Google trong terminal có thể tạo file chia sẻ riêng bằng `scripts\setup-google-auth.bat --from-env --project`. Kiểm tra bằng `scripts\setup-google-auth.bat --check`; hướng dẫn/callback/độ ưu tiên ở [WEB_AUTH_ONBOARDING.md](docs/WEB_AUTH_ONBOARDING.md). Không đặt secret thật trong Git.
 
@@ -175,6 +177,7 @@ Không còn file alias `api.py`, `store.py`, `compiler.py`... ở root package. 
 | `compilation/toolchain.py` | Công cụ, preflight package/Biber; cài gói do quản trị server thực hiện |
 | `compilation/explainer.py`, `compilation/synctex.py` | Giải thích lỗi và điều hướng source ↔ PDF |
 | `documents/` | Word text-sync cũ, native DOCX workspace, báo cáo IELTS |
+| `writing/` | API và nghiệp vụ IELTS: lớp, đề, bản nháp, snapshot nộp, checklist, công bố kết quả và phiếu LaTeX |
 | `collaboration/network.py`, `collaboration/review.py`, `entrypoints/console.py` | TCP/TLS/OT cũ, comment/reply/resolve, console demo |
 | `storage/mongo.py`, `storage/mongo_store.py` | Kết nối/indexes và Store/State/History MongoDB chính cho web |
 | `storage/migration.py` | Chuyển SQLite/JSON, backup/đối chiếu/resume/rebind volume |

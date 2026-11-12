@@ -1,0 +1,24 @@
+{
+  "version": "2026.11",
+  "repository": "https://tlnet.yihui.org",
+  "archives": {
+    "windows-amd64": {"name": "TinyTeX-v2026.11.zip", "sha256": "a13d14ba987873d1bdf81773f5bdfcc34537882b825dd2134f61eb6ee21d5f69"},
+    "linux-x86_64": {"name": "TinyTeX-linux-x86_64-v2026.11.tar.xz", "sha256": "50e68059058db770a28bcca44d5a323cb57fc10d470017c858404aafeaac9dd7"},
+    "linux-arm64": {"name": "TinyTeX-linux-arm64-v2026.11.tar.xz", "sha256": "a493b548ba82aafd715f297397de959bc8131c16a9be9e4b90fa6454e5d57fb1"},
+    "darwin": {"name": "TinyTeX-darwin-v2026.11.tar.xz", "sha256": "a54a3a16aca1717580b1cc0e4965791487c0650a450d1502dda457dd68e41962"}
+  },
+  "packages": [
+    "latex-bin", "latexmk", "xetex", "luatex", "biber", "synctex", "lm", "vntex", "tex-gyre", "cm-super", "ec",
+    "collection-fontsrecommended", "babel-vietnamese", "biblatex", "csquotes", "pgf", "beamer",
+    "geometry", "hyperref", "xcolor", "amsmath", "amsfonts", "amscls", "fontspec", "iftex", "graphics",
+    "footmisc", "colortbl", "tools", "multirow", "microtype", "fancyhdr", "lastpage", "caption",
+    "booktabs", "enumitem", "setspace", "titlesec", "tocloft", "tcolorbox", "environ", "trimspaces",
+    "pgfplots", "float", "wrapfig", "adjustbox", "listings", "algorithm2e", "algorithms", "algorithmicx",
+    "newtx", "silence", "cite", "xpatch", "xstring", "soul", "psnfss", "courier", "helvetic"
+  ],
+  "probes": ["footmisc.sty", "colortbl.sty", "booktabs.sty", "multirow.sty", "microtype.sty", "fancyhdr.sty",
+    "lastpage.sty", "caption.sty", "subcaption.sty", "enumitem.sty", "setspace.sty", "titlesec.sty", "tocloft.sty",
+    "tcolorbox.sty", "environ.sty", "trimspaces.sty", "pgfplots.sty", "float.sty", "wrapfig.sty", "adjustbox.sty",
+    "listings.sty", "algorithm2e.sty", "algorithm.sty", "algpseudocode.sty", "newtxtext.sty", "newtxmath.sty",
+    "silence.sty", "cite.sty", "xpatch.sty", "xstring.sty", "soul.sty", "tcrm1200.tfm", "texgyretermes-regular.otf"]
+}

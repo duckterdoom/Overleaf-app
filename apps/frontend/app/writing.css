@@ -1,0 +1,1206 @@
+.writing-shell {
+    height: 100dvh;
+    min-height: 0;
+    color: var(--ink);
+    background: var(--soft);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 15px;
+}
+.writing-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 46px 226px minmax(0, 1fr);
+}
+.writing-workspace-grid > .writing-module {
+    flex: 1;
+    width: 0;
+    height: auto;
+}
+.writing-module .writing-layout {
+    grid-template-columns: 226px minmax(0, 1fr);
+}
+@media (max-width: 800px) {
+    .writing-module .writing-layout {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+    .writing-module .writing-sidebar {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .writing-module .writing-main {
+        grid-column: 1;
+        grid-row: 2;
+    }
+}
+.writing-sidebar {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+    padding: 28px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-height: 0;
+    overflow: auto;
+}
+.writing-eyebrow {
+    font-size: 10px;
+    letter-spacing: 1.7px;
+    color: var(--muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.writing-sidebar > .writing-eyebrow {
+    padding: 0 12px 17px;
+}
+.writing-sidebar > button {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 12px;
+    border-radius: 7px;
+    text-align: left;
+    white-space: nowrap;
+}
+.writing-sidebar > button:hover {
+    background: var(--soft);
+}
+.writing-sidebar > button.active {
+    background: color-mix(in srgb, var(--green) 11%, var(--panel));
+    color: var(--green);
+    font-weight: 600;
+}
+.writing-sidebar-note {
+    margin-top: auto;
+    padding: 24px 15px 8px;
+    color: var(--green);
+}
+.writing-sidebar-note strong {
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 22px;
+    line-height: 1.4;
+    margin: 17px 0;
+}
+.writing-sidebar-note p {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.9;
+}
+.writing-mode-switch {
+    display: flex;
+    margin-left: 30px;
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 3px;
+    gap: 3px;
+}
+.writing-mode-switch button {
+    padding: 7px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.writing-mode-switch .active {
+    background: var(--green);
+    color: white;
+}
+.writing-role {
+    color: var(--green);
+    font-size: 12px;
+    margin-right: 20px;
+}
+.writing-account {
+    font-size: 13px;
+    margin-right: 12px;
+}
+.writing-main {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    padding: 28px clamp(18px, 3vw, 48px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.writing-page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 15px;
+}
+.writing-page-heading h1 {
+    font-family: Georgia, serif;
+    font-size: 31px;
+    font-weight: 400;
+    line-height: 1.3;
+    margin: 8px 0 0;
+}
+.writing-page-heading > div:last-child {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.writing-shell button {
+    cursor: pointer;
+}
+.writing-main button,
+.writing-band-panel button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--panel);
+    padding: 9px 13px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 500;
+}
+.writing-main button:hover,
+.writing-band-panel button:hover {
+    border-color: var(--green);
+    color: var(--green);
+}
+.writing-main button.primary,
+.writing-band-panel button.primary {
+    background: var(--green);
+    color: white;
+    border-color: var(--green);
+}
+.writing-shell button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+.writing-shell button:focus-visible,
+.writing-shell input:focus-visible,
+.writing-shell textarea:focus-visible,
+.writing-shell select:focus-visible {
+    outline: 2px solid var(--green);
+    outline-offset: 2px;
+}
+.writing-card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 25px;
+}
+.writing-card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 6px 0 12px;
+}
+.writing-muted,
+.writing-card p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.8;
+}
+.writing-welcome {
+    padding: 36px 40px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--green) 8%, var(--panel));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 35px;
+}
+.writing-welcome h2 {
+    font-family: Georgia, serif;
+    font-weight: 400;
+    font-size: 34px;
+    line-height: 1.4;
+    max-width: 530px;
+    margin: 15px 0;
+}
+.writing-welcome p {
+    max-width: 520px;
+    color: var(--muted);
+    line-height: 1.9;
+}
+.writing-welcome-art {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    transform: rotate(-7deg);
+    padding: 30px;
+    background: var(--panel);
+    color: var(--green);
+    box-shadow: 0 15px 35px #18352215;
+    border-radius: 4px;
+}
+.writing-welcome-art span {
+    font-size: 16px;
+    font-family: Georgia, serif;
+}
+.writing-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+.writing-stats .writing-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.writing-stats strong {
+    font-size: 34px;
+    font-family: Georgia, serif;
+    color: var(--green);
+}
+.writing-stats span {
+    font-size: 13px;
+    color: var(--muted);
+}
+.writing-start {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+.writing-shell label {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 0;
+}
+.writing-shell input:not([type="checkbox"]),
+.writing-shell select,
+.writing-shell textarea {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--ink);
+    background: var(--panel);
+    font: inherit;
+    font-weight: 400;
+    min-width: 0;
+}
+.writing-shell textarea {
+    resize: vertical;
+    line-height: 1.7;
+}
+.writing-shell input[type="checkbox"] {
+    accent-color: var(--green);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+.writing-form {
+    width: min(900px, 100%);
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.writing-form-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+.writing-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+.writing-form fieldset {
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.writing-form legend {
+    font-size: 13px;
+    padding: 0 8px;
+    color: var(--green);
+}
+.writing-form .writing-inline-check {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: 400;
+}
+.writing-form footer,
+.writing-check-submit footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.writing-image-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.writing-image-upload img {
+    max-width: 500px;
+    max-height: 350px;
+    object-fit: contain;
+    align-self: center;
+}
+.writing-class-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 15px;
+}
+.writing-class-form label {
+    flex: 1;
+    max-width: 480px;
+}
+.writing-class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+}
+.writing-class-grid .writing-card > svg {
+    color: var(--green);
+}
+.writing-class-code {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--line);
+}
+.writing-class-code span {
+    font-size: 12px;
+    color: var(--muted);
+}
+.writing-class-code code {
+    font-size: 17px;
+    letter-spacing: 1px;
+}
+.writing-class-grid ul {
+    list-style: disc;
+    padding: 15px 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.9;
+}
+.writing-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.writing-assignment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.writing-assignment-list article {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+.writing-assignment-list h2 {
+    margin-top: 12px;
+}
+.writing-assignment-list small {
+    color: var(--muted);
+}
+.writing-tag {
+    display: inline-flex;
+    border-radius: 20px;
+    padding: 4px 9px;
+    font-size: 11px;
+    background: color-mix(in srgb, var(--green) 9%, var(--panel));
+    color: var(--green);
+}
+.writing-empty {
+    padding: 70px 25px;
+    text-align: center;
+    background: var(--panel);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 18px;
+    color: var(--muted);
+}
+.writing-empty h2 {
+    font-family: Georgia, serif;
+    font-size: 25px;
+    color: var(--ink);
+}
+.writing-table-wrap {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: auto;
+    background: var(--panel);
+}
+.writing-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+.writing-table th {
+    color: var(--muted);
+    background: var(--soft);
+    font-weight: 500;
+    white-space: nowrap;
+}
+.writing-table th,
+.writing-table td {
+    padding: 18px;
+    border-bottom: 1px solid var(--line);
+}
+.writing-table tr:last-child td {
+    border-bottom: 0;
+}
+.writing-table small {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 7px;
+}
+.writing-table td > strong {
+    display: block;
+}
+.writing-practice {
+    display: flex;
+    flex-direction: column;
+    min-height: 550px;
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--panel);
+}
+.writing-practice-strip {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+    font-size: 12px;
+    flex-wrap: wrap;
+}
+.writing-timer {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    color: var(--green);
+    font-variant-numeric: tabular-nums;
+}
+.writing-task-tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.writing-task-tabs button {
+    border: 0;
+    background: transparent;
+    padding: 8px 12px;
+}
+.writing-task-tabs button[aria-selected="true"],
+.writing-task-tabs button[aria-pressed="true"] {
+    background: var(--green);
+    color: white;
+}
+.writing-document-view {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 450px;
+    flex: 1;
+    overflow: hidden;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+.writing-practice > .writing-document-view {
+    border: 0;
+    border-radius: 0;
+}
+.writing-view-tabs {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+.writing-view-tabs button[aria-selected="true"] {
+    background: color-mix(in srgb, var(--green) 10%, var(--panel));
+    border-color: var(--green);
+    color: var(--green);
+}
+.writing-view-tabs > span {
+    flex: 1;
+}
+.writing-practice-panes {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.25fr);
+    flex: 1;
+    min-height: 420px;
+}
+.writing-question {
+    padding: 28px;
+    overflow: auto;
+    border-right: 1px solid var(--line);
+    line-height: 1.9;
+}
+.writing-question h2 {
+    font-size: 20px;
+    line-height: 1.5;
+    margin: 12px 0 22px;
+}
+.writing-prompt-text {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    white-space: pre-wrap;
+    line-height: 1.8;
+}
+.writing-question img,
+.writing-paper-title img {
+    display: block;
+    max-width: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    margin: 20px auto;
+}
+.writing-chart {
+    width: 100%;
+    max-width: 480px;
+    margin: 22px auto;
+    display: block;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 8px;
+    border-radius: 7px;
+}
+.writing-question-note {
+    font-size: 12px;
+    color: var(--muted);
+    padding-top: 22px;
+    margin-top: 22px;
+    border-top: 1px solid var(--line);
+}
+.writing-answer {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+.writing-answer header,
+.writing-answer footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 20px;
+    flex-shrink: 0;
+    font-size: 12px;
+    border-bottom: 1px solid var(--line);
+}
+.writing-answer header span {
+    color: var(--muted);
+}
+.writing-answer textarea {
+    flex: 1;
+    width: 100%;
+    min-height: 350px;
+    resize: none;
+    border: 0;
+    border-radius: 0;
+    padding: 24px 28px;
+    font-size: 18px;
+    line-height: 1.9;
+    font-family: Georgia, serif;
+    overflow: auto;
+}
+.writing-answer footer {
+    border-top: 1px solid var(--line);
+    border-bottom: 0;
+}
+.writing-word-warning {
+    color: #a46b18 !important;
+}
+.writing-check-submit {
+    max-width: 980px;
+    align-self: center;
+    width: 100%;
+    line-height: 1.9;
+}
+.writing-check-submit article {
+    margin: 25px 0;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+}
+.writing-check-submit article > p:last-child {
+    white-space: pre-wrap;
+    color: var(--ink);
+    font-family: Georgia, serif;
+    font-size: 17px;
+}
+.writing-error {
+    border: 1px solid #bf6363;
+    background: color-mix(in srgb, #bd5353 9%, var(--panel));
+    border-radius: 6px;
+    padding: 13px 16px;
+    font-size: 13px;
+    color: var(--ink);
+    line-height: 1.7;
+    flex-shrink: 0;
+}
+.writing-notice {
+    padding: 12px 16px;
+    background: var(--soft);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+    border-bottom: 1px solid var(--line);
+}
+.writing-notice button {
+    margin-left: 10px;
+}
+.writing-source-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 450px;
+    flex: 1;
+    gap: 12px;
+    padding-bottom: 15px;
+}
+.writing-source-panel > button {
+    align-self: flex-start;
+    margin-left: 16px;
+}
+.writing-source-panel > textarea {
+    margin: 0 16px;
+    min-height: 380px;
+    flex: 1;
+    font: 14px/1.8 monospace;
+    resize: none;
+}
+.writing-pdf-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 450px;
+    height: 65vh;
+    flex: 1;
+    overflow: hidden;
+}
+.writing-review {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+.writing-document-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    flex-shrink: 0;
+}
+.writing-document-toolbar > .writing-muted {
+    margin-right: auto;
+}
+.writing-review-meta {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 22px;
+    color: var(--muted);
+    font-size: 12px;
+}
+.writing-profile-select {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    gap: 12px;
+    padding: 0 22px 16px;
+    flex-wrap: wrap;
+}
+.writing-profile-select select {
+    padding: 7px;
+}
+.writing-profile-select small {
+    font-weight: 400;
+    color: var(--muted);
+}
+.writing-review-scroll {
+    overflow: auto;
+    flex: 1;
+    min-height: 300px;
+    padding: 20px 24px 70px;
+    background: var(--soft);
+}
+.writing-paper-grid {
+    background: var(--panel);
+    max-width: 1280px;
+    margin: auto;
+    padding: 30px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 286px;
+    column-gap: 30px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+}
+.writing-paper-title {
+    font-size: 15px;
+    line-height: 1.8;
+    padding: 0 0 25px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 25px;
+}
+.writing-paper-title > p {
+    margin-top: 12px;
+}
+.writing-paragraph-row {
+    display: contents;
+}
+.writing-paragraph {
+    position: relative;
+    padding: 14px 16px 24px;
+    margin: 0 0 22px;
+    border-left: 3px solid transparent;
+    min-width: 0;
+}
+.writing-paragraph.selected {
+    border-left-color: var(--green);
+    background: color-mix(in srgb, #e6b949 11%, var(--panel));
+}
+.writing-paragraph p {
+    font:
+        18px/1.95 Georgia,
+        serif;
+    white-space: pre-wrap;
+    user-select: text;
+}
+.writing-paragraph p::selection {
+    background: #f3d975;
+    color: #16251c;
+}
+.writing-paragraph-label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 12px;
+}
+.writing-comment-trigger {
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    opacity: 0;
+    padding: 5px !important;
+}
+.writing-paragraph:hover .writing-comment-trigger,
+.writing-paragraph.selected .writing-comment-trigger {
+    opacity: 1;
+}
+.writing-whole-note {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 13px;
+}
+.writing-margin-card {
+    align-self: start;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    margin-top: 10px;
+    margin-bottom: 22px;
+    min-width: 0;
+    box-shadow: 0 3px 10px #18352206;
+    overflow: hidden;
+}
+.writing-margin-card.expanded {
+    border-color: color-mix(in srgb, var(--green) 65%, var(--line));
+    box-shadow: 0 7px 22px #18352211;
+}
+.writing-card-toggle {
+    display: flex !important;
+    justify-content: flex-start !important;
+    width: 100%;
+    padding: 14px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    text-align: left;
+    background: transparent !important;
+}
+.writing-card-toggle > span:nth-child(2) {
+    flex: 1;
+}
+.writing-card-toggle strong {
+    display: block;
+    font-size: 13px;
+}
+.writing-card-toggle small {
+    display: block;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 6px;
+    font-weight: 400;
+}
+.writing-tutor-dot {
+    border-radius: 50%;
+    height: 28px;
+    width: 28px;
+    background: color-mix(in srgb, var(--green) 12%, var(--panel));
+    color: var(--green);
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+.writing-card-body {
+    padding: 0 15px 16px;
+    max-height: 490px;
+    overflow: auto;
+}
+.writing-checks {
+    margin: 14px 0;
+}
+.writing-check {
+    padding: 13px 0;
+    border-top: 1px solid var(--line);
+}
+.writing-check > label {
+    flex-direction: row;
+    align-items: flex-start;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.7;
+    gap: 8px;
+}
+.writing-check > label small {
+    display: block;
+    font-size: 9px;
+    color: var(--green);
+    margin-top: 4px;
+}
+.writing-check > select {
+    margin: 8px 0 0 23px;
+    font-size: 10px;
+    padding: 4px 7px;
+    max-width: 160px;
+}
+.writing-check-status {
+    margin-left: 23px;
+    font-size: 10px;
+    color: var(--green);
+}
+.writing-card-body > label {
+    font-size: 11px;
+}
+.writing-card-body textarea {
+    font-size: 13px;
+}
+.writing-card-body blockquote {
+    border-left: 2px solid var(--green);
+    background: var(--soft);
+    padding: 10px;
+    font-size: 11px;
+    line-height: 1.7;
+    margin: 12px 0;
+    max-height: 100px;
+    overflow: auto;
+    position: relative;
+}
+.writing-card-body blockquote button {
+    float: right;
+    padding: 2px;
+}
+.writing-evidence-button {
+    font-size: 11px !important;
+    padding: 7px !important;
+}
+.writing-band-backdrop {
+    position: fixed;
+    inset: 0;
+    background: #17281e28;
+    z-index: 160;
+    display: flex;
+    justify-content: flex-end;
+}
+.writing-band-panel {
+    width: min(420px, 100vw);
+    background: var(--panel);
+    color: var(--ink);
+    height: 100%;
+    overflow: auto;
+    padding: 25px;
+    box-shadow: -8px 0 40px #18352225;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.writing-band-panel > header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.writing-band-panel h2 {
+    font-size: 23px;
+    margin-top: 8px;
+    font-family: Georgia, serif;
+}
+.writing-band-card {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 18px;
+}
+.writing-band-card > div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 7px;
+}
+.writing-band-card > div > strong {
+    font-size: 17px;
+}
+.writing-band-card > div > span {
+    grid-column: 1;
+    grid-row: 2;
+    font-size: 11px;
+    color: var(--muted);
+}
+.writing-band-card > div select,
+.writing-band-card > div b {
+    grid-column: 2;
+    grid-row: 1/3;
+    min-width: 72px;
+}
+.writing-band-card details {
+    margin: 15px 0;
+    color: var(--green);
+    font-size: 12px;
+}
+.writing-band-card details p,
+.writing-band-card > p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.8;
+    margin-top: 10px;
+}
+.writing-band-card summary {
+    cursor: pointer;
+}
+.writing-band-estimate {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    font-size: 13px;
+}
+.writing-band-estimate strong {
+    font-family: Georgia, serif;
+    font-size: 35px;
+    color: var(--green);
+}
+.writing-band-estimate small {
+    font-size: 10px;
+    color: var(--muted);
+}
+.writing-band-panel footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 15px;
+    margin-top: auto;
+}
+.writing-rubric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px;
+}
+.writing-rubric-grid ul {
+    font-size: 13px;
+    line-height: 1.9;
+    padding-left: 20px;
+    list-style: disc;
+}
+.writing-rubric-grid h2 {
+    margin-top: 15px;
+}
+@media (max-width: 1100px) {
+    .writing-layout {
+        grid-template-columns: 44px 180px minmax(0, 1fr);
+    }
+    .writing-main {
+        padding: 22px 18px;
+    }
+    .writing-paper-grid {
+        padding: 20px;
+        column-gap: 18px;
+        grid-template-columns: minmax(0, 1fr) 250px;
+    }
+    .writing-review-scroll {
+        padding: 12px;
+    }
+    .writing-paragraph p {
+        font-size: 17px;
+    }
+    .writing-welcome-art {
+        display: none;
+    }
+    .writing-page-heading h1 {
+        font-size: 26px;
+    }
+}
+@media (max-width: 800px) {
+    .writing-layout {
+        grid-template-columns: 42px minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+    .writing-layout > .workspace-activity-bar {
+        grid-column: 1;
+        grid-row: 1/3;
+    }
+    .writing-sidebar {
+        grid-column: 2;
+        grid-row: 1;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 6px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+    .writing-sidebar > .writing-eyebrow,
+    .writing-sidebar-note {
+        display: none;
+    }
+    .writing-sidebar > button {
+        padding: 10px;
+        font-size: 12px;
+    }
+    .writing-main {
+        grid-column: 2;
+        grid-row: 2;
+        padding: 18px 12px;
+    }
+    .writing-mode-switch {
+        margin-left: 10px;
+    }
+    .writing-mode-switch button {
+        padding: 6px 9px;
+        font-size: 11px;
+    }
+    .writing-role,
+    .writing-account {
+        display: none;
+    }
+    .writing-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .writing-welcome {
+        padding: 24px;
+    }
+    .writing-welcome h2 {
+        font-size: 29px;
+    }
+    .writing-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .writing-start,
+    .writing-form-heading,
+    .writing-class-form,
+    .writing-assignment-list article {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .writing-practice-panes {
+        grid-template-columns: 1fr;
+    }
+    .writing-question {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+        max-height: 440px;
+    }
+    .writing-answer textarea {
+        min-height: 400px;
+    }
+    .writing-practice {
+        flex: none;
+    }
+    .writing-document-view {
+        overflow: visible;
+        flex: none;
+    }
+    .writing-paper-grid {
+        display: block;
+        padding: 18px;
+    }
+    .writing-paragraph-row {
+        display: block;
+        margin-bottom: 35px;
+    }
+    .writing-margin-card {
+        margin-left: 15px;
+        max-width: 100%;
+        margin-top: 0;
+    }
+    .writing-review-scroll {
+        max-height: none;
+        overflow: visible;
+    }
+    .writing-paragraph {
+        margin-bottom: 0;
+    }
+    .writing-paper-title + div {
+        display: none;
+    }
+    .writing-page-heading {
+        align-items: flex-start;
+    }
+    .writing-page-heading h1 {
+        font-size: 24px;
+    }
+    .writing-page-heading button.primary {
+        font-size: 11px;
+    }
+    .writing-view-tabs > span {
+        display: none;
+    }
+    .writing-view-tabs button {
+        padding: 7px;
+        font-size: 11px;
+    }
+    .writing-pdf-panel {
+        min-height: 500px;
+    }
+    .writing-shell .statusbar {
+        font-size: 10px;
+    }
+    .writing-shell .statusbar > span:last-child {
+        display: none;
+    }
+    .writing-profile-select {
+        padding: 12px;
+    }
+    .writing-main button {
+        max-width: 100%;
+    }
+}

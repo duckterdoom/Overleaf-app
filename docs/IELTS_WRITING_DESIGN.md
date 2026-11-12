@@ -4,7 +4,7 @@ Cập nhật 07/11/2026 theo yêu cầu đính chính: **IELTS Writing là chứ
 
 **Cập nhật kết hợp LaTeX:** IELTS là nghiệp vụ đánh giá, LaTeX là công cụ soạn/trình bày và xuất phiếu trong cùng workspace. Học viên và Tutor có tab Văn bản / LaTeX source / PDF preview. Không tách IELTS thành một ứng dụng chỉ gõ essay; cũng không chấm kỹ năng viết LaTeX thay cho kỹ năng tiếng Anh. Các chỗ dưới đây nói không bắt compile có nghĩa là không bắt buộc với mọi bài luyện, không loại bỏ LaTeX khỏi sản phẩm.
 
-[Mở prototype IELTS](prototypes/writing/index.html). Prototype giữ khung workspace hiện có; chưa tích hợp nghiệp vụ thật vào app/backend.
+**Cập nhật 11/11/2026:** nghiệp vụ IELTS đã được tích hợp vào web Latex với đăng nhập Student/Tutor và MongoDB thật. Xem [hướng dẫn triển khai hiện tại](IELTS_WRITING_WEB.md) để phân biệt tính năng đã chạy và phần thiết kế mở rộng. [Prototype IELTS](prototypes/writing/index.html) giữ làm tài liệu tham khảo; các màn dưới đây là định hướng thiết kế, không phải mọi chi tiết đều đã triển khai.
 
 ## 1. Màn hình chính: viết IELTS, không viết mã
 

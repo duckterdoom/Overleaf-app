@@ -117,6 +117,14 @@ def test_web_build_passes_validated_interpreter_to_uv(tmp_path):
     (root / 'commands/npm.cmd').write_text('@echo off\necho %*>>"%LATEX_TEST_NPM_LOG%"\nexit /b 0\n', encoding='ascii')
     env['LATEX_TEST_UV_LOG'] = str(root / 'uv.txt')
     env['LATEX_TEST_NPM_LOG'] = str(root / 'npm.txt')
+    # uv is a shim in this launcher test, so provide a TeX preparation shim too.
+    # Real extraction/package/font compilation is covered by runtime integration.
+    module = root / 'fake modules/latex_backend/compilation'
+    module.mkdir(parents=True)
+    (module.parent / '__init__.py').write_text('')
+    (module / '__init__.py').write_text('')
+    (module / 'tex_runtime.py').write_text('import sys\nassert "--ensure" in sys.argv\n', encoding='ascii')
+    env['PYTHONPATH'] = str(module.parents[1])
     result = subprocess.run([str(Path(os.environ['SystemRoot']) / 'System32/cmd.exe'), '/d', '/c',
                              'scripts\\run-python-web.bat', '--build'], cwd=root, env=env,
                             capture_output=True, text=True, timeout=90)

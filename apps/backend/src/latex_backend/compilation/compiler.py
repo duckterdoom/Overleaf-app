@@ -19,6 +19,10 @@ from latex_backend.compilation.explainer import explain_exit
 def find_latexmk(configured: str = "") -> str:
     if configured or os.getenv("OVERLEAF_LATEXMK"):
         return configured or os.environ["OVERLEAF_LATEXMK"]
+    from latex_backend.compilation.tex_runtime import managed_latexmk
+    managed = managed_latexmk()
+    if managed:
+        return managed
     found = shutil.which("latexmk")
     if found:
         return found
@@ -295,13 +299,9 @@ class Compiler:
             atomic_write(
                 failed, b"Build started; remove only after successful PDF validation.\n"
             )
-            environment = os.environ.copy()
+            from latex_backend.compilation.tex_runtime import tex_environment
             tool = shutil.which(job.executable) or job.executable
-            environment["PATH"] = (
-                str(Path(tool).absolute().parent)
-                + os.pathsep
-                + environment.get("PATH", "")
-            )
+            environment = tex_environment(tool)
             flags = {"pdflatex": "-pdf", "xelatex": "-xelatex", "lualatex": "-lualatex"}
             process = await asyncio.create_subprocess_exec(
                 tool,

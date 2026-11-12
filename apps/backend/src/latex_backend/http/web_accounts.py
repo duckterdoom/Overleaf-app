@@ -79,6 +79,8 @@ class WebAccounts:
         from latex_backend.collaboration.presence import Presence
         self.presence = Presence(self)
         self.presence.routes()
+        from latex_backend.writing.api import register_writing
+        register_writing(self)
 
     async def project_workspace(self, project, user):
         if not isinstance(project, str) or not re.fullmatch(r'[0-9a-f]{32}', project):
@@ -101,7 +103,8 @@ class WebAccounts:
     async def project_info(self, project, user):
         _, store, permission = await self.project_workspace(project, user)
         owner = self.accounts.user(self.sharing.owner(project))
-        return {**store.info(project), 'permission': permission, 'shared': permission != 'owner', 'ownerName': owner['name']}
+        return {**store.info(project), 'permission': permission, 'shared': permission != 'owner', 'ownerName': owner['name'],
+                'workspaceRole': self.sharing.workspace_role(project, user['id'])}
 
     def principal(self, request):
         user = self.accounts.resolve(request.cookies.get(COOKIE, ''))
@@ -322,7 +325,7 @@ class WebAccounts:
         if invalid:
             return await JSONResponse({'message': 'Invalid request origin or host'}, 403)(scope, receive, send)
         # Bound auth payloads before JSON parsing. File upload routes retain their own limits.
-        public_auth = path == '/api/session' or path.startswith(('/api/auth/', '/api/shares/')) or '/sharing' in path or (path == '/api/projects' and request.method == 'GET') or path in {
+        public_auth = path == '/api/session' or path.startswith(('/api/auth/', '/api/shares/', '/api/writing/')) or '/sharing' in path or (path == '/api/projects' and request.method == 'GET') or path in {
             '/api/actions/register', '/api/actions/login', '/api/actions/logout',
             '/api/actions/offline', '/api/actions/profile'}
         if public_auth:
@@ -330,7 +333,7 @@ class WebAccounts:
                 body = bytearray()
                 async for chunk in request.stream():
                     body.extend(chunk)
-                    if len(body) > 16384:
+                    if len(body) > (4 * 1024 * 1024 if path.startswith('/api/writing/') else 16384):
                         return await JSONResponse({'message': 'Request too large'}, 413)(scope, receive, send)
                 async def replay():
                     return {'type': 'http.request', 'body': bytes(body), 'more_body': False}

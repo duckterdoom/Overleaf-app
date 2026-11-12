@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "superdoc/style.css";
+@import "./writing.css";
 
 .document-tabs { display: flex; flex-shrink: 0; align-items: stretch; overflow-x: auto; min-height: 36px; background: var(--soft); color: var(--ink); border-bottom: 1px solid var(--line); }
 .document-tab { display: flex; flex: 0 0 auto; align-items: center; max-width: 320px; border-right: 1px solid var(--line); border-top: 2px solid transparent; }

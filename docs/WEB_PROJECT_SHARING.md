@@ -6,6 +6,16 @@ Nút **Chia sẻ / Share** trong editor web thay hộp thoại phòng TCP/TLS b�
 
 ## Sử dụng
 
+### Vai trò Tutor / Học viên dùng chung với IELTS (12/11/2026)
+
+Hộp thoại Chia sẻ được dùng chung từ editor và module IELTS, cùng project ID và ACL. Khi mời hoặc quản lý từng thành viên, chủ sở hữu chọn riêng **quyền Chỉ xem/Chỉnh sửa** và **vai trò Tutor/Học viên**. Vai trò chỉ thuộc dự án; không thay role tài khoản hoặc quyền ở dự án khác. Chỉ chủ sở hữu quản lý vai trò, Tutor được mời không tự cấp thêm quyền cho mình.
+
+Tutor có quyền chỉnh sửa được tạo lớp/đề, xem các bản nộp, nháp chấm và công bố kết quả trong dự án. Học viên chỉ được xem/viết/nộp bài của mình và đọc kết quả đã công bố; không đọc bài học viên khác. Luyện cá nhân vẫn riêng tư. Viewer không ghi source LaTeX hoặc dữ liệu IELTS dù được gán Tutor. Các API đều kiểm quyền hiện tại; UI IELTS cập nhật vai trò trong khoảng 5 giây và giữ bản khôi phục cho sửa đổi chưa lưu khi quyền bị hạ.
+
+Với link sharing, chủ sở hữu chọn vai trò mặc định cho người mới mở link. Người đã truy cập qua link hiện trong danh sách quản lý với role/quyền riêng; không có invitation token riêng để copy. Tắt/đổi link vô hiệu hóa quyền qua link cũ; chấp nhận link mới lấy lại mặc định mới, không giữ override quyền của token cũ. Người có invitation riêng vẫn giữ quyền invitation theo quy tắc cũ.
+
+Dữ liệu IELTS được gắn `projectId`; người được chia sẻ tự thấy lớp/đề của dự án. Các bài IELTS tạo trước thay đổi này chưa tự gắn vào dự án: dùng nút **Đưa dữ liệu cũ vào dự án này** trong IELTS sau khi mở đúng dự án và đọc xác nhận. Xem [hướng dẫn IELTS](IELTS_WRITING_WEB.md).
+
 ### Riêng tư
 
 Mặc định dự án riêng tư. Chủ sở hữu nhập một hoặc nhiều email phân cách bằng dấu phẩy, chọn **Chỉ xem** hoặc **Chỉnh sửa**, rồi bấm **Mời**. Danh sách hiển thị email, lời mời đang chờ/đã tham gia, quyền, nút sao chép liên kết lời mời và nút thu hồi.

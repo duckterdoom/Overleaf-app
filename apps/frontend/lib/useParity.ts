@@ -664,8 +664,13 @@ export default function useParity(core: Core) {
         setPanel("history");
     }
     async function connect() {
+        if (isServerStorage()) {
+            // Opening ACL settings does not require an initialized OT socket
+            // when there are no local edits to persist (e.g. returning from IELTS).
+            if ((core.dirty || core.live.pending) && !(await core.save())) return;
+            setPanel("share"); return;
+        }
         if (!(await core.save())) return;
-        if (isServerStorage()) { setPanel("share"); return; }
         if (core.file !== "main.tex")
             await core.openFile({
                 path: "main.tex",

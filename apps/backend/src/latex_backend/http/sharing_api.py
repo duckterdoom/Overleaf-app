@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from fastapi import Request
+from typing import Literal
 
 from latex_backend.storage.store import Problem
 
@@ -8,11 +9,13 @@ class ShareSettings(BaseModel):
     mode: str
     permission: str = 'viewer'
     rotate: bool = False
+    workspaceRole: Literal['tutor', 'student'] | None = None
 
 
 class Invite(BaseModel):
     emails: list[str] = Field(min_length=1, max_length=20)
     permission: str = 'viewer'
+    workspaceRole: Literal['tutor', 'student'] = 'student'
 
 
 class Accept(BaseModel):
@@ -20,7 +23,8 @@ class Accept(BaseModel):
 
 
 class Member(BaseModel):
-    permission: str
+    permission: Literal['viewer', 'editor'] | None = None
+    workspaceRole: Literal['tutor', 'student'] | None = None
 
 
 def register_sharing(gateway):
@@ -41,7 +45,7 @@ def register_sharing(gateway):
         result = []
         for project in store.list():
             sharing.register(project['id'], principal['id'])
-            result.append({**project, 'permission': 'owner', 'shared': False, 'ownerName': principal['name']})
+            result.append({**project, 'permission': 'owner', 'shared': False, 'ownerName': principal['name'], 'workspaceRole': sharing.workspace_role(project['id'], principal['id'])})
         for identifier in sharing.projects_for(principal['id']):
             if sharing.owner(identifier) == principal['id']:
                 continue
@@ -61,19 +65,21 @@ def register_sharing(gateway):
     async def configure(project: str, data: ShareSettings, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.configure(project, principal['id'], data.mode, data.permission, data.rotate)
+        return sharing.configure(project, principal['id'], data.mode, data.permission, data.rotate, data.workspaceRole)
 
     @app.post('/api/projects/{project}/sharing/invitations')
     async def invite(project: str, data: Invite, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.invite(project, principal['id'], data.emails, data.permission)
+        return sharing.invite(project, principal['id'], data.emails, data.permission, data.workspaceRole)
 
     @app.patch('/api/projects/{project}/sharing/members/{identifier}')
     async def update_member(project: str, identifier: str, data: Member, request: Request):
         principal = user(request)
         await gateway.project_workspace(project, principal)
-        return sharing.member(project, principal['id'], identifier, data.permission)
+        if data.permission is None and data.workspaceRole is None:
+            raise Problem('Chọn quyền hoặc vai trò cần thay đổi.')
+        return sharing.member(project, principal['id'], identifier, data.permission, data.workspaceRole)
 
     @app.delete('/api/projects/{project}/sharing/members/{identifier}')
     async def remove_member(project: str, identifier: str, request: Request):

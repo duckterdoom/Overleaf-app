@@ -1,4 +1,5 @@
 export type Project = {
+    workspaceRole?: "tutor" | "student";
     permission?: "owner" | "editor" | "viewer";
     shared?: boolean;
     ownerName?: string;
@@ -102,12 +103,12 @@ export async function request(path: string, options: RequestInit = {}) {
     });
     if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(
+        throw Object.assign(new Error(
             error.message ||
                 (typeof error.detail === "string"
                     ? error.detail
                     : `Yêu cầu thất bại (${response.status})`),
-        );
+        ), { status: response.status });
     }
     const permission = response.headers.get("x-latex-permission");
     const project = path.match(/^\/projects\/([0-9a-f]{32})(?:\/|$)/)?.[1];

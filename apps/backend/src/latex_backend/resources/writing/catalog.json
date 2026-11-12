@@ -1,0 +1,5091 @@
+{
+  "line": {
+    "task": 1,
+    "family": "academic",
+    "label": "Line graph",
+    "focus": [
+      "Phân biệt xu hướng chung với biến động cục bộ.",
+      "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "bar": {
+    "task": 1,
+    "family": "academic",
+    "label": "Bar chart",
+    "focus": [
+      "So sánh đúng các nhóm trên cùng thang đo.",
+      "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "pie": {
+    "task": 1,
+    "family": "academic",
+    "label": "Pie chart",
+    "focus": [
+      "Phân biệt phần trăm với số lượng thực.",
+      "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt phần trăm với số lượng thực.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt phần trăm với số lượng thực.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Phân biệt phần trăm với số lượng thực.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "table": {
+    "task": 1,
+    "family": "academic",
+    "label": "Table",
+    "focus": [
+      "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+      "Kiểm tra đơn vị, phân nhóm và ngoại lệ."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "mixed": {
+    "task": 1,
+    "family": "academic",
+    "label": "Mixed / multiple visuals",
+    "focus": [
+      "Bao quát tất cả hình được giao.",
+      "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Bao quát tất cả hình được giao.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Bao quát tất cả hình được giao.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Bao quát tất cả hình được giao.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "process": {
+    "task": 1,
+    "family": "academic",
+    "label": "Process / cycle",
+    "focus": [
+      "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+      "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "map": {
+    "task": 1,
+    "family": "academic",
+    "label": "Map / plan",
+    "focus": [
+      "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+      "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "diagram": {
+    "task": 1,
+    "family": "academic",
+    "label": "Object / system diagram",
+    "focus": [
+      "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+      "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "visual",
+          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "context",
+          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paraphrase",
+          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "big-picture",
+          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "selection",
+          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "overview-role",
+          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "codes": [
+            "TA",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "details",
+          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "grouping",
+          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "relation",
+          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "accuracy",
+          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "formal": {
+    "task": 1,
+    "family": "general",
+    "label": "Formal letter",
+    "focus": [
+      "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+      "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "recipient",
+          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "purpose",
+          "text": "Mục đích thư rõ, bám tình huống.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "opening-tone",
+          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "bullet-coverage",
+          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "bullet-development",
+          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "tone",
+          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paragraph-flow",
+          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "next-step",
+          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "signoff",
+          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "no-new-task",
+          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "three-bullets",
+          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "semiformal": {
+    "task": 1,
+    "family": "general",
+    "label": "Semi-formal letter",
+    "focus": [
+      "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+      "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "recipient",
+          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "purpose",
+          "text": "Mục đích thư rõ, bám tình huống.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "opening-tone",
+          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "bullet-coverage",
+          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "bullet-development",
+          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "tone",
+          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paragraph-flow",
+          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "next-step",
+          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "signoff",
+          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "no-new-task",
+          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "three-bullets",
+          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "informal": {
+    "task": 1,
+    "family": "general",
+    "label": "Informal letter",
+    "focus": [
+      "Giọng văn gần gũi phù hợp người nhận.",
+      "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "recipient",
+          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "purpose",
+          "text": "Mục đích thư rõ, bám tình huống.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "opening-tone",
+          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "bullet-coverage",
+          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "bullet-development",
+          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "tone",
+          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "paragraph-flow",
+          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "next-step",
+          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "signoff",
+          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "codes": [
+            "TA",
+            "LR"
+          ]
+        },
+        {
+          "id": "no-new-task",
+          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "codes": [
+            "CC",
+            "TA"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "three-bullets",
+          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "codes": [
+            "TA"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "codes": [
+            "TA"
+          ]
+        }
+      ]
+    }
+  },
+  "opinion": {
+    "task": 2,
+    "label": "Opinion / agree–disagree",
+    "focus": [
+      "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+      "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "discussion": {
+    "task": 2,
+    "label": "Discuss both views (+ opinion)",
+    "focus": [
+      "Thực sự giải thích cả hai quan điểm trong đề.",
+      "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "advantages": {
+    "task": 2,
+    "label": "Advantages & disadvantages",
+    "focus": [
+      "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+      "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "outweigh": {
+    "task": 2,
+    "label": "Do advantages outweigh disadvantages?",
+    "focus": [
+      "Trình bày hai phía có liên quan.",
+      "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Trình bày hai phía có liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Trình bày hai phía có liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Trình bày hai phía có liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "cause_solution": {
+    "task": 2,
+    "label": "Causes & solutions",
+    "focus": [
+      "Nêu và giải thích nguyên nhân liên quan.",
+      "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "problem_solution": {
+    "task": 2,
+    "label": "Problems & solutions",
+    "focus": [
+      "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+      "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "cause_effect": {
+    "task": 2,
+    "label": "Causes & effects",
+    "focus": [
+      "Giải thích vì sao hiện tượng xảy ra.",
+      "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "two_part": {
+    "task": 2,
+    "label": "Two-part / direct questions",
+    "focus": [
+      "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+      "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "positive_negative": {
+    "task": 2,
+    "label": "Positive / negative development",
+    "focus": [
+      "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+      "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  },
+  "custom": {
+    "task": 2,
+    "label": "Mixed / yêu cầu tùy chỉnh",
+    "focus": [
+      "Tách từng mệnh đề yêu cầu trong đề thật.",
+      "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp."
+    ],
+    "checks": {
+      "intro": [
+        {
+          "id": "scope",
+          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "position",
+          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "relevance",
+          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "overview": [
+        {
+          "id": "type-0",
+          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "body": [
+        {
+          "id": "main-idea",
+          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "development",
+          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "support",
+          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "flow",
+          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "consistency",
+          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "conclusion": [
+        {
+          "id": "answer",
+          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "consistent",
+          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "codes": [
+            "TR",
+            "CC"
+          ]
+        },
+        {
+          "id": "synthesis",
+          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "codes": [
+            "CC",
+            "TR"
+          ]
+        },
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "closing": [
+        {
+          "id": "precision",
+          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "sentences",
+          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "codes": [
+            "GRA"
+          ]
+        }
+      ],
+      "whole": [
+        {
+          "id": "all-demands",
+          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "progression",
+          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "codes": [
+            "CC"
+          ]
+        },
+        {
+          "id": "lexical-patterns",
+          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "codes": [
+            "LR"
+          ]
+        },
+        {
+          "id": "grammar-patterns",
+          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "codes": [
+            "GRA"
+          ]
+        },
+        {
+          "id": "type-0",
+          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "codes": [
+            "TR"
+          ]
+        },
+        {
+          "id": "type-1",
+          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "codes": [
+            "TR"
+          ]
+        }
+      ]
+    },
+    "family": "essay"
+  }
+}

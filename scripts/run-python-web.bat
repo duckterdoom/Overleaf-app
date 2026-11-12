@@ -34,6 +34,8 @@ if not errorlevel 1 goto dependencies_ready
 "%WEB_PYTHON%" -m pip install -e "apps/backend[web-local]"
 if errorlevel 1 goto failed
 :dependencies_ready
+"%WEB_PYTHON%" -X utf8 -m latex_backend.compilation.tex_runtime --ensure
+if errorlevel 1 goto failed
 if /i "%~1"=="--build" goto build_ui
 if exist "apps\frontend\out\index.html" goto launch
 :build_ui

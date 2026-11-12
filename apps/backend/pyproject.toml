@@ -36,7 +36,7 @@ overleaf-server-python = "latex_backend.collaboration.network:server_main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-latex_backend = ["resources/templates/**/*", "resources/*.json", "pdf_export/original/*.py", "pdf_export/original/*.json", "pdf_export/original/extracted_figures/*"]
+latex_backend = ["resources/templates/**/*", "resources/*.json", "resources/writing/*.json", "pdf_export/original/*.py", "pdf_export/original/*.json", "pdf_export/original/extracted_figures/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

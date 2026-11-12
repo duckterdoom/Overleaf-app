@@ -1,0 +1,18 @@
+# Compile environment base image; this is not the old TCP collaboration server.
+FROM python:3.12-slim-bookworm
+ARG TEX_PROFILE=standard
+ENV PYTHONUTF8=1 PYTHONUNBUFFERED=1
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates perl fontconfig libfreetype6 libfontconfig1 libxrender1 libglib2.0-0 libgl1 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /opt/latex
+COPY apps/backend ./apps/backend
+RUN pip install --no-cache-dir -e './apps/backend[web-local]' \
+    && case "$TEX_PROFILE" in \
+        standard) python -m latex_backend.compilation.tex_runtime --ensure --managed --smoke-catalog ;; \
+        full) python -m latex_backend.compilation.tex_runtime --ensure --managed --full --smoke-catalog ;; \
+        *) echo 'TEX_PROFILE must be standard or full'; exit 1 ;; \
+    esac
+# A derived web/worker image adds its own non-root account, UI, config and entrypoint.
+# Default command only checks the baked compile environment; it opens no network port.
+ENTRYPOINT ["python", "-m", "latex_backend.compilation.tex_runtime", "--check"]

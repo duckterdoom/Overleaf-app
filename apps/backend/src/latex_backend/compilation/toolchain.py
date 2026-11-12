@@ -77,7 +77,7 @@ def bundled(root):
     root = root.resolve()
     return any(
         (base / "texmf-dist").is_dir() and root.is_relative_to(base.resolve())
-        for base in [REPO / "target/TinyTeX", REPO / "TinyTeX", REPO / "tools/TinyTeX"]
+        for base in [REPO / "target/tex-runtime/TinyTeX", REPO / "target/TinyTeX", REPO / "TinyTeX", REPO / "tools/TinyTeX"]
     )
 
 
@@ -102,7 +102,9 @@ def preflight(executable, template):
     ]:
         if not (root / (name + suffix)).is_file():
             missing.append({"name": name, "package": package, "probe": name})
-    return {"missing": missing, "bundled": bundled(root), "bin": str(root)}
+    available = (root / ('kpsewhich' + suffix)).is_file() and (root / ('latexmk' + suffix)).is_file()
+    return {"missing": missing, "bundled": bundled(root), "bin": str(root),
+            "toolchainAvailable": available, "setupCommand": "scripts/setup-tex.bat" if os.name == "nt" else "sh scripts/setup-tex.sh"}
 
 
 async def install_packages(compiler, template, confirmed):
@@ -121,7 +123,7 @@ async def install_packages(compiler, template, confirmed):
         return report
     distribution = next(
         base
-        for base in [REPO / "target/TinyTeX", REPO / "TinyTeX", REPO / "tools/TinyTeX"]
+        for base in [REPO / "target/tex-runtime/TinyTeX", REPO / "target/TinyTeX", REPO / "TinyTeX", REPO / "tools/TinyTeX"]
         if bin_path.resolve().is_relative_to(base.resolve())
     )
     command = (

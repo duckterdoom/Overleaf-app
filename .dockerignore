@@ -1,0 +1,11 @@
+.git
+target
+**/.venv
+**/__pycache__
+**/node_modules
+**/.next
+apps/frontend/out
+config/*.local.json
+**/client_secret*.json
+**/*.key
+**/*.pem

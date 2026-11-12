@@ -37,6 +37,8 @@ import {
 } from "lucide-react";
 import PdfViewer from "../components/PdfViewer";
 import WordPreview from "../components/WordDocxPreview";
+import WritingWorkspace from "../components/writing/WritingWorkspace";
+import { WritingProjectContext } from "../lib/writing/context";
 import type { WordPreviewHandle } from "../lib/word-preview";
 import {
     bootstrap,
@@ -98,6 +100,8 @@ const fold = (text: string) =>
         .toLowerCase();
 
 export default function Workspace() {
+    const [appMode,setAppMode]=useState<'editor'|'writing'>('editor');
+    const writingLeave = useRef<(() => Promise<boolean>) | null>(null);
     const [ready, setReady] = useState(false),
         [projects, setProjects] = useState<Project[]>([]),
         [catalog, setCatalog] = useState<Catalog>({
@@ -248,7 +252,7 @@ export default function Workspace() {
     async function save() {
         if (!project || !file) return true;
         if (ext.readonly) return !dirty;
-        if (isServerStorage()) return live.flush();
+        if (isServerStorage()) return (!dirty && !live.pending) || live.flush();
         const ticket = revision.current;
         try {
             await json(`/projects/${project.id}/file`, {
@@ -273,6 +277,7 @@ export default function Workspace() {
     }
     useEffect(() => {
         const handler = (event: KeyboardEvent) => {
+            if(appMode==='writing')return;
             if (
                 (event.ctrlKey || event.metaKey) &&
                 event.key.toLowerCase() === "s"
@@ -703,7 +708,7 @@ export default function Workspace() {
         live,
     });
     const presence = usePresence(project?.id, file, ext.session?.id,
-        ready && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live);
+        ready && appMode==='editor' && isServerStorage() && !!ext.session && !ext.readonly && !!project, view, live);
     const editorHandlers = useRef({ change, update: (_: ViewUpdate) => {} });
     editorHandlers.current = { change, update: (update) => {
         if (update.selectionSet || update.docChanged) outlineCursor.current(update.state.selection.main.head);
@@ -986,6 +991,14 @@ export default function Workspace() {
         );
     if (ext.session.needsRole)
         return <main data-desktop-ready="true"><RoleSelection session={ext.session} language={uiLanguage} onDone={ext.authenticated} onLogout={ext.logout} /></main>;
+    async function enterWriting(){
+        if(busy)return;
+        if(wordPreview.current&&!(await wordPreview.current.flush()))return;
+        if(project&&(dirty||live.pending)&&!(await save()))return;
+        view.current=null;
+        setAppMode('writing');
+    }
+
     if (project && ext.panel === "history")
         return (
             <HistoryPanel
@@ -1012,6 +1025,28 @@ export default function Workspace() {
                 }}
             />
         );
+    async function leaveWriting() {
+        return appMode !== 'writing' || !writingLeave.current || await writingLeave.current();
+    }
+    async function selectWorkspacePanel(panel: 'files' | 'review' | 'chat') {
+        if (!(await leaveWriting())) return;
+        setSidePanel(appMode === 'writing' ? panel : sidePanel === panel ? null : panel);
+        setAppMode('editor');
+    }
+    const workspaceTools = <nav className="workspace-activity-bar" aria-label={t("Thanh công cụ workspace", "Workspace tools")}>
+        {([
+            ['files', t('Tệp và outline', 'Files and outline'), FileText],
+            ['review', t('Nhận xét', 'Review'), MessageSquareText],
+            ['chat', t('Chat cộng tác', 'Collaborator chat'), MessagesSquare],
+        ] as const).map(([panel, label, Icon]) => <button key={panel} title={label} aria-label={label}
+            aria-pressed={appMode === 'editor' && sidePanel === panel}
+            onClick={() => void selectWorkspacePanel(panel)}><Icon size={21}/></button>)}
+        <button title={t('Chấm điểm IELTS Writing', 'IELTS Writing Evaluation')}
+            aria-label={t('Chấm điểm IELTS Writing', 'IELTS Writing Evaluation')}
+            aria-pressed={appMode === 'writing'} onClick={() => {if (appMode !== 'writing') void enterWriting();}}>
+            <GraduationCap size={21}/>
+        </button>
+    </nav>;
     return (
         <main
             data-desktop-ready={ready && ext.loaded}
@@ -1045,6 +1080,8 @@ export default function Workspace() {
                                 )
                                     return;
                                 if (dirty && !(await save())) return;
+                                if (!(await leaveWriting())) return;
+                                setAppMode("editor");
                                 await ext.leaveBeforeOpen("");
                                 setProject(null);
                                 setProjects(await json<Project[]>("/projects"));
@@ -1076,7 +1113,7 @@ export default function Workspace() {
                                     !wordPreview.current ||
                                     (await wordPreview.current.flush())
                                 )
-                                    await ext.showHistory();
+                                    if (await leaveWriting()) await ext.showHistory();
                             }}
                         >
                             <Clock3 size={17} />
@@ -1084,7 +1121,11 @@ export default function Workspace() {
                         </button>
                         <button
                             className="quiet"
-                            onClick={() => void ext.connect()}
+                            onClick={async () => {
+                                if (appMode === 'writing' && isServerStorage()) {
+                                    if (await leaveWriting()) ext.setPanel('share');
+                                } else await ext.connect();
+                            }}
                         >
                             {isServerStorage() ? <><UsersRound size={17} />{t("Chia sẻ", "Share")}</> : ext.network.joined
                                 ? (ext.network.online ? "● " : "○ ") +
@@ -1214,7 +1255,15 @@ export default function Workspace() {
                     </button>
                 </div>
             )}
-            {!project ? (
+            {appMode === 'writing' ? (
+                <div className="workspace-grid writing-workspace-grid">
+                    {workspaceTools}
+                    <WritingProjectContext.Provider value={project?.id || null}>
+                        <WritingWorkspace key={project?.id} session={ext.session} language={uiLanguage} beforeLeaveRef={writingLeave}
+                            onOpenProject={async value=>{setAppMode('editor');await refreshProjects();await open(value);}}/>
+                    </WritingProjectContext.Provider>
+                </div>
+            ) : !project ? (
                 <div className="dashboard dashboard-home">
                     <section className="projects-main">
                         <div className="page-heading">
@@ -1428,71 +1477,7 @@ export default function Workspace() {
                         } as React.CSSProperties
                     }
                 >
-                    <nav
-                        className="workspace-activity-bar"
-                        aria-label={t(
-                            "Thanh công cụ workspace",
-                            "Workspace tools",
-                        )}
-                    >
-                        <button
-                            title={t("Tệp và outline", "Files and outline")}
-                            aria-label={t(
-                                "Tệp và outline",
-                                "Files and outline",
-                            )}
-                            aria-pressed={sidePanel === "files"}
-                            onClick={() =>
-                                setSidePanel(
-                                    sidePanel === "files" ? null : "files",
-                                )
-                            }
-                        >
-                            <FileText size={21} />
-                        </button>
-                        <button
-                            title={t("Nhận xét", "Review")}
-                            aria-label={t("Nhận xét", "Review")}
-                            aria-pressed={sidePanel === "review"}
-                            onClick={() =>
-                                setSidePanel(
-                                    sidePanel === "review" ? null : "review",
-                                )
-                            }
-                        >
-                            <MessageSquareText size={21} />
-                        </button>
-                        <button
-                            title={t("Chat cộng tác", "Collaborator chat")}
-                            aria-label={t("Chat cộng tác", "Collaborator chat")}
-                            aria-pressed={sidePanel === "chat"}
-                            onClick={() =>
-                                setSidePanel(
-                                    sidePanel === "chat" ? null : "chat",
-                                )
-                            }
-                        >
-                            <MessagesSquare size={21} />
-                        </button>
-                        <button
-                            title={t(
-                                "Chấm điểm IELTS Writing",
-                                "IELTS Writing Evaluation",
-                            )}
-                            aria-label={t(
-                                "Chấm điểm IELTS Writing",
-                                "IELTS Writing Evaluation",
-                            )}
-                            aria-pressed={sidePanel === "ielts"}
-                            onClick={() =>
-                                setSidePanel(
-                                    sidePanel === "ielts" ? null : "ielts",
-                                )
-                            }
-                        >
-                            <GraduationCap size={21} />
-                        </button>
-                    </nav>
+                    {workspaceTools}
                     <aside
                         className="file-sidebar"
                         hidden={sidePanel !== "files"}
@@ -2480,7 +2465,7 @@ export default function Workspace() {
                     </section>
                 </div>
             )}
-            <div className="statusbar">
+            {appMode !== "writing" && <div className="statusbar">
                 <span>
                     <span className={`status-dot ${busy ? "busy" : ""}`} />
                     {localize(notice, uiLanguage)}
@@ -2493,7 +2478,7 @@ export default function Workspace() {
                               uiLanguage,
                           )}
                 </span>
-            </div>
+            </div>}
             {ext.panel === "settings" && (
                 <SettingsPanel
                     settings={ext.settings}
@@ -2831,17 +2816,18 @@ export default function Workspace() {
                                             >
                                                 <strong>
                                                     {t(
-                                                        "Thiếu công cụ / gói LaTeX:",
-                                                        "Missing tools / packages:",
+                                                        isServerStorage() ? "Máy chủ chưa sẵn sàng biên dịch LaTeX" : "Thiếu công cụ / gói LaTeX:",
+                                                        isServerStorage() ? "Server LaTeX environment is not ready" : "Missing tools / packages:",
                                                     )}
                                                 </strong>
-                                                <p>
+                                                {isServerStorage() && <p>{t("Bạn không cần cài LaTeX trên máy dùng trình duyệt. Môi trường biên dịch phải được chuẩn bị trên máy chủ. Nếu đang dev/test local, chạy lại launcher để tự chuẩn bị bộ TeX; nếu dùng web chung, báo người quản trị.", "You do not need LaTeX on your browser device. The compile environment must be prepared on the server. For local dev/test, rerun the launcher to prepare TeX; on a hosted site, contact the administrator.")}</p>}
+                                                <details open={!isServerStorage()}><summary>{t("Chi tiết kiểm tra môi trường", "Environment check details")}</summary><p>
                                                     {preflight.missing
                                                         .map(
                                                             (item) => item.name,
                                                         )
                                                         .join(", ")}
-                                                </p>
+                                                </p></details>
                                                 {preflight.bundled && !isServerStorage() ? (
                                                     <button
                                                         className="primary"
@@ -2884,14 +2870,14 @@ export default function Workspace() {
                                                             "Download and install into bundled TinyTeX",
                                                         )}
                                                     </button>
-                                                ) : (
+                                                ) : !isServerStorage() ? (
                                                     <p>
                                                         {t(
                                                             "Cài gói bằng trình quản lý TeX của máy rồi thử lại.",
                                                             "Install these packages with your TeX manager, then retry.",
                                                         )}
                                                     </p>
-                                                )}
+                                                ) : null}
                                                 {installing && (
                                                     <button
                                                         type="button"

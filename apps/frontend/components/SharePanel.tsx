@@ -5,19 +5,23 @@ import { json, type Project } from "../lib/api";
 import { errorText, translator } from "../lib/parity";
 
 type Permission = "viewer" | "editor";
+type WorkspaceRole = "tutor" | "student";
 type Sharing = {
     permission: "owner" | Permission;
     owner: { name: string; email: string };
     mode: "private" | "link";
     linkPermission: Permission;
     linkToken: string | null;
-    members: { id: string; email: string; permission: Permission; status: "pending" | "accepted"; inviteToken: string }[];
+    workspaceRole: WorkspaceRole;
+    linkRole: WorkspaceRole;
+    members: { id: string; email: string; permission: Permission; workspaceRole: WorkspaceRole; status: "pending" | "accepted"; inviteToken: string | null }[];
 };
 
 export default function SharePanel({ project, language, onClose }: { project: Project; language: string; onClose: () => void }) {
     const t = translator(language), route = `/projects/${project.id}/sharing`;
     const [data, setData] = useState<Sharing | null>(null), [emails, setEmails] = useState("");
     const [permission, setPermission] = useState<Permission>("viewer"), [busy, setBusy] = useState(false);
+    const [workspaceRole, setWorkspaceRole] = useState<WorkspaceRole>("student");
     const [error, setError] = useState(""), [status, setStatus] = useState("");
     const dialog = useRef<HTMLElement>(null), members = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -50,6 +54,7 @@ export default function SharePanel({ project, language, onClose }: { project: Pr
         try {
             const value = await json<Sharing>(path, { method, ...(body ? { body: JSON.stringify(body) } : {}) });
             setData(value); setStatus(t("Đã cập nhật quyền truy cập.", "Access updated."));
+            window.dispatchEvent(new CustomEvent("latex-sharing-updated", {detail: {project: project.id}}));
             return true;
         } catch (e) { setError(errorText(e)); return false; } finally { setBusy(false); }
     }
@@ -72,11 +77,12 @@ export default function SharePanel({ project, language, onClose }: { project: Pr
                     {owner && <form className="share-invite" onSubmit={async event => {
                         event.preventDefault();
                         const list = emails.split(/[,;\n]+/).map(value => value.trim()).filter(Boolean);
-                        if (await update(route + "/invitations", "POST", { emails: list, permission })) { setEmails(""); setStatus(t("Đã tạo lời mời. Sao chép liên kết lời mời bên cạnh email để gửi cho người nhận.", "Invitation created. Copy the invitation link beside the email and send it to the recipient.")); }
+                        if (await update(route + "/invitations", "POST", { emails: list, permission, workspaceRole })) { setEmails(""); setStatus(t("Đã tạo lời mời. Sao chép liên kết lời mời bên cạnh email để gửi cho người nhận.", "Invitation created. Copy the invitation link beside the email and send it to the recipient.")); }
                     }}>
                         <label htmlFor="share-emails">{t("Mời người khác qua email", "Invite people by email")}</label>
                         <div className="share-invite-controls"><input id="share-emails" value={emails} onChange={e => setEmails(e.target.value)} placeholder={t("Nhập email, phân cách bằng dấu phẩy", "Enter emails, separated by commas")} disabled={busy} required maxLength={5000} />
                             <select aria-label={t("Quyền của lời mời", "Invitation permission")} value={permission} onChange={e => setPermission(e.target.value as Permission)} disabled={busy}><option value="viewer">{t("Chỉ xem", "Viewer")}</option><option value="editor">{t("Chỉnh sửa", "Editor")}</option></select>
+                            <select aria-label={t("Vai trò của lời mời", "Invitation role")} value={workspaceRole} onChange={e => setWorkspaceRole(e.target.value as WorkspaceRole)} disabled={busy}><option value="student">{t("Học viên", "Student")}</option><option value="tutor">Tutor</option></select>
                             <button className="primary" disabled={busy || !emails.trim()}><MailPlus size={16} />{t("Mời", "Invite")}</button></div>
                         <small>{t("Ứng dụng chưa gửi email tự động. Bạn sao chép và gửi liên kết lời mời; người nhận cần đăng nhập đúng email được mời.", "Email delivery is not enabled. Copy and send the invitation link; the recipient must sign in with the invited email.")}</small>
                     </form>}
@@ -85,11 +91,13 @@ export default function SharePanel({ project, language, onClose }: { project: Pr
                         <div className="share-person"><span className="share-person-avatar">{data.owner.name.slice(0, 1).toUpperCase()}</span><div className="share-person-text"><strong>{data.owner.name}</strong><small>{data.owner.email}</small></div><span className="share-owner-label">{t("Chủ sở hữu", "Owner")}</span></div>
                         {data.members.map(member => <div className="share-person" key={member.id}><span className="share-person-avatar"><UsersRound size={17} /></span><div className="share-person-text"><strong>{member.email}</strong><small>{member.status === "pending" ? t("Đang chờ chấp nhận lời mời", "Invitation pending") : t("Đã tham gia", "Joined")}</small></div>
                             <select disabled={busy} aria-label={`${t("Quyền của", "Permission for")} ${member.email}`} value={member.permission} onChange={e => void update(route + "/members/" + member.id, "PATCH", { permission: e.target.value })}><option value="viewer">{t("Chỉ xem", "Viewer")}</option><option value="editor">{t("Chỉnh sửa", "Editor")}</option></select>
-                            <button disabled={busy} title={t("Sao chép liên kết lời mời", "Copy invitation link")} aria-label={`${t("Sao chép lời mời cho", "Copy invitation for")} ${member.email}`} onClick={() => void copy(member.inviteToken)}><Copy size={16} /></button>
+                            <select disabled={busy} aria-label={`${t("Vai trò của", "Role for")} ${member.email}`} value={member.workspaceRole} onChange={e => void update(route + "/members/" + member.id, "PATCH", { workspaceRole: e.target.value })}><option value="student">{t("Học viên", "Student")}</option><option value="tutor">Tutor</option></select>
+                            {member.inviteToken && <button disabled={busy} title={t("Sao chép liên kết lời mời", "Copy invitation link")} aria-label={`${t("Sao chép lời mời cho", "Copy invitation for")} ${member.email}`} onClick={() => void copy(member.inviteToken!)}><Copy size={16} /></button>}
                             <button disabled={busy} title={t("Thu hồi quyền", "Revoke access")} aria-label={`${t("Thu hồi quyền của", "Revoke access for")} ${member.email}`} onClick={() => void update(route + "/members/" + member.id, "DELETE")}><X size={16} /></button>
                         </div>)}
                         {owner && !data.members.length && <p className="share-no-members">{t("Bạn chưa mời ai vào dự án này.", "No one has been invited yet.")}</p>}
                     </div>
+                    {owner && data.mode === "link" && <label>{t("Vai trò mặc định cho người mới mở liên kết", "Default role for new link members")}<select disabled={busy} aria-label={t("Vai trò của liên kết", "Link role")} value={data.linkRole} onChange={e => void update(route, "PATCH", {mode: data.mode, permission: data.linkPermission, workspaceRole: e.target.value})}><option value="student">{t("Học viên", "Student")}</option><option value="tutor">Tutor</option></select></label>}
                     <h3>{t("Quyền truy cập bằng liên kết", "General access")}</h3>
                     <div className={`share-general ${data.mode === "link" ? "link-enabled" : ""}`}>
                         <span className="share-access-icon">{data.mode === "private" ? <LockKeyhole size={23} /> : <Globe size={23} />}</span>
@@ -99,7 +107,8 @@ export default function SharePanel({ project, language, onClose }: { project: Pr
                     </div>
                     {owner && data.mode === "link" && data.linkToken && <div className="share-link-field"><input aria-label={t("Liên kết chia sẻ", "Sharing link")} value={sharingLink(data.linkToken)} readOnly onFocus={e => e.currentTarget.select()} /><button disabled={busy} onClick={() => void update(route, "PATCH", { mode: data.mode, permission: data.linkPermission, rotate: true })}>{t("Tạo liên kết mới", "Reset link")}</button></div>}
                     {!owner && <p className="share-notice">{t("Chỉ chủ sở hữu được mời thành viên và thay đổi chế độ chia sẻ.", "Only the owner can invite people and manage sharing.")}</p>}
-                    <p className="share-notice"><ShieldCheck size={15} />{t("Quyền xem/chỉnh sửa được kiểm tra trên server. Đồng bộ thao tác gõ đồng thời sẽ được bổ sung sau.", "View/edit permissions are enforced on the server. Live simultaneous editing will be added later.")}</p>
+                    <p className="share-notice"><ShieldCheck size={15} />{t("Quyền và vai trò dùng chung cho editor LaTeX và IELTS trong dự án này, không đổi vai trò tài khoản ở dự án khác. Tutor có thể xem bài nộp và nháp chấm; Học viên chỉ xem bài của mình. Chỉ quyền chỉnh sửa mới được viết/nộp/chấm bài.", "Permissions and roles apply to LaTeX and IELTS in this project, without changing account roles elsewhere. Tutors can access submissions and review drafts; students only access their own. Editing permission is required to write, submit or grade.")}</p>
+                    <p className="share-notice">{t("Vai trò của bạn trong dự án", "Your project role")}: <strong>{data.workspaceRole === "tutor" ? "Tutor" : t("Học viên", "Student")}</strong></p>
                 </>}
                 {error && <p className="form-error" role="alert">{error}</p>}
                 {status && <p className="share-status" role="status"><Check size={15} />{status}</p>}

@@ -13,6 +13,7 @@ if command -v uv >/dev/null 2>&1; then
 elif ! "$web_python" -c 'import google.auth, httpx, requests, fastapi, uvicorn, websockets, httptools, pymongo, PIL, pypdf, pdf2docx, pymupdf, docx, latex_backend.entrypoints.web; from importlib.metadata import version; assert tuple(map(int,version("fastapi").split(".")[:2])) >= (0,162); assert tuple(map(int,version("uvicorn").split(".")[:2])) >= (0,54)' >/dev/null 2>&1; then
     "$web_python" -m pip install -e 'apps/backend[web]'
 fi
+"$web_python" -X utf8 -m latex_backend.compilation.tex_runtime --ensure
 if [ ! -f apps/frontend/out/index.html ] || [ "${1:-}" = --build ]; then
     (cd apps/frontend && npm ci && npm run build)
 fi

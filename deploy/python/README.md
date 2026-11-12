@@ -1,5 +1,7 @@
 # Networking server Python
 
+Với môi trường TeX cho **web API/compile**, xem [TEX_RUNTIME_SETUP.md](../../docs/TEX_RUNTIME_SETUP.md) và `Dockerfile.tex-runtime`. Dockerfile/compose trong tài liệu bên dưới vẫn là TCP/TLS cũ, không phải web server và không dùng để chuẩn bị package LaTeX cho browser.
+
 Đây là server TCP/TLS cộng tác tương ứng M3/M4, **không phải API file/compile local** của cửa sổ desktop. Không cần Java, frontend, bộ TeX hay pywebview trên server.
 
 Từ root repository, tạo Python 3.12+ venv và cài `pip install ./apps/backend`, sau đó:
