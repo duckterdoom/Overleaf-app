@@ -34,8 +34,8 @@ import ProjectRubrics from './ProjectRubrics';
 
 type Screen =
     | "overview"
-    | "classes"
     | "assignments"
+    | "exams"
     | "create"
     | "practice"
     | "check"
@@ -44,16 +44,16 @@ type Screen =
     | "grading"
     | "rubric";
 const screenTitles: Record<Screen, string> = {
-    overview: "Không gian IELTS Writing",
-    classes: "Lớp học",
+    overview: "Không gian chấm bài",
     assignments: "Bài được giao",
-    create: "Chuẩn bị bài IELTS",
-    practice: "Luyện viết IELTS",
+    exams: "Bài kiểm tra",
+    create: "Chuẩn bị bài tập",
+    practice: "Luyện viết",
     check: "Kiểm tra và nộp",
     submissions: "Bản nộp",
     results: "Kết quả & phản hồi",
     grading: "Đọc và chấm bài",
-    rubric: "Tiêu chí IELTS",
+    rubric: "Tiêu chí chấm",
 };
 const date = (value?: string | null) =>
     value ? new Date(value).toLocaleString("vi-VN") : "Không có hạn";
@@ -84,14 +84,17 @@ export default function WritingWorkspace({
     const readonly = !overview.role || overview.permission === "viewer";
     const roleRef = useRef<Session['role']>(null);
     const [recovery, setRecovery] = useState("");
+    const [navigatingTo,setNavigatingTo]=useState<Screen|null>(null);
+    const navigationSequence=useRef(0);
     const [inspect, setInspect] = useState<Assignment | null>(null);
+    const [listKind,setListKind]=useState<'assignment'|'exam'>('assignment');
+    const [examGate,setExamGate]=useState<Assignment|null>(null),[examEntryPassword,setExamEntryPassword]=useState('');
+    const [passwordTarget,setPasswordTarget]=useState<Assignment|null>(null),[newExamPassword,setNewExamPassword]=useState('');
     const [loading, setLoading] = useState(true),
         [busy, setBusy] = useState(false),
         [error, setError] = useState(""),
         [notice, setNotice] = useState("Dữ liệu được lưu trên server");
-    const [classTitle, setClassTitle] = useState(""),
-        [joinCode, setJoinCode] = useState(""),
-        [editing, setEditing] = useState<Assignment | undefined>(),
+    const [editing, setEditing] = useState<Assignment | undefined>(),
         [active, setActive] = useState<Assignment | null>(null),
         [task, setTask] = useState(1);
     const [draft, setDraft] = useState<Draft | null>(null),
@@ -330,16 +333,25 @@ export default function WritingWorkspace({
     }
     async function navigate(next: Screen) {
         if (readonly && next === 'create') return;
-        if (!(await beforeLeave())) return;
-        setError("");
-        if (next === "create") setEditing(undefined);
-        setScreen(next);
+        const ticket=++navigationSequence.current;
+        setNavigatingTo(next);
+        try{
+            if (!(await beforeLeave()) || ticket!==navigationSequence.current) return;
+            setError("");
+            if (next === "create") setEditing(undefined);
+            setScreen(next);
+            // Render cached lists immediately. Reuse an in-flight refresh instead
+            // of making every click wait for a complete MongoDB overview.
+            if(['assignments','exams','submissions','results'].includes(next))
+                void reload().catch(e=>setError(errorText(e)));
+        }finally{if(ticket===navigationSequence.current)setNavigatingTo(null);}
     }
     async function openAssignment(assignment: Assignment) {
         if (!(await beforeLeave())) return;
         await execute(async () => {
             if (tutor) {
                 if (assignment.published) {
+                    setListKind(assignment.kind==='exam'?'exam':'assignment');
                     setFilterAssignment(assignment.id);
                     setScreen("submissions");
                 } else {
@@ -348,6 +360,9 @@ export default function WritingWorkspace({
                 }
                 return;
             }
+            if(assignment.kind==='exam' && !assignment.examEntered){setExamEntryPassword('');setError('');setExamGate(assignment);return;}
+            setListKind(assignment.kind==='exam'?'exam':'assignment');
+            assignment=await json<Assignment>(`/writing/assignments/${assignment.id}`);
             const data = await json<Draft>(
                 `/writing/assignments/${assignment.id}/draft`,
             );
@@ -501,23 +516,27 @@ export default function WritingWorkspace({
         : null;
     const filtered = overview.submissions.filter(
         (s) =>
+            (s.assignment.kind||'assignment')===listKind &&
             (screen !== "results" || s.result) &&
             (!filterAssignment || s.assignmentId === filterAssignment),
     );
+    const assignmentKind=tutor?listKind:screen==='exams'?'exam':'assignment';
+    const listedAssignments=overview.assignments.filter(a=>(a.kind||'assignment')===assignmentKind);
+    const kindTabs=<div className="writing-kind-tabs" role="tablist" aria-label="Phân loại bài"><button role="tab" aria-selected={listKind==='assignment'} onClick={()=>{setListKind('assignment');setFilterAssignment('');setInspect(null);}}>Bài tập</button><button role="tab" aria-selected={listKind==='exam'} onClick={()=>{setListKind('exam');setFilterAssignment('');setInspect(null);}}>Bài kiểm tra</button></div>;
+    const examExpired=active?.kind==='exam' && (draft?.readOnly || remaining!==null && remaining<=0);
     const navigation = tutor
         ? ([
               ["overview", "Tổng quan", GraduationCap],
-              ["classes", "Lớp học", UsersRound],
-              ["create", "Giao bài IELTS", Plus],
+              ["create", "Giao bài", Plus],
               ["assignments", "Đề đã tạo", BookOpen],
               ["submissions", "Bài nộp học viên", ClipboardCheck],
-              ["rubric", "Tiêu chí IELTS", Check],
+              ["rubric", "Tiêu chí chấm", Check],
           ] as const)
         : ([
               ["overview", "Tổng quan", GraduationCap],
               ["practice", "Luyện viết", FileText],
-              ["classes", "Lớp học", UsersRound],
               ["assignments", "Bài được giao", BookOpen],
+              ["exams", "Bài kiểm tra", Clock3],
               ["submissions", "Lịch sử nộp", Send],
               ["results", "Kết quả & phản hồi", ClipboardCheck],
           ] as const);
@@ -530,6 +549,14 @@ export default function WritingWorkspace({
             className={`writing-shell writing-module${screen==='grading'?' writing-grading-mode':''}`}
             data-writing-ready={!loading}
         >
+            {examGate&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Vào bài kiểm tra" onSubmit={e=>{e.preventDefault();void execute(async()=>{
+                const result=await json<{assignment:Assignment}>(`/writing/assignments/${examGate.id}/enter`,{method:'POST',body:JSON.stringify({password:examEntryPassword})});
+                setExamEntryPassword('');setExamGate(null);await openAssignment(result.assignment);
+            });}}><h2>{examGate.title}</h2><p>Mở: {date(examGate.opensAt)}<br/>Đóng: {date(examGate.closesAt)}<br/>Thời lượng: {examGate.durationMinutes} phút</p><label>Mật khẩu vào bài<input aria-label="Mật khẩu vào bài" autoFocus type="password" autoComplete="off" required maxLength={128} value={examEntryPassword} onChange={e=>setExamEntryPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setExamGate(null);setExamEntryPassword('');}}>Hủy</button><button className="primary" disabled={busy} type="submit">Bắt đầu bài kiểm tra</button></footer></form></div>}
+            {passwordTarget&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Đổi mật khẩu bài kiểm tra" onSubmit={e=>{e.preventDefault();void execute(async()=>{
+                await json(`/writing/assignments/${passwordTarget.id}/exam-password`,{method:'PATCH',body:JSON.stringify({password:newExamPassword,revision:passwordTarget.revision})});
+                setPasswordTarget(null);setNewExamPassword('');setNotice('Đã đổi mật khẩu. Người đang làm bài giữ nguyên đồng hồ.');await reload(true);
+            });}}><h2>Đổi mật khẩu</h2><p>{passwordTarget.title}</p><label>Mật khẩu mới<input aria-label="Mật khẩu kiểm tra mới" type="password" autoComplete="new-password" minLength={6} maxLength={128} required value={newExamPassword} onChange={e=>setNewExamPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setPasswordTarget(null);setNewExamPassword('');}}>Hủy</button><button className="primary" disabled={busy}>Lưu mật khẩu</button></footer></form></div>}
             <div className="writing-layout">
                 <aside className="writing-sidebar">
                     <span className="writing-eyebrow">
@@ -539,7 +566,8 @@ export default function WritingWorkspace({
                         <button
                             key={id}
                             disabled={readonly && id === "create"}
-                            className={screen === id ? "active" : ""}
+                            className={(navigatingTo||screen) === id ? "active" : ""}
+                            aria-busy={navigatingTo===id}
                             onClick={() => {
                                 if (id === "submissions")
                                     setFilterAssignment("");
@@ -568,7 +596,7 @@ export default function WritingWorkspace({
                     <div className="writing-page-heading">
                         <div>
                             <span className="writing-eyebrow">
-                                IELTS × LATEX
+                                CHẤM BÀI × LATEX
                             </span>
                             <h1>{screenTitles[screen]}</h1>
                         </div>
@@ -642,7 +670,7 @@ export default function WritingWorkspace({
                                             <p>
                                                 {tutor
                                                     ? "Giao bài, đọc snapshot học viên đã nộp, ghi nhận theo từng đoạn và công bố phản hồi."
-                                                    : "Luyện Task 1 / Task 2, lưu bài trên server và nhận phản hồi từ Tutor."}
+                                                    : "Luyện IELTS, Report hoặc Research từ tệp dự án và nhận phản hồi từ Tutor."}
                                             </p>
                                         </div>
                                         <div className="writing-welcome-art">
@@ -657,8 +685,8 @@ export default function WritingWorkspace({
                                     <div className="writing-stats">
                                         {[
                                             [
-                                                overview.classes.length,
-                                                "Lớp học",
+                                                overview.assignments.length,
+                                                "Đề trong dự án",
                                             ],
                                             [
                                                 overview.assignments.filter(
@@ -694,165 +722,31 @@ export default function WritingWorkspace({
                                         <div>
                                             <h2>
                                                 {tutor
-                                                    ? "Bắt đầu từ lớp học"
-                                                    : "Bạn đã có mã lớp?"}
+                                                    ? "Giao bài cho thành viên dự án"
+                                                    : "Bài tập trong dự án"}
                                             </h2>
                                             <p>
                                                 {tutor
-                                                    ? "Tạo lớp và gửi mã tham gia cho học viên. Danh sách bài nộp sẽ xuất hiện sau khi học viên nộp thật."
-                                                    : "Tham gia lớp để nhận bài từ Tutor, hoặc luyện một bài cá nhân với đề tự chọn."}
+                                                    ? "Chọn tệp đề trong editor để giao cho Học viên được chia sẻ dự án."
+                                                    : "Mở bài được giao hoặc chọn tệp trong dự án để luyện cá nhân."}
                                             </p>
                                         </div>
                                         <button
                                             onClick={() =>
-                                                void navigate("classes")
+                                                void navigate(tutor ? "create" : "assignments")
                                             }
                                         >
                                             {tutor
-                                                ? "Quản lý lớp"
-                                                : "Tham gia lớp"}
+                                                ? "Giao bài"
+                                                : "Bài được giao"}
                                             <ArrowRight size={16} />
                                         </button>
                                     </section>
                                 </>
                             )}
-                            {screen === "classes" && (
-                                <>
-                                    {!readonly && <form
-                                        className="writing-card writing-class-form"
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            void execute(async () => {
-                                                if (tutor) {
-                                                    await json(
-                                                        "/writing/classes",
-                                                        {
-                                                            method: "POST",
-                                                            body: JSON.stringify(
-                                                                {
-                                                                    title: classTitle,
-                                                                },
-                                                            ),
-                                                        },
-                                                    );
-                                                    setClassTitle("");
-                                                } else {
-                                                    await json(
-                                                        "/writing/classes/join",
-                                                        {
-                                                            method: "POST",
-                                                            body: JSON.stringify(
-                                                                {
-                                                                    code: joinCode,
-                                                                },
-                                                            ),
-                                                        },
-                                                    );
-                                                    setJoinCode("");
-                                                }
-                                                await reload();
-                                            });
-                                        }}
-                                    >
-                                        <label>
-                                            {tutor
-                                                ? "Tên lớp mới"
-                                                : "Mã lớp từ Tutor"}
-                                            <input
-                                                required
-                                                aria-label={
-                                                    tutor
-                                                        ? "Tên lớp mới"
-                                                        : "Mã lớp"
-                                                }
-                                                value={
-                                                    tutor
-                                                        ? classTitle
-                                                        : joinCode
-                                                }
-                                                onChange={(e) =>
-                                                    tutor
-                                                        ? setClassTitle(
-                                                              e.target.value,
-                                                          )
-                                                        : setJoinCode(
-                                                              e.target.value,
-                                                          )
-                                                }
-                                            />
-                                        </label>
-                                        <button
-                                            disabled={busy}
-                                            className="primary"
-                                        >
-                                            {tutor ? "Tạo lớp" : "Tham gia lớp"}
-                                        </button>
-                                    </form>}
-                                    <div className="writing-class-grid">
-                                        {overview.classes.map((c) => (
-                                            <article
-                                                className="writing-card"
-                                                key={c.id}
-                                            >
-                                                <UsersRound size={24} />
-                                                <h2>{c.title}</h2>
-                                                <p>
-                                                    {c.tutorName} ·{" "}
-                                                    {c.studentCount} học viên
-                                                </p>
-                                                {c.joinCode && (
-                                                    <div className="writing-class-code">
-                                                        <span>Mã tham gia</span>
-                                                        <code>
-                                                            {c.joinCode}
-                                                        </code>
-                                                        <button
-                                                            onClick={() =>
-                                                                void navigator.clipboard
-                                                                    .writeText(
-                                                                        c.joinCode!,
-                                                                    )
-                                                                    .then(() =>
-                                                                        setNotice(
-                                                                            "Đã sao chép mã lớp.",
-                                                                        ),
-                                                                    )
-                                                                    .catch(() =>
-                                                                        setNotice(
-                                                                            "Chọn mã lớp để sao chép thủ công.",
-                                                                        ),
-                                                                    )
-                                                            }
-                                                        >
-                                                            Sao chép
-                                                        </button>
-                                                    </div>
-                                                )}
-                                                {c.students && (
-                                                    <ul>
-                                                        {c.students.map((s) => (
-                                                            <li key={s.id}>
-                                                                {s.name}
-                                                            </li>
-                                                        ))}
-                                                    </ul>
-                                                )}
-                                            </article>
-                                        ))}
-                                    </div>
-                                    {overview.classes.length === 0 && (
-                                        <div className="writing-empty">
-                                            {tutor
-                                                ? "Chưa có lớp. Tạo lớp đầu tiên ở trên."
-                                                : "Bạn chưa tham gia lớp nào."}
-                                        </div>
-                                    )}
-                                </>
-                            )}
                             {screen === "create" && !readonly && (
                                 <AssignmentForm
                                     key={editing?.id || "new"}
-                                    classes={overview.classes}
                                     practice={!tutor}
                                     initial={editing}
                                     onCancel={() =>
@@ -861,9 +755,10 @@ export default function WritingWorkspace({
                                     onDone={(a) => {
                                         void reload();
                                         if (tutor) {
+                                            setListKind(a.kind==='exam'?'exam':'assignment');
                                             setNotice(
                                                 a.published
-                                                    ? "Đã giao bài cho lớp."
+                                                    ? "Đã giao bài cho Học viên trong dự án."
                                                     : "Đã lưu đề nháp.",
                                             );
                                             setScreen("assignments");
@@ -871,18 +766,19 @@ export default function WritingWorkspace({
                                     }}
                                 />
                             )}
-                            {screen === "assignments" && (
+                            {(screen === "assignments" || screen==='exams') && (
                                 <>
+                                    {tutor&&kindTabs}
                                     {tutor && inspect && <section className="writing-card">
                                         <h2>{inspect.title}</h2>
                                         <button onClick={()=>setInspect(null)}>Đóng chi tiết đề</button>
                                         {inspect.tasks.map(number=><div key={number}>
-                                            <h3>Task {number}</h3>
+                                            <h3>{!inspect.category||inspect.category==='ielts'?`Task ${number}`:inspect.category==='report'?'Report':'Research'}</h3>
                                             {inspect.promptFiles?.[String(number)] ? <PromptDocument file={inspect.promptFiles[String(number)]} language={language}/> : <p>{inspect.prompts[String(number)] || 'Đề cũ chưa có tệp từ editor. Sửa bài để chọn tệp đề.'}</p>}
                                         </div>)}
                                         <h3>Theo dõi học viên</h3>
                                         <table><thead><tr><th>Học viên</th><th>Trạng thái</th><th>Bản nộp</th></tr></thead><tbody>
-                                            {(overview.classes.find(c=>c.id===inspect.classId)?.students || []).map(person=>{
+                                            {(overview.students || []).map(person=>{
                                                 const submissions=overview.submissions.filter(s=>s.assignmentId===inspect.id && s.studentId===person.id);
                                                 return <tr key={person.id}><td>{person.name}</td><td>{submissions.length?'Đã nộp':'Chưa nộp'}</td><td>{submissions.length}</td></tr>;
                                             })}
@@ -891,10 +787,10 @@ export default function WritingWorkspace({
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
-                                                ? "Đề nháp và bài đã giao cho lớp của bạn."
-                                                : "Những bài đã giao cho lớp và bài luyện cá nhân."}
+                                                ? "Đề nháp và bài đã giao trong dự án."
+                                                : screen==='exams'?"Bài kiểm tra có mật khẩu và giờ mở/đóng riêng.":"Bài được giao và bài luyện cá nhân."}
                                         </p>
-                                        <button
+                                        {(tutor||screen!=='exams')&&<button
                                             onClick={() =>
                                                 void navigate("create")
                                             }
@@ -903,11 +799,11 @@ export default function WritingWorkspace({
                                             {tutor
                                                 ? "Tạo bài tập"
                                                 : "Bài luyện cá nhân"}
-                                        </button>
+                                        </button>}
                                     </div>
-                                    {overview.assignments.length ? (
+                                    {listedAssignments.length ? (
                                         <div className="writing-assignment-list">
-                                            {overview.assignments.map((a) => (
+                                            {listedAssignments.map((a) => (
                                                 <article
                                                     className="writing-card"
                                                     key={a.id}
@@ -920,7 +816,7 @@ export default function WritingWorkspace({
                                                         </span>
                                                         <h2>{a.title}</h2>
                                                         <p>
-                                                            {a.variant ===
+                                                            {a.category && a.category!=='ielts'?a.category==='report'?'Report':'Research':a.variant ===
                                                             "academic"
                                                                 ? "Academic"
                                                                 : "General Training"}{" "}
@@ -928,8 +824,7 @@ export default function WritingWorkspace({
                                                             {a.tasks
                                                                 .map(
                                                                     (t) =>
-                                                                        "Task " +
-                                                                        t,
+                                                                        (!a.category||a.category==='ielts'?"Task " + t:"Tài liệu"),
                                                                 )
                                                                 .join(
                                                                     " + ",
@@ -940,7 +835,7 @@ export default function WritingWorkspace({
                                                                 : a.tutorName}
                                                         </p>
                                                         <small>
-                                                            Hạn: {date(a.dueAt)}
+                                                            {a.kind==='exam'?`Mở: ${date(a.opensAt)} · Đóng: ${date(a.closesAt)} · ${a.durationMinutes} phút`:`Hạn: ${date(a.dueAt)}`}
                                                         </small>
                                                     </div>
                                                     <button
@@ -955,12 +850,13 @@ export default function WritingWorkspace({
                                                             ? a.published
                                                                 ? "Xem bản nộp"
                                                                 : "Sửa đề nháp"
-                                                            : "Mở bài viết"}
+                                                            : a.kind==='exam'?'Vào bài kiểm tra':"Mở bài viết"}
                                                         <ArrowRight size={15} />
                                                     </button>
                                                     {tutor && <div>
                                                         <button onClick={()=>{setInspect(a);}}>Xem đề và học viên</button>
                                                         {!readonly && <>
+                                                            {a.kind==='exam'&&<button onClick={()=>{setPasswordTarget(a);setNewExamPassword('');setError('');}}>Đổi mật khẩu</button>}
                                                             <button onClick={()=>{setEditing(a);setScreen('create');}}>Sửa bài tập</button>
                                                             <button onClick={async()=>{
                                                                 if(!window.confirm('Xóa bài tập khỏi danh sách? Bản nộp và kết quả đã có vẫn được giữ.'))return;
@@ -975,8 +871,8 @@ export default function WritingWorkspace({
                                         <div className="writing-empty">
                                             Chưa có bài tập.{" "}
                                             {tutor
-                                                ? "Hãy tạo lớp và giao bài."
-                                                : "Tham gia lớp hoặc tạo bài luyện cá nhân."}
+                                                ? "Hãy lấy đề từ editor và giao cho dự án."
+                                                : "Mở bài được giao hoặc tạo bài luyện cá nhân."}
                                         </div>
                                     )}
                                 </>
@@ -1021,17 +917,17 @@ export default function WritingWorkspace({
                                                             setTask(n)
                                                         }
                                                     >
-                                                        Task {n}
+                                                        {!active.category||active.category==='ielts'?`Task ${n}`:active.category==='report'?'Report':'Research'}
                                                     </button>
                                                 ))}
                                             </div>
                                             <span>
-                                                {active.variant === "academic"
+                                                {active.category && active.category!=='ielts'?active.category==='report'?'Report':'Research':active.variant === "academic"
                                                     ? "Academic"
                                                     : "General Training"}{" "}
                                                 ·{" "}
                                                 {
-                                                    catalog[
+                                                    (active.rubricCatalog||catalog)[
                                                         active.profiles[
                                                             String(task)
                                                         ]
@@ -1043,7 +939,7 @@ export default function WritingWorkspace({
                                                 {remaining === null
                                                     ? "Không bấm giờ"
                                                     : remaining === 0
-                                                      ? "Hết giờ — bài vẫn được lưu"
+                                                      ? active.kind==='exam'?"Hết giờ — chỉ xem bản nháp đã lưu":"Hết giờ — bài vẫn được lưu"
                                                       : `${Math.floor(
                                                             remaining / 60,
                                                         )
@@ -1054,7 +950,7 @@ export default function WritingWorkspace({
                                                             )}:${(remaining % 60).toString().padStart(2, "0")}`}
                                             </span>
                                             <button
-                                                disabled={readonly}
+                                                disabled={readonly||!!examExpired}
                                                 onClick={() =>
                                                     void navigate("check")
                                                 }
@@ -1122,7 +1018,7 @@ export default function WritingWorkspace({
                                                                 alt="Hình đề Task 1"
                                                             />
                                                         ))}
-                                                    <p className="writing-question-note">
+                                                    {(!active.category || active.category === "ielts") && <p className="writing-question-note">
                                                         Ít nhất{" "}
                                                         {task === 1 ? 150 : 250}{" "}
                                                         từ ·{" "}
@@ -1133,7 +1029,7 @@ export default function WritingWorkspace({
                                                         Đếm từ là công cụ hỗ
                                                         trợ, không tự quy đổi
                                                         thành band.
-                                                    </p>
+                                                    </p>}
                                                 </aside>
                                                 <section className="writing-answer">
                                                     <header>
@@ -1149,7 +1045,7 @@ export default function WritingWorkspace({
                                                         </span>
                                                     </header>
                                                     <textarea
-                                                        readOnly={readonly}
+                                                        readOnly={readonly||!!examExpired}
                                                         aria-label={`Câu trả lời Task ${task}`}
                                                         spellCheck
                                                         value={
@@ -1197,7 +1093,7 @@ export default function WritingWorkspace({
                                                                         )
                                                                     ] || "",
                                                                 ) <
-                                                                (task === 1
+                                                                (active.category && active.category!=='ielts'?0:task === 1
                                                                     ? 150
                                                                     : 250)
                                                                     ? "writing-word-warning"
@@ -1215,10 +1111,7 @@ export default function WritingWorkspace({
                                                                 )}{" "}
                                                                 từ
                                                             </strong>{" "}
-                                                            /{" "}
-                                                            {task === 1
-                                                                ? 150
-                                                                : 250}
+                                                            {(!active.category||active.category==='ielts') && ` / ${task===1?150:250}`}
                                                         </span>
                                                         <button
                                                             disabled={
@@ -1250,7 +1143,7 @@ export default function WritingWorkspace({
                                     {active.tasks.map((n) => (
                                         <article key={n}>
                                             <h3>
-                                                Task {n} ·{" "}
+                                                {!active.category||active.category==='ielts'?`Task ${n}`:'Tài liệu'} ·{" "}
                                                 {countWords(
                                                     draft.answers[String(n)] ||
                                                         "",
@@ -1260,7 +1153,7 @@ export default function WritingWorkspace({
                                             {active.promptFiles?.[String(n)] && <PromptDocument focused file={active.promptFiles[String(n)]} language={language}/>}
                                             {countWords(
                                                 draft.answers[String(n)] || "",
-                                            ) < (n === 1 ? 150 : 250) && (
+                                            ) < (n === 1 ? 150 : 250) && (!active.category||active.category==='ielts') && (
                                                 <p className="writing-word-warning">
                                                     Bài dưới số từ khuyến nghị;
                                                     không tự suy ra band.
@@ -1282,7 +1175,7 @@ export default function WritingWorkspace({
                                         </button>
                                         <button
                                             disabled={
-                                                readonly || busy ||
+                                                readonly || busy || !!examExpired ||
                                                 active.tasks.some(
                                                     (n) =>
                                                         !draft.answers[
@@ -1304,6 +1197,7 @@ export default function WritingWorkspace({
                             {(screen === "submissions" ||
                                 screen === "results") && (
                                 <>
+                                    {kindTabs}
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
@@ -1448,36 +1342,14 @@ export default function WritingWorkspace({
                                 </DocumentView>
                             )}
                             {screen === "rubric" && (
-                                <><ProjectRubrics editable={tutor&&!readonly}/><div className="writing-rubric-grid">
-                                    {Object.entries(catalog).map(([id, p]) => (
-                                        <article
-                                            className="writing-card"
-                                            key={id}
-                                        >
-                                            <span className="writing-tag">
-                                                Task {p.task} · {p.family}
-                                            </span>
-                                            <h2>{p.label}</h2>
-                                            <ul>
-                                                {p.focus.map((text) => (
-                                                    <li key={text}>{text}</li>
-                                                ))}
-                                            </ul>
-                                            <p className="writing-muted">
-                                                Hướng dẫn sư phạm để đối chiếu
-                                                đề. Không phải bảng quy đổi
-                                                checklist thành band.
-                                            </p>
-                                        </article>
-                                    ))}
-                                </div></>
+                                <ProjectRubrics editable={tutor&&!readonly}/>
                             )}
                         </>
                     )}
                 </section>
             </div>
             <footer className="statusbar">
-                <span>{notice}</span>
+                <span>{navigatingTo?'Đang lưu và chuyển mục…':notice}</span>
                 <span>
                     {dirty
                         ? "Bài viết chưa lưu"

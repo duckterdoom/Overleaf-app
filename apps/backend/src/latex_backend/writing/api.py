@@ -24,12 +24,23 @@ class Title(Model):
 class RubricCheck(Model):
     id: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,80}$')
     text: str = Field(min_length=1, max_length=1000)
-    codes: list[Literal['TA','TR','CC','LR','GRA']] = Field(min_length=1, max_length=5)
+    codes: list[Annotated[str, StringConstraints(pattern=r'^[A-Z0-9_-]{1,30}$')]] = Field(min_length=1, max_length=10)
+
+
+class RubricProfile(Model):
+    category: Literal['ielts','report','research'] = 'ielts'
+    task: Literal[1,2] = 1
+    family: Literal['academic','general','essay','report','research']
+    label: str = Field(min_length=1,max_length=160)
+    focus: list[Annotated[str,StringConstraints(max_length=1000)]] = Field(default_factory=list,max_length=20)
+    sectionTitles: dict[str,Annotated[str,StringConstraints(max_length=100)]] = Field(default_factory=dict,max_length=20)
+    checks: dict[str,list[RubricCheck]] = Field(max_length=20)
 
 
 class RubricSettings(Model):
     revision: int = Field(ge=0)
-    checks: dict[str, dict[str, list[RubricCheck]]]
+    checks: dict[str, dict[str, list[RubricCheck]]] | None = None
+    catalog: dict[str,RubricProfile] | None = Field(default=None,max_length=80)
 
 
 class Join(Model):
@@ -37,6 +48,11 @@ class Join(Model):
 
 
 class Assignment(Title):
+    kind: Literal['assignment','exam'] = 'assignment'
+    opensAt: datetime | None = None
+    closesAt: datetime | None = None
+    examPassword: str | None = Field(default=None,min_length=6,max_length=128)
+    category: Literal['ielts','report','research'] = 'ielts'
     classId: str | None = None
     variant: Literal['academic', 'general'] = 'academic'
     tasks: list[Literal[1, 2]] = Field(min_length=1, max_length=2)
@@ -58,6 +74,14 @@ class Draft(Model):
     latexSources: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=200000)]] = Field(default_factory=dict)
 
 
+class ExamEntry(Model):
+    password: str = Field(min_length=1,max_length=128)
+
+
+class ExamPassword(ExamEntry):
+    revision: int = Field(ge=0)
+
+
 class Submit(Model):
     revision: int = Field(ge=0)
     requestId: str = Field(min_length=16, max_length=64, pattern='^[a-zA-Z0-9-]+$')
@@ -65,7 +89,7 @@ class Submit(Model):
 
 class Section(Model):
     paragraph: int = Field(ge=-1, le=1000)
-    kind: Literal['intro', 'overview', 'body', 'conclusion', 'closing', 'whole']
+    kind: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,40}$')
     title: str = Field(max_length=160)
     checks: dict[str, Literal['unreviewed', 'met', 'partial', 'missing', 'na']] = Field(default_factory=dict, max_length=100)
     note: str = Field(default='', max_length=10000)
@@ -73,8 +97,9 @@ class Section(Model):
 
 
 class Grade(Model):
+    scoreSource: Literal['manual','checklist'] = 'manual'
     profile: str = Field(max_length=40)
-    scores: dict[str, float | None] = Field(max_length=4)
+    scores: dict[str, float | None] = Field(default_factory=dict,max_length=4)
     notes: dict[str, Annotated[str, StringConstraints(max_length=10000)]] = Field(default_factory=dict, max_length=4)
     overall: str = Field(default='', max_length=10000)
     sections: list[Section] = Field(default_factory=list, max_length=200)
@@ -129,9 +154,10 @@ def register_writing(gateway):
     @api.get('/api/writing/overview')
     def overview(request: Request):
         current = user(request)
-        return {'classes': service.classes(current), 'assignments': service.assignments(current),
-                'submissions': service.submissions(current), 'role': current['role'],
-                'permission': current.get('projectPermission', 'owner'), 'legacy': service.legacy(current)}
+        return {'classes': service.classes(current), 'assignments': service.assignments(current, compact=True),
+                'submissions': service.submissions(current, compact=True), 'role': current['role'],
+                'permission': current.get('projectPermission', 'owner'), 'legacy': service.legacy(current),
+                'students': service.project_students(current)}
 
     @api.get('/api/writing/settings')
     def writing_settings(request: Request):
@@ -166,7 +192,10 @@ def register_writing(gateway):
             for assignment in gateway.database.writing_assignments.find({'projectId': row['projectId'], '$or': [
                     {'promptFiles.1.id': key}, {'promptFiles.2.id': key}]}):
                 try:
-                    service.assignment(current, assignment['id']); allowed = True; break
+                    task=service.assignment(current, assignment['id'])
+                    from latex_backend.writing.exams import require_entry
+                    require_entry(gateway.database,current,task)
+                    allowed = True; break
                 except Problem:
                     pass
         if not allowed:
@@ -191,8 +220,16 @@ def register_writing(gateway):
 
     @api.get('/api/writing/assignments/{key}')
     def get_assignment(key: str, request: Request):
-        from latex_backend.writing.service import public
-        return public(service.assignment(user(request), key))
+        current=user(request)
+        return service.assignment_view(current,service.assignment(current,key))
+
+    @api.post('/api/writing/assignments/{key}/enter')
+    def enter_exam(key: str, data: ExamEntry, request: Request):
+        return service.enter_exam(user(request),key,data.password)
+
+    @api.patch('/api/writing/assignments/{key}/exam-password')
+    def exam_password(key: str, data: ExamPassword, request: Request):
+        return service.exam_password(user(request),key,data.password,data.revision)
 
     @api.delete('/api/writing/assignments/{key}')
     def delete_assignment(key: str, request: Request, revision: int):
@@ -261,7 +298,9 @@ def register_writing(gateway):
         if not allowed:
             for assignment in gateway.database.writing_assignments.find({'imageId': key}):
                 try:
-                    service.assignment(current, assignment['id'])
+                    task=service.assignment(current, assignment['id'])
+                    from latex_backend.writing.exams import require_entry
+                    require_entry(gateway.database,current,task)
                     allowed = True
                     break
                 except Problem:

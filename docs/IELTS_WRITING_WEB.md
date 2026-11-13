@@ -1,5 +1,7 @@
 # IELTS Writing trong web Latex
 
+**Cập nhật 13/11/2026:** tính năng này đã tích hợp **Report và Research trong cùng luồng chấm**, bỏ lớp học ở giao diện/giao bài mới trong dự án, đổi mục rubric thành **Tiêu chí chấm**, hỗ trợ CRUD cả bộ/nhóm/mục con và tổng kết IELTS từ checklist. Xem [hướng dẫn hiện hành](UNIFIED_ASSESSMENT.md); các đoạn mô tả lớp học và checklist không quy đổi điểm phía dưới là lịch sử phiên bản trước.
+
 **Phiếu kết quả trong cây tệp:** khi Tutor công bố điểm, hệ thống tạo `result/<ten-hoc-vien>-task<N>-<dang-bai>-<ma-ban-nop>-v<phien-ban>.tex`. Mỗi Task là một tài liệu liên tục: tên học viên → đề → bài làm → band/lời phê theo tiêu chí/nhận xét theo đoạn → tổng kết. Tài liệu dài phân trang tự nhiên, không ép co toàn bộ bài vào một trang giấy. PDF/ảnh đề được chép vào `result/assets/` để compile lại đúng bản đã giao. Không tạo dự án mới. Công bố lại phiên bản mới tạo tên phiên bản mới; không ghi đè file người dùng đã sửa.
 
 `result/` là tệp chung của dự án: thành viên có quyền đọc dự án có thể đọc phiếu đã công bố. Nháp viết/nháp chấm vẫn giữ riêng trong module. Các bài đã công bố trước cập nhật chưa tự tạo file; Tutor công bố lại cùng phiên bản để tạo phiếu, không thay điểm.

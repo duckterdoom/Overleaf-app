@@ -515,6 +515,17 @@
     align-items: center;
     gap: 4px;
 }
+.writing-kind-tabs { display:flex; gap:5px; padding:5px; border:1px solid var(--line); background:var(--soft); border-radius:10px; width:fit-content; margin:0 0 15px; }
+.writing-kind-tabs button { border:0; padding:10px 22px; background:transparent; }
+.writing-kind-tabs button[aria-selected=true] { background:var(--green); color:white; }
+.writing-exam-settings { border:1px solid var(--line); border-radius:10px; padding:18px; background:var(--soft); }
+.writing-exam-backdrop { position:fixed; inset:0; z-index:2000; background:#0006; display:flex; align-items:center; justify-content:center; padding:20px; }
+.writing-exam-dialog { width:min(500px,100%); max-height:90vh; overflow:auto; background:var(--panel); color:var(--ink); border-radius:14px; padding:26px; box-shadow:0 12px 60px #0004; }
+.writing-exam-dialog h2 { font-size:24px; margin:0 0 15px; }
+.writing-exam-dialog p { line-height:1.8; margin-bottom:16px; }
+.writing-exam-dialog label { display:flex; flex-direction:column; gap:8px; }
+.writing-exam-dialog input { width:100%; padding:12px; border:1px solid var(--line); border-radius:7px; }
+.writing-exam-dialog footer { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
 .writing-task-tabs button {
     border: 0;
     background: transparent;
@@ -590,6 +601,31 @@
 .writing-focused-prompt .pdf-sheet { box-shadow: none; }
 .writing-rubric-edit-row { display:flex; align-items:center; gap:10px; margin:10px 0; }
 .writing-rubric-edit-row textarea { flex:1; min-height:70px; }
+.rubric-manager { min-width:0; }
+.rubric-manager > header { display:flex; justify-content:space-between; gap:20px; align-items:center; margin-bottom:20px; }
+.rubric-manager h2 { font-size:25px; margin:5px 0; }
+.rubric-manager header p { color:var(--muted); font-size:14px; }
+.rubric-category-tabs { display:flex; gap:6px; padding:5px; background:var(--soft); border:1px solid var(--line); border-radius:12px; width:fit-content; margin-bottom:20px; }
+.rubric-category-tabs button { padding:10px 24px; border:0; background:transparent; }
+.rubric-category-tabs button[aria-pressed=true] { background:var(--green); color:white; box-shadow:0 2px 6px #0001; }
+.rubric-manager-layout { display:grid; grid-template-columns:250px minmax(0,1fr); gap:24px; align-items:start; }
+.rubric-manager-layout > aside { display:flex; flex-direction:column; gap:5px; background:var(--panel); padding:12px; border:1px solid var(--line); border-radius:12px; max-height:75vh; overflow:auto; }
+.rubric-manager-layout > aside button { text-align:left; display:flex; justify-content:space-between; padding:12px; border-color:transparent; }
+.rubric-manager-layout > aside button.active { background:var(--soft); border-color:var(--green); color:var(--green); }
+.rubric-manager-layout > aside small { white-space:nowrap; color:var(--muted); margin-left:8px; }
+.rubric-editor { min-width:0; padding:22px; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+.rubric-editor-heading { display:flex; align-items:end; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.rubric-editor-heading label { flex:1; }
+.rubric-section-card { border:1px solid var(--line); border-radius:10px; margin:16px 0; overflow:hidden; }
+.rubric-section-card > summary { cursor:pointer; background:var(--soft); padding:14px 18px; }
+.rubric-section-card > summary small { float:right; color:var(--muted); }
+.rubric-section-content { padding:16px; }
+.rubric-check-row { display:grid; grid-template-columns:24px minmax(0,1fr) 180px; gap:12px; padding:14px 0; border-top:1px solid var(--line); align-items:start; }
+.rubric-check-row > span { color:var(--muted); font-size:12px; padding-top:10px; }
+.rubric-check-row textarea { min-height:90px; resize:vertical; font-size:14px; line-height:1.6; }
+.rubric-code-picker { display:flex; flex-wrap:wrap; gap:5px; margin-bottom:8px; }
+.rubric-code-picker label { display:flex; flex-direction:row; align-items:center; gap:3px; font-size:11px; padding:3px; background:var(--soft); border-radius:4px; }
+@media(max-width:1050px){.rubric-manager-layout{grid-template-columns:1fr}.rubric-manager-layout>aside{max-height:240px}.rubric-check-row{grid-template-columns:20px 1fr}.rubric-check-row>div{grid-column:2}.rubric-manager>header{align-items:start;flex-direction:column}}
 .writing-project-rubrics fieldset { padding:12px; margin:12px 0; border:1px solid var(--line); }
 .writing-question:has(.writing-focused-prompt) > .writing-eyebrow,
 .writing-question:has(.writing-focused-prompt) > h2,

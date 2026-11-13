@@ -1,11 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWritingApi } from "../../lib/writing/context";
 import { errorText } from "../../lib/parity";
 import {
-    catalog,
+    catalog as defaultCatalog,
+    type Profile,
     type Assignment,
-    type Classroom,
     type PromptFile,
 } from "../../lib/writing/types";
 import ProjectPromptPicker from './ProjectPromptPicker';
@@ -83,23 +83,25 @@ export function CommutingChart() {
 }
 
 export default function AssignmentForm({
-    classes,
     practice,
     initial,
     onDone,
     onCancel,
 }: {
-    classes: Classroom[];
     practice: boolean;
     initial?: Assignment;
     onDone: (a: Assignment) => void;
     onCancel: () => void;
 }) {
     const { json, request, assetUrl } = useWritingApi();
-    const [title, setTitle] = useState(initial?.title || ""),
-        [classId, setClassId] = useState(
-            initial?.classId || classes[0]?.id || "",
-        );
+    const [kind,setKind]=useState<'assignment'|'exam'>(initial?.kind||'assignment');
+    const [examPassword,setExamPassword]=useState('');
+    const localDate=(value?:string|null)=>value?new Date(new Date(value).getTime()-new Date(value).getTimezoneOffset()*60000).toISOString().slice(0,16):'';
+    const [opens,setOpens]=useState(localDate(initial?.opensAt)),[closes,setCloses]=useState(localDate(initial?.closesAt));
+    const [category,setCategory]=useState<'ielts'|'report'|'research'>(initial?.category||'ielts');
+    const [catalog,setCatalog]=useState<Record<string,Profile>>(initial?.rubricCatalog||defaultCatalog);
+    useEffect(()=>{void json<{catalog:Record<string,Profile>}>('/writing/settings').then(v=>setCatalog(v.catalog)).catch(e=>setError(errorText(e)));},[]);
+    const [title, setTitle] = useState(initial?.title || "");
     const [variant, setVariant] = useState<"academic" | "general">(
             initial?.variant || "academic",
         ),
@@ -118,7 +120,12 @@ export default function AssignmentForm({
         [allowLate, setAllowLate] = useState(initial?.allowLate ?? true);
     const [busy, setBusy] = useState(false),
         [error, setError] = useState("");
-    const tasks = mode.split(",").map(Number);
+    const tasks = category==='ielts'?mode.split(",").map(Number):[1];
+    useEffect(()=>{setProfiles(old=>{
+        const next={...old};for(const n of tasks){const options=Object.entries(catalog).filter(([,p])=>(p.category||'ielts')===category && p.task===n && (category!=='ielts'||n===2||p.family===variant));
+            if(!options.some(([key])=>key===next[String(n)]))next[String(n)]=options[0]?.[0]||'';}
+        return next;
+    });},[category,mode,variant,catalog]);
     const [promptFiles,setPromptFiles]=useState<Record<string,PromptFile>>(initial?.promptFiles || {});
     const [imports,setImports]=useState<Set<number>>(new Set());
     const [promptGeneration,setPromptGeneration]=useState(0);
@@ -136,18 +143,23 @@ export default function AssignmentForm({
                     method: initial ? "PUT" : "POST",
                     body: JSON.stringify({
                         title,
-                        classId: practice ? null : classId,
+                        kind:practice?'assignment':kind,
+                        examPassword:kind==='exam'&&examPassword?examPassword:undefined,
+                        opensAt:kind==='exam'&&opens?new Date(opens).toISOString():null,
+                        closesAt:kind==='exam'&&closes?new Date(closes).toISOString():null,
+                        classId: null,
+                        category,
                         variant,
                         tasks,
                         prompts,
                         profiles,
                         imageId: imageId || null,
                         promptFiles: Object.fromEntries(tasks.filter(t=>promptFiles[String(t)]).map(t=>[String(t),promptFiles[String(t)].id])),
-                        dueAt: due
+                        dueAt: kind==='exam'?null:due
                             ? new Date(due).toISOString()
                             : initial?.dueAt || null,
                         durationMinutes: minutes ? Number(minutes) : null,
-                        allowLate,
+                        allowLate:kind==='exam'?false:allowLate,
                         published,
                         practice,
                         revision: initial?.revision || 0,
@@ -161,36 +173,6 @@ export default function AssignmentForm({
             setBusy(false);
         }
     }
-    async function upload(file?: File) {
-        if (!file) return;
-        setBusy(true);
-        try {
-            const response = await request("/writing/assets", {
-                method: "POST",
-                headers: { "Content-Type": file.type },
-                body: file,
-            });
-            setImageId((await response.json()).id);
-        } catch (e) {
-            setError(errorText(e));
-        } finally {
-            setBusy(false);
-        }
-    }
-    function sample() {
-        setPromptFiles({});
-        setPromptGeneration(v=>v+1);
-        setTitle(title || "IELTS Writing · Luyện tập");
-        setPrompts({
-            "1":
-                variant === "academic"
-                    ? "The chart shows the percentages of commuters using three forms of transport in a city in 2000 and 2020. Summarise the information by selecting and reporting the main features, and make comparisons where relevant."
-                    : "You recently attended a course at a local college. You enjoyed the teaching, but there were problems with the facilities. Write to the course organiser: explain what you enjoyed, describe the problems and suggest improvements.",
-            "2": "Some people believe that improving public transport is the best way to reduce traffic congestion. Others think that building more roads is more effective. Discuss both views and give your own opinion.",
-        });
-        if (variant === "academic" && tasks.includes(1))
-            setImageId("sample-commuting");
-    }
     return (
         <form
             className="writing-form writing-card"
@@ -202,19 +184,20 @@ export default function AssignmentForm({
             <div className="writing-form-heading">
                 <div>
                     <span className="writing-eyebrow">
-                        {practice ? "KHÔNG GIAN LUYỆN TẬP" : "GIAO BÀI CHO LỚP"}
+                        {practice ? "KHÔNG GIAN LUYỆN TẬP" : "GIAO BÀI TRONG DỰ ÁN"}
                     </span>
                     <h2>
                         {practice
                             ? "Bắt đầu một bài viết"
-                            : "Tạo bài tập IELTS"}
+                            : "Tạo bài tập"}
                     </h2>
                 </div>
 
             </div>
-            <p className="writing-muted">
-                Đề mẫu do nhóm tự biên soạn; không phải đề thi IELTS chính thức.
-            </p>
+            <p className="writing-muted">Người được chia sẻ dự án với vai trò Học viên sẽ thấy bài được giao. Không cần tạo hoặc tham gia lớp.</p>
+            {!practice&&<label>Hình thức giao bài<select aria-label="Hình thức giao bài" value={kind} onChange={e=>setKind(e.target.value as typeof kind)}><option value="assignment">Bài tập</option><option value="exam">Bài kiểm tra</option></select></label>}
+            {!practice&&kind==='exam'&&<fieldset className="writing-exam-settings"><legend>Thiết lập bài kiểm tra</legend><label>Mật khẩu vào bài<input aria-label="Mật khẩu bài kiểm tra" type="password" autoComplete="new-password" minLength={6} maxLength={128} required={!initial||initial.kind!=='exam'} value={examPassword} onChange={e=>setExamPassword(e.target.value)} placeholder={initial?.kind==='exam'?'Để trống để giữ mật khẩu hiện tại':'Ít nhất 6 ký tự'}/></label><div className="writing-form-grid"><label>Mở bài kiểm tra lúc<input aria-label="Giờ mở bài kiểm tra" type="datetime-local" required value={opens} onChange={e=>setOpens(e.target.value)}/></label><label>Đóng bài kiểm tra lúc<input aria-label="Giờ đóng bài kiểm tra" type="datetime-local" required value={closes} onChange={e=>setCloses(e.target.value)}/></label></div><p className="writing-muted">Đồng hồ bắt đầu khi Học viên nhập đúng mật khẩu và bắt đầu bài; thời điểm kết thúc không vượt giờ đóng. Có thể đổi mật khẩu sau khi giao mà không đặt lại đồng hồ người đang làm.</p></fieldset>}
+            <label>Loại bài đánh giá<select aria-label="Loại bài đánh giá" value={category} onChange={e=>{setCategory(e.target.value as typeof category);setPromptFiles({});setPromptGeneration(v=>v+1);}}><option value="ielts">IELTS Writing</option><option value="report">Report</option><option value="research">Research</option></select></label>
             <label>
                 Tên bài
                 <input
@@ -225,24 +208,7 @@ export default function AssignmentForm({
                     maxLength={160}
                 />
             </label>
-            {!practice && (
-                <label>
-                    Lớp học
-                    <select
-                        aria-label="Lớp được giao"
-                        required
-                        value={classId}
-                        onChange={(e) => setClassId(e.target.value)}
-                    >
-                        <option value="">Chọn lớp</option>
-                        {classes.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.title}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-            )}
+            {category === "ielts" && <>
             <div className="writing-form-grid">
                 <label>
                     Loại bài
@@ -276,10 +242,11 @@ export default function AssignmentForm({
                     </select>
                 </label>
             </div>
+            </>}
             {tasks.map((task) => (
                 <fieldset key={task}>
                     <legend>
-                        Task {task} · ít nhất {task === 1 ? 150 : 250} từ
+                        {category==='ielts'?`Task ${task} · ít nhất ${task===1?150:250} từ`:'Tài liệu và yêu cầu bài tập'}
                     </legend>
                     <label>
                         Dạng bài
@@ -296,8 +263,8 @@ export default function AssignmentForm({
                             {Object.entries(catalog)
                                 .filter(
                                     ([, p]) =>
-                                        p.task === task &&
-                                        (task === 2 || p.family === variant),
+                                        (p.category||'ielts')===category && p.task === task &&
+                                        (category!=='ielts'||task === 2 || p.family === variant),
                                 )
                                 .map(([id, p]) => (
                                     <option key={id} value={id}>
@@ -317,17 +284,18 @@ export default function AssignmentForm({
             ))}
             <div className="writing-form-grid">
                 <label>
-                    Thời lượng (phút, không bắt buộc)
+                    {kind==='exam'?'Thời lượng bài kiểm tra (phút, bắt buộc)':'Thời lượng (phút, không bắt buộc)'}
                     <input
                         type="number"
                         min="1"
                         max="180"
                         aria-label="Thời lượng"
+                        required={kind==='exam'}
                         value={minutes}
                         onChange={(e) => setMinutes(e.target.value)}
                     />
                 </label>
-                {!practice && (
+                {!practice && kind!=='exam' && (
                     <label>
                         Hạn nộp
                         <input
@@ -339,14 +307,14 @@ export default function AssignmentForm({
                     </label>
                 )}
             </div>
-            <label className="writing-inline-check">
+            {kind!=='exam'&&<label className="writing-inline-check">
                 <input
                     type="checkbox"
                     checked={allowLate}
                     onChange={(e) => setAllowLate(e.target.checked)}
                 />
                 Nhận bài quá hạn và ghi nhận trạng thái nộp muộn
-            </label>
+            </label>}
             {error && (
                 <p className="writing-error" role="alert">
                     {error}

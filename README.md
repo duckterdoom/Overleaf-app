@@ -1,5 +1,9 @@
 # Latex — Python + Next.js
 
+**Bài kiểm tra có mật khẩu:** trong Giao bài chọn Bài kiểm tra, đặt thời lượng bắt buộc và giờ mở/đóng. Học viên có mục Bài kiểm tra riêng; đề, bài nộp và kết quả có tab Bài tập/Bài kiểm tra. Bộ tiêu chí chấm giữ nguyên. Xem [hướng dẫn](docs/UNIFIED_ASSESSMENT.md).
+
+**Chấm bài chung IELTS / Report / Research:** trong tính năng chấm hiện có, Tutor lấy đề từ editor và giao cho Học viên được chia sẻ dự án, không qua lớp học. Mục **Tiêu chí chấm** quản lý bộ tiêu chí, các phần và mục con theo dự án. IELTS có tổng kết điểm luyện tập từ checklist; Report/Research chỉ checklist/lời phê, không có band. Xem [hướng dẫn hệ thống chấm chung](docs/UNIFIED_ASSESSMENT.md).
+
 **Bộ đề IELTS có sẵn:** chọn **Dự án mới → Đề mẫu IELTS Writing**. Chỉ một template chứa đủ 21 dạng Task 1/2, hình LaTeX sửa được, từng tệp câu hỏi riêng để compile và giao bài, cùng khung bài làm. Xem [hướng dẫn template IELTS](docs/IELTS_PROJECT_TEMPLATES.md).
 
 Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trùng và giới hạn job CPU chung giữa các workspace. Xem [hiệu năng và cấu hình cho server](docs/COMPILE_WORD_PERFORMANCE.md); tối ưu cache không thay thuật toán converter gốc.
@@ -14,7 +18,7 @@ IELTS giữ cùng kết nối hiện diện của dự án với editor: avatar 
 
 Đăng ký/đăng nhập web đã có bước chọn **Tutor hoặc Student**, phiên riêng và vùng dự án riêng theo tài khoản. Google sign-in được tích hợp nhưng cần cấu hình OAuth client của bạn trước khi sử dụng. Xem [luồng tài khoản và cấu hình Google](docs/WEB_AUTH_ONBOARDING.md). Dự án chung cũ được giữ nguyên, không tự gán cho tài khoản mới.
 
-**IELTS Writing là module trong workspace dự án:** mở một dự án rồi nhấn icon mũ tốt nghiệp ở thanh trái. Header dự án và cả bốn icon Tệp/Nhận xét/Chat/IELTS được giữ nguyên; dùng các icon để chuyển chức năng, không có header riêng cho IELTS. Tutor tạo lớp, giao Task 1/Task 2, chấm từng đoạn bằng thẻ checklist và công bố band; Student tham gia bằng mã lớp, viết/lưu nháp/nộp bài và đọc phản hồi. Dữ liệu thật lưu MongoDB theo tài khoản, bản nộp giữ nguyên nội dung tại thời điểm nộp. Có Văn bản / LaTeX source / PDF preview và mở bài/phiếu phản hồi trong editor LaTeX. Xem [hướng dẫn sử dụng và giới hạn](docs/IELTS_WRITING_WEB.md). [Prototype](docs/prototypes/writing/index.html) và [thiết kế](docs/IELTS_WRITING_DESIGN.md) được giữ để đối chiếu; app không chạy iframe prototype hay lấy điểm demo.
+**Chấm bài trong workspace dự án:** mở icon mũ tốt nghiệp như trước. IELTS, Report và Research dùng cùng header/rail và quyền chia sẻ dự án. Tutor giao bài từ tệp editor, Học viên viết/lưu/nộp trong dự án; Tutor nhận xét theo đoạn và công bố kết quả. IELTS có band luyện tập, Report/Research không có band. Phiếu LaTeX lưu trong result/ của chính dự án, không tạo project mới. Xem [hướng dẫn hiện hành](docs/UNIFIED_ASSESSMENT.md).
 
 Bản web lưu dự án, source, lịch sử và Word draft **trên server chạy Python**. Trình duyệt upload dữ liệu và tải bản sao về; người dùng không chọn đường dẫn lưu vật lý của server. Cấu trúc backend và cấu hình dữ liệu: [WEB_BACKEND_ARCHITECTURE.md](docs/WEB_BACKEND_ARCHITECTURE.md).
 

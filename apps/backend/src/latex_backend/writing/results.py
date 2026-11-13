@@ -19,7 +19,9 @@ def write_results(gateway, service, user, store, submission, publication):
         raise Problem('Kết quả đã đổi; tải lại trước khi tạo phiếu.',409)
     for number in row['assignment']['tasks']:
         profile=row['assignment']['profiles'][str(number)]
-        name=f"result/{slug(row['studentName'])}-task{number}-{slug(profile)}-{submission[:12]}-v{publication['publishedVersion']}.tex"
+        category=row['assignment'].get('category','ielts')
+        scope=f'task{number}' if category=='ielts' else category
+        name=f"result/{slug(row['studentName'])}-{scope}-{slug(profile)}-{submission[:12]}-v{publication['publishedVersion']}.tex"
         source,_=service.latex(user,submission=submission,report=True,task_number=number)
         source=source.replace(r'\begin{document}',r'\begin{document}'+'\n'+r'\section*{'+escape_tex(row['studentName'])+r'}')
         source=source.replace('question-task-',f'result/assets/{submission}-question-task-')
