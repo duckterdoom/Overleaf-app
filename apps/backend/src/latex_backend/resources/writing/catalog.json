@@ -4,21 +4,21 @@
     "family": "academic",
     "label": "Line graph",
     "focus": [
-      "Phân biệt xu hướng chung với biến động cục bộ.",
-      "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có."
+      "Distinguish overall trends from local fluctuations.",
+      "Compare starting and ending points, peaks, troughs and intersections where relevant."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -26,7 +26,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -34,14 +34,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -50,21 +50,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -72,28 +72,28 @@
         },
         {
           "id": "type-0",
-          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "text": "Distinguish overall trends from local fluctuations.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "text": "Compare starting and ending points, peaks, troughs and intersections where relevant.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -102,14 +102,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -117,14 +117,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -132,28 +132,28 @@
         },
         {
           "id": "type-0",
-          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "text": "Distinguish overall trends from local fluctuations.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "text": "Compare starting and ending points, peaks, troughs and intersections where relevant.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -162,14 +162,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -178,14 +178,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -194,42 +194,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Phân biệt xu hướng chung với biến động cục bộ.",
+          "text": "Distinguish overall trends from local fluctuations.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đối chiếu điểm đầu/cuối, đỉnh/đáy hoặc giao nhau nếu có.",
+          "text": "Compare starting and ending points, peaks, troughs and intersections where relevant.",
           "codes": [
             "TA"
           ]
@@ -242,21 +242,21 @@
     "family": "academic",
     "label": "Bar chart",
     "focus": [
-      "So sánh đúng các nhóm trên cùng thang đo.",
-      "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm."
+      "Compare groups accurately using the same scale.",
+      "Distinguish changes over time from differences between groups."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -264,7 +264,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -272,14 +272,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -288,21 +288,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -310,28 +310,28 @@
         },
         {
           "id": "type-0",
-          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "text": "Compare groups accurately using the same scale.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "text": "Distinguish changes over time from differences between groups.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -340,14 +340,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -355,14 +355,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -370,28 +370,28 @@
         },
         {
           "id": "type-0",
-          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "text": "Compare groups accurately using the same scale.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "text": "Distinguish changes over time from differences between groups.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -400,14 +400,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -416,14 +416,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -432,42 +432,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "So sánh đúng các nhóm trên cùng thang đo.",
+          "text": "Compare groups accurately using the same scale.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Nếu có thời gian, phân biệt thay đổi theo năm với chênh lệch giữa nhóm.",
+          "text": "Distinguish changes over time from differences between groups.",
           "codes": [
             "TA"
           ]
@@ -480,21 +480,21 @@
     "family": "academic",
     "label": "Pie chart",
     "focus": [
-      "Phân biệt phần trăm với số lượng thực.",
-      "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình."
+      "Distinguish percentages from absolute quantities.",
+      "Compare composition and proportions across multiple visuals."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -502,7 +502,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -510,14 +510,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -526,21 +526,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -548,28 +548,28 @@
         },
         {
           "id": "type-0",
-          "text": "Phân biệt phần trăm với số lượng thực.",
+          "text": "Distinguish percentages from absolute quantities.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "text": "Compare composition and proportions across multiple visuals.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -578,14 +578,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -593,14 +593,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -608,28 +608,28 @@
         },
         {
           "id": "type-0",
-          "text": "Phân biệt phần trăm với số lượng thực.",
+          "text": "Distinguish percentages from absolute quantities.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "text": "Compare composition and proportions across multiple visuals.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -638,14 +638,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -654,14 +654,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -670,42 +670,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Phân biệt phần trăm với số lượng thực.",
+          "text": "Distinguish percentages from absolute quantities.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "So sánh cơ cấu/tỷ trọng giữa các hình, nếu đề có nhiều hình.",
+          "text": "Compare composition and proportions across multiple visuals.",
           "codes": [
             "TA"
           ]
@@ -718,21 +718,21 @@
     "family": "academic",
     "label": "Table",
     "focus": [
-      "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
-      "Kiểm tra đơn vị, phân nhóm và ngoại lệ."
+      "Select key data from rows and columns instead of listing every cell.",
+      "Check units, groupings and exceptions."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -740,7 +740,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -748,14 +748,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -764,21 +764,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -786,28 +786,28 @@
         },
         {
           "id": "type-0",
-          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "text": "Select key data from rows and columns instead of listing every cell.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "text": "Check units, groupings and exceptions.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -816,14 +816,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -831,14 +831,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -846,28 +846,28 @@
         },
         {
           "id": "type-0",
-          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "text": "Select key data from rows and columns instead of listing every cell.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "text": "Check units, groupings and exceptions.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -876,14 +876,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -892,14 +892,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -908,42 +908,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Chọn dữ liệu nổi bật từ hàng/cột thay vì đọc mọi ô.",
+          "text": "Select key data from rows and columns instead of listing every cell.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra đơn vị, phân nhóm và ngoại lệ.",
+          "text": "Check units, groupings and exceptions.",
           "codes": [
             "TA"
           ]
@@ -956,21 +956,21 @@
     "family": "academic",
     "label": "Mixed / multiple visuals",
     "focus": [
-      "Bao quát tất cả hình được giao.",
-      "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả."
+      "Cover every visual in the question.",
+      "Link information across visuals where supported without inventing causation."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -978,7 +978,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -986,14 +986,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1002,21 +1002,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -1024,28 +1024,28 @@
         },
         {
           "id": "type-0",
-          "text": "Bao quát tất cả hình được giao.",
+          "text": "Cover every visual in the question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "text": "Link information across visuals where supported without inventing causation.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1054,14 +1054,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -1069,14 +1069,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -1084,28 +1084,28 @@
         },
         {
           "id": "type-0",
-          "text": "Bao quát tất cả hình được giao.",
+          "text": "Cover every visual in the question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "text": "Link information across visuals where supported without inventing causation.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1114,14 +1114,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1130,14 +1130,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1146,42 +1146,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Bao quát tất cả hình được giao.",
+          "text": "Cover every visual in the question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kết nối thông tin giữa các hình khi có căn cứ, không gán quan hệ nhân quả.",
+          "text": "Link information across visuals where supported without inventing causation.",
           "codes": [
             "TA"
           ]
@@ -1194,21 +1194,21 @@
     "family": "academic",
     "label": "Process / cycle",
     "focus": [
-      "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
-      "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu."
+      "Follow the correct sequence, branches and cycles.",
+      "Describe inputs, outputs, transformations and agents without inventing data."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -1216,7 +1216,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -1224,14 +1224,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1240,21 +1240,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -1262,28 +1262,28 @@
         },
         {
           "id": "type-0",
-          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "text": "Follow the correct sequence, branches and cycles.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "text": "Describe inputs, outputs, transformations and agents without inventing data.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1292,14 +1292,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -1307,14 +1307,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -1322,28 +1322,28 @@
         },
         {
           "id": "type-0",
-          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "text": "Follow the correct sequence, branches and cycles.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "text": "Describe inputs, outputs, transformations and agents without inventing data.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1352,14 +1352,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1368,14 +1368,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1384,42 +1384,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Theo dõi đúng trình tự, nhánh hoặc vòng lặp.",
+          "text": "Follow the correct sequence, branches and cycles.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Mô tả đầu vào/đầu ra, biến đổi và tác nhân theo hình; không tự bịa số liệu.",
+          "text": "Describe inputs, outputs, transformations and agents without inventing data.",
           "codes": [
             "TA"
           ]
@@ -1432,21 +1432,21 @@
     "family": "academic",
     "label": "Map / plan",
     "focus": [
-      "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
-      "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có."
+      "Describe changes or spatial arrangements for the specified periods.",
+      "Distinguish unchanged, added, removed and relocated features."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -1454,7 +1454,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -1462,14 +1462,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1478,21 +1478,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -1500,28 +1500,28 @@
         },
         {
           "id": "type-0",
-          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "text": "Describe changes or spatial arrangements for the specified periods.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "text": "Distinguish unchanged, added, removed and relocated features.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1530,14 +1530,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -1545,14 +1545,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -1560,28 +1560,28 @@
         },
         {
           "id": "type-0",
-          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "text": "Describe changes or spatial arrangements for the specified periods.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "text": "Distinguish unchanged, added, removed and relocated features.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1590,14 +1590,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1606,14 +1606,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1622,42 +1622,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Mô tả thay đổi hoặc bố trí không gian theo mốc đề cho.",
+          "text": "Describe changes or spatial arrangements for the specified periods.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân biệt hạng mục giữ nguyên, xây mới, dỡ bỏ và chuyển vị trí khi có.",
+          "text": "Distinguish unchanged, added, removed and relocated features.",
           "codes": [
             "TA"
           ]
@@ -1670,21 +1670,21 @@
     "family": "academic",
     "label": "Object / system diagram",
     "focus": [
-      "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
-      "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian."
+      "Explain the components, relationships and functions in the diagram.",
+      "Avoid trend language for diagrams without a time series."
     ],
     "checks": {
       "intro": [
         {
           "id": "visual",
-          "text": "Giới thiệu đúng đối tượng/hình được mô tả.",
+          "text": "Introduce the subject or visual accurately.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "context",
-          "text": "Giữ đúng địa điểm, thời gian và đơn vị nếu hình có.",
+          "text": "Preserve the location, time period and units shown.",
           "codes": [
             "TA",
             "LR"
@@ -1692,7 +1692,7 @@
         },
         {
           "id": "paraphrase",
-          "text": "Diễn đạt rõ, không đổi nghĩa nhãn hoặc tiêu đề hình.",
+          "text": "Paraphrase clearly without changing the meaning of labels or titles.",
           "codes": [
             "TA",
             "LR"
@@ -1700,14 +1700,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1716,21 +1716,21 @@
       "overview": [
         {
           "id": "big-picture",
-          "text": "Nêu được bức tranh chung phù hợp hình/đề.",
+          "text": "Present an overview that matches the visual or question.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "selection",
-          "text": "Chọn đặc điểm nổi bật, không chỉ kể các chi tiết rời rạc.",
+          "text": "Select key features rather than listing isolated details.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "overview-role",
-          "text": "Nhận diện được ý tổng quan dù nằm chung với đoạn khác.",
+          "text": "Provide an identifiable overview, even within another paragraph.",
           "codes": [
             "TA",
             "CC"
@@ -1738,28 +1738,28 @@
         },
         {
           "id": "type-0",
-          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "text": "Explain the components, relationships and functions in the diagram.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "text": "Avoid trend language for diagrams without a time series.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1768,14 +1768,14 @@
       "body": [
         {
           "id": "details",
-          "text": "Chi tiết mô tả có thể đối chiếu với hình gốc.",
+          "text": "Descriptions can be verified against the original visual.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "grouping",
-          "text": "Nhóm thông tin theo logic thay vì liệt kê từng điểm máy móc.",
+          "text": "Group information logically instead of mechanically listing points.",
           "codes": [
             "CC",
             "TA"
@@ -1783,14 +1783,14 @@
         },
         {
           "id": "relation",
-          "text": "So sánh/trình tự/vị trí phù hợp loại hình, có minh chứng cụ thể.",
+          "text": "Use comparisons, sequence or location appropriate to the visual, with evidence.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "accuracy",
-          "text": "Tên, đơn vị và mốc thời gian/quy trình không bị nhầm.",
+          "text": "Use accurate names, units and time or process references.",
           "codes": [
             "TA",
             "LR"
@@ -1798,28 +1798,28 @@
         },
         {
           "id": "type-0",
-          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "text": "Explain the components, relationships and functions in the diagram.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "text": "Avoid trend language for diagrams without a time series.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1828,14 +1828,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1844,14 +1844,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1860,42 +1860,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giải thích cấu phần và quan hệ/chức năng thể hiện trong sơ đồ.",
+          "text": "Explain the components, relationships and functions in the diagram.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không ép ngôn ngữ tăng/giảm cho sơ đồ không có chuỗi thời gian.",
+          "text": "Avoid trend language for diagrams without a time series.",
           "codes": [
             "TA"
           ]
@@ -1908,14 +1908,14 @@
     "family": "general",
     "label": "Formal letter",
     "focus": [
-      "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
-      "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp."
+      "Use an appropriate formal salutation and closing.",
+      "Make clear, polite requests without inappropriate familiarity."
     ],
     "checks": {
       "intro": [
         {
           "id": "recipient",
-          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "text": "Open the letter appropriately for the recipient and relationship.",
           "codes": [
             "TA",
             "LR"
@@ -1923,14 +1923,14 @@
         },
         {
           "id": "purpose",
-          "text": "Mục đích thư rõ, bám tình huống.",
+          "text": "State a clear purpose consistent with the situation.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "opening-tone",
-          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "text": "Use an opening tone appropriate to the level of formality.",
           "codes": [
             "TA",
             "LR"
@@ -1938,14 +1938,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1954,28 +1954,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "text": "Use an appropriate formal salutation and closing.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "text": "Make clear, polite requests without inappropriate familiarity.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -1984,21 +1984,21 @@
       "body": [
         {
           "id": "bullet-coverage",
-          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "text": "Address one or more prompt requirements and identify them.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "bullet-development",
-          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "text": "Develop the requested content with relevant detail.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "tone",
-          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "text": "Maintain an appropriate tone and form of address.",
           "codes": [
             "TA",
             "LR"
@@ -2006,35 +2006,35 @@
         },
         {
           "id": "paragraph-flow",
-          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "text": "Connect ideas logically; each bullet need not be a separate paragraph.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "type-0",
-          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "text": "Use an appropriate formal salutation and closing.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "text": "Make clear, polite requests without inappropriate familiarity.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2043,14 +2043,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2059,14 +2059,14 @@
       "closing": [
         {
           "id": "next-step",
-          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "text": "End with a closing or next step that suits the letter's purpose.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "signoff",
-          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "text": "Use a closing and signature appropriate to the chosen tone.",
           "codes": [
             "TA",
             "LR"
@@ -2074,7 +2074,7 @@
         },
         {
           "id": "no-new-task",
-          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "text": "Avoid new requests that distract from the letter's purpose.",
           "codes": [
             "CC",
             "TA"
@@ -2082,14 +2082,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2098,49 +2098,49 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "three-bullets",
-          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "text": "Cover all three bullets and their sub-requirements.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Xưng hô và kết thư phù hợp quan hệ trang trọng.",
+          "text": "Use an appropriate formal salutation and closing.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Yêu cầu hoặc đề nghị rõ ràng, lịch sự, tránh thân mật không phù hợp.",
+          "text": "Make clear, polite requests without inappropriate familiarity.",
           "codes": [
             "TA"
           ]
@@ -2153,14 +2153,14 @@
     "family": "general",
     "label": "Semi-formal letter",
     "focus": [
-      "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
-      "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã."
+      "Use appropriate politeness for a recipient you know.",
+      "Avoid abrupt shifts between excessively formal and casual language."
     ],
     "checks": {
       "intro": [
         {
           "id": "recipient",
-          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "text": "Open the letter appropriately for the recipient and relationship.",
           "codes": [
             "TA",
             "LR"
@@ -2168,14 +2168,14 @@
         },
         {
           "id": "purpose",
-          "text": "Mục đích thư rõ, bám tình huống.",
+          "text": "State a clear purpose consistent with the situation.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "opening-tone",
-          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "text": "Use an opening tone appropriate to the level of formality.",
           "codes": [
             "TA",
             "LR"
@@ -2183,14 +2183,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2199,28 +2199,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "text": "Use appropriate politeness for a recipient you know.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "text": "Avoid abrupt shifts between excessively formal and casual language.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2229,21 +2229,21 @@
       "body": [
         {
           "id": "bullet-coverage",
-          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "text": "Address one or more prompt requirements and identify them.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "bullet-development",
-          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "text": "Develop the requested content with relevant detail.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "tone",
-          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "text": "Maintain an appropriate tone and form of address.",
           "codes": [
             "TA",
             "LR"
@@ -2251,35 +2251,35 @@
         },
         {
           "id": "paragraph-flow",
-          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "text": "Connect ideas logically; each bullet need not be a separate paragraph.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "text": "Use appropriate politeness for a recipient you know.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "text": "Avoid abrupt shifts between excessively formal and casual language.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2288,14 +2288,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2304,14 +2304,14 @@
       "closing": [
         {
           "id": "next-step",
-          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "text": "End with a closing or next step that suits the letter's purpose.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "signoff",
-          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "text": "Use a closing and signature appropriate to the chosen tone.",
           "codes": [
             "TA",
             "LR"
@@ -2319,7 +2319,7 @@
         },
         {
           "id": "no-new-task",
-          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "text": "Avoid new requests that distract from the letter's purpose.",
           "codes": [
             "CC",
             "TA"
@@ -2327,14 +2327,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2343,49 +2343,49 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "three-bullets",
-          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "text": "Cover all three bullets and their sub-requirements.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giữ mức lịch sự phù hợp với người nhận có quan hệ quen biết nhất định.",
+          "text": "Use appropriate politeness for a recipient you know.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không đổi đột ngột giữa văn phong quá trang trọng và quá suồng sã.",
+          "text": "Avoid abrupt shifts between excessively formal and casual language.",
           "codes": [
             "TA"
           ]
@@ -2398,14 +2398,14 @@
     "family": "general",
     "label": "Informal letter",
     "focus": [
-      "Giọng văn gần gũi phù hợp người nhận.",
-      "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc."
+      "Use a friendly tone appropriate to the recipient.",
+      "Maintain the letter's purpose rather than writing an essay or disconnected dialogue."
     ],
     "checks": {
       "intro": [
         {
           "id": "recipient",
-          "text": "Mở thư phù hợp người nhận và quan hệ.",
+          "text": "Open the letter appropriately for the recipient and relationship.",
           "codes": [
             "TA",
             "LR"
@@ -2413,14 +2413,14 @@
         },
         {
           "id": "purpose",
-          "text": "Mục đích thư rõ, bám tình huống.",
+          "text": "State a clear purpose consistent with the situation.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "opening-tone",
-          "text": "Giọng điệu mở đầu phù hợp mức trang trọng.",
+          "text": "Use an opening tone appropriate to the level of formality.",
           "codes": [
             "TA",
             "LR"
@@ -2428,14 +2428,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2444,28 +2444,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "text": "Use a friendly tone appropriate to the recipient.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "text": "Maintain the letter's purpose rather than writing an essay or disconnected dialogue.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2474,21 +2474,21 @@
       "body": [
         {
           "id": "bullet-coverage",
-          "text": "Nội dung đoạn xử lý một hoặc nhiều ý yêu cầu trong đề; ghi rõ ý nào.",
+          "text": "Address one or more prompt requirements and identify them.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "bullet-development",
-          "text": "Phần được hỏi được phát triển bằng chi tiết liên quan.",
+          "text": "Develop the requested content with relevant detail.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "tone",
-          "text": "Giữ giọng văn và cách xưng hô phù hợp người nhận.",
+          "text": "Maintain an appropriate tone and form of address.",
           "codes": [
             "TA",
             "LR"
@@ -2496,35 +2496,35 @@
         },
         {
           "id": "paragraph-flow",
-          "text": "Các ý/đoạn liên kết hợp lý, không bắt mỗi bullet phải là một đoạn riêng.",
+          "text": "Connect ideas logically; each bullet need not be a separate paragraph.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "text": "Use a friendly tone appropriate to the recipient.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "text": "Maintain the letter's purpose rather than writing an essay or disconnected dialogue.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2533,14 +2533,14 @@
       "conclusion": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2549,14 +2549,14 @@
       "closing": [
         {
           "id": "next-step",
-          "text": "Lời kết/đề nghị tiếp theo phù hợp mục đích thư.",
+          "text": "End with a closing or next step that suits the letter's purpose.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "signoff",
-          "text": "Kết thư và tên phù hợp giọng văn đã chọn.",
+          "text": "Use a closing and signature appropriate to the chosen tone.",
           "codes": [
             "TA",
             "LR"
@@ -2564,7 +2564,7 @@
         },
         {
           "id": "no-new-task",
-          "text": "Không phát sinh yêu cầu mới làm lệch mục đích thư.",
+          "text": "Avoid new requests that distract from the letter's purpose.",
           "codes": [
             "CC",
             "TA"
@@ -2572,14 +2572,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2588,49 +2588,49 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "three-bullets",
-          "text": "Kiểm đủ ba bullet và các ý nhỏ như and/why/plural trong từng bullet.",
+          "text": "Cover all three bullets and their sub-requirements.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giọng văn gần gũi phù hợp người nhận.",
+          "text": "Use a friendly tone appropriate to the recipient.",
           "codes": [
             "TA"
           ]
         },
         {
           "id": "type-1",
-          "text": "Duy trì mục đích thư, không biến thành essay trang trọng hoặc hội thoại rời rạc.",
+          "text": "Maintain the letter's purpose rather than writing an essay or disconnected dialogue.",
           "codes": [
             "TA"
           ]
@@ -2642,28 +2642,28 @@
     "task": 2,
     "label": "Opinion / agree–disagree",
     "focus": [
-      "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
-      "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía."
+      "Make the writer's position or degree of agreement clear.",
+      "Support the position consistently; both sides need not receive equal weight."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -2671,14 +2671,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2687,28 +2687,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "text": "Make the writer's position or degree of agreement clear.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "text": "Support the position consistently; both sides need not receive equal weight.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2717,7 +2717,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -2725,28 +2725,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -2754,28 +2754,28 @@
         },
         {
           "id": "type-0",
-          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "text": "Make the writer's position or degree of agreement clear.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "text": "Support the position consistently; both sides need not receive equal weight.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2784,14 +2784,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -2799,7 +2799,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -2807,14 +2807,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2823,14 +2823,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2839,42 +2839,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Làm rõ mức độ đồng ý hoặc lập trường của người viết.",
+          "text": "Make the writer's position or degree of agreement clear.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Lập luận trong thân bài hỗ trợ nhất quán cho lập trường; không buộc cân bằng hai phía.",
+          "text": "Support the position consistently; both sides need not receive equal weight.",
           "codes": [
             "TR"
           ]
@@ -2887,28 +2887,28 @@
     "task": 2,
     "label": "Discuss both views (+ opinion)",
     "focus": [
-      "Thực sự giải thích cả hai quan điểm trong đề.",
-      "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm."
+      "Explain both views in the question.",
+      "Express a personal opinion when requested, rather than repeating both views."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -2916,14 +2916,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2932,28 +2932,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "text": "Explain both views in the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "text": "Express a personal opinion when requested, rather than repeating both views.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -2962,7 +2962,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -2970,28 +2970,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -2999,28 +2999,28 @@
         },
         {
           "id": "type-0",
-          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "text": "Explain both views in the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "text": "Express a personal opinion when requested, rather than repeating both views.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3029,14 +3029,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -3044,7 +3044,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -3052,14 +3052,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3068,14 +3068,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3084,42 +3084,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Thực sự giải thích cả hai quan điểm trong đề.",
+          "text": "Explain both views in the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Thể hiện ý kiến riêng nếu đề yêu cầu; không chỉ lặp hai quan điểm.",
+          "text": "Express a personal opinion when requested, rather than repeating both views.",
           "codes": [
             "TR"
           ]
@@ -3132,28 +3132,28 @@
     "task": 2,
     "label": "Advantages & disadvantages",
     "focus": [
-      "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
-      "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh."
+      "Address both benefits and drawbacks within the question's scope.",
+      "Do not force an outweigh judgment unless the question asks for it."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -3161,14 +3161,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3177,28 +3177,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "text": "Address both benefits and drawbacks within the question's scope.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "text": "Do not force an outweigh judgment unless the question asks for it.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3207,7 +3207,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -3215,28 +3215,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -3244,28 +3244,28 @@
         },
         {
           "id": "type-0",
-          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "text": "Address both benefits and drawbacks within the question's scope.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "text": "Do not force an outweigh judgment unless the question asks for it.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3274,14 +3274,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -3289,7 +3289,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -3297,14 +3297,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3313,14 +3313,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3329,42 +3329,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Xử lý cả lợi ích và bất lợi theo phạm vi câu hỏi.",
+          "text": "Address both benefits and drawbacks within the question's scope.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Không tự bắt buộc chọn bên thắng nếu đề không yêu cầu đánh giá outweigh.",
+          "text": "Do not force an outweigh judgment unless the question asks for it.",
           "codes": [
             "TR"
           ]
@@ -3377,28 +3377,28 @@
     "task": 2,
     "label": "Do advantages outweigh disadvantages?",
     "focus": [
-      "Trình bày hai phía có liên quan.",
-      "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý."
+      "Present both relevant sides.",
+      "Evaluate which side outweighs the other using reasons, not a count of points."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -3406,14 +3406,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3422,28 +3422,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Trình bày hai phía có liên quan.",
+          "text": "Present both relevant sides.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "text": "Evaluate which side outweighs the other using reasons, not a count of points.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3452,7 +3452,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -3460,28 +3460,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -3489,28 +3489,28 @@
         },
         {
           "id": "type-0",
-          "text": "Trình bày hai phía có liên quan.",
+          "text": "Present both relevant sides.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "text": "Evaluate which side outweighs the other using reasons, not a count of points.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3519,14 +3519,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -3534,7 +3534,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -3542,14 +3542,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3558,14 +3558,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3574,42 +3574,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Trình bày hai phía có liên quan.",
+          "text": "Present both relevant sides.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Có cơ sở so sánh để kết luận bên nào nổi trội; không chỉ đếm số ý.",
+          "text": "Evaluate which side outweighs the other using reasons, not a count of points.",
           "codes": [
             "TR"
           ]
@@ -3622,28 +3622,28 @@
     "task": 2,
     "label": "Causes & solutions",
     "focus": [
-      "Nêu và giải thích nguyên nhân liên quan.",
-      "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu."
+      "Identify and explain relevant causes.",
+      "Identify who implements solutions and link them to the stated causes."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -3651,14 +3651,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3667,28 +3667,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "text": "Identify and explain relevant causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "text": "Identify who implements solutions and link them to the stated causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3697,7 +3697,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -3705,28 +3705,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -3734,28 +3734,28 @@
         },
         {
           "id": "type-0",
-          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "text": "Identify and explain relevant causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "text": "Identify who implements solutions and link them to the stated causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3764,14 +3764,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -3779,7 +3779,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -3787,14 +3787,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3803,14 +3803,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3819,42 +3819,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Nêu và giải thích nguyên nhân liên quan.",
+          "text": "Identify and explain relevant causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải pháp có đối tượng thực hiện và phù hợp nguyên nhân đã nêu.",
+          "text": "Identify who implements solutions and link them to the stated causes.",
           "codes": [
             "TR"
           ]
@@ -3867,28 +3867,28 @@
     "task": 2,
     "label": "Problems & solutions",
     "focus": [
-      "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
-      "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định."
+      "Describe the requested problems or impacts, distinguishing them from causes.",
+      "Propose solutions with a mechanism for addressing the identified problem."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -3896,14 +3896,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3912,28 +3912,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "text": "Describe the requested problems or impacts, distinguishing them from causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "text": "Propose solutions with a mechanism for addressing the identified problem.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -3942,7 +3942,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -3950,28 +3950,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -3979,28 +3979,28 @@
         },
         {
           "id": "type-0",
-          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "text": "Describe the requested problems or impacts, distinguishing them from causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "text": "Propose solutions with a mechanism for addressing the identified problem.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4009,14 +4009,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -4024,7 +4024,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -4032,14 +4032,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4048,14 +4048,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4064,42 +4064,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Mô tả vấn đề/tác động được hỏi, phân biệt với nguyên nhân.",
+          "text": "Describe the requested problems or impacts, distinguishing them from causes.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Đề xuất giải pháp có cơ chế xử lý vấn đề đã xác định.",
+          "text": "Propose solutions with a mechanism for addressing the identified problem.",
           "codes": [
             "TR"
           ]
@@ -4112,28 +4112,28 @@
     "task": 2,
     "label": "Causes & effects",
     "focus": [
-      "Giải thích vì sao hiện tượng xảy ra.",
-      "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi."
+      "Explain why the phenomenon occurs.",
+      "Analyze the requested effects rather than substituting unrequested solutions."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -4141,14 +4141,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4157,28 +4157,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "text": "Explain why the phenomenon occurs.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "text": "Analyze the requested effects rather than substituting unrequested solutions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4187,7 +4187,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -4195,28 +4195,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -4224,28 +4224,28 @@
         },
         {
           "id": "type-0",
-          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "text": "Explain why the phenomenon occurs.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "text": "Analyze the requested effects rather than substituting unrequested solutions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4254,14 +4254,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -4269,7 +4269,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -4277,14 +4277,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4293,14 +4293,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4309,42 +4309,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Giải thích vì sao hiện tượng xảy ra.",
+          "text": "Explain why the phenomenon occurs.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Phân tích hệ quả được hỏi; không thay phần effects bằng solutions khi đề không hỏi.",
+          "text": "Analyze the requested effects rather than substituting unrequested solutions.",
           "codes": [
             "TR"
           ]
@@ -4357,28 +4357,28 @@
     "task": 2,
     "label": "Two-part / direct questions",
     "focus": [
-      "Ghi rõ câu hỏi A và câu hỏi B của đề.",
-      "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu."
+      "Identify both questions in the prompt.",
+      "Answer both questions with development proportionate to their requirements."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -4386,14 +4386,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4402,28 +4402,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "text": "Identify both questions in the prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "text": "Answer both questions with development proportionate to their requirements.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4432,7 +4432,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -4440,28 +4440,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -4469,28 +4469,28 @@
         },
         {
           "id": "type-0",
-          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "text": "Identify both questions in the prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "text": "Answer both questions with development proportionate to their requirements.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4499,14 +4499,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -4514,7 +4514,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -4522,14 +4522,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4538,14 +4538,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4554,42 +4554,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Ghi rõ câu hỏi A và câu hỏi B của đề.",
+          "text": "Identify both questions in the prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Trả lời đủ cả hai câu hỏi; phân bổ phát triển ý tương xứng với yêu cầu.",
+          "text": "Answer both questions with development proportionate to their requirements.",
           "codes": [
             "TR"
           ]
@@ -4602,28 +4602,28 @@
     "task": 2,
     "label": "Positive / negative development",
     "focus": [
-      "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
-      "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm."
+      "Evaluate the development clearly as requested.",
+      "Explain specific effects and stakeholders instead of listing pros and cons."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -4631,14 +4631,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4647,28 +4647,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "text": "Evaluate the development clearly as requested.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "text": "Explain specific effects and stakeholders instead of listing pros and cons.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4677,7 +4677,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -4685,28 +4685,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -4714,28 +4714,28 @@
         },
         {
           "id": "type-0",
-          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "text": "Evaluate the development clearly as requested.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "text": "Explain specific effects and stakeholders instead of listing pros and cons.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4744,14 +4744,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -4759,7 +4759,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -4767,14 +4767,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4783,14 +4783,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4799,42 +4799,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Có đánh giá rõ về chiều hướng phát triển theo câu hỏi.",
+          "text": "Evaluate the development clearly as requested.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Giải thích bằng tác động/đối tượng cụ thể thay vì chỉ liệt kê ưu nhược điểm.",
+          "text": "Explain specific effects and stakeholders instead of listing pros and cons.",
           "codes": [
             "TR"
           ]
@@ -4847,28 +4847,28 @@
     "task": 2,
     "label": "Mixed / yêu cầu tùy chỉnh",
     "focus": [
-      "Tách từng mệnh đề yêu cầu trong đề thật.",
-      "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp."
+      "Identify each requirement in the actual prompt.",
+      "Check every requirement; adapt the checklist for mixed questions."
     ],
     "checks": {
       "intro": [
         {
           "id": "scope",
-          "text": "Giới thiệu đúng vấn đề/phạm vi, không đổi nghĩa đề.",
+          "text": "Introduce the issue and scope without changing the question's meaning.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "position",
-          "text": "Lập trường hoặc hướng trả lời đủ rõ theo yêu cầu thực tế.",
+          "text": "Make the position or response clear according to the actual question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "relevance",
-          "text": "Dẫn nhập liên quan, tránh mở đầu học thuộc không phục vụ bài.",
+          "text": "Use a relevant introduction rather than an unrelated memorized opening.",
           "codes": [
             "TR",
             "CC"
@@ -4876,14 +4876,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4892,28 +4892,28 @@
       "overview": [
         {
           "id": "type-0",
-          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "text": "Identify each requirement in the actual prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "text": "Check every requirement; adapt the checklist for mixed questions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4922,7 +4922,7 @@
       "body": [
         {
           "id": "main-idea",
-          "text": "Đoạn có trọng tâm, góp phần trả lời câu hỏi được giao.",
+          "text": "Give the paragraph a focus that contributes to answering the question.",
           "codes": [
             "TR",
             "CC"
@@ -4930,28 +4930,28 @@
         },
         {
           "id": "development",
-          "text": "Ý được giải thích, không dừng ở một khẳng định ngắn.",
+          "text": "Explain ideas beyond brief unsupported assertions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "support",
-          "text": "Minh họa/lý giải cụ thể hỗ trợ ý; ví dụ là một cách, không bắt buộc ở mọi câu.",
+          "text": "Support ideas with specific explanation; examples are useful but not mandatory in every sentence.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "flow",
-          "text": "Các câu nối tiếp hợp lý, tránh lặp lại hoặc nhảy ý.",
+          "text": "Sentences progress logically without repetition or abrupt changes.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "consistency",
-          "text": "Ý trong đoạn phù hợp với lập trường và các đoạn khác.",
+          "text": "Keep paragraph ideas consistent with the position and other paragraphs.",
           "codes": [
             "TR",
             "CC"
@@ -4959,28 +4959,28 @@
         },
         {
           "id": "type-0",
-          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "text": "Identify each requirement in the actual prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "text": "Check every requirement; adapt the checklist for mixed questions.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -4989,14 +4989,14 @@
       "conclusion": [
         {
           "id": "answer",
-          "text": "Kết lại câu trả lời/đánh giá đúng câu hỏi đã giao.",
+          "text": "Conclude with an answer or evaluation that addresses the question.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "consistent",
-          "text": "Kết luận nhất quán với lập luận trong bài.",
+          "text": "Keep the conclusion consistent with the arguments.",
           "codes": [
             "TR",
             "CC"
@@ -5004,7 +5004,7 @@
         },
         {
           "id": "synthesis",
-          "text": "Tổng hợp được ý chính, không đưa lập luận mới chưa phát triển.",
+          "text": "Synthesize the main ideas without adding undeveloped arguments.",
           "codes": [
             "CC",
             "TR"
@@ -5012,14 +5012,14 @@
         },
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -5028,14 +5028,14 @@
       "closing": [
         {
           "id": "precision",
-          "text": "Từ/cụm từ dùng đúng nghĩa trong đoạn; ghi ví dụ nếu cần sửa.",
+          "text": "Use words and phrases accurately; cite examples where correction is needed.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "sentences",
-          "text": "Câu đủ nghĩa, ngữ pháp và dấu câu được kiểm tra bằng minh chứng.",
+          "text": "Check complete sentences, grammar and punctuation using evidence.",
           "codes": [
             "GRA"
           ]
@@ -5044,42 +5044,42 @@
       "whole": [
         {
           "id": "all-demands",
-          "text": "Đối chiếu mọi yêu cầu của đề thật, không chỉ tên dạng bài. ",
+          "text": "Check every requirement in the actual prompt, not only its question type. ",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "progression",
-          "text": "Nhìn toàn bài có sự phát triển và liên kết giữa các phần.",
+          "text": "Develop ideas coherently and connect the sections.",
           "codes": [
             "CC"
           ]
         },
         {
           "id": "lexical-patterns",
-          "text": "Ghi mẫu dùng từ tốt/lỗi lặp lại trong toàn bài.",
+          "text": "Record effective vocabulary and recurring lexical errors.",
           "codes": [
             "LR"
           ]
         },
         {
           "id": "grammar-patterns",
-          "text": "Ghi phạm vi cấu trúc và lỗi lặp lại có ảnh hưởng nghĩa.",
+          "text": "Record structural range and recurring errors that affect meaning.",
           "codes": [
             "GRA"
           ]
         },
         {
           "id": "type-0",
-          "text": "Tách từng mệnh đề yêu cầu trong đề thật.",
+          "text": "Identify each requirement in the actual prompt.",
           "codes": [
             "TR"
           ]
         },
         {
           "id": "type-1",
-          "text": "Kiểm tra từng yêu cầu; Tutor bổ sung checklist để phù hợp đề kết hợp.",
+          "text": "Check every requirement; adapt the checklist for mixed questions.",
           "codes": [
             "TR"
           ]

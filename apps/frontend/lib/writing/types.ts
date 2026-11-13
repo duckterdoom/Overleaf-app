@@ -11,6 +11,8 @@ export type Profile = {
 };
 export const catalog: Record<string, Profile> = rawCatalog;
 export type Classroom = {
+    kind?: 'course'|'group';
+    revision?: number;
     id: string;
     title: string;
     tutorId: string;
@@ -20,6 +22,9 @@ export type Classroom = {
     students?: { id: string; name: string }[];
 };
 export type Assignment = {
+    writingScope?: 'whole'|'intro'|'body'|'conclusion';
+    purpose?: 'practice'|'homework'|'exam';
+    questionId?: string;
     kind?: 'assignment'|'exam';
     opensAt?: string|null;
     closesAt?: string|null;
@@ -46,10 +51,11 @@ export type Assignment = {
     createdAt: string;
 };
 export type PromptFile = {
-    id: string; sourcePath: string; projectId: string; kind: 'pdf' | 'image' | 'text'; mime: string;
+    id: string; sourcePath: string; projectId: string|null; sourceProjectId?:string; kind: 'pdf' | 'image' | 'text'; mime: string;
     digest: string; pages: number | null; firstPage: number; lastPage: number | null; text?: string;
 };
 export type Draft = {
+    blocks?: Record<string,WritingBlock[]>;
     readOnly?: boolean;
     revision: number;
     answers: Record<string, string>;
@@ -76,6 +82,8 @@ export type Grade = {
     sections: Section[];
 };
 export type Review = {
+    scorePercent?: number;
+    criteriaCount?: number;
     revision: number;
     tasks: Record<string, Grade>;
     summary: string;
@@ -87,6 +95,7 @@ export type Review = {
     tutorName?: string;
 };
 export type Submission = {
+    blocks?: Record<string,WritingBlock[]>;
     id: string;
     assignmentId: string;
     assignment: Assignment;
@@ -124,23 +133,23 @@ export const codes = (task: number) => [
 export const criteria: Record<string, { title: string; hint: string }> = {
     TA: {
         title: "Task Achievement",
-        hint: "Đáp ứng đề; lựa chọn thông tin chính, overview hoặc mục đích thư và giọng văn.",
+        hint: "Task coverage, key information, overview or letter purpose and tone.",
     },
     TR: {
         title: "Task Response",
-        hint: "Trả lời đủ yêu cầu, lập trường rõ khi đề hỏi và phát triển ý có căn cứ.",
+        hint: "Address all requirements, state a clear position where requested and support ideas.",
     },
     CC: {
         title: "Coherence & Cohesion",
-        hint: "Tổ chức, tiến triển đoạn và liên kết ý phù hợp.",
+        hint: "Organization, paragraph development and appropriate connections.",
     },
     LR: {
         title: "Lexical Resource",
-        hint: "Phạm vi, độ chính xác và sự phù hợp của từ vựng.",
+        hint: "Vocabulary range, precision and appropriateness.",
     },
     GRA: {
         title: "Grammatical Range & Accuracy",
-        hint: "Phạm vi cấu trúc câu và độ chính xác ngữ pháp.",
+        hint: "Range of sentence structures and grammatical accuracy.",
     },
 };
 export const countWords = (value: string) =>
@@ -186,7 +195,7 @@ export function checklistScores(profile:Profile, sections:Section[], task:number
 export function blankGrade(task: number, assignment: Assignment): Grade {
     return {
         profile: assignment.profiles[String(task)],
-        scores: assignment.category && assignment.category!=='ielts' ? {} : Object.fromEntries(codes(task).map((code) => [code, null])),
+        scores: usesBands(assignment) ? Object.fromEntries(codes(task).map((code) => [code, null])) : {},
         notes: {},
         overall: "",
         sections: [],
@@ -200,7 +209,7 @@ export function defaultSection(
 ): Section {
     const isIelts=!assignment.category||assignment.category==='ielts';
     const letter = isIelts && task === 1 && assignment.variant === "general";
-    const kind =
+    const kind = assignment.writingScope && assignment.writingScope!=='whole' ? assignment.writingScope :
         index === 0
             ? "intro"
             : isIelts && task === 1 && !letter && index === 1 && length >= 4
@@ -217,7 +226,7 @@ export function defaultSection(
         kind,
         title: (
             {
-                intro: letter ? "Opening / mục đích thư" : "Introduction",
+                intro: letter ? "Opening / letter purpose" : "Introduction",
                 overview: "Overview",
                 conclusion: "Conclusion",
                 closing: "Closing",
@@ -229,3 +238,7 @@ export function defaultSection(
         quote: "",
     };
 }
+
+export const usesBands=(assignment:Assignment)=>(!assignment.category||assignment.category==='ielts')&&(!assignment.writingScope||assignment.writingScope==='whole');
+export type Question={id:string;ownerId:string;ownerName:string;title:string;visibility:'private'|'public';revision:number;content:Assignment};
+export type WritingBlock={heading:string;text:string};

@@ -141,7 +141,7 @@ export default function useParity(core: Core) {
         } catch (error) { latest.current.setError(errorText(error)); }
         return true;
     }
-    const lang = String(settings.language || "vi");
+    const lang = "en";
     useEffect(() => {
         const updatePermission = (event: Event) => {
             const { project, permission, workspaceRole } = (event as CustomEvent).detail;

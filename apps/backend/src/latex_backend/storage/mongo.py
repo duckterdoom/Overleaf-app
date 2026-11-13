@@ -70,6 +70,10 @@ def indexes(db):
     ensure(db.invitations, 'user_id')
     ensure(db.link_visitors, [('project', 1), ('user_id', 1)], unique=True)
     ensure(db.history, [('owner_id', 1), ('project', 1), ('time', -1)])
+    ensure(db.writing_questions, [('ownerId', 1), ('updatedAt', -1)])
+    ensure(db.writing_questions, [('visibility', 1), ('updatedAt', -1)])
+    ensure(db.writing_classes, [('projectId', 1), ('tutorId', 1)])
+    ensure(db.writing_memberships, [('studentId', 1), ('classId', 1)])
 
 
 def prepare(home: Path, db):

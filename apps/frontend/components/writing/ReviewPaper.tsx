@@ -8,6 +8,7 @@ import {
     ClipboardCheck,
 } from "lucide-react";
 import {
+    usesBands,
     catalog,
     checklistScores,
     codes,
@@ -28,11 +29,11 @@ import { useWritingApi } from "../../lib/writing/context";
 import PromptDocument from './PromptDocument';
 
 const states: Record<string, string> = {
-    unreviewed: "Chưa xem",
-    met: "Đạt",
-    partial: "Một phần",
-    missing: "Cần sửa",
-    na: "Không áp dụng",
+    unreviewed: "Unreviewed",
+    met: "Met",
+    partial: "Partly met",
+    missing: "Needs improvement",
+    na: "Not applicable",
 };
 const kinds: Record<string, string> = {
     intro: "Introduction / Opening",
@@ -40,7 +41,7 @@ const kinds: Record<string, string> = {
     body: "Body",
     conclusion: "Conclusion",
     closing: "Closing",
-    whole: "Toàn bài / yêu cầu đề",
+    whole: "Whole paper / task requirements",
 };
 export default function ReviewPaper({
     submission,
@@ -67,7 +68,8 @@ export default function ReviewPaper({
 }) {
     const { assetUrl } = useWritingApi();
     const assignment = submission.assignment;
-    const isIelts=!assignment.category || assignment.category==='ielts';
+    const hasBands=usesBands(assignment);
+    const isIelts=!assignment.category||assignment.category==='ielts';
     const projectCatalog = assignment.rubricCatalog || catalog;
     const bandRef = useRef<HTMLElement>(null);
     const [task, setTask] = useState(assignment.tasks[0]),
@@ -87,13 +89,13 @@ export default function ReviewPaper({
     const grade = value.tasks[String(task)],
         parts = paragraphs(submission.answers?.[String(task)] || "");
     const selectedProfile=projectCatalog[grade?.profile || assignment.profiles[String(task)]];
-    const kinds=Object.fromEntries(Object.keys(selectedProfile?.checks||{}).map(key=>[key,selectedProfile?.sectionTitles?.[key]||({intro:'Introduction / Opening',overview:'Overview',body:'Body',conclusion:'Conclusion',closing:'Closing',whole:'Toàn bài / yêu cầu đề'} as Record<string,string>)[key]||key]));
+    const kinds=Object.fromEntries(Object.keys(selectedProfile?.checks||{}).map(key=>[key,selectedProfile?.sectionTitles?.[key]||({intro:'Introduction / Opening',overview:'Overview',body:'Body',conclusion:'Conclusion',closing:'Closing',whole:'Whole paper / task requirements'} as Record<string,string>)[key]||key]));
     const [autoError,setAutoError]=useState('');
     function autoScore(){
         if(!grade||!selectedProfile)return;
         const sections=[...parts.map((_,i)=>section(i)),section(-1)];
         const scores=checklistScores(selectedProfile,sections,task);
-        if(!scores){setAutoError('Đánh giá hết các mục trong từng đoạn và Toàn bài (Đạt / Một phần / Cần sửa / Không áp dụng). Mỗi mã IELTS cần ít nhất một mục có đánh giá.');return;}
+        if(!scores){setAutoError('Review every criterion in each paragraph and the whole-paper section. Each IELTS code needs at least one applicable rating.');return;}
         setAutoError('');changeGrade({scores,scoreSource:'checklist'});
     }
     useEffect(() => {
@@ -137,7 +139,7 @@ export default function ReviewPaper({
     function section(index: number): Section {
         const existing=grade?.sections.find(item=>item.paragraph===index);
         if(existing)return existing;
-        const generated=index===-1?{paragraph:-1,kind:'whole',title:kinds.whole||'Toàn bài',checks:{},note:'',quote:''}:defaultSection(task,assignment,index,parts.length);
+        const generated=index===-1?{paragraph:-1,kind:selectedProfile?.checks.whole?'whole':Object.keys(selectedProfile?.checks||{})[0]||'whole',title:kinds.whole||'Whole paper',checks:{},note:'',quote:''}:defaultSection(task,assignment,index,parts.length);
         if(index!==-1 && !selectedProfile?.checks[generated.kind]){
             generated.kind=Object.keys(selectedProfile?.checks||{}).find(key=>key!=='whole')||'whole';
         }
@@ -150,7 +152,7 @@ export default function ReviewPaper({
         const next = { ...section(index), ...update };
         const sections=[...grade.sections.filter(item=>item.paragraph!==index),next];
         const updates:Partial<Grade>={sections};
-        if(isIelts && grade.scoreSource==='checklist' && selectedProfile){
+        if(hasBands && grade.scoreSource==='checklist' && selectedProfile){
             const full=[...parts.map((_,i)=>sections.find(s=>s.paragraph===i)||section(i)),sections.find(s=>s.paragraph===-1)||section(-1)];
             updates.scores=checklistScores(selectedProfile,full,task)||Object.fromEntries(codes(task).map(code=>[code,null]));
         }
@@ -184,8 +186,8 @@ export default function ReviewPaper({
                         <strong>{item.title}</strong>
                         <small>
                             {item.note
-                                ? "Có nhận xét"
-                                : `${met}/${checks.length} mục đạt`}
+                                ? "Feedback added"
+                                : `${met}/${checks.length} criteria met`}
                         </small>
                     </span>
                     <ChevronDown size={15} />
@@ -194,9 +196,9 @@ export default function ReviewPaper({
                     <div className="writing-card-body">
                         {editable && (
                             <label>
-                                Phần của bài
+                                Writing section
                                 <select
-                                    aria-label={`Phần đoạn ${index + 1}`}
+                                    aria-label={`Paragraph section ${index + 1}`}
                                     value={item.kind}
                                     disabled={index === -1}
                                     onChange={(e) =>
@@ -248,7 +250,7 @@ export default function ReviewPaper({
                                     {editable ? (
                                         <select
                                             aria-label={
-                                                "Trạng thái " + check.text
+                                                "Status " + check.text
                                             }
                                             value={
                                                 item.checks[check.id] ||
@@ -291,7 +293,7 @@ export default function ReviewPaper({
                                 }
                             >
                                 <MessageSquarePlus size={14} />
-                                Gắn phần chữ đã chọn
+                                Attach selected text
                             </button>
                         )}
                         {item.quote && (
@@ -299,7 +301,7 @@ export default function ReviewPaper({
                                 {item.quote}
                                 {editable && (
                                     <button
-                                        title="Bỏ minh chứng"
+                                        title="Remove evidence"
                                         onClick={() =>
                                             changeSection(index, { quote: "" })
                                         }
@@ -311,12 +313,12 @@ export default function ReviewPaper({
                         )}
                         {editable ? (
                             <label>
-                                Nhận xét theo đoạn
+                                Paragraph feedback
                                 <textarea
-                                    aria-label={`Nhận xét đoạn ${index + 1}`}
+                                    aria-label={`Paragraph feedback ${index + 1}`}
                                     rows={4}
                                     value={item.note}
-                                    placeholder="Điểm mạnh, điều cần sửa và cách luyện tiếp…"
+                                    placeholder="Strengths, improvements and next steps…"
                                     onChange={(e) =>
                                         changeSection(index, {
                                             note: e.target.value,
@@ -325,7 +327,7 @@ export default function ReviewPaper({
                                 />
                             </label>
                         ) : (
-                            <p>{item.note || "Không có nhận xét riêng."}</p>
+                            <p>{item.note || "No additional feedback."}</p>
                         )}
                     </div>
                 )}
@@ -338,7 +340,7 @@ export default function ReviewPaper({
                 <div
                     className="writing-task-tabs"
                     role="tablist"
-                    aria-label="Task trong bản nộp"
+                    aria-label="Submitted task"
                 >
                     {assignment.tasks.map((n) => (
                         <button
@@ -355,31 +357,31 @@ export default function ReviewPaper({
                     ))}
                 </div>
                 <span className="writing-muted">
-                    {submission.studentName} · Lần {submission.attempt}
+                    {submission.studentName} · Attempt {submission.attempt}
                 </span>
                 <button onClick={() => setBand(true)}>
                     <ClipboardCheck size={15} />
-                    {isIelts?'Tổng kết band':'Tổng kết nhận xét'}
+                    {hasBands?'Band summary':'Assessment summary'}
                 </button>
                 {published && (
                     <button onClick={() => onDocument(true)}>
-                        Tạo phiếu LaTeX
+                        Export LaTeX report
                     </button>
                 )}
+                {published?.scorePercent!==undefined&&<span className="writing-section-score">Checklist: {published.scorePercent}% · {published.criteriaCount} criteria</span>}
                 {editable && (
                     <button
                         className="primary"
                         disabled={busy || !dirty}
                         onClick={() => void onSave()}
                     >
-                        {busy ? "Đang lưu…" : "Lưu nháp chấm"}
+                        {busy ? "Saving…" : "Save assessment draft"}
                     </button>
                 )}
             </div>
             {!editable && !published && (
                 <div className="writing-notice">
-                    Bài đã nộp. Tutor chưa công bố kết quả; bản chấm nháp không
-                    hiển thị cho học viên.
+                    Submitted. Your tutor has not published the results yet. Assessment drafts remain private.
                 </div>
             )}
             <div className="writing-review-meta">
@@ -389,16 +391,16 @@ export default function ReviewPaper({
                         : "General Training"}{" "}
                     · {projectCatalog[assignment.profiles[String(task)]]?.label}
                 </span>
-                <strong>{submission.wordCounts[String(task)]} từ</strong>
+                <strong>{submission.wordCounts[String(task)]} words</strong>
             </div>
             {editable && grade && (
                 <label className="writing-profile-select">
-                    Dạng bài đối chiếu
+                    Assessment profile
                     <select
-                        aria-label="Dạng bài chấm"
+                        aria-label="Assessment profile"
                         value={grade.profile}
                         onChange={(e) =>
-                            changeGrade({ profile: e.target.value,sections:[],scores:isIelts?Object.fromEntries(codes(task).map(code=>[code,null])):{},scoreSource:'manual' })
+                            changeGrade({ profile: e.target.value,sections:[],scores:hasBands?Object.fromEntries(codes(task).map(code=>[code,null])):{},scoreSource:'manual' })
                         }
                     >
                         {Object.entries(projectCatalog)
@@ -415,7 +417,7 @@ export default function ReviewPaper({
                             ))}
                     </select>
                     <small>
-                        Checklist hỗ trợ ghi nhận, không quy đổi dấu tích thành
+                        Checklists support evidence-based assessment; ticks alone are not an official
                         band.
                     </small>
                 </label>
@@ -424,10 +426,10 @@ export default function ReviewPaper({
                 <div className="writing-paper-grid">
                     <div className="writing-paper-title">
                         <span className="writing-eyebrow">
-                            {isIelts?`TASK ${task}`:assignment.category?.toUpperCase()} · BẢN NỘP KHÔNG THAY ĐỔI
+                            {isIelts?`TASK ${task}`:assignment.category?.toUpperCase()} · IMMUTABLE SUBMISSION
                         </span>
                         <p>{assignment.prompts[String(task)]}</p>
-                        {assignment.promptFiles?.[String(task)] && <details><summary>{isIelts?`Xem đề bài Task ${task}`:'Xem yêu cầu bài tập'}</summary><PromptDocument focused file={assignment.promptFiles[String(task)]}/></details>}
+                        {assignment.promptFiles?.[String(task)] && <details><summary>{isIelts?`View question Task ${task}`:'View exercise instructions'}</summary><PromptDocument focused file={assignment.promptFiles[String(task)]}/></details>}
                         {task === 1 &&
                             assignment.imageId &&
                             (assignment.imageId === "sample-commuting" ? (
@@ -435,7 +437,7 @@ export default function ReviewPaper({
                             ) : (
                                 <img
                                     src={assetUrl(assignment.imageId)}
-                                    alt="Hình đề Task 1"
+                                    alt="Task 1 visual"
                                 />
                             ))}
                     </div>
@@ -446,7 +448,7 @@ export default function ReviewPaper({
                                 className={`writing-paragraph ${active === index ? "selected" : ""}`}
                             >
                                 <span className="writing-paragraph-label">
-                                    {section(index).title} · Đoạn {index + 1}
+                                    {section(index).title} · Paragraph {index + 1}
                                 </span>
                                 <p
                                     onMouseUp={(e) => {
@@ -475,7 +477,7 @@ export default function ReviewPaper({
                                 </p>
                                 <button
                                     className="writing-comment-trigger"
-                                    title={`Nhận xét đoạn ${index + 1}`}
+                                    title={`Paragraph feedback ${index + 1}`}
                                     onClick={() =>
                                         setActive(
                                             active === index ? null : index,
@@ -488,11 +490,11 @@ export default function ReviewPaper({
                             {(editable || published) && card(index)}
                         </div>
                     ))}
-                    {(editable || published) && (
+                    {(editable || published) && selectedProfile?.checks.whole && (
                         <div className="writing-paragraph-row">
                             <div className="writing-whole-note">
                                 <Check size={18} />
-                                {isIelts?'Đối chiếu yêu cầu toàn bài trước khi tổng kết band.':'Đối chiếu yêu cầu và minh chứng trước khi công bố nhận xét.'}
+                                {hasBands?'Review the whole paper against the task before summarizing bands.':'Review requirements and evidence before publishing feedback.'}
                             </div>
                             {card(-1)}
                         </div>
@@ -509,28 +511,27 @@ export default function ReviewPaper({
                         className="writing-band-panel"
                         role="dialog"
                         aria-modal="true"
-                        aria-label={isIelts?'Tổng kết band IELTS':'Tổng kết nhận xét'}
+                        aria-label={hasBands?'IELTS band summary':'Assessment summary'}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <header>
                             <div>
                                 <span className="writing-eyebrow">
-                                    ĐÁNH GIÁ TOÀN BÀI
+                                    ASSESSMENT SUMMARY
                                 </span>
-                                <h2>{isIelts?'4 tiêu chí IELTS':'Nhận xét và kết luận'}</h2>
+                                <h2>{hasBands?'4 IELTS criteria':'Feedback & conclusion'}</h2>
                             </div>
                             <button
-                                aria-label={isIelts?'Đóng tổng kết band':'Đóng tổng kết nhận xét'}
+                                aria-label={hasBands?'Close band summary':'Close assessment summary'}
                                 onClick={() => setBand(false)}
                             >
                                 <X size={20} />
                             </button>
                         </header>
-                        {isIelts && <p className="writing-muted">
-                            Band ước tính luyện tập do Tutor đánh giá; không
-                            phải kết quả thi IELTS chính thức.
+                        {hasBands && <p className="writing-muted">
+                            Practice bands are tutor estimates, not official IELTS examination results.
                         </p>}
-                        {isIelts && editable && <section className="writing-notice"><p>Điểm checklist = 9 × tỷ lệ đạt theo từng mã, làm tròn 0.5. Đạt = 1, Một phần = 0.5, Cần sửa = 0; Không áp dụng bỏ qua. Mục lặp ở nhiều đoạn lấy mức thấp nhất. Đây là quy ước luyện tập, không phải quy đổi band chính thức.</p><button onClick={autoScore}>Tự tổng kết từ checklist</button>{autoError&&<p role="alert">{autoError}</p>}{grade?.scoreSource==='checklist'&&<small>Điểm được tính từ checklist; Tutor có thể điều chỉnh.</small>}</section>}
+                        {hasBands && editable && <section className="writing-notice"><p>Practice score = 9 × mean attainment per code, rounded to 0.5. Met = 1, partly met = 0.5, needs improvement = 0. Not applicable is excluded; repeated criteria use the weakest rating. This is a teaching convention, not an official band conversion.</p><button onClick={autoScore}>Summarize checklist scores</button>{autoError&&<p role="alert">{autoError}</p>}{grade?.scoreSource==='checklist'&&<small>Checklist scores are suggestions; the tutor can adjust them.</small>}</section>}
                         <div className="writing-task-tabs">
                             {assignment.tasks.map((n) => (
                                 <button
@@ -538,11 +539,11 @@ export default function ReviewPaper({
                                     aria-pressed={task === n}
                                     onClick={() => setTask(n)}
                                 >
-                                    {isIelts?`Task ${n}`:'Tài liệu'}
+                                    {isIelts?`Task ${n}`:'Document'}
                                 </button>
                             ))}
                         </div>
-                        {(isIelts?codes(task):[]).map((code) => (
+                        {(hasBands?codes(task):[]).map((code) => (
                             <section
                                 className="writing-band-card"
                                 key={task + code}
@@ -589,7 +590,7 @@ export default function ReviewPaper({
                                     )}
                                 </div>
                                 <details>
-                                    <summary>Gợi ý đánh giá</summary>
+                                    <summary>Assessment guidance</summary>
                                     <p>{criteria[code].hint}</p>
                                 </details>
                                 {editable && grade ? (
@@ -612,25 +613,25 @@ export default function ReviewPaper({
                                 ) : (
                                     <p>
                                         {grade?.notes[code] ||
-                                            "Chưa có nhận xét."}
+                                            "No feedback yet."}
                                     </p>
                                 )}
                             </section>
                         ))}
-                        {isIelts && <div className="writing-band-estimate">
-                            <span>Task {task} band ước tính</span>
+                        {hasBands && <div className="writing-band-estimate">
+                            <span>Task {task} estimated band</span>
                             <strong>
                                 {taskEstimate(grade) === null
                                     ? "—"
                                     : rounded(taskEstimate(grade)!).toFixed(1)}
                             </strong>
                         </div>}
-                        {isIelts && assignment.tasks.length === 2 && (
+                        {hasBands && assignment.tasks.length === 2 && (
                             <div className="writing-band-estimate">
                                 <span>
-                                    Writing band ước tính
+                                    Writing estimated band
                                     <br />
-                                    <small>Task 2 có trọng số gấp đôi</small>
+                                    <small>Task 2 carries twice the weight</small>
                                 </span>
                                 <strong>
                                     {estimate(value, assignment.tasks)?.toFixed(
@@ -642,9 +643,9 @@ export default function ReviewPaper({
                         {editable ? (
                             <>
                                 <label>
-                                    Nhận xét chung
+                                    Overall feedback
                                     <textarea
-                                        aria-label="Nhận xét chung"
+                                        aria-label="Overall feedback"
                                         rows={4}
                                         value={value.summary}
                                         onChange={(e) =>
@@ -656,9 +657,9 @@ export default function ReviewPaper({
                                     />
                                 </label>
                                 <label>
-                                    Hướng luyện tiếp
+                                    Next steps
                                     <textarea
-                                        aria-label="Hướng luyện tiếp"
+                                        aria-label="Next steps"
                                         rows={4}
                                         value={value.recommendations}
                                         onChange={(e) =>
@@ -671,9 +672,9 @@ export default function ReviewPaper({
                                 </label>
                                 {published && (
                                     <label>
-                                        Lý do công bố lại
+                                        Reason for republishing
                                         <input
-                                            aria-label="Lý do điều chỉnh"
+                                            aria-label="Reason for revision"
                                             value={reason}
                                             onChange={(e) =>
                                                 setReason(e.target.value)
@@ -686,13 +687,13 @@ export default function ReviewPaper({
                                         disabled={busy || !dirty}
                                         onClick={() => void onSave()}
                                     >
-                                        Lưu nháp
+                                        Save draft
                                     </button>
                                     <button
                                         className="primary"
                                         disabled={
                                             busy ||
-                                            isIelts && estimate(
+                                            hasBands && estimate(
                                                 value,
                                                 assignment.tasks,
                                             ) === null
@@ -700,16 +701,16 @@ export default function ReviewPaper({
                                         onClick={() => void onPublish(reason)}
                                     >
                                         {published
-                                            ? "Công bố bản điều chỉnh"
-                                            : "Công bố kết quả"}
+                                            ? "Publish revised results"
+                                            : "Publish results"}
                                     </button>
                                 </footer>
                             </>
                         ) : (
                             <>
-                                <h3>Nhận xét chung</h3>
+                                <h3>Overall feedback</h3>
                                 <p>{value.summary || "—"}</p>
-                                <h3>Hướng luyện tiếp</h3>
+                                <h3>Next steps</h3>
                                 <p>{value.recommendations || "—"}</p>
                             </>
                         )}

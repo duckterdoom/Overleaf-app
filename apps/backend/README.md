@@ -14,6 +14,9 @@ Backend Python của ứng dụng web nằm tại `src/latex_backend/`.
 | `collaboration/` | Review/comment và networking TCP/TLS cũ |
 | `pdf_export/` | Bộ chuyển PDF sang DOCX |
 | `resources/` | Template và rule lỗi |
+| `writing/` | Task Writing: questions, courses/groups, per-exercise rubric snapshots, structured answers, assessment and LaTeX output |
+
+Task Writing has account-level routes independent of document projects, as well as optional `projectId` integration. `writing/questions.py` owns the private/public question library; `courses.py` manages explicit enrollment; `rubrics.py` validates snapshots and calculates section-exercise checklist percentages. Project ACL and course enrollment remain separate. See [Task Writing review and API](../../docs/TASK_WRITING_REVIEW.md).
 
 Web gateway `http/web_accounts.py` cấp workspace riêng theo tài khoản. `storage/mongo.py` và `mongo_store.py` là persistence chính; `storage/migration.py` chuyển dữ liệu cũ có backup/verify. Xem [MONGODB_PRIMARY.md](../../docs/MONGODB_PRIMARY.md) trước khi chạy. Google cần OAuth config như trước; dữ liệu shared cũ không tự gán cho người đăng ký đầu tiên. SQLite chỉ còn là nguồn migration và tương thích desktop cũ.
 

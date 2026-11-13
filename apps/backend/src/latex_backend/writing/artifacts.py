@@ -11,7 +11,7 @@ from latex_backend.compilation.compiler import Compiler
 
 async def render(gateway, user, assignment, source, report, submission):
     gateway.accounts.throttle(('writing-output', user['id']))
-    project = user['writingProject']
+    project = user.get('writingProject')
     fingerprint = hashlib.sha256(source.encode()).hexdigest()
     key = hashlib.sha256(f'{project}:{user["id"]}:{submission or assignment["id"]}:{report}:{fingerprint}'.encode()).hexdigest()
     cached = await asyncio.to_thread(gateway.database.writing_artifacts.find_one, {'_id':key})
@@ -26,7 +26,7 @@ async def render(gateway, user, assignment, source, report, submission):
             if attachment['kind'] in {'pdf','image'}:
                 row = await asyncio.to_thread(gateway.database.writing_prompt_files.find_one, {'_id':attachment['id'],'projectId':project})
                 if not row:
-                    raise Problem('Không tìm thấy tệp đề.',409)
+                    raise Problem('Question attachment not found.',409)
                 extension = 'pdf' if attachment['kind']=='pdf' else 'png'
                 atomic_write(store.path(identifier,f'question-task-{task}.{extension}'),bytes(row['data']))
         image = assignment.get('imageId')
@@ -49,10 +49,10 @@ async def render(gateway, user, assignment, source, report, submission):
             if event['type']=='end':
                 break
         if not snapshot:
-            raise Problem('Không biên dịch được phiếu IELTS. Bài viết/bản nộp vẫn được giữ trong dự án.',409)
+            raise Problem('Could not compile the writing report. Your draft and submission are preserved.',409)
         pdf=compiler.verified(identifier,snapshot).data
         if len(pdf) + len(source.encode()) > 12 * 1024 * 1024:
-            raise Problem('Phiếu PDF quá lớn để lưu trực tiếp. Giảm dung lượng hình trong đề; bản nộp vẫn được giữ.',413)
+            raise Problem('The PDF is too large. Reduce image sizes; your submission is preserved.',413)
         await asyncio.to_thread(gateway.database.writing_artifacts.update_one, {'_id':key}, {'$set':{
             'projectId':project,'userId':user['id'],'assignmentId':assignment['id'],
             'submissionId':submission,'report':report,'source':source,'pdf':Binary(pdf)}}, upsert=True)

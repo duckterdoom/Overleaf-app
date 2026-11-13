@@ -101,7 +101,7 @@ const fold = (text: string) =>
 
 export default function Workspace() {
     const [appMode,setAppMode]=useState<'editor'|'writing'>('editor');
-    const [writingLocation, setWritingLocation] = useState('IELTS Writing');
+    const [writingLocation, setWritingLocation] = useState('Task Writing');
     const writingLeave = useRef<(() => Promise<boolean>) | null>(null);
     const [ready, setReady] = useState(false),
         [projects, setProjects] = useState<Project[]>([]),
@@ -814,7 +814,7 @@ export default function Workspace() {
         }
         setResultTabs(remaining);
     }
-    const uiLanguage = String(ext.settings.language || "vi"),
+    const uiLanguage = "en",
         t = translator(uiLanguage);
     const logEntries = useMemo(
         () => parseAllLogs(ext.issues, logs, compileTarget || file, uiLanguage),
@@ -1042,8 +1042,8 @@ export default function Workspace() {
         ] as const).map(([panel, label, Icon]) => <button key={panel} title={label} aria-label={label}
             aria-pressed={appMode === 'editor' && sidePanel === panel}
             onClick={() => void selectWorkspacePanel(panel)}><Icon size={21}/></button>)}
-        <button title={t('Chấm điểm IELTS Writing', 'IELTS Writing Evaluation')}
-            aria-label={t('Chấm điểm IELTS Writing', 'IELTS Writing Evaluation')}
+        <button title="Task Writing"
+            aria-label="Task Writing"
             aria-pressed={appMode === 'writing'} onClick={() => {if (appMode !== 'writing') void enterWriting();}}>
             <GraduationCap size={21}/>
         </button>
@@ -1060,6 +1060,10 @@ export default function Workspace() {
                     </span>
                     <strong>Latex</strong>
                 </div>
+                {!project && <nav className="product-navigation" aria-label="Main tools">
+                    <button aria-pressed={appMode==='editor'} onClick={async()=>{if(await leaveWriting())setAppMode('editor');}}>LaTeX Studio</button>
+                    <button aria-pressed={appMode==='writing'} onClick={()=>void enterWriting()}>Task Writing</button>
+                </nav>}
                 {project ? (
                     <>
                         <span className="header-divider" />
@@ -1268,6 +1272,14 @@ export default function Workspace() {
             ) : !project ? (
                 <div className="dashboard dashboard-home">
                     <section className="projects-main">
+                        <section className="platform-overview" aria-label="Platform overview">
+                            <div><span className="eyebrow">WRITE · REVIEW · PUBLISH</span><h1>From a single paragraph to a finished paper.</h1><p>Choose your workspace. Practise and assess writing independently, then use LaTeX when you are ready to publish.</p></div>
+                            <div className="platform-pathways">
+                                <button onClick={()=>void enterWriting()}><GraduationCap size={25}/><strong>01 · Task Writing</strong><span>Practise an introduction, body, conclusion or whole paper. Teach with courses, reusable questions and custom criteria.</span><b>Open Task Writing →</b></button>
+                                <button onClick={()=>void enterWriting()}><BookOpen size={25}/><strong>02 · Develop a paper</strong><span>Organize longer reports and research papers into sections and review each against its own checklist.</span><b>Explore writing →</b></button>
+                                <button onClick={()=>{setSelectedTemplate(null);setName('');setDialog('project');}}><Braces size={25}/><strong>03 · LaTeX Studio</strong><span>Compose documents, collaborate on source and export publication-ready PDF or Word files.</span><b>Create a document →</b></button>
+                            </div>
+                        </section>
                         <div className="page-heading">
                             <div>
                                 <p className="eyebrow">
@@ -1299,70 +1311,6 @@ export default function Workspace() {
                                 <Plus size={18} />
                                 {localize("Dự án mới", uiLanguage)}
                             </button>
-                        </div>
-                        <div className="welcome-card">
-                            <div>
-                                <span className="welcome-label">
-                                    <Leaf size={14} />
-                                    {localize(
-                                        "KHÔNG GIAN CHO Ý TƯỞNG",
-                                        uiLanguage,
-                                    )}
-                                </span>
-                                <h2>
-                                    {localize("Từ dòng đầu tiên", uiLanguage)}
-                                    <br />
-                                    {localize(
-                                        "đến bản PDF hoàn chỉnh.",
-                                        uiLanguage,
-                                    )}
-                                </h2>
-                                <p>
-                                    {t(`Bắt đầu với trang trống, hoặc chọn từ ${catalog.templates.length} mẫu tài liệu`,
-                                        `Start with a blank page or choose from ${catalog.templates.length} templates`)}
-                                    <br />
-                                    {localize(
-                                        "có sẵn bằng tiếng Việt và tiếng Anh.",
-                                        uiLanguage,
-                                    )}
-                                </p>
-                                <button
-                                    onClick={() => {
-                                        setSelectedTemplate(null);
-                                        setName("");
-                                        setDialog("project");
-                                    }}
-                                >
-                                    {localize(
-                                        "Khám phá thư viện mẫu",
-                                        uiLanguage,
-                                    )}{" "}
-                                    <ArrowRight size={16} />
-                                </button>
-                            </div>
-                            <div className="paper-art" aria-hidden="true">
-                                <div className="back-paper" />
-                                <div className="front-paper">
-                                    <div className="paper-tag">LaTeX</div>
-                                    <div className="paper-title" />
-                                    <div className="paper-line short" />
-                                    <div className="paper-formula">E = mc²</div>
-                                    <div className="paper-line" />
-                                    <div className="paper-line" />
-                                    <div className="paper-line short" />
-                                    <div className="paper-chart">
-                                        <i />
-                                        <i />
-                                        <i />
-                                        <i />
-                                        <i />
-                                    </div>
-                                    <div className="paper-line" />
-                                </div>
-                                <div className="paper-check">
-                                    <Check size={24} />
-                                </div>
-                            </div>
                         </div>
                         <ActivityHeatmap
                             activity={ext.activity}

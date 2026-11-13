@@ -17,16 +17,16 @@ def admission(db,user,row):
 
 def require_entry(db,user,row):
     if is_exam(row) and user['role']!='tutor' and not admission(db,user,row):
-        raise Problem('Nhập mật khẩu để bắt đầu bài kiểm tra.',403)
+        raise Problem('Enter the password to start the examination.',403)
 
 
 def require_open(row):
     stamp=utc_now()
-    if stamp < datetime.fromisoformat(row['opensAt']):raise Problem('Bài kiểm tra chưa đến giờ mở.',403)
-    if stamp >= datetime.fromisoformat(row['closesAt']):raise Problem('Bài kiểm tra đã đóng.',403)
+    if stamp < datetime.fromisoformat(row['opensAt']):raise Problem('The examination has not opened yet.',403)
+    if stamp >= datetime.fromisoformat(row['closesAt']):raise Problem('The examination has closed.',403)
 
 
 def require_writable(row,draft):
     if not is_exam(row):return
     require_open(row)
-    if utc_now()>=datetime.fromisoformat(draft['deadline']):raise Problem('Đã hết thời gian làm bài kiểm tra. Bản nháp đã lưu vẫn được giữ.',403)
+    if utc_now()>=datetime.fromisoformat(draft['deadline']):raise Problem('Examination time is up. Your saved draft is preserved.',403)

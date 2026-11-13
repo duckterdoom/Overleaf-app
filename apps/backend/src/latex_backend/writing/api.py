@@ -48,6 +48,10 @@ class Join(Model):
 
 
 class Assignment(Title):
+    questionId: str | None = Field(default=None, max_length=80)
+    writingScope: Literal['whole','intro','body','conclusion'] = 'whole'
+    purpose: Literal['practice','homework','exam'] = 'homework'
+    rubricCatalog: dict[str,RubricProfile] | None = Field(default=None,max_length=80)
     kind: Literal['assignment','exam'] = 'assignment'
     opensAt: datetime | None = None
     closesAt: datetime | None = None
@@ -68,7 +72,13 @@ class Assignment(Title):
     revision: int = Field(default=0, ge=0)
 
 
+class WritingBlock(Model):
+    heading: str = Field(min_length=1, max_length=160)
+    text: str = Field(max_length=100000)
+
+
 class Draft(Model):
+    blocks: dict[Literal['1', '2'], list[WritingBlock]] = Field(default_factory=dict, max_length=2)
     revision: int = Field(ge=0)
     answers: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=100000)]]
     latexSources: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=200000)]] = Field(default_factory=dict)
@@ -118,6 +128,7 @@ class Publish(Model):
 
 
 class Latex(Model):
+    createDocument: bool = True
     assignmentId: str | None = None
     submissionId: str | None = None
     report: bool = False
@@ -126,6 +137,7 @@ class Latex(Model):
 
 
 class PromptImport(Model):
+    sourceProjectId: str | None = Field(default=None, max_length=80)
     path: str = Field(min_length=1, max_length=1024)
     snapshot: str | None = Field(default=None, max_length=100)
     firstPage: int = Field(default=1, ge=1, le=100)
@@ -142,13 +154,13 @@ def register_writing(gateway):
         if project:
             permission = gateway.sharing.access(project, value['id'])
             if not permission:
-                raise Problem('Bạn không có quyền truy cập dự án.', 404)
+                raise Problem('You do not have access to this project.', 404)
             value = {**value, 'role': gateway.sharing.workspace_role(project, value['id']),
                      'writingProject': project, 'projectPermission': permission}
             if request.method not in {'GET', 'HEAD'} and permission == 'viewer' and request.url.path != '/api/writing/latex':
-                raise Problem('Bạn chỉ có quyền xem dự án; cần quyền chỉnh sửa để thay đổi IELTS.', 403)
+                raise Problem('This project is read only. Editing access is required for Task Writing changes.', 403)
         if value.get('role') not in {'student', 'tutor'}:
-            raise Problem('Hoàn tất lựa chọn Student/Tutor trước khi dùng IELTS Writing.', 403)
+            raise Problem('Complete Student/Tutor onboarding before using Task Writing.', 403)
         return value
 
     @api.get('/api/writing/overview')
@@ -176,8 +188,17 @@ def register_writing(gateway):
         import asyncio
         from latex_backend.writing.prompts import capture
         current = user(request)
+        if not current.get('writingProject') and data.sourceProjectId:
+            source = data.sourceProjectId
+            if not gateway.sharing.access(source, current['id']):
+                raise Problem('You do not have access to this source project.', 404)
+            app, store, _ = await gateway.project_workspace(source, current)
+            result = await asyncio.to_thread(capture, gateway, {**current, 'writingProject': source}, store, app.state.compiler, data)
+            await asyncio.to_thread(gateway.database.writing_prompt_files.update_one, {'_id': result['id'], 'ownerId': current['id']},
+                {'$set': {'projectId': None, 'sourceProjectId': source}})
+            return {**result, 'projectId': None, 'sourceProjectId': source}
         if not current.get('writingProject'):
-            raise Problem('Mở dự án chứa đề trước khi nhập.', 400)
+            raise Problem('Open the source project before importing a question.', 400)
         app, store, _ = await gateway.project_workspace(current['writingProject'], current)
         return await asyncio.to_thread(capture, gateway, current, store, app.state.compiler, data)
 
@@ -185,11 +206,16 @@ def register_writing(gateway):
     def prompt_file(key: str, request: Request):
         current = user(request)
         row = gateway.database.writing_prompt_files.find_one({'_id': key})
-        if not row or row['projectId'] != current.get('writingProject'):
-            raise Problem('Không tìm thấy tệp đề trong dự án.', 404)
-        allowed = current['role'] == 'tutor' or row.get('ownerId') == current['id']
+        if not row:
+            raise Problem('Question source not found in this workspace.', 404)
+        allowed = (row.get('ownerId') == current['id'] and row['projectId'] == current.get('writingProject')) or (current['role'] == 'tutor' and
+            bool(current.get('writingProject')) and row['projectId'] == current['writingProject'])
+        if not allowed and current['role'] == 'tutor':
+            allowed = bool(gateway.database.writing_questions.find_one({'deleted': {'$ne': True},
+                '$and': [{'$or': [{'ownerId': current['id']}, {'visibility': 'public'}]},
+                         {'$or': [{'content.promptFiles.1.id': key}, {'content.promptFiles.2.id': key}]}]}))
         if not allowed:
-            for assignment in gateway.database.writing_assignments.find({'projectId': row['projectId'], '$or': [
+            for assignment in gateway.database.writing_assignments.find({'projectId': current.get('writingProject'), '$or': [
                     {'promptFiles.1.id': key}, {'promptFiles.2.id': key}]}):
                 try:
                     task=service.assignment(current, assignment['id'])
@@ -199,7 +225,7 @@ def register_writing(gateway):
                 except Problem:
                     pass
         if not allowed:
-            raise Problem('Đề chưa được giao cho bạn.', 404)
+            raise Problem('This question has not been assigned to you.', 404)
         return Response(bytes(row['data']), media_type=row['mime'], headers={'Cache-Control': 'private, no-store'})
 
     @api.post('/api/writing/classes')
@@ -209,6 +235,11 @@ def register_writing(gateway):
     @api.post('/api/writing/classes/join')
     def join_class(data: Join, request: Request):
         return service.join(user(request), data.code)
+
+    from latex_backend.writing.questions import register_questions
+    register_questions(api, service, user)
+    from latex_backend.writing.courses import register_courses
+    register_courses(api, service, user)
 
     @api.post('/api/writing/assignments')
     def create_assignment(data: Assignment, request: Request):
@@ -271,19 +302,19 @@ def register_writing(gateway):
         current = user(request)
         data = await request.body()
         if len(data) > 2 * 1024 * 1024:
-            raise Problem('Ảnh đề bài tối đa 2 MiB.', 413)
+            raise Problem('Question images must not exceed 2 MiB.', 413)
         try:
             with Image.open(io.BytesIO(data)) as image:
                 if image.format not in {'PNG', 'JPEG', 'WEBP'} or image.width * image.height > 12000000:
-                    raise Problem('Chỉ dùng PNG/JPEG/WebP, tối đa 12 triệu pixel.')
+                    raise Problem('Use PNG/JPEG/WebP images with at most 12 million pixels.')
                 image.load()
                 output = io.BytesIO()
                 image.convert('RGB').save(output, format='PNG')
                 payload = output.getvalue()
                 if len(payload) > 4 * 1024 * 1024:
-                    raise Problem('Ảnh sau chuẩn hóa quá lớn.', 413)
+                    raise Problem('The normalized image is too large.', 413)
         except (UnidentifiedImageError, OSError, Image.DecompressionBombError):
-            raise Problem('Tệp ảnh không hợp lệ.') from None
+            raise Problem('Invalid image file.') from None
         key = uuid.uuid4().hex
         gateway.database.writing_assets.insert_one({'_id': key, 'ownerId': current['id'], 'data': Binary(payload)})
         return {'id': key}
@@ -293,7 +324,7 @@ def register_writing(gateway):
         current = user(request)
         asset = gateway.database.writing_assets.find_one({'_id': key})
         if not asset:
-            raise Problem('Không tìm thấy ảnh.', 404)
+            raise Problem('Image not found.', 404)
         allowed = asset['ownerId'] == current['id']
         if not allowed:
             for assignment in gateway.database.writing_assignments.find({'imageId': key}):
@@ -306,23 +337,23 @@ def register_writing(gateway):
                 except Problem:
                     pass
         if not allowed:
-            raise Problem('Bạn không có quyền xem hình.', 404)
+            raise Problem('You do not have access to this image.', 404)
         return Response(bytes(asset['data']), media_type='image/png', headers={'Cache-Control': 'private, no-store'})
 
     @api.post('/api/writing/latex')
     async def latex(data: Latex, request: Request):
         current = user(request)
         if bool(data.assignmentId) == bool(data.submissionId):
-            raise Problem('Chọn đúng một bản viết hoặc bản nộp.')
+            raise Problem('Select exactly one draft or submission.')
         source, assignment = service.latex(current, data.assignmentId, data.submissionId, data.report)
         if data.useDraftSource:
             if not data.assignmentId or data.submissionId or data.report:
-                raise Problem('Nhánh source tự sửa chỉ dùng trong bản viết của chính học viên.', 403)
+                raise Problem("Custom source is only available for the student's own draft.", 403)
             own_draft = service.draft(current, data.assignmentId)
             source = own_draft['latexSources'].get(str(assignment['tasks'][0])) or source
         if not data.createProject:
             return {'source': source, 'notice': 'LaTeX là nhánh trình bày; sửa source không tự đổi văn bản dùng để chấm.'}
-        if current.get('writingProject'):
+        if current.get('writingProject') or not data.createDocument:
             from latex_backend.writing.artifacts import render
             return await render(gateway, current, assignment, source, data.report, data.submissionId)
         _, store = await gateway.workspace(current)
@@ -348,7 +379,7 @@ def register_writing(gateway):
                 if attachment['kind'] in {'pdf', 'image'}:
                     record = gateway.database.writing_prompt_files.find_one({'_id': attachment['id']})
                     if not record:
-                        raise Problem('Tệp đề không còn khả dụng.', 409)
+                        raise Problem('The question attachment is no longer available.', 409)
                     extension = 'pdf' if attachment['kind'] == 'pdf' else 'png'
                     with store.shared_files.edit(project['id']):
                         atomic_write(store.path(project['id'], 'question-task-' + task + '.' + extension), bytes(record['data']))

@@ -16,7 +16,7 @@ def write_results(gateway, service, user, store, submission, publication):
     payloads={}
     current=gateway.database.writing_results.find_one({'_id':submission})
     if not current or current['publishedVersion']!=publication['publishedVersion']:
-        raise Problem('Kết quả đã đổi; tải lại trước khi tạo phiếu.',409)
+        raise Problem('Results changed. Reload before generating a report.',409)
     for number in row['assignment']['tasks']:
         profile=row['assignment']['profiles'][str(number)]
         category=row['assignment'].get('category','ielts')
@@ -32,7 +32,7 @@ def write_results(gateway, service, user, store, submission, publication):
             continue
         asset=gateway.database.writing_prompt_files.find_one({'_id':attachment['id'],'projectId':project})
         if not asset:
-            raise Problem('Không tìm thấy tệp đề để lưu kết quả.',409)
+            raise Problem('Question attachment not found for the result report.',409)
         ext='pdf' if attachment['kind']=='pdf' else 'png'
         payloads[f'result/assets/{submission}-question-task-{task}.{ext}']=bytes(asset['data'])
     image=row['assignment'].get('imageId')
@@ -48,12 +48,12 @@ def write_results(gateway, service, user, store, submission, publication):
     # Never overwrite a generated file someone subsequently edited by hand.
     current=gateway.database.writing_results.find_one({'_id':submission})
     if current['publishedVersion']!=publication['publishedVersion']:
-        raise Problem('Kết quả đã đổi; tải lại trước khi tạo phiếu.',409)
+        raise Problem('Results changed. Reload before generating a report.',409)
     with store.shared_files.edit(project):
         for name,data in payloads.items():
             path=store.path(project,name)
             if path.exists() and path.read_bytes()!=data:
-                raise Problem('Tệp kết quả đã được chỉnh sửa trong editor; không ghi đè tự động.',409)
+                raise Problem('The result file was edited in LaTeX Studio and will not be overwritten.',409)
         for name,data in payloads.items():
             path=store.path(project,name);path.parent.mkdir(parents=True,exist_ok=True)
             if not path.exists():atomic_write(path,data)

@@ -20,14 +20,14 @@ export default function SettingsPanel({
     onDone: (settings: Settings) => void;
     onClose: () => void;
 }) {
-    const [draft, setDraft] = useState(settings),
+    const [draft, setDraft] = useState<Settings>({...settings,language:'en'}),
         [tab, setTab] = useState("general"),
         [busy, setBusy] = useState(false),
         [error, setError] = useState("");
     const [tools, setTools] = useState<
         { name: string; available: boolean; path: string; detail: string }[]
     >([]);
-    const t = translator(String(draft.language));
+    const t = translator("en");
     const update = (key: string, value: Settings[string]) =>
         setDraft((valueNow) => ({ ...valueNow, [key]: value }));
     function choice(key: string, title: string, options: [string, string][]) {
@@ -107,7 +107,6 @@ export default function SettingsPanel({
                         {tab === "general" && (
                             <>
                                 {choice("language", t("Ngôn ngữ", "Language"), [
-                                    ["vi", "Tiếng Việt"],
                                     ["en", "English"],
                                 ])}
                                 {choice("mode", t("Chế độ", "Mode"), [

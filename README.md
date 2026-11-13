@@ -1,8 +1,23 @@
-# Latex — Python + Next.js
+# Latex — Task Writing & LaTeX Studio
+
+**Task Writing** is the learning and assessment workspace; **LaTeX Studio** is the document editor. Open either from the main navigation. The home page explains three paths: practise writing, develop a paper, and publish with LaTeX. Task Writing does **not** require creating a document project. The interface is English; questions, answers and source documents keep their original language.
+
+### Task Writing workflow
+
+1. Tutor opens **Task Writing → Courses & groups**, creates a course/group and adds registered students by email or shares its join code.
+2. In **Question library**, create a question directly or optionally select a source project/file from LaTeX Studio. Save it **Private** (author only) or **Public** (reusable by authenticated tutors in this application).
+3. Choose **Introduction only / Body only / Conclusion only / Whole paper**. Customize criteria by adding, changing or removing sections and checklist items. Each question and exercise keeps its own rubric snapshot; editing a template does not change existing exercises.
+4. Use a question for an exercise and choose **Practice / Assigned exercise / Examination**, then its course/group. Enrolled students can start practice themselves; examinations retain password, mandatory duration and opening/closing times.
+5. Students write a whole answer or organize it **By paragraph / paper section**. Tutors read the immutable submission beside paragraph checklists and publish feedback. Partial-writing exercises receive a checklist percentage; whole IELTS tasks retain practice-band assessment. Report/Research have feedback without IELTS bands.
+6. Section headings and text are retained when generating LaTeX/PDF. Routine previews and feedback downloads do not create projects; **Open in LaTeX Studio** is an explicit document-creation action for independent Writing. Project-linked writing still saves result files in its original project.
+
+Public questions currently span the application's tutor community; faculty/department scoping is not implemented. Course enrollment is separate from editor sharing. Existing project-shared assignments retain their original access; new Course/Group assignments enforce explicit enrollment. No existing database records are automatically moved or translated.
+
+Review, API and verification details: [Task Writing review](docs/TASK_WRITING_REVIEW.md).
 
 **Bài kiểm tra có mật khẩu:** trong Giao bài chọn Bài kiểm tra, đặt thời lượng bắt buộc và giờ mở/đóng. Học viên có mục Bài kiểm tra riêng; đề, bài nộp và kết quả có tab Bài tập/Bài kiểm tra. Bộ tiêu chí chấm giữ nguyên. Xem [hướng dẫn](docs/UNIFIED_ASSESSMENT.md).
 
-**Chấm bài chung IELTS / Report / Research:** trong tính năng chấm hiện có, Tutor lấy đề từ editor và giao cho Học viên được chia sẻ dự án, không qua lớp học. Mục **Tiêu chí chấm** quản lý bộ tiêu chí, các phần và mục con theo dự án. IELTS có tổng kết điểm luyện tập từ checklist; Report/Research chỉ checklist/lời phê, không có band. Xem [hướng dẫn hệ thống chấm chung](docs/UNIFIED_ASSESSMENT.md).
+**Chấm bài chung IELTS / Report / Research:** thuộc Task Writing, có câu hỏi trực tiếp hoặc nhập từ editor, Course/Group và tiêu chí tùy biến theo từng bài. Rubric templates là mẫu để bắt đầu, không ép mọi bài dùng chung cấu hình. Luồng chấm trong dự án cũ vẫn được hỗ trợ. Xem [luồng hiện hành](docs/TASK_WRITING_REVIEW.md); [hướng dẫn trước đây](docs/UNIFIED_ASSESSMENT.md) mô tả thêm cơ chế snapshot, band và bài kiểm tra.
 
 **Bộ đề IELTS có sẵn:** chọn **Dự án mới → Đề mẫu IELTS Writing**. Chỉ một template chứa đủ 21 dạng Task 1/2, hình LaTeX sửa được, từng tệp câu hỏi riêng để compile và giao bài, cùng khung bài làm. Xem [hướng dẫn template IELTS](docs/IELTS_PROJECT_TEMPLATES.md).
 
@@ -18,7 +33,7 @@ IELTS giữ cùng kết nối hiện diện của dự án với editor: avatar 
 
 Đăng ký/đăng nhập web đã có bước chọn **Tutor hoặc Student**, phiên riêng và vùng dự án riêng theo tài khoản. Google sign-in được tích hợp nhưng cần cấu hình OAuth client của bạn trước khi sử dụng. Xem [luồng tài khoản và cấu hình Google](docs/WEB_AUTH_ONBOARDING.md). Dự án chung cũ được giữ nguyên, không tự gán cho tài khoản mới.
 
-**Chấm bài trong workspace dự án:** mở icon mũ tốt nghiệp như trước. IELTS, Report và Research dùng cùng header/rail và quyền chia sẻ dự án. Tutor giao bài từ tệp editor, Học viên viết/lưu/nộp trong dự án; Tutor nhận xét theo đoạn và công bố kết quả. IELTS có band luyện tập, Report/Research không có band. Phiếu LaTeX lưu trong result/ của chính dự án, không tạo project mới. Xem [hướng dẫn hiện hành](docs/UNIFIED_ASSESSMENT.md).
+**Task Writing trong workspace dự án:** icon mũ tốt nghiệp vẫn mở luồng có liên kết dự án, giữ header/rail, presence và quyền cộng tác. Đây là lựa chọn tích hợp LaTeX, không còn là điều kiện bắt buộc để dùng Task Writing. Phiếu LaTeX được công bố vẫn lưu trong `result/` của chính dự án.
 
 Bản web lưu dự án, source, lịch sử và Word draft **trên server chạy Python**. Trình duyệt upload dữ liệu và tải bản sao về; người dùng không chọn đường dẫn lưu vật lý của server. Cấu trúc backend và cấu hình dữ liệu: [WEB_BACKEND_ARCHITECTURE.md](docs/WEB_BACKEND_ARCHITECTURE.md).
 
@@ -185,7 +200,7 @@ Không còn file alias `api.py`, `store.py`, `compiler.py`... ở root package. 
 | `compilation/toolchain.py` | Công cụ, preflight package/Biber; cài gói do quản trị server thực hiện |
 | `compilation/explainer.py`, `compilation/synctex.py` | Giải thích lỗi và điều hướng source ↔ PDF |
 | `documents/` | Word text-sync cũ, native DOCX workspace, báo cáo IELTS |
-| `writing/` | API và nghiệp vụ IELTS: lớp, đề, bản nháp, snapshot nộp, checklist, công bố kết quả và phiếu LaTeX |
+| `writing/` | Task Writing: câu hỏi Private/Public, Course/Group, bài tập theo phần/cả bài, tiêu chí riêng, nháp, snapshot, chấm và xuất LaTeX |
 | `collaboration/network.py`, `collaboration/review.py`, `entrypoints/console.py` | TCP/TLS/OT cũ, comment/reply/resolve, console demo |
 | `storage/mongo.py`, `storage/mongo_store.py` | Kết nối/indexes và Store/State/History MongoDB chính cho web |
 | `storage/migration.py` | Chuyển SQLite/JSON, backup/đối chiếu/resume/rebind volume |

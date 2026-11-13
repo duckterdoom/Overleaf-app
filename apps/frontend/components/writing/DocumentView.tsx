@@ -70,6 +70,7 @@ export default function DocumentView({
                         ...context,
                         report,
                         createProject: true,
+                        createDocument: open,
                         useDraftSource: !!assignmentId,
                     }),
                 },
@@ -90,7 +91,7 @@ export default function DocumentView({
                 "pdflatex",
                 (event) => {
                     if (event.type === "error")
-                        failed = event.message || "Biên dịch chưa thành công.";
+                        failed = event.message || "Compilation did not succeed.";
                     if (event.type === "done" && event.snapshot)
                         pending = (async () => {
                             const response = await request(
@@ -124,7 +125,7 @@ export default function DocumentView({
             <div
                 className="writing-view-tabs"
                 role="tablist"
-                aria-label="Dạng xem IELTS"
+                aria-label="Task Writing view"
             >
                 <button
                     role="tab"
@@ -132,7 +133,7 @@ export default function DocumentView({
                     onClick={() => void choose("text")}
                 >
                     <FileText size={15} />
-                    Văn bản
+                    Text
                 </button>
                 <button
                     role="tab"
@@ -155,7 +156,7 @@ export default function DocumentView({
                     onClick={() => void makeProject(false, true)}
                 >
                     <FileUp size={15} />
-                    Mở trong editor LaTeX
+                    Open in LaTeX Studio
                 </button>
             </div>
             {error && (
@@ -168,15 +169,15 @@ export default function DocumentView({
                 <div className="writing-source-panel">
                     <div className="writing-notice">
                         {onSourceChange
-                            ? "Source là nhánh trình bày riêng. Sửa LaTeX không tự đổi câu trả lời tiếng Anh dùng để chấm."
-                            : "Source được tạo từ văn bản snapshot; không thực thi mã tự viết của học viên khi Tutor mở bản nộp."}
+                            ? "LaTeX is a separate presentation branch. Editing it does not change the answer used for assessment."
+                            : "Source is generated from the submitted text; student-authored code is not executed in the tutor's view."}
                     </div>
                     <button disabled={busy} onClick={() => void generate()}>
                         <RefreshCw size={14} />
-                        Tạo lại source từ văn bản
+                        Regenerate source from text
                     </button>
                     <textarea
-                        aria-label="LaTeX của bài IELTS"
+                        aria-label="Writing LaTeX source"
                         spellCheck={false}
                         readOnly={!onSourceChange}
                         value={
@@ -195,13 +196,13 @@ export default function DocumentView({
                 <div className="writing-pdf-panel">
                     <div className="writing-notice">
                         {assignmentId
-                            ? "PDF từ nhánh LaTeX của bản viết; phần văn bản vẫn là nội dung nộp/chấm."
-                            : "PDF trình bày từ đúng văn bản trong snapshot đã nộp."}{" "}
+                            ? "PDF from the writing source; the text answer remains the submission used for assessment."
+                            : "PDF generated from the exact submitted text."}{" "}
                         <button
                             disabled={busy}
                             onClick={() => void makeProject()}
                         >
-                            {busy ? "Đang biên dịch…" : "Biên dịch lại PDF"}
+                            {busy ? "Compiling…" : "Recompile PDF"}
                         </button>
                     </div>
                     <PdfViewer

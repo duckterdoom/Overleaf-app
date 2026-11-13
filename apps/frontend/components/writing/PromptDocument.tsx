@@ -16,11 +16,11 @@ export default function PromptDocument({file, language='vi', focused=false}: {fi
         return()=>{active=false;};
     },[file.id]);
     return <div className={`writing-prompt-document${focused?' writing-focused-prompt':''}`} data-prompt-file={file.id}>
-        <p className="writing-notice">Đề từ editor: <strong>{file.sourcePath}</strong>{file.pages ? ` · ${file.pages} trang` : ''}.
-            <span> Bản đề khi giao bài được giữ nguyên.</span></p>
+        <p className="writing-notice">Source from LaTeX Studio: <strong>{file.sourcePath}</strong>{file.pages ? ` · ${file.pages} pages` : ''}.
+            <span> The question snapshot is preserved when assigned.</span></p>
         {error && <p className="writing-error" role="alert">{error}</p>}
-        {file.kind==='pdf' && <div className="writing-prompt-pdf">{pdf ? <PdfViewer reading={focused} data={pdf} stale={false} language={language}/> : !error && <p role="status">Đang tải đề từ editor…</p>}</div>}
-        {file.kind==='image' && <img src={promptUrl(file.id)} alt={'Đề bài từ '+file.sourcePath}/>}
-        {file.kind==='text' && <small>Văn bản đã lấy từ tệp nguồn.</small>}
+        {file.kind==='pdf' && <div className="writing-prompt-pdf">{pdf ? <PdfViewer reading={focused} data={pdf} stale={false} language={language}/> : !error && <p role="status">Loading imported question…</p>}</div>}
+        {file.kind==='image' && <img src={promptUrl(file.id)} alt={'Question from '+file.sourcePath}/>}
+        {file.kind==='text' && <small>Text imported from source.</small>}
     </div>;
 }

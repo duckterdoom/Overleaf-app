@@ -20,6 +20,8 @@ import {
     blankGrade,
     catalog,
     countWords,
+    usesBands,
+    type Question,
     type Assignment,
     type Draft,
     type Overview,
@@ -31,8 +33,14 @@ import ReviewPaper from "./ReviewPaper";
 import DocumentView from "./DocumentView";
 import PromptDocument from './PromptDocument';
 import ProjectRubrics from './ProjectRubrics';
+import Courses from './Courses';
+import WritingAnswer from './WritingAnswer';
+import QuestionLibrary from './QuestionLibrary';
 
 type Screen =
+    | "practice-bank"
+    | "courses"
+    | "library"
     | "overview"
     | "assignments"
     | "exams"
@@ -44,19 +52,22 @@ type Screen =
     | "grading"
     | "rubric";
 const screenTitles: Record<Screen, string> = {
-    overview: "Không gian chấm bài",
-    assignments: "Bài được giao",
-    exams: "Bài kiểm tra",
-    create: "Chuẩn bị bài tập",
-    practice: "Luyện viết",
-    check: "Kiểm tra và nộp",
-    submissions: "Bản nộp",
-    results: "Kết quả & phản hồi",
-    grading: "Đọc và chấm bài",
-    rubric: "Tiêu chí chấm",
+    "practice-bank": "Practice exercises",
+    courses: "Courses & groups",
+    library: "Question library",
+    overview: "Task Writing",
+    assignments: "Assigned exercises",
+    exams: "Examinations",
+    create: "Prepare an exercise",
+    practice: "Writing practice",
+    check: "Check and submit",
+    submissions: "Submissions",
+    results: "Results & feedback",
+    grading: "Read & assess",
+    rubric: "Assessment criteria",
 };
 const date = (value?: string | null) =>
-    value ? new Date(value).toLocaleString("vi-VN") : "Không có hạn";
+    value ? new Date(value).toLocaleString("en-GB") : "No deadline";
 
 export default function WritingWorkspace({
     session,
@@ -71,7 +82,8 @@ export default function WritingWorkspace({
     onLocationChange?: (location: string) => void;
     onOpenProject: (p: Project) => Promise<void>;
 }) {
-    const { json, assetUrl } = useWritingApi();
+    const { json, assetUrl, project: writingProject } = useWritingApi();
+    const [template,setTemplate]=useState<Question|undefined>();
     const [screen, setScreen] = useState<Screen>("overview"),
         [overview, setOverview] = useState<Overview>({
             classes: [],
@@ -88,12 +100,13 @@ export default function WritingWorkspace({
     const navigationSequence=useRef(0);
     const [inspect, setInspect] = useState<Assignment | null>(null);
     const [listKind,setListKind]=useState<'assignment'|'exam'>('assignment');
+    const [practiceOnly,setPracticeOnly]=useState(false);
     const [examGate,setExamGate]=useState<Assignment|null>(null),[examEntryPassword,setExamEntryPassword]=useState('');
     const [passwordTarget,setPasswordTarget]=useState<Assignment|null>(null),[newExamPassword,setNewExamPassword]=useState('');
     const [loading, setLoading] = useState(true),
         [busy, setBusy] = useState(false),
         [error, setError] = useState(""),
-        [notice, setNotice] = useState("Dữ liệu được lưu trên server");
+        [notice, setNotice] = useState("Data is stored on the server");
     const [editing, setEditing] = useState<Assignment | undefined>(),
         [active, setActive] = useState<Assignment | null>(null),
         [task, setTask] = useState(1);
@@ -145,7 +158,7 @@ export default function WritingWorkspace({
                 setDirty(false); setReviewDirty(false);
                 edit.current = saved.current; reviewEdits.current = reviewSaved.current;
                 roleRef.current = data.role as Session['role'];
-                setNotice("Đã xác nhận vai trò dự án; nội dung đã lưu vẫn được giữ trên server.");
+                setNotice("Access confirmed. Saved work remains on the server.");
             }
             setOverview(data);
         } catch (error) {
@@ -178,7 +191,7 @@ export default function WritingWorkspace({
         return () => window.removeEventListener("latex-sharing-updated", update);
     }, []);
     useEffect(() => {
-        onLocationChange?.(`IELTS Writing · ${screenTitles[screen]}${screen === 'practice' || screen === 'grading' ? ` · Task ${task}` : ''}`);
+        onLocationChange?.(`Task Writing · ${screenTitles[screen]}${screen === 'practice' || screen === 'grading' ? ` · Task ${task}` : ''}`);
     }, [screen, task, onLocationChange]);
     useEffect(() => {
         const timer = setInterval(() => setTime(Date.now()), 1000);
@@ -237,6 +250,7 @@ export default function WritingWorkspace({
                                 revision: revision.current,
                                 answers: body.answers,
                                 latexSources: body.latexSources,
+                                blocks: body.blocks||{},
                             }),
                         },
                     );
@@ -250,7 +264,7 @@ export default function WritingWorkspace({
                                 : current,
                         );
                     setDirty(edit.current !== ticket);
-                    setNotice("Đã lưu bài viết trên server");
+                    setNotice("Writing saved on server");
                     return true;
                 } finally {
                     setSaving(false);
@@ -319,7 +333,7 @@ export default function WritingWorkspace({
                     current ? { ...current, revision: data.revision } : current,
                 );
                 setReviewDirty(reviewEdits.current !== ticket);
-                setNotice("Đã lưu nháp chấm; học viên chưa thấy bản nháp.");
+                setNotice("Assessment draft saved; students cannot see it yet.");
                 return true;
             });
         reviewQueue.current = operation;
@@ -338,7 +352,7 @@ export default function WritingWorkspace({
         try{
             if (!(await beforeLeave()) || ticket!==navigationSequence.current) return;
             setError("");
-            if (next === "create") setEditing(undefined);
+            if (next === "create") {setEditing(undefined);setTemplate(undefined);}
             setScreen(next);
             // Render cached lists immediately. Reuse an in-flight refresh instead
             // of making every click wait for a complete MongoDB overview.
@@ -428,7 +442,7 @@ export default function WritingWorkspace({
             if (!(await saveReview()) || !view) return;
             if (reviewEdits.current !== reviewSaved.current)
                 throw Error(
-                    "Bản chấm vừa thay đổi; lưu lại trước khi công bố.",
+                    "The assessment changed. Save it before publishing.",
                 );
             const result = await json<Review>(
                 `/writing/submissions/${view.submission.id}/publish`,
@@ -441,7 +455,7 @@ export default function WritingWorkspace({
                 },
             );
             setView({ ...view, published: result });
-            setNotice("Đã công bố kết quả cho học viên.");
+            setNotice("Results published to the student.");
             await reload();
         });
     }
@@ -477,7 +491,7 @@ export default function WritingWorkspace({
             setView(data);
             setReview(data.review);
             setScreen("grading");
-            setNotice("Đã nộp. Snapshot đã được lưu riêng với bản đang viết.");
+            setNotice("Submitted. An immutable snapshot has been saved separately from your draft.");
         });
     }
     async function openGenerated(report: boolean) {
@@ -492,6 +506,7 @@ export default function WritingWorkspace({
                         submissionId: view.submission.id,
                         report,
                         createProject: true,
+                        createDocument: false,
                     }),
                 },
             );
@@ -499,7 +514,7 @@ export default function WritingWorkspace({
                 const bytes=Uint8Array.from(atob(response.pdf),c=>c.charCodeAt(0));
                 const link=document.createElement('a');const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
                 link.href=url;link.download=report?'ielts-feedback.pdf':'ielts-submission.pdf';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-                setNotice('Đã lưu phiếu trong dự án và tải PDF. Không tạo dự án mới.');
+                setNotice('PDF downloaded. Your writing remains in its original workspace.');
             }else if(response.project) await onOpenProject(response.project);
         });
     }
@@ -517,28 +532,33 @@ export default function WritingWorkspace({
     const filtered = overview.submissions.filter(
         (s) =>
             (s.assignment.kind||'assignment')===listKind &&
+            (listKind==='exam'||(s.assignment.purpose==='practice')===practiceOnly) &&
             (screen !== "results" || s.result) &&
             (!filterAssignment || s.assignmentId === filterAssignment),
     );
     const assignmentKind=tutor?listKind:screen==='exams'?'exam':'assignment';
-    const listedAssignments=overview.assignments.filter(a=>(a.kind||'assignment')===assignmentKind);
-    const kindTabs=<div className="writing-kind-tabs" role="tablist" aria-label="Phân loại bài"><button role="tab" aria-selected={listKind==='assignment'} onClick={()=>{setListKind('assignment');setFilterAssignment('');setInspect(null);}}>Bài tập</button><button role="tab" aria-selected={listKind==='exam'} onClick={()=>{setListKind('exam');setFilterAssignment('');setInspect(null);}}>Bài kiểm tra</button></div>;
+    const listedAssignments=overview.assignments.filter(a=>(a.kind||'assignment')===assignmentKind && (assignmentKind==='exam'||(a.purpose==='practice')===(tutor?practiceOnly:screen==='practice-bank')));
+    const kindTabs=<div className="writing-kind-tabs" role="tablist" aria-label="Exercise type"><button role="tab" aria-selected={listKind==='assignment'&&!practiceOnly} onClick={()=>{setListKind('assignment');setPracticeOnly(false);setFilterAssignment('');setInspect(null);}}>Assigned exercises</button><button role="tab" aria-selected={listKind==='assignment'&&practiceOnly} onClick={()=>{setListKind('assignment');setPracticeOnly(true);setFilterAssignment('');setInspect(null);}}>Practice</button><button role="tab" aria-selected={listKind==='exam'} onClick={()=>{setListKind('exam');setFilterAssignment('');setInspect(null);}}>Examinations</button></div>;
     const examExpired=active?.kind==='exam' && (draft?.readOnly || remaining!==null && remaining<=0);
     const navigation = tutor
         ? ([
-              ["overview", "Tổng quan", GraduationCap],
-              ["create", "Giao bài", Plus],
-              ["assignments", "Đề đã tạo", BookOpen],
-              ["submissions", "Bài nộp học viên", ClipboardCheck],
-              ["rubric", "Tiêu chí chấm", Check],
+              ["overview", "Overview", GraduationCap],
+              ["courses", "Courses & groups", UsersRound],
+              ["library", "Question library", BookOpen],
+              ["create", "Assign exercise", Plus],
+              ["assignments", "Created exercises", BookOpen],
+              ["submissions", "Student submissions", ClipboardCheck],
+              ["rubric", "Assessment criteria", Check],
           ] as const)
         : ([
-              ["overview", "Tổng quan", GraduationCap],
-              ["practice", "Luyện viết", FileText],
-              ["assignments", "Bài được giao", BookOpen],
-              ["exams", "Bài kiểm tra", Clock3],
-              ["submissions", "Lịch sử nộp", Send],
-              ["results", "Kết quả & phản hồi", ClipboardCheck],
+              ["overview", "Overview", GraduationCap],
+              ["courses", "Courses & groups", UsersRound],
+              ["practice-bank", "Practice exercises", FileText],
+              ["practice", "My writing", FileText],
+              ["assignments", "Assigned exercises", BookOpen],
+              ["exams", "Examinations", Clock3],
+              ["submissions", "Submission history", Send],
+              ["results", "Results & feedback", ClipboardCheck],
           ] as const);
     useEffect(() => {
         beforeLeaveRef.current = beforeLeave;
@@ -549,23 +569,23 @@ export default function WritingWorkspace({
             className={`writing-shell writing-module${screen==='grading'?' writing-grading-mode':''}`}
             data-writing-ready={!loading}
         >
-            {examGate&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Vào bài kiểm tra" onSubmit={e=>{e.preventDefault();void execute(async()=>{
+            {examGate&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Enter examination" onSubmit={e=>{e.preventDefault();void execute(async()=>{
                 const result=await json<{assignment:Assignment}>(`/writing/assignments/${examGate.id}/enter`,{method:'POST',body:JSON.stringify({password:examEntryPassword})});
                 setExamEntryPassword('');setExamGate(null);await openAssignment(result.assignment);
-            });}}><h2>{examGate.title}</h2><p>Mở: {date(examGate.opensAt)}<br/>Đóng: {date(examGate.closesAt)}<br/>Thời lượng: {examGate.durationMinutes} phút</p><label>Mật khẩu vào bài<input aria-label="Mật khẩu vào bài" autoFocus type="password" autoComplete="off" required maxLength={128} value={examEntryPassword} onChange={e=>setExamEntryPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setExamGate(null);setExamEntryPassword('');}}>Hủy</button><button className="primary" disabled={busy} type="submit">Bắt đầu bài kiểm tra</button></footer></form></div>}
-            {passwordTarget&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Đổi mật khẩu bài kiểm tra" onSubmit={e=>{e.preventDefault();void execute(async()=>{
+            });}}><h2>{examGate.title}</h2><p>Opens: {date(examGate.opensAt)}<br/>Closes: {date(examGate.closesAt)}<br/>Duration: {examGate.durationMinutes} minutes</p><label>Entry password<input aria-label="Entry password" autoFocus type="password" autoComplete="off" required maxLength={128} value={examEntryPassword} onChange={e=>setExamEntryPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setExamGate(null);setExamEntryPassword('');}}>Cancel</button><button className="primary" disabled={busy} type="submit">Start examination</button></footer></form></div>}
+            {passwordTarget&&<div className="writing-exam-backdrop"><form className="writing-exam-dialog" role="dialog" aria-modal="true" aria-label="Change exam password" onSubmit={e=>{e.preventDefault();void execute(async()=>{
                 await json(`/writing/assignments/${passwordTarget.id}/exam-password`,{method:'PATCH',body:JSON.stringify({password:newExamPassword,revision:passwordTarget.revision})});
-                setPasswordTarget(null);setNewExamPassword('');setNotice('Đã đổi mật khẩu. Người đang làm bài giữ nguyên đồng hồ.');await reload(true);
-            });}}><h2>Đổi mật khẩu</h2><p>{passwordTarget.title}</p><label>Mật khẩu mới<input aria-label="Mật khẩu kiểm tra mới" type="password" autoComplete="new-password" minLength={6} maxLength={128} required value={newExamPassword} onChange={e=>setNewExamPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setPasswordTarget(null);setNewExamPassword('');}}>Hủy</button><button className="primary" disabled={busy}>Lưu mật khẩu</button></footer></form></div>}
+                setPasswordTarget(null);setNewExamPassword('');setNotice('Password changed. Current students keep their existing timers.');await reload(true);
+            });}}><h2>Change password</h2><p>{passwordTarget.title}</p><label>New password<input aria-label="New exam password" type="password" autoComplete="new-password" minLength={6} maxLength={128} required value={newExamPassword} onChange={e=>setNewExamPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setPasswordTarget(null);setNewExamPassword('');}}>Cancel</button><button className="primary" disabled={busy}>Save password</button></footer></form></div>}
             <div className="writing-layout">
                 <aside className="writing-sidebar">
                     <span className="writing-eyebrow">
-                        {loading || !overview.role ? "ĐANG XÁC NHẬN VAI TRÒ DỰ ÁN" : `KHÔNG GIAN ${tutor ? "TUTOR" : "HỌC VIÊN"}`}
+                        {loading || !overview.role ? "CHECKING ACCESS" : `WORKSPACE ${tutor ? "TUTOR" : "STUDENT"}`}
                     </span>
                     {(loading || !overview.role ? [] : navigation).map(([id, label, Icon]) => (
                         <button
                             key={id}
-                            disabled={readonly && id === "create"}
+                            disabled={readonly && ['create','library','rubric'].includes(id)}
                             className={(navigatingTo||screen) === id ? "active" : ""}
                             aria-busy={navigatingTo===id}
                             onClick={() => {
@@ -581,14 +601,14 @@ export default function WritingWorkspace({
                     <div className="writing-sidebar-note">
                         <BookOpen size={24} />
                         <strong>
-                            Viết rõ hơn.
+                            Write with clarity.
                             <br />
-                            Nhận xét cụ thể hơn.
+                            Give specific feedback.
                         </strong>
                         <p>
-                            IELTS để luyện viết.
+                            Task Writing for learning.
                             <br />
-                            LaTeX để trình bày và xuất tài liệu.
+                            LaTeX for document publishing.
                         </p>
                     </div>
                 </aside>
@@ -596,7 +616,7 @@ export default function WritingWorkspace({
                     <div className="writing-page-heading">
                         <div>
                             <span className="writing-eyebrow">
-                                CHẤM BÀI × LATEX
+                                TASK WRITING
                             </span>
                             <h1>{screenTitles[screen]}</h1>
                         </div>
@@ -616,12 +636,12 @@ export default function WritingWorkspace({
                                 >
                                     <Plus size={16} />
                                     {tutor
-                                        ? "Giao bài mới"
-                                        : "Luyện một bài mới"}
+                                        ? "Create exercise"
+                                        : "Start a practice exercise"}
                                 </button>
                             )}
                             <button
-                                title="Tải lại dữ liệu IELTS"
+                                title="Refresh Task Writing"
                                 disabled={busy}
                                 onClick={() => void execute(reload)}
                             >
@@ -634,49 +654,51 @@ export default function WritingWorkspace({
                             {error}
                         </div>
                     )}
-                    {overview.role && <div className="writing-notice">Vai trò trong dự án: <strong>{tutor ? "Tutor" : "Học viên"}</strong> · {readonly ? "Chỉ xem — liên hệ chủ sở hữu để được cấp quyền chỉnh sửa." : "Có quyền chỉnh sửa"}. Quyền dùng chung với editor LaTeX.</div>}
-                    {recovery && <div className="writing-notice">Quyền/vai trò vừa thay đổi. Bạn có thể giữ bản sửa chưa được lưu: <button onClick={() => {
+                    {overview.role && <div className="writing-notice">Your role: <strong>{tutor ? "Tutor" : "Student"}</strong> · {readonly ? "Read only — ask the owner for editing access." : "Editing enabled"}. Access is checked on the server.</div>}
+                    {recovery && <div className="writing-notice">Your role or access changed. Keep a copy of unsaved work: <button onClick={() => {
                         const url = URL.createObjectURL(new Blob([recovery], {type: 'application/json'}));
                         const link = document.createElement('a'); link.href = url; link.download = 'ielts-unsaved-recovery.json'; link.click();
                         setTimeout(() => URL.revokeObjectURL(url), 1000);
-                    }}>Tải bản nháp chưa lưu</button></div>}
-                    {!readonly && !!((overview.legacy?.classes || 0) + (overview.legacy?.assignments || 0)) &&
-                        <div className="writing-notice">Bạn có {overview.legacy?.classes} lớp và {overview.legacy?.assignments} đề IELTS cũ chưa gắn dự án.
+                    }}>Download unsaved work</button></div>}
+                    {writingProject && !readonly && !!((overview.legacy?.classes || 0) + (overview.legacy?.assignments || 0)) &&
+                        <div className="writing-notice">You have {overview.legacy?.classes} courses and {overview.legacy?.assignments} existing exercises outside this project.
                             <button onClick={() => {
-                                if (window.confirm('Đưa lớp/đề cũ của bạn và các bản nộp liên quan vào dự án đang mở? Dữ liệu sẽ dùng quyền chia sẻ của dự án này; hãy mời học viên cũ vào dự án để họ tiếp tục truy cập.'))
+                                if (window.confirm('Import your existing courses and exercises into this project? Project sharing will apply; invite enrolled students to retain access.'))
                                     void execute(async () => { if (!(await beforeLeave())) return; await json('/writing/import-legacy', {method: 'POST'}); await reload(); });
-                            }} disabled={busy}>Đưa dữ liệu cũ vào dự án này</button>
+                            }} disabled={busy}>Import existing writing data</button>
                         </div>}
                     {loading ? (
                         <div className="writing-empty">
-                            Đang tải không gian IELTS…
+                            Loading Task Writing…
                         </div>
                     ) : (
                         <>
+                            {screen === "courses" && <Courses courses={overview.classes} tutor={tutor} editable={!readonly} onRefresh={()=>reload(true)}/>}
+                            {screen === "library" && tutor && <QuestionLibrary userId={session.id||''} onUse={q=>{setTemplate(q);setEditing(undefined);setScreen("create");}}/>}
                             {screen === "overview" && (
                                 <>
                                     <section className="writing-welcome">
                                         <div>
                                             <span className="writing-eyebrow">
                                                 {tutor
-                                                    ? "ĐỒNG HÀNH CÙNG BÀI VIẾT"
-                                                    : "TỪ Ý TƯỞNG ĐẾN BÀI VIẾT"}
+                                                    ? "SUPPORT EVERY WRITER"
+                                                    : "FROM IDEAS TO WRITING"}
                                             </span>
                                             <h2>
                                                 {tutor
-                                                    ? "Mỗi đoạn viết, một góp ý có ích."
-                                                    : "Một nơi để viết và tiến bộ."}
+                                                    ? "Every paragraph deserves useful feedback."
+                                                    : "A place to write and improve."}
                                             </h2>
                                             <p>
                                                 {tutor
-                                                    ? "Giao bài, đọc snapshot học viên đã nộp, ghi nhận theo từng đoạn và công bố phản hồi."
-                                                    : "Luyện IELTS, Report hoặc Research từ tệp dự án và nhận phản hồi từ Tutor."}
+                                                    ? "Assign exercises, read submitted work, assess each paragraph and publish feedback."
+                                                    : "Practise tasks, reports and research papers with feedback from your tutor."}
                                             </p>
                                         </div>
                                         <div className="writing-welcome-art">
                                             <FileText size={68} />
                                             <span>
-                                                IELTS
+                                                Task Writing
                                                 <br />
                                                 <strong>× LaTeX</strong>
                                             </span>
@@ -686,27 +708,27 @@ export default function WritingWorkspace({
                                         {[
                                             [
                                                 overview.assignments.length,
-                                                "Đề trong dự án",
+                                                "Workspace questions",
                                             ],
                                             [
                                                 overview.assignments.filter(
                                                     (a) => a.published,
                                                 ).length,
-                                                "Bài tập",
+                                                "Exercises",
                                             ],
                                             [
                                                 overview.submissions.filter(
                                                     (s) => !s.result,
                                                 ).length,
                                                 tutor
-                                                    ? "Chờ chấm"
-                                                    : "Chờ kết quả",
+                                                    ? "Awaiting assessment"
+                                                    : "Awaiting results",
                                             ],
                                             [
                                                 overview.submissions.filter(
                                                     (s) => s.result,
                                                 ).length,
-                                                "Đã công bố",
+                                                "Published",
                                             ],
                                         ].map(([value, label]) => (
                                             <section
@@ -722,13 +744,13 @@ export default function WritingWorkspace({
                                         <div>
                                             <h2>
                                                 {tutor
-                                                    ? "Giao bài cho thành viên dự án"
-                                                    : "Bài tập trong dự án"}
+                                                    ? "Assign exercises"
+                                                    : "Workspace exercises"}
                                             </h2>
                                             <p>
                                                 {tutor
-                                                    ? "Chọn tệp đề trong editor để giao cho Học viên được chia sẻ dự án."
-                                                    : "Mở bài được giao hoặc chọn tệp trong dự án để luyện cá nhân."}
+                                                    ? "Create a question directly or import an existing LaTeX source."
+                                                    : "Open an assigned exercise or start personal practice."}
                                             </p>
                                         </div>
                                         <button
@@ -737,8 +759,8 @@ export default function WritingWorkspace({
                                             }
                                         >
                                             {tutor
-                                                ? "Giao bài"
-                                                : "Bài được giao"}
+                                                ? "Assign exercise"
+                                                : "Assigned exercises"}
                                             <ArrowRight size={16} />
                                         </button>
                                     </section>
@@ -749,46 +771,47 @@ export default function WritingWorkspace({
                                     key={editing?.id || "new"}
                                     practice={!tutor}
                                     initial={editing}
+                                    template={template}
                                     onCancel={() =>
                                         void navigate("assignments")
                                     }
                                     onDone={(a) => {
                                         void reload();
                                         if (tutor) {
-                                            setListKind(a.kind==='exam'?'exam':'assignment');
+                                            setListKind(a.kind==='exam'?'exam':'assignment');setPracticeOnly(a.purpose==='practice');setTemplate(undefined);
                                             setNotice(
                                                 a.published
-                                                    ? "Đã giao bài cho Học viên trong dự án."
-                                                    : "Đã lưu đề nháp.",
+                                                    ? "Exercise assigned to students."
+                                                    : "Exercise draft saved.",
                                             );
                                             setScreen("assignments");
                                         } else void openAssignment(a);
                                     }}
                                 />
                             )}
-                            {(screen === "assignments" || screen==='exams') && (
+                            {(screen === "assignments" || screen==='exams' || screen==='practice-bank') && (
                                 <>
                                     {tutor&&kindTabs}
                                     {tutor && inspect && <section className="writing-card">
                                         <h2>{inspect.title}</h2>
-                                        <button onClick={()=>setInspect(null)}>Đóng chi tiết đề</button>
+                                        <button onClick={()=>setInspect(null)}>Close exercise details</button>
                                         {inspect.tasks.map(number=><div key={number}>
                                             <h3>{!inspect.category||inspect.category==='ielts'?`Task ${number}`:inspect.category==='report'?'Report':'Research'}</h3>
-                                            {inspect.promptFiles?.[String(number)] ? <PromptDocument file={inspect.promptFiles[String(number)]} language={language}/> : <p>{inspect.prompts[String(number)] || 'Đề cũ chưa có tệp từ editor. Sửa bài để chọn tệp đề.'}</p>}
+                                            {inspect.promptFiles?.[String(number)] ? <PromptDocument file={inspect.promptFiles[String(number)]} language={language}/> : <p>{inspect.prompts[String(number)] || 'No imported source is attached.'}</p>}
                                         </div>)}
-                                        <h3>Theo dõi học viên</h3>
-                                        <table><thead><tr><th>Học viên</th><th>Trạng thái</th><th>Bản nộp</th></tr></thead><tbody>
-                                            {(overview.students || []).map(person=>{
+                                        <h3>Student progress</h3>
+                                        <table><thead><tr><th>Student</th><th>Status</th><th>Submissions</th></tr></thead><tbody>
+                                            {(inspect.classId ? overview.classes.find(c=>c.id===inspect.classId)?.students||[] : overview.students || []).map(person=>{
                                                 const submissions=overview.submissions.filter(s=>s.assignmentId===inspect.id && s.studentId===person.id);
-                                                return <tr key={person.id}><td>{person.name}</td><td>{submissions.length?'Đã nộp':'Chưa nộp'}</td><td>{submissions.length}</td></tr>;
+                                                return <tr key={person.id}><td>{person.name}</td><td>{submissions.length?'Submitted':'Not submitted'}</td><td>{submissions.length}</td></tr>;
                                             })}
                                         </tbody></table>
                                     </section>}
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
-                                                ? "Đề nháp và bài đã giao trong dự án."
-                                                : screen==='exams'?"Bài kiểm tra có mật khẩu và giờ mở/đóng riêng.":"Bài được giao và bài luyện cá nhân."}
+                                                ? "Draft and assigned exercises in this workspace."
+                                                : screen==='exams'?"Examinations have a password and opening/closing times.":"Assigned exercises and personal practice."}
                                         </p>
                                         {(tutor||screen!=='exams')&&<button
                                             onClick={() =>
@@ -797,8 +820,8 @@ export default function WritingWorkspace({
                                         >
                                             <Plus size={16} />
                                             {tutor
-                                                ? "Tạo bài tập"
-                                                : "Bài luyện cá nhân"}
+                                                ? "Create exercise"
+                                                : "Personal practice"}
                                         </button>}
                                     </div>
                                     {listedAssignments.length ? (
@@ -811,8 +834,8 @@ export default function WritingWorkspace({
                                                     <div>
                                                         <span className="writing-tag">
                                                             {a.published
-                                                                ? "Đã giao"
-                                                                : "Đề nháp"}
+                                                                ? "Assigned"
+                                                                : "Draft question"}
                                                         </span>
                                                         <h2>{a.title}</h2>
                                                         <p>
@@ -824,18 +847,18 @@ export default function WritingWorkspace({
                                                             {a.tasks
                                                                 .map(
                                                                     (t) =>
-                                                                        (!a.category||a.category==='ielts'?"Task " + t:"Tài liệu"),
+                                                                        (!a.category||a.category==='ielts'?"Task " + t:"Document"),
                                                                 )
                                                                 .join(
                                                                     " + ",
                                                                 )}{" "}
                                                             ·{" "}
                                                             {a.practiceOwner
-                                                                ? "Luyện cá nhân"
+                                                                ? "Personal practice"
                                                                 : a.tutorName}
                                                         </p>
                                                         <small>
-                                                            {a.kind==='exam'?`Mở: ${date(a.opensAt)} · Đóng: ${date(a.closesAt)} · ${a.durationMinutes} phút`:`Hạn: ${date(a.dueAt)}`}
+                                                            {a.kind==='exam'?`Opens: ${date(a.opensAt)} · Closes: ${date(a.closesAt)} · ${a.durationMinutes} minutes`:`Due: ${date(a.dueAt)}`}
                                                         </small>
                                                     </div>
                                                     <button
@@ -848,20 +871,20 @@ export default function WritingWorkspace({
                                                     >
                                                         {tutor
                                                             ? a.published
-                                                                ? "Xem bản nộp"
-                                                                : "Sửa đề nháp"
-                                                            : a.kind==='exam'?'Vào bài kiểm tra':"Mở bài viết"}
+                                                                ? "View submissions"
+                                                                : "Edit draft"
+                                                            : a.kind==='exam'?'Enter examination':"Open writing"}
                                                         <ArrowRight size={15} />
                                                     </button>
                                                     {tutor && <div>
-                                                        <button onClick={()=>{setInspect(a);}}>Xem đề và học viên</button>
+                                                        <button onClick={()=>{setInspect(a);}}>View question & students</button>
                                                         {!readonly && <>
-                                                            {a.kind==='exam'&&<button onClick={()=>{setPasswordTarget(a);setNewExamPassword('');setError('');}}>Đổi mật khẩu</button>}
-                                                            <button onClick={()=>{setEditing(a);setScreen('create');}}>Sửa bài tập</button>
+                                                            {a.kind==='exam'&&<button onClick={()=>{setPasswordTarget(a);setNewExamPassword('');setError('');}}>Change password</button>}
+                                                            <button onClick={()=>{setEditing(a);setScreen('create');}}>Edit exercise</button>
                                                             <button onClick={async()=>{
-                                                                if(!window.confirm('Xóa bài tập khỏi danh sách? Bản nộp và kết quả đã có vẫn được giữ.'))return;
+                                                                if(!window.confirm('Remove this exercise? Existing submissions and results will be preserved.'))return;
                                                                 try{await json(`/writing/assignments/${a.id}?revision=${a.revision}`,{method:'DELETE'});setInspect(null);await reload();}catch(e){setError(errorText(e));}
-                                                            }}>Xóa bài tập</button>
+                                                            }}>Delete exercise</button>
                                                         </>}
                                                     </div>}
                                                 </article>
@@ -869,10 +892,10 @@ export default function WritingWorkspace({
                                         </div>
                                     ) : (
                                         <div className="writing-empty">
-                                            Chưa có bài tập.{" "}
+                                            No exercises yet.{" "}
                                             {tutor
-                                                ? "Hãy lấy đề từ editor và giao cho dự án."
-                                                : "Mở bài được giao hoặc tạo bài luyện cá nhân."}
+                                                ? "Create an exercise directly or reuse a question from the library."
+                                                : "Open an assigned exercise or create personal practice."}
                                         </div>
                                     )}
                                 </>
@@ -881,21 +904,21 @@ export default function WritingWorkspace({
                                 (!active || !draft ? (
                                     <div className="writing-empty">
                                         <BookOpen size={40} />
-                                        <h2>Sẵn sàng cho một bài viết mới?</h2>
+                                        <h2>Ready to write?</h2>
                                         <button
                                             className="primary"
                                             onClick={() =>
                                                 void navigate("create")
                                             }
                                         >
-                                            Tạo bài luyện IELTS
+                                            Start personal practice
                                         </button>
                                         <button
                                             onClick={() =>
                                                 void navigate("assignments")
                                             }
                                         >
-                                            Xem bài được giao
+                                            View assigned exercises
                                         </button>
                                     </div>
                                 ) : (
@@ -904,7 +927,7 @@ export default function WritingWorkspace({
                                             <div
                                                 className="writing-task-tabs"
                                                 role="tablist"
-                                                aria-label="Task đang viết"
+                                                aria-label="Active task"
                                             >
                                                 {active.tasks.map((n) => (
                                                     <button
@@ -937,9 +960,9 @@ export default function WritingWorkspace({
                                             <span className="writing-timer">
                                                 <Clock3 size={15} />
                                                 {remaining === null
-                                                    ? "Không bấm giờ"
+                                                    ? "Untimed"
                                                     : remaining === 0
-                                                      ? active.kind==='exam'?"Hết giờ — chỉ xem bản nháp đã lưu":"Hết giờ — bài vẫn được lưu"
+                                                      ? active.kind==='exam'?"Time is up — saved draft is read only":"Time is up — your work is saved"
                                                       : `${Math.floor(
                                                             remaining / 60,
                                                         )
@@ -956,7 +979,7 @@ export default function WritingWorkspace({
                                                 }
                                                 className="primary"
                                             >
-                                                Kiểm tra và nộp
+                                                Check and submit
                                             </button>
                                         </div>
                                         <DocumentView
@@ -988,7 +1011,7 @@ export default function WritingWorkspace({
                                             <div className="writing-practice-panes">
                                                 <aside className="writing-question">
                                                     <span className="writing-eyebrow">
-                                                        ĐỀ BÀI · TASK {task}
+                                                        QUESTION · TASK {task}
                                                     </span>
                                                     <h2>{active.title}</h2>
                                                     <div className="writing-prompt-text">
@@ -1006,82 +1029,47 @@ export default function WritingWorkspace({
                                                             <>
                                                                 <CommutingChart />
                                                                 <small>
-                                                                    Đề và dữ
-                                                                    liệu luyện
-                                                                    tập tự biên
-                                                                    soạn.
+                                                                    Original practice question and data.
                                                                 </small>
                                                             </>
                                                         ) : (
                                                             <img
                                                                 src={assetUrl(active.imageId)}
-                                                                alt="Hình đề Task 1"
+                                                                alt="Task 1 visual"
                                                             />
                                                         ))}
-                                                    {(!active.category || active.category === "ielts") && <p className="writing-question-note">
-                                                        Ít nhất{" "}
+                                                    {usesBands(active) && <p className="writing-question-note">
+                                                        At least{" "}
                                                         {task === 1 ? 150 : 250}{" "}
-                                                        từ ·{" "}
+                                                        words ·{" "}
                                                         {task === 1
-                                                            ? "Gợi ý 20 phút"
-                                                            : "Gợi ý 40 phút"}
+                                                            ? "Suggested: 20 minutes"
+                                                            : "Suggested: 40 minutes"}
                                                         <br />
-                                                        Đếm từ là công cụ hỗ
-                                                        trợ, không tự quy đổi
-                                                        thành band.
+                                                        Word count is a writing aid, not a band conversion.
                                                     </p>}
                                                 </aside>
                                                 <section className="writing-answer">
                                                     <header>
                                                         <strong>
-                                                            Câu trả lời của bạn
+                                                            Your answer
                                                         </strong>
                                                         <span>
                                                             {saving
-                                                                ? "Đang lưu…"
+                                                                ? "Saving…"
                                                                 : dirty
-                                                                  ? "Chưa lưu"
-                                                                  : "Đã lưu trên server"}
+                                                                  ? "Unsaved"
+                                                                  : "Saved on server"}
                                                         </span>
                                                     </header>
-                                                    <textarea
-                                                        readOnly={readonly||!!examExpired}
-                                                        aria-label={`Câu trả lời Task ${task}`}
-                                                        spellCheck
-                                                        value={
-                                                            draft.answers[
-                                                                String(task)
-                                                            ] || ""
-                                                        }
-                                                        onChange={(e) =>
-                                                            changeDraft({
-                                                                answers: {
-                                                                    ...draftRef
-                                                                        .current!
-                                                                        .answers,
-                                                                    [task]: e
-                                                                        .target
-                                                                        .value,
-                                                                },
-                                                            })
-                                                        }
-                                                        onKeyDown={(e) => {
-                                                            if (
-                                                                (e.ctrlKey ||
-                                                                    e.metaKey) &&
-                                                                e.key.toLowerCase() ===
-                                                                    "s"
-                                                            ) {
-                                                                e.preventDefault();
-                                                                void flush();
-                                                            }
-                                                        }}
-                                                        placeholder={
-                                                            task === 1
-                                                                ? "Describe the main features and make relevant comparisons…"
-                                                                : "Develop your response to all parts of the question…"
-                                                        }
-                                                    />
+                                                    <WritingAnswer key={`${active.id}:${task}`} assignment={active} task={task} value={draft.answers[String(task)]||''}
+                                                        blocks={draft.blocks?.[String(task)]} readOnly={readonly||!!examExpired}
+                                                        onSave={()=>void flush()} onChange={(text,blocks)=>{
+                                                            changeDraft({answers:{...draftRef.current!.answers,[task]:text},
+                                                                blocks:{...draftRef.current!.blocks,[task]:blocks||[]},
+                                                                latexSources:{...draftRef.current!.latexSources,[task]:''}});
+                                                        }}/>
+
                                                     <footer>
                                                         <span
                                                             className={
@@ -1093,7 +1081,7 @@ export default function WritingWorkspace({
                                                                         )
                                                                     ] || "",
                                                                 ) <
-                                                                (active.category && active.category!=='ielts'?0:task === 1
+                                                                (!usesBands(active)?0:task === 1
                                                                     ? 150
                                                                     : 250)
                                                                     ? "writing-word-warning"
@@ -1109,9 +1097,9 @@ export default function WritingWorkspace({
                                                                         )
                                                                     ] || "",
                                                                 )}{" "}
-                                                                từ
+                                                                words
                                                             </strong>{" "}
-                                                            {(!active.category||active.category==='ielts') && ` / ${task===1?150:250}`}
+                                                            {usesBands(active) && ` / ${task===1?150:250}`}
                                                         </span>
                                                         <button
                                                             disabled={
@@ -1121,7 +1109,7 @@ export default function WritingWorkspace({
                                                                 void flush()
                                                             }
                                                         >
-                                                            Lưu bài
+                                                            Save writing
                                                         </button>
                                                     </footer>
                                                 </section>
@@ -1132,36 +1120,34 @@ export default function WritingWorkspace({
                             {screen === "check" && active && draft && (
                                 <section className="writing-card writing-check-submit">
                                     <span className="writing-eyebrow">
-                                        SNAPSHOT NỘP BÀI
+                                        SUBMISSION SNAPSHOT
                                     </span>
                                     <h2>{active.title}</h2>
                                     <p>
-                                        Bản nộp được giữ riêng. Sửa working copy
-                                        sau này không thay đổi bài Tutor đang
-                                        chấm.
+                                        Submissions are saved separately. Editing your draft later does not change the work your tutor assesses.
                                     </p>
                                     {active.tasks.map((n) => (
                                         <article key={n}>
                                             <h3>
-                                                {!active.category||active.category==='ielts'?`Task ${n}`:'Tài liệu'} ·{" "}
+                                                {!active.category||active.category==='ielts'?`Task ${n}`:'Document'} ·{" "}
                                                 {countWords(
                                                     draft.answers[String(n)] ||
                                                         "",
                                                 )}{" "}
-                                                từ
+                                                words
                                             </h3>
                                             {active.promptFiles?.[String(n)] && <PromptDocument focused file={active.promptFiles[String(n)]} language={language}/>}
                                             {countWords(
                                                 draft.answers[String(n)] || "",
-                                            ) < (n === 1 ? 150 : 250) && (!active.category||active.category==='ielts') && (
+                                            ) < (n === 1 ? 150 : 250) && usesBands(active) && (
                                                 <p className="writing-word-warning">
-                                                    Bài dưới số từ khuyến nghị;
-                                                    không tự suy ra band.
+                                                    Below the recommended word count;
+                                                    this does not determine a band score.
                                                 </p>
                                             )}
                                             <p>
                                                 {draft.answers[String(n)] ||
-                                                    "Chưa có câu trả lời."}
+                                                    "No answer yet."}
                                             </p>
                                         </article>
                                     ))}
@@ -1171,7 +1157,7 @@ export default function WritingWorkspace({
                                                 setScreen("practice")
                                             }
                                         >
-                                            Quay lại viết
+                                            Back to writing
                                         </button>
                                         <button
                                             disabled={
@@ -1188,8 +1174,8 @@ export default function WritingWorkspace({
                                         >
                                             <Send size={15} />
                                             {busy
-                                                ? "Đang nộp…"
-                                                : "Xác nhận nộp bài"}
+                                                ? "Submitting…"
+                                                : "Confirm submission"}
                                         </button>
                                     </footer>
                                 </section>
@@ -1201,8 +1187,8 @@ export default function WritingWorkspace({
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
-                                                ? "Chỉ các bản nộp thuộc bài bạn đã giao."
-                                                : "Bản nộp và phản hồi đã công bố của bạn."}
+                                                ? "Submissions for exercises you have assigned."
+                                                : "Your submissions and published feedback."}
                                         </p>
                                         {filterAssignment && (
                                             <button
@@ -1210,7 +1196,7 @@ export default function WritingWorkspace({
                                                     setFilterAssignment("")
                                                 }
                                             >
-                                                Xem tất cả bài nộp
+                                                View all submissions
                                             </button>
                                         )}
                                     </div>
@@ -1221,14 +1207,14 @@ export default function WritingWorkspace({
                                                     <tr>
                                                         <th>
                                                             {tutor
-                                                                ? "Học viên"
-                                                                : "Bài tập"}
+                                                                ? "Student"
+                                                                : "Exercises"}
                                                         </th>
                                                         <th>Task</th>
                                                         <th>
-                                                            Lần nộp / thời gian
+                                                            Attempt / submitted at
                                                         </th>
-                                                        <th>Trạng thái</th>
+                                                        <th>Status</th>
                                                         <th />
                                                     </tr>
                                                 </thead>
@@ -1251,37 +1237,37 @@ export default function WritingWorkspace({
                                                                         : s
                                                                               .assignment
                                                                               .tutorName ||
-                                                                          "Luyện cá nhân"}
+                                                                          "Personal practice"}
                                                                 </small>
                                                             </td>
                                                             <td>
                                                                 {s.assignment.tasks
                                                                     .map(
                                                                         (n) =>
-                                                                            `Task ${n}: ${s.wordCounts[String(n)]} từ`,
+                                                                            `Task ${n}: ${s.wordCounts[String(n)]} words`,
                                                                     )
                                                                     .join(
                                                                         " · ",
                                                                     )}
                                                             </td>
                                                             <td>
-                                                                Lần {s.attempt}
+                                                                Attempt {s.attempt}
                                                                 <small>
                                                                     {date(
                                                                         s.submittedAt,
                                                                     )}
                                                                     {s.late
-                                                                        ? " · Quá hạn"
+                                                                        ? " · Late"
                                                                         : ""}
                                                                 </small>
                                                             </td>
                                                             <td>
                                                                 <span className="writing-tag">
                                                                     {s.result
-                                                                        ? "Đã công bố"
+                                                                        ? "Published"
                                                                         : s.tutorId
-                                                                          ? "Chờ chấm"
-                                                                          : "Luyện cá nhân"}
+                                                                          ? "Awaiting assessment"
+                                                                          : "Personal practice"}
                                                                 </span>
                                                             </td>
                                                             <td>
@@ -1293,8 +1279,8 @@ export default function WritingWorkspace({
                                                                     }
                                                                 >
                                                                     {tutor
-                                                                        ? "Mở bài chấm"
-                                                                        : "Xem bản nộp"}
+                                                                        ? "Open assessment"
+                                                                        : "View submissions"}
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -1305,8 +1291,8 @@ export default function WritingWorkspace({
                                     ) : (
                                         <div className="writing-empty">
                                             {screen === "results"
-                                                ? "Chưa có kết quả được công bố."
-                                                : "Chưa có bản nộp."}
+                                                ? "No published results yet."
+                                                : "No submissions yet."}
                                         </div>
                                     )}
                                 </>
@@ -1349,13 +1335,13 @@ export default function WritingWorkspace({
                 </section>
             </div>
             <footer className="statusbar">
-                <span>{navigatingTo?'Đang lưu và chuyển mục…':notice}</span>
+                <span>{navigatingTo?'Saving and opening…':notice}</span>
                 <span>
                     {dirty
-                        ? "Bài viết chưa lưu"
+                        ? "Unsaved writing"
                         : reviewDirty
-                          ? "Bản chấm chưa lưu"
-                          : "Lưu trên server · MongoDB"}
+                          ? "Unsaved assessment"
+                          : "Stored on server · MongoDB"}
                 </span>
             </footer>
         </section>
