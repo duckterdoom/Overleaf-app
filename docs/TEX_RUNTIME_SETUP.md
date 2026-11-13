@@ -17,6 +17,8 @@ macOS/Linux dùng `sh scripts/run-python-web.sh --build` rồi `sh scripts/run-p
 
 Launcher chạy `latex_backend.compilation.tex_runtime --ensure` sau khi cài dependency Python, trước UI/server. Nếu bộ TeX được chọn đã đáp ứng profile, chỉ kiểm tra và dùng lại, không tải lại mỗi lần. Nếu thiếu, tải bản TinyTeX native đã pin và kiểm SHA-256, giải nén vào `target/tex-runtime/TinyTeX`, cài package bằng tlmgr, sửa fontconfig cho đường dẫn hiện tại, compile tiếng Việt qua pdfLaTeX/XeLaTeX/LuaLaTeX và ghi marker xác nhận. Không có marker hợp lệ thì runtime chưa được coi là sẵn sàng. Setup có lock để ngăn hai launcher cùng sửa bộ TeX. Không sửa bộ TeX hệ thống hay xóa bộ TinyTeX cũ.
 
+Profile có `titling` và `abstract` cho ZIP sử dụng `LTJournalArticle.cls`, kèm kiểm tra sự tồn tại của cả hai tệp `.sty`. Khi cập nhật profile, marker cũ tự mất hiệu lực để lần khởi động sau cài phần còn thiếu. Có thể chuẩn bị ngay bằng `.\scripts\setup-tex.bat` trên Windows, rồi bấm Biên dịch lại trong dự án đang mở; không cần nhập lại ZIP.
+
 Lần đầu tải archive khoảng 150–250 MB tùy hệ điều hành, cộng các package bổ sung; bản cài thực tế cần nhiều dung lượng hơn file nén. Cho phép kết nối HTTPS tới GitHub và repository TeX. Một số policy của doanh nghiệp có thể chặn executable; script báo lỗi thật, không thay đổi policy bảo vệ máy.
 
 Pin hiện tại: TinyTeX **2026.11**, archive/checksum và package profile ở `apps/backend/src/latex_backend/resources/tex-runtime.json`. Windows x64, Linux x86_64/ARM64 và macOS có archive riêng. Windows ARM64 native chưa có archive trong profile, cần bộ TeX native do operator chọn. Không dùng binary Windows cho Mac/Linux.

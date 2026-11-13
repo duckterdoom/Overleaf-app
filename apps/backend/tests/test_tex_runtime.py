@@ -83,6 +83,14 @@ def test_manifest_covers_all_templates_and_common_import_dependencies():
     assert 'subcaption' not in packages  # subcaption.sty belongs to the caption package.
 
 
+def test_journal_article_import_dependencies_are_installed_and_probed():
+    profile = runtime.manifest()
+    # LTJournalArticle loads both packages; checking only the template catalog
+    # allowed the runtime to be marked ready while imported articles failed.
+    assert {'titling', 'abstract'} <= set(profile['packages'])
+    assert {'titling.sty', 'abstract.sty'} <= set(profile['probes'])
+
+
 def test_explicit_broken_distribution_is_not_modified(monkeypatch, capsys):
     monkeypatch.setattr(runtime, 'check', lambda *a, **kw: {'ready': False, 'missing': ['example']})
     monkeypatch.setattr(runtime, 'install_distribution', lambda *a: pytest.fail('Must not change configured system TeX'))

@@ -12,12 +12,12 @@
     "collection-fontsrecommended", "babel-vietnamese", "biblatex", "csquotes", "pgf", "beamer",
     "geometry", "hyperref", "xcolor", "amsmath", "amsfonts", "amscls", "fontspec", "iftex", "graphics",
     "footmisc", "colortbl", "tools", "multirow", "microtype", "fancyhdr", "lastpage", "caption",
-    "booktabs", "enumitem", "setspace", "titlesec", "tocloft", "tcolorbox", "environ", "trimspaces",
+    "booktabs", "enumitem", "setspace", "titlesec", "titling", "abstract", "tocloft", "tcolorbox", "environ", "trimspaces",
     "pgfplots", "float", "wrapfig", "adjustbox", "listings", "algorithm2e", "algorithms", "algorithmicx",
     "newtx", "silence", "cite", "xpatch", "xstring", "soul", "psnfss", "courier", "helvetic"
   ],
   "probes": ["footmisc.sty", "colortbl.sty", "booktabs.sty", "multirow.sty", "microtype.sty", "fancyhdr.sty",
-    "lastpage.sty", "caption.sty", "subcaption.sty", "enumitem.sty", "setspace.sty", "titlesec.sty", "tocloft.sty",
+    "lastpage.sty", "caption.sty", "subcaption.sty", "enumitem.sty", "setspace.sty", "titlesec.sty", "titling.sty", "abstract.sty", "tocloft.sty",
     "tcolorbox.sty", "environ.sty", "trimspaces.sty", "pgfplots.sty", "float.sty", "wrapfig.sty", "adjustbox.sty",
     "listings.sty", "algorithm2e.sty", "algorithm.sty", "algpseudocode.sty", "newtxtext.sty", "newtxmath.sty",
     "silence.sty", "cite.sty", "xpatch.sty", "xstring.sty", "soul.sty", "tcrm1200.tfm", "texgyretermes-regular.otf"]

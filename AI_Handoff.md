@@ -1,5 +1,11 @@
 # AI Handoff — Overleaf Desktop / Networking Backend M3
 
+## 106. Khôi phục compile ZIP LTJournalArticle thiếu titling (13/11/2026)
+
+Tái hiện bằng ZIP `_Article__Hands_on_Training_for_Mitigating_vulnerabilites__Toan_.zip` trong thư mục kiểm thử riêng `target/article-titling-repro-20261113`; không sửa ZIP hay nguồn dự án người dùng. Runtime được compiler chọn là `target/tex-runtime/TinyTeX`, thiếu cả `titling.sty` và `abstract.sty` mà `LTJournalArticle.cls` sử dụng. Trước sửa latexmk trả exit 12, đúng lỗi ảnh. Profile trước đó chưa cài/probe hai gói này nên vẫn có thể được đánh dấu ready.
+
+Bổ sung `titling`, `abstract` vào packages và probes của `apps/backend/src/latex_backend/resources/tex-runtime.json`. Manifest đổi làm mất hiệu lực marker cũ; launcher `--ensure` tự bổ sung khi dev clone/cập nhật, không bắt người dùng web cài TeX. Chạy `scripts/setup-tex.bat` đã cài hai gói và xác nhận compile tiếng Việt qua cả ba engine. Test hồi quy profile trong `test_tex_runtime.py`: 17 tests passed. Biên dịch thật ZIP bằng pdfLaTeX/latexmk + Biber exit 0, `build/main.pdf` có 6 trang, 1.071.425 byte; nhật ký before/after giữ trong thư mục kiểm thử. Đây là kiểm chứng ZIP cụ thể, không đảm bảo mọi ZIP bất kỳ đều đủ package. Server đang chạy không bị dừng; người dùng bấm Biên dịch lại sau khi setup hoàn tất.
+
 ## 105. Bài kiểm tra có mật khẩu/cửa sổ thời gian và danh sách riêng (13/11/2026)
 
 Assignment.kind assignment/exam defaultassignment cho legacy. Form Giao bài chọn hình thức, exam bắt buộc duration1–180/opensAt/closesAt/password6+, timezone normalizeUTC, validate đóng>sau mở, dueAtnull/allowLatefalse. Sourcepicker/category/rubric không đổi. Hash State.password (salt/PBKDF2) trong examSecret, public() loại hash khỏi mọi DTO/snapshot; không lưu plaintext examPassword. PUT đề giữ hash khi bỏ trống; PATCH /assignments/id/exam-password roleTutor+revisionCAS đổi được kể cả bài đang có người làm mà không đổi timer. Deadline/question đổi khi có draft vẫn theo lock nội dung cũ, cần bài mới.
