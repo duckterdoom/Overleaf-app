@@ -302,6 +302,8 @@ class Writing:
         practice = data.pop('practice', False)
         if practice:
             self.role(user, 'student')
+            if data.get('libraryVisibility') is not None:
+                raise Problem('Only tutors can save questions to the library.', 403)
         else:
             self.role(user, 'tutor')
             if not user.get('writingProject') and not data.get('classId'):
@@ -353,6 +355,8 @@ class Writing:
                     self.db.writing_submissions.count_documents({'assignmentId': key}))):
                 raise Problem('An exercise already started by learners is immutable. Create another exercise instead.', 409)
         version = data.pop('revision', 0)
+        if current and data.get('libraryVisibility') is None:
+            data['libraryVisibility'] = current.get('libraryVisibility')
         key = key or identifier()
         row = {**data, '_id': key, 'id': key, 'tasks': tasks, 'tutorId': None if practice else user['id'],
                'questionId': question_id,
@@ -365,6 +369,9 @@ class Writing:
                 raise Problem('The exercise draft changed in another window. Reload before saving.', 409)
         else:
             self.db.writing_assignments.insert_one(row)
+        if not practice and row.get('libraryVisibility') is not None:
+            from latex_backend.writing.questions import save_assignment_question
+            save_assignment_question(self, user, row)
         return public(row)
 
     def draft(self, user, assignment):

@@ -48,6 +48,7 @@ class Join(Model):
 
 
 class Assignment(Title):
+    libraryVisibility: Literal['private', 'public'] | None = None
     questionId: str | None = Field(default=None, max_length=80)
     writingScope: Literal['whole','intro','body','conclusion'] = 'whole'
     purpose: Literal['practice','homework','exam'] = 'homework'

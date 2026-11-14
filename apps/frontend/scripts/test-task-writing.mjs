@@ -38,7 +38,7 @@ try{
  await expect(tutor.locator('.question-library article')).toContainText('Public transport introduction');
  expect((await(await ok(await oc.request.get(url+'api/writing/questions'))).json()).items).toHaveLength(0);
  await tutor.getByRole('button',{name:'Edit question',exact:true}).click();await tutor.getByLabel('Question visibility').selectOption('public');await tutor.getByRole('button',{name:'Save question',exact:true}).click();
- await expect(tutor.locator('.question-library article')).toContainText('public');
+ await expect(tutor.locator('.question-library article')).toContainText('Public');
  expect((await(await ok(await oc.request.get(url+'api/writing/questions'))).json()).items).toHaveLength(1);
  await tutor.screenshot({path:path.join(home,'question-library.png')});
  await tutor.getByRole('button',{name:'Use for an exercise',exact:true}).click();await tutor.getByLabel('Course or group').selectOption({label:'Introduction workshop'});await tutor.getByLabel('Exercise purpose').selectOption('practice');
@@ -84,7 +84,7 @@ try{
  await tutor.getByLabel('Source project Task 2',{exact:true}).selectOption({label:'Optional LaTeX source'});
  await tutor.getByLabel('Question source Task 2',{exact:true}).selectOption('main.tex');await tutor.getByRole('button',{name:'Use source for Task 2',exact:true}).click();
  await expect(tutor.locator('[data-prompt-file] canvas').first()).toBeVisible({timeout:90000});
- await tutor.getByRole('button',{name:'Save question',exact:true}).click();await expect(tutor.locator('.question-library article')).toHaveCount(2);
+ await tutor.getByRole('button',{name:'Save question',exact:true}).click();await expect(tutor.locator('.question-library article')).toHaveCount(3);
  await tutor.screenshot({path:path.join(home,'latex-source-library.png')});
  await tutor.setViewportSize({width:430,height:900});await nav.getByRole('button',{name:'Question library',exact:true}).click();
  await tutor.screenshot({path:path.join(home,'mobile-question-library.png')});

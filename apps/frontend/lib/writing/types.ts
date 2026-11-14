@@ -22,6 +22,7 @@ export type Classroom = {
     students?: { id: string; name: string }[];
 };
 export type Assignment = {
+    libraryVisibility?: 'private'|'public'|null;
     writingScope?: 'whole'|'intro'|'body'|'conclusion';
     purpose?: 'practice'|'homework'|'exam';
     questionId?: string;
@@ -240,5 +241,5 @@ export function defaultSection(
 }
 
 export const usesBands=(assignment:Assignment)=>(!assignment.category||assignment.category==='ielts')&&(!assignment.writingScope||assignment.writingScope==='whole');
-export type Question={id:string;ownerId:string;ownerName:string;title:string;visibility:'private'|'public';revision:number;content:Assignment};
+export type Question={id:string;ownerId:string;ownerName:string;title:string;visibility:'private'|'public';revision:number;content:Assignment;sourceQuestionId?:string;sourceOwnerName?:string;sourceAssignmentId?:string};
 export type WritingBlock={heading:string;text:string};

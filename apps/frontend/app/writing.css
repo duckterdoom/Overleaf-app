@@ -1310,6 +1310,17 @@
 .course-members > div,.course-add-member { display:flex; align-items:center; justify-content:space-between; gap:15px; margin:10px 0; }
 .course-add-member label { flex:1; display:grid; gap:8px; }
 .question-excerpt { white-space:pre-wrap; max-height:140px; overflow:auto; }
+.question-library-views { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
+.question-library-views button[aria-pressed=true] { background:var(--green); color:white; }
+.question-library-heading p,.question-library-owner { color:var(--muted); line-height:1.6; }
+.question-library-filters { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,1fr); gap:16px; margin:20px 0; }
+.question-library-filters label { display:grid; gap:8px; min-width:0; font-weight:600; }
+.question-library-filters input,.question-library-filters select { width:100%; min-width:0; }
+.question-library-badges { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.question-library .writing-assignment-list article { display:block; }
+.question-library article h3 { font-size:20px; line-height:1.4; overflow-wrap:anywhere; }
+.question-library article p { overflow-wrap:anywhere; }
+@media(max-width:600px){ .question-library-filters { grid-template-columns:1fr; } }
 .writing-courses > form { margin-bottom:25px; }
 .question-library article footer,.writing-courses article footer { display:flex; gap:8px; flex-wrap:wrap; margin-top:18px; }
 .writing-section-score { padding:12px 16px; background:var(--soft); border-radius:8px; font-weight:600; }

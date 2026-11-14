@@ -13,6 +13,8 @@
 
 Public questions currently span the application's tutor community; faculty/department scoping is not implemented. Course enrollment is separate from editor sharing. Existing project-shared assignments retain their original access; new Course/Group assignments enforce explicit enrollment. No existing database records are automatically moved or translated.
 
+**Question library → My library** contains your originals, questions saved when assigning exercises, and private copies added from **Public library**. Both views support title search and assessment-type filters; cards show assessment type, IELTS task/variant, rubric, writing scope, and ownership/source. In **Public library**, choose **Add to my library**, then use or edit your independent copy in **My library**. Assign exercise has its own **Library visibility** choice: assigning stores the question/rubric in your library and Public also makes it reusable by other tutors. Save draft does not publish a library question. Course details, deadlines, exam passwords and student work are not included in library snapshots.
+
 Review, API and verification details: [Task Writing review](docs/TASK_WRITING_REVIEW.md).
 
 **Bài kiểm tra có mật khẩu:** trong Giao bài chọn Bài kiểm tra, đặt thời lượng bắt buộc và giờ mở/đóng. Học viên có mục Bài kiểm tra riêng; đề, bài nộp và kết quả có tab Bài tập/Bài kiểm tra. Bộ tiêu chí chấm giữ nguyên. Xem [hướng dẫn](docs/UNIFIED_ASSESSMENT.md).
