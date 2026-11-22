@@ -104,7 +104,7 @@ def preflight(executable, template):
             missing.append({"name": name, "package": package, "probe": name})
     available = (root / ('kpsewhich' + suffix)).is_file() and (root / ('latexmk' + suffix)).is_file()
     return {"missing": missing, "bundled": bundled(root), "bin": str(root),
-            "toolchainAvailable": available, "setupCommand": "scripts/setup-tex.bat" if os.name == "nt" else "sh scripts/setup-tex.sh"}
+            "toolchainAvailable": available, "setupCommand": "apps/backend/tools/setup-tex.bat" if os.name == "nt" else "sh apps/backend/tools/setup-tex.sh"}
 
 
 async def install_packages(compiler, template, confirmed):

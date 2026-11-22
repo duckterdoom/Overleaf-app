@@ -1,5 +1,5 @@
 import rawCatalog from "./catalog.json";
-export type Check = { id: string; text: string; codes: string[] };
+export type Check = { id: string; text: string; codes: string[]; weight?: number };
 export type Profile = {
     category?: "ielts" | "report" | "research";
     sectionTitles?: Record<string,string>;
@@ -9,7 +9,12 @@ export type Profile = {
     focus: string[];
     checks: Record<string, Check[]>;
 };
+export function assessmentCategoryTitle(profile:Profile|undefined,key:string){
+    const names:Record<string,string>={intro:'Introduction',overview:'Overview',body:'Body',conclusion:'Conclusion',closing:'Closing',whole:'Whole-paper requirements'};
+    return profile?.sectionTitles?.[key]||names[key]||key;
+}
 export const catalog: Record<string, Profile> = rawCatalog;
+export type CourseStudent = {id:string;name:string;email?:string;displayName?:string;studentCode?:string;note?:string;revision?:number};
 export type Classroom = {
     kind?: 'course'|'group';
     revision?: number;
@@ -19,9 +24,13 @@ export type Classroom = {
     tutorName: string;
     joinCode?: string;
     studentCount: number;
-    students?: { id: string; name: string }[];
+    students?: CourseStudent[];
 };
 export type Assignment = {
+    scoring?: {mode:'points';total:number}|null;
+    assessmentCategories?: Record<string,string[]>;
+    description?: string;
+    libraryVisibility?: 'private'|'public'|null;
     writingScope?: 'whole'|'intro'|'body'|'conclusion';
     purpose?: 'practice'|'homework'|'exam';
     questionId?: string;
@@ -51,6 +60,7 @@ export type Assignment = {
     createdAt: string;
 };
 export type PromptFile = {
+    origin?: "upload";
     id: string; sourcePath: string; projectId: string|null; sourceProjectId?:string; kind: 'pdf' | 'image' | 'text'; mime: string;
     digest: string; pages: number | null; firstPage: number; lastPage: number | null; text?: string;
 };
@@ -73,7 +83,14 @@ export type Section = {
     note: string;
     quote: string;
 };
+export type SentenceAnnotation = {
+    id:string;start:number;end:number;quote:string;comment:string;replacement:string;
+    kind:'comment'|'underline'|'strike'|'replace';category:string;resolved:boolean;
+    authorName?:string;createdAt?:string;
+};
 export type Grade = {
+    annotations?: SentenceAnnotation[];
+    criterionScores?: Record<string,number|null>;
     scoreSource?: 'manual' | 'checklist';
     profile: string;
     scores: Record<string, number | null>;
@@ -82,6 +99,11 @@ export type Grade = {
     sections: Section[];
 };
 export type Review = {
+    awardedTotal?: number | null;
+    calculatedScore?: number;
+    totalScore?: number;
+    maxScore?: number;
+    taskScores?: Record<string,number>;
     scorePercent?: number;
     criteriaCount?: number;
     revision: number;
@@ -209,7 +231,8 @@ export function defaultSection(
 ): Section {
     const isIelts=!assignment.category||assignment.category==='ielts';
     const letter = isIelts && task === 1 && assignment.variant === "general";
-    const kind = assignment.writingScope && assignment.writingScope!=='whole' ? assignment.writingScope :
+    const selectedKinds=assignment.scoring?Object.keys(assignment.rubricCatalog?.[assignment.profiles[String(task)]]?.checks||{}).filter(key=>key!=='whole'):[];
+    const kind = selectedKinds.length?selectedKinds[Math.min(index,selectedKinds.length-1)]:assignment.writingScope && assignment.writingScope!=='whole' ? assignment.writingScope :
         index === 0
             ? "intro"
             : isIelts && task === 1 && !letter && index === 1 && length >= 4
@@ -232,13 +255,13 @@ export function defaultSection(
                 closing: "Closing",
                 body: `Body ${Math.max(1, index - (task === 1 && !letter && length >= 4 ? 1 : 0))}`,
             } as Record<string, string>
-        )[kind],
+        )[kind] || assignment.rubricCatalog?.[assignment.profiles[String(task)]]?.sectionTitles?.[kind] || kind,
         checks: {},
         note: "",
         quote: "",
     };
 }
 
-export const usesBands=(assignment:Assignment)=>(!assignment.category||assignment.category==='ielts')&&(!assignment.writingScope||assignment.writingScope==='whole');
-export type Question={id:string;ownerId:string;ownerName:string;title:string;visibility:'private'|'public';revision:number;content:Assignment};
+export const usesBands=(assignment:Assignment)=>!assignment.scoring&&(!assignment.category||assignment.category==='ielts')&&(!assignment.writingScope||assignment.writingScope==='whole');
+export type Question={id:string;ownerId:string;ownerName:string;title:string;visibility:'private'|'public';revision:number;content:Assignment;sourceQuestionId?:string;sourceOwnerName?:string;sourceAssignmentId?:string};
 export type WritingBlock={heading:string;text:string};

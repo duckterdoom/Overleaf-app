@@ -377,8 +377,12 @@ class Store:
         trash.mkdir(exist_ok=True)
         source.rename(trash / (uuid.uuid4().hex + "-" + source.name))
 
-    def update_project(self, project, title=None, icon=None, color=None):
+    def update_project(self, project, title=None, icon=None, color=None, tags=None, tag_mode='replace', archived=None):
         info = self.info(project)
+        if archived is not None:
+            if not isinstance(archived, bool):
+                raise Problem("Archived must be true or false.")
+            info["archived"] = archived
         if title is not None:
             if not 1 <= len(title.strip()) <= 120:
                 raise Problem("Tên dự án không hợp lệ.")
@@ -387,6 +391,17 @@ class Store:
             info["icon"] = str(icon)[:40]
         if color is not None:
             info["color"] = str(color)[:40]
+        if tags is not None:
+            if not isinstance(tags, list) or len(tags) > 20 or any(not isinstance(tag, str) or not 1 <= len(tag.strip()) <= 40 for tag in tags):
+                raise Problem('Use up to 20 tags, each between 1 and 40 characters.')
+            if tag_mode not in ('replace', 'add', 'remove'):
+                raise Problem('Invalid tag action.')
+            incoming = list(dict.fromkeys(tag.strip() for tag in tags))
+            current = info.get('tags', [])
+            values = incoming if tag_mode == 'replace' else [tag for tag in current if tag not in incoming] if tag_mode == 'remove' else list(dict.fromkeys([*current, *incoming]))
+            if len(values) > 20:
+                raise Problem('A project can have at most 20 tags.')
+            info['tags'] = values
         self.write_info(project, info)
         return self.info(project)
 

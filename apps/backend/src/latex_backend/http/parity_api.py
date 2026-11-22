@@ -378,7 +378,7 @@ def register(app, store, compiler):
                 raise Problem("Rời phòng trước khi thay đổi cấu trúc dự án.", 409)
         if name == "project-update":
             return store.update_project(
-                project, data.get("title"), data.get("icon"), data.get("color")
+                project, data.get("title"), data.get("icon"), data.get("color"), data.get("tags"), data.get("tagMode", "replace"), data.get("archived")
             )
         if name == "project-delete":
             store.delete_project(project)

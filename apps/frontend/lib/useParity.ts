@@ -710,12 +710,14 @@ export default function useParity(core: Core) {
         }
     }
     async function authenticated(value: Session) {
+        const roleChanged=!!session && session.role!==value.role;
         setSession(value);
         if (value.needsRole) { core.setProjects([]); return; }
         await refreshSession();
         core.setProjects(await json<Project[]>("/projects"));
         setActivity(await action<Activity>("activity"));
         await acceptSharedLink();
+        if(roleChanged)window.dispatchEvent(new Event('latex-account-role-updated'));
     }
     async function logout() {
         if (!(await core.save())) return;

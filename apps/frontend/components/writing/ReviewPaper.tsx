@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
     Check,
     ChevronDown,
+    ChevronUp,
     MessageSquarePlus,
     X,
     ClipboardCheck,
@@ -27,6 +28,10 @@ import {
 import { CommutingChart } from "./AssignmentForm";
 import { useWritingApi } from "../../lib/writing/context";
 import PromptDocument from './PromptDocument';
+import FloatingChecklist from './FloatingChecklist';
+import PointAssessment from './PointAssessment';
+import AnnotatedSubmission from './AnnotatedSubmission';
+import {pointProgress} from '../../lib/writing/points';
 
 const states: Record<string, string> = {
     unreviewed: "Unreviewed",
@@ -54,6 +59,7 @@ export default function ReviewPaper({
     dirty,
     published,
     onDocument,
+    pendingFeedbackRef,
 }: {
     submission: Submission;
     review: Review | null;
@@ -65,10 +71,16 @@ export default function ReviewPaper({
     dirty: boolean;
     published: Review | null;
     onDocument: (report: boolean) => void;
+    pendingFeedbackRef?: React.MutableRefObject<boolean>;
 }) {
     const { assetUrl } = useWritingApi();
     const assignment = submission.assignment;
     const hasBands=usesBands(assignment);
+    const points=!!assignment.scoring;
+    const progress=pointProgress(assignment,review||{revision:0,tasks:{},summary:'',recommendations:''});
+    const complete=progress.count>0&&progress.graded===progress.count;
+    const [questionCollapsed,setQuestionCollapsed]=useState(editable);
+    function scorePoint(key:string,number:number|null){changeGrade({criterionScores:{...grade?.criterionScores,[key]:number}});}
     const isIelts=!assignment.category||assignment.category==='ielts';
     const projectCatalog = assignment.rubricCatalog || catalog;
     const bandRef = useRef<HTMLElement>(null);
@@ -91,6 +103,9 @@ export default function ReviewPaper({
     const selectedProfile=projectCatalog[grade?.profile || assignment.profiles[String(task)]];
     const kinds=Object.fromEntries(Object.keys(selectedProfile?.checks||{}).map(key=>[key,selectedProfile?.sectionTitles?.[key]||({intro:'Introduction / Opening',overview:'Overview',body:'Body',conclusion:'Conclusion',closing:'Closing',whole:'Whole paper / task requirements'} as Record<string,string>)[key]||key]));
     const [autoError,setAutoError]=useState('');
+    const [checklistCategory,setChecklistCategory]=useState('');
+    const [pendingSentence,setPendingSentence]=useState(false);
+    useEffect(()=>{if(pendingFeedbackRef)pendingFeedbackRef.current=pendingSentence;return()=>{if(pendingFeedbackRef)pendingFeedbackRef.current=false;};},[pendingSentence,pendingFeedbackRef]);
     function autoScore(){
         if(!grade||!selectedProfile)return;
         const sections=[...parts.map((_,i)=>section(i)),section(-1)];
@@ -99,7 +114,7 @@ export default function ReviewPaper({
         setAutoError('');changeGrade({scores,scoreSource:'checklist'});
     }
     useEffect(() => {
-        if (!band) return;
+        if (!band || points) return;
         const previous = document.activeElement as HTMLElement | null;
         const panel = bandRef.current;
         const controls = () => Array.from(panel?.querySelectorAll<HTMLElement>(
@@ -118,7 +133,7 @@ export default function ReviewPaper({
         };
         panel?.addEventListener("keydown", trap);
         return () => { panel?.removeEventListener("keydown", trap); previous?.focus(); };
-    }, [band]);
+    }, [band,points]);
     useEffect(() => {
         const key = (e: KeyboardEvent) => {
             if (e.key === "Escape") {
@@ -161,46 +176,22 @@ export default function ReviewPaper({
         });
     }
     function card(index: number) {
+        if(points){const keys=Object.keys(selectedProfile?.checks||{});const category=keys.includes(checklistCategory)?checklistCategory:keys[0];return <FloatingChecklist title="Checklist score" onClose={()=>setActive(null)}><nav className="category-checklist-tabs" aria-label="Assigned assessment categories">{keys.map(key=><button key={key} aria-pressed={category===key} onClick={()=>setChecklistCategory(key)}>{kinds[key]}</button>)}</nav><p className="writing-muted">Score the whole submission against each assigned criterion. Paragraph count does not change the points.</p><PointAssessment assignment={assignment} review={value} task={task} category={category} editable={editable} onScore={scorePoint} onTotal={number=>onChange({...value,awardedTotal:number})}/>{editable&&<footer className="checklist-finish"><small>{complete?'All criteria scored. Ready to review.':'Score every assigned criterion to finish.'}</small>{complete&&<button className="primary" disabled={busy||pendingSentence} onClick={async()=>{if(await onSave()){setActive(null);setBand(true);}}}>Finish score</button>}</footer>}</FloatingChecklist>;}
         const item = section(index),
             open = active === index;
         const checks =
             projectCatalog[grade?.profile || assignment.profiles[String(task)]]
                 ?.checks[item.kind] || [];
-        const met = checks.filter(
-            (check) => item.checks[check.id] === "met",
-        ).length;
+        if (!open) return null;
         return (
-            <aside
-                className={`writing-margin-card ${open ? "expanded" : ""} ${item.note ? "has-feedback" : ""}`}
-                key={"card-" + index}
-            >
-                <button
-                    className="writing-card-toggle"
-                    aria-expanded={open}
-                    onClick={() => setActive(open ? null : index)}
-                >
-                    <span className="writing-tutor-dot">
-                        {published?.tutorName?.[0] || "T"}
-                    </span>
-                    <span>
-                        <strong>{item.title}</strong>
-                        <small>
-                            {item.note
-                                ? "Feedback added"
-                                : `${met}/${checks.length} criteria met`}
-                        </small>
-                    </span>
-                    <ChevronDown size={15} />
-                </button>
-                {open && (
-                    <div className="writing-card-body">
+                    <FloatingChecklist key={`${task}:${index}`} title={`${item.title}${index===-1?'':` · Paragraph ${index+1}`}`} onClose={()=>setActive(null)}><div className="writing-card-body">
                         {editable && (
                             <label>
                                 Writing section
                                 <select
                                     aria-label={`Paragraph section ${index + 1}`}
                                     value={item.kind}
-                                    disabled={index === -1}
+                                    disabled={!points && index === -1}
                                     onChange={(e) =>
                                         changeSection(index, {
                                             kind: e.target.value,
@@ -218,8 +209,8 @@ export default function ReviewPaper({
                                 </select>
                             </label>
                         )}
-                        <div className="writing-checks">
-                            {checks.map((check) => (
+                        <div className="writing-checks">{points&&<PointAssessment assignment={assignment} review={value} task={task} category={item.kind} editable={editable} onScore={scorePoint}/>}
+                            {!points&&checks.map((check) => (
                                 <div className="writing-check" key={check.id}>
                                     <label>
                                         <input
@@ -329,13 +320,11 @@ export default function ReviewPaper({
                         ) : (
                             <p>{item.note || "No additional feedback."}</p>
                         )}
-                    </div>
-                )}
-            </aside>
+                    </div></FloatingChecklist>
         );
     }
     return (
-        <div className="writing-review">
+        <div className={`writing-review${points?` category-review${questionCollapsed?' question-compact':''}${band?' score-review-page':''}`:''}`}>
             <div className="writing-document-toolbar">
                 <div
                     className="writing-task-tabs"
@@ -346,6 +335,7 @@ export default function ReviewPaper({
                         <button
                             key={n}
                             role="tab"
+                            disabled={pendingSentence}
                             aria-selected={task === n}
                             onClick={() => {
                                 setTask(n);
@@ -359,25 +349,20 @@ export default function ReviewPaper({
                 <span className="writing-muted">
                     {submission.studentName} · Attempt {submission.attempt}
                 </span>
-                <button onClick={() => setBand(true)}>
+                {points&&(editable||published)&&<button aria-expanded={active===-1} onClick={()=>setActive(active===-1?null:-1)}><ClipboardCheck size={15}/>Checklist score</button>}
+                {points&&!editable&&published&&<button onClick={()=>{setActive(null);setBand(true);}}>Review results</button>}
+                {!points&&<button disabled={pendingSentence} onClick={() => {setActive(null);setBand(true);}}>
                     <ClipboardCheck size={15} />
                     {hasBands?'Band summary':'Assessment summary'}
-                </button>
+                </button>}
                 {published && (
                     <button onClick={() => onDocument(true)}>
-                        Export LaTeX report
+                        Export LaTeX document
                     </button>
                 )}
+                {published?.totalScore!==undefined&&<span className="writing-section-score">Score: {published.totalScore} / {published.maxScore}</span>}
                 {published?.scorePercent!==undefined&&<span className="writing-section-score">Checklist: {published.scorePercent}% · {published.criteriaCount} criteria</span>}
-                {editable && (
-                    <button
-                        className="primary"
-                        disabled={busy || !dirty}
-                        onClick={() => void onSave()}
-                    >
-                        {busy ? "Saving…" : "Save assessment draft"}
-                    </button>
-                )}
+                {editable&&<span className="review-save-state" role="status">{dirty?'Saving changes...':'All changes saved'}</span>}
             </div>
             {!editable && !published && (
                 <div className="writing-notice">
@@ -386,19 +371,18 @@ export default function ReviewPaper({
             )}
             <div className="writing-review-meta">
                 <span>
-                        {!isIelts?assignment.category==='report'?'Report':'Research':assignment.variant === "academic"
-                        ? "Academic"
-                        : "General Training"}{" "}
+                        {!isIelts?assignment.category==='report'?'Research / Report':'Research':'IELTS Task'}{" "}
                     · {projectCatalog[assignment.profiles[String(task)]]?.label}
                 </span>
                 <strong>{submission.wordCounts[String(task)]} words</strong>
             </div>
-            {editable && grade && (
+            {editable && grade && !points && (
                 <label className="writing-profile-select">
                     Assessment profile
                     <select
                         aria-label="Assessment profile"
                         value={grade.profile}
+                        disabled={points}
                         onChange={(e) =>
                             changeGrade({ profile: e.target.value,sections:[],scores:hasBands?Object.fromEntries(codes(task).map(code=>[code,null])):{},scoreSource:'manual' })
                         }
@@ -417,19 +401,23 @@ export default function ReviewPaper({
                             ))}
                     </select>
                     <small>
-                        Checklists support evidence-based assessment; ticks alone are not an official
-                        band.
+                        {points?'Enter points for the saved criteria. The total is calculated on the tutor-defined scale.':'Checklists support evidence-based assessment; ticks alone are not an official band.'}
                     </small>
                 </label>
             )}
+            {pendingSentence&&<p className="writing-muted sentence-pending-notice" role="status">Finish or cancel your sentence feedback before saving or switching tasks.</p>}
+            {points&&<div className="review-question-heading">
+                <span>{isIelts?`Task ${task}`:'Document'} <span className="writing-muted">/ Submitted prompt</span></span>
+                <button type="button" aria-expanded={!questionCollapsed} aria-controls="review-question-content" onClick={()=>setQuestionCollapsed(v=>!v)}>{questionCollapsed?<ChevronDown size={16}/>:<ChevronUp size={16}/>} {questionCollapsed?'Show question':'Minimize question'}</button>
+            </div>}
             <div className="writing-review-scroll">
                 <div className="writing-paper-grid">
-                    <div className="writing-paper-title">
-                        <span className="writing-eyebrow">
-                            {isIelts?`TASK ${task}`:assignment.category?.toUpperCase()} · IMMUTABLE SUBMISSION
-                        </span>
+                    <section className="writing-paper-title" hidden={points&&questionCollapsed}>
+
+                        <div id="review-question-content" hidden={points&&questionCollapsed}>
+
                         <p>{assignment.prompts[String(task)]}</p>
-                        {assignment.promptFiles?.[String(task)] && <details><summary>{isIelts?`View question Task ${task}`:'View exercise instructions'}</summary><PromptDocument focused file={assignment.promptFiles[String(task)]}/></details>}
+                        {assignment.promptFiles?.[String(task)] && <PromptDocument focused file={assignment.promptFiles[String(task)]}/>}
                         {task === 1 &&
                             assignment.imageId &&
                             (assignment.imageId === "sample-commuting" ? (
@@ -440,8 +428,10 @@ export default function ReviewPaper({
                                     alt="Task 1 visual"
                                 />
                             ))}
-                    </div>
-                    <div />
+                        </div>
+                    </section>
+
+                    {points?<AnnotatedSubmission key={`${submission.id}:${task}`} text={submission.answers?.[String(task)]||''} annotations={grade?.annotations||[]} editable={editable} onPendingChange={setPendingSentence} categories={kinds} onChange={annotations=>changeGrade({annotations})}/>:<>
                     {parts.map((text, index) => (
                         <div className="writing-paragraph-row" key={index}>
                             <div
@@ -475,9 +465,11 @@ export default function ReviewPaper({
                                 >
                                     {text}
                                 </p>
-                                <button
+                                {(editable || published) && <button
                                     className="writing-comment-trigger"
                                     title={`Paragraph feedback ${index + 1}`}
+                                    aria-label={`Open checklist for paragraph ${index + 1}`}
+                                    aria-expanded={active===index}
                                     onClick={() =>
                                         setActive(
                                             active === index ? null : index,
@@ -485,33 +477,36 @@ export default function ReviewPaper({
                                     }
                                 >
                                     <MessageSquarePlus size={16} />
-                                </button>
+                                    Checklist
+                                </button>}
                             </div>
-                            {(editable || published) && card(index)}
+
                         </div>
                     ))}
-                    {(editable || published) && selectedProfile?.checks.whole && (
+                    </>}
+                    {!points && (editable || published) && selectedProfile?.checks.whole && (
                         <div className="writing-paragraph-row">
                             <div className="writing-whole-note">
                                 <Check size={18} />
                                 {hasBands?'Review the whole paper against the task before summarizing bands.':'Review requirements and evidence before publishing feedback.'}
                             </div>
-                            {card(-1)}
+                            <button className="writing-whole-checklist" onClick={()=>setActive(-1)}><ClipboardCheck size={16}/>Whole-paper checklist</button>
                         </div>
                     )}
                 </div>
             </div>
+            {(editable || published) && active !== null && card(active)}
             {band && (
                 <div
-                    className="writing-band-backdrop"
-                    onClick={() => setBand(false)}
+                    className={points?"score-review-container":"writing-band-backdrop"}
+                    onClick={points?undefined:() => setBand(false)}
                 >
                     <aside
                         ref={bandRef}
-                        className="writing-band-panel"
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label={hasBands?'IELTS band summary':'Assessment summary'}
+                        className={points?"score-review-content":"writing-band-panel"}
+                        role={points?"region":"dialog"}
+                        aria-modal={points?undefined:true}
+                        aria-label={points?'Finish score':hasBands?'IELTS band summary':'Assessment summary'}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <header>
@@ -519,15 +514,32 @@ export default function ReviewPaper({
                                 <span className="writing-eyebrow">
                                     ASSESSMENT SUMMARY
                                 </span>
-                                <h2>{hasBands?'4 IELTS criteria':'Feedback & conclusion'}</h2>
+                                <h2>{points?'Review before publishing':hasBands?'4 IELTS criteria':'Feedback & conclusion'}</h2>
                             </div>
                             <button
-                                aria-label={hasBands?'Close band summary':'Close assessment summary'}
+                                aria-label={points?'Back to marking':hasBands?'Close band summary':'Close assessment summary'}
                                 onClick={() => setBand(false)}
                             >
-                                <X size={20} />
+                                {points?"Back to marking":<X size={20} />}
                             </button>
                         </header>
+                        {published&&<button disabled={busy} onClick={()=>onDocument(true)}>Export LaTeX document</button>}
+                        {points&&<section className="finish-score-review">
+                            <p>Review all criterion scores, corrections and comments before publishing.</p><label className="review-awarded-total">Awarded total score {editable?<input aria-label="Final awarded total" type="number" min={0} max={assignment.scoring?.total} step={0.01} value={value.awardedTotal??progress.score} onChange={e=>onChange({...value,awardedTotal:e.target.value===''?null:Number(e.target.value)})}/>:value.awardedTotal??progress.score} / {assignment.scoring?.total}<small>Calculated from criteria: {progress.score}. The assignment scale stays unchanged.</small>{editable&&value.awardedTotal!=null&&<button onClick={()=>onChange({...value,awardedTotal:null})}>Use calculated score</button>}</label>
+                            {assignment.tasks.map(number=><section key={number}>
+                                <h3>{isIelts?`Task ${number}`:'Document'}</h3>
+                                <PointAssessment assignment={assignment} review={value} task={number} editable={false} onScore={scorePoint}/>
+                                <h4>Corrections & comments</h4>
+                                {(value.tasks[String(number)]?.annotations||[]).map(note=><article className="finish-score-comment" key={note.id}>
+                                    <blockquote>{note.quote}</blockquote>
+                                    {note.replacement&&<p><strong>Suggested correction:</strong> {note.replacement}</p>}
+                                    {note.comment&&<p>{note.comment}</p>}
+                                    <small>{note.kind}{note.resolved?' - Resolved':''}</small>
+                                </article>)}
+                                {!value.tasks[String(number)]?.annotations?.length&&<p>No sentence comments.</p>}
+                            </section>)}
+                            {pointProgress(assignment,value).graded<pointProgress(assignment,value).count&&<p role="status">Score every criterion in Checklist score before publishing.</p>}
+                        </section>}
                         {hasBands && <p className="writing-muted">
                             Practice bands are tutor estimates, not official IELTS examination results.
                         </p>}
@@ -683,16 +695,17 @@ export default function ReviewPaper({
                                     </label>
                                 )}
                                 <footer>
-                                    <button
-                                        disabled={busy || !dirty}
+                                    {!points&&<button
+                                        disabled={busy || !dirty || pendingSentence}
                                         onClick={() => void onSave()}
                                     >
                                         Save draft
-                                    </button>
+                                    </button>}
                                     <button
                                         className="primary"
                                         disabled={
-                                            busy ||
+                                            busy || pendingSentence ||
+                                            points && pointProgress(assignment,value).graded < pointProgress(assignment,value).count ||
                                             hasBands && estimate(
                                                 value,
                                                 assignment.tasks,

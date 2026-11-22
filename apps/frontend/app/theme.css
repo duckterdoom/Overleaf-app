@@ -1,0 +1,41 @@
+/* Canonical application appearance tokens. Document paper and code fonts remain separate. */
+:root,:root[data-theme="forest"] {
+ --on-primary:#fff; color-scheme:light;
+ --green:#3454d1; --primary:#3454d1; --ink:#17233b; --muted:#52627b;
+ --line:#dde4ef; --surface:#f3f5fa; --panel:#fff; --soft:#f4f6fb;
+ --ui-writing:#7147c6; --ui-writing-soft:#f1ecfb;
+ --ui-editor:#2563eb; --ui-editor-soft:#eaf1ff;
+ --ui-course:#925d0a; --ui-course-soft:#fff5df;
+ --ui-positive:#117b68; --ui-positive-soft:#e7f5ef;
+ --ui-danger:#b42335; --ui-danger-soft:#fff0f1;
+ --ui-nav:#15233d; --ui-nav-text:#dce5f5; --ui-nav-muted:#a9b8d1;
+ --ui-shadow:0 4px 22px #20345d08; --ui-modal-shadow:0 24px 90px #101e3b38;
+ --ui-radius:14px; --ui-fast:160ms;
+ --ui-font:var(--font-sans);
+ --font-sans:Inter,"Segoe UI",-apple-system,BlinkMacSystemFont,Arial,sans-serif;
+}
+:root[data-theme="mint"] { --green:#087569; --primary:#087569; }
+:root[data-theme="bee"] { --green:#925d0a; --primary:#925d0a; }
+:root[data-theme="parchment"] { --green:#82583b; --primary:#82583b; --surface:#faf5e9; }
+:root[data-mode="dark"] {
+ --green:#9aafff; --primary:#9aafff; --ink:#e8edf7; --muted:#afbdd3;
+ --line:#35435a; --surface:#101827; --panel:#1b273b; --soft:#233147;
+ --ui-writing:#c1a4ff; --ui-writing-soft:#332b4d;
+ --ui-editor:#a3c5ff; --ui-editor-soft:#243957;
+ --ui-course:#f4ce83; --ui-course-soft:#403824;
+ --ui-positive:#84d6c1; --ui-positive-soft:#203d3b;
+ --ui-danger:#ffb0ba; --ui-danger-soft:#452a36;
+ --ui-nav:#0c1423; --ui-nav-text:#e4eaf5; --ui-nav-muted:#a6b4cd;
+ --ui-shadow:0 5px 24px #00000014; --ui-modal-shadow:0 24px 90px #0007;
+ --on-primary:#111d34;
+ color-scheme:dark;
+}
+
+:root[data-font="serif"] { --ui-font:var(--font-serif); }
+/* SuperDoc UI consumes a separate font token; document runs retain their own fonts. */
+:root,.sd-theme-docs,.sd-theme-word,.sd-theme-blueprint { --sd-font-family:var(--ui-font); --sd-ui-font-family:var(--ui-font); }
+:root[data-theme="mint"][data-mode="dark"] { --green:#7ed9ce; --primary:#7ed9ce; }
+:root[data-theme="bee"][data-mode="dark"] { --green:#f4ce83; --primary:#f4ce83; }
+:root[data-theme="parchment"][data-mode="dark"] { --green:#e5bd9b; --primary:#e5bd9b; }
+:root { --academic-soft:var(--soft); --writing-accent:var(--ui-writing); --heat-0:var(--soft); --heat-1:#dce3fa; --heat-2:#b3c0f0; --heat-3:#738bdc; --heat-4:#3454a7; }
+:root[data-mode="dark"] { --heat-1:#263355; --heat-2:#354b7b; --heat-3:#536eb2; --heat-4:#94adff; }

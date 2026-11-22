@@ -102,7 +102,7 @@ def test_bad_checksum_or_manifest_path_cannot_overwrite_local_files(tmp_path, mo
     mongo_database.project_chunks.update_one({'_id': digest + ':0'}, {'$set': {'data': b'CORRUPT'}})
     with pytest.raises(Problem, match='Checksum'):
         b.refresh_shared(project)
-    assert (b.projects / project / 'main.tex').read_text() == before
+    assert (b.projects / project / 'main.tex').read_text(encoding='utf-8') == before
     remote['files']['../escape'] = {'directory': True}
     remote['revision'] = 'malicious'
     mongo_database.project_files.replace_one({'_id': project}, remote)

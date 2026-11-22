@@ -24,9 +24,9 @@ import {
     Grid2X2,
     LayoutPanelLeft,
     Leaf,
+    House,
     List,
     LoaderCircle,
-    Play,
     Plus,
     Search,
     Settings2,
@@ -35,9 +35,11 @@ import {
     UsersRound,
     X,
 } from "lucide-react";
-import PdfViewer from "../components/PdfViewer";
-import WordPreview from "../components/WordDocxPreview";
+import PdfViewer from "../components/editor/PdfViewer";
+import WordPreview from "../components/editor/WordDocxPreview";
 import WritingWorkspace from "../components/writing/WritingWorkspace";
+import DashboardOverview from "../components/workspace/DashboardOverview";
+import WorkspaceNavigation, {type WritingSection} from "../components/workspace/WorkspaceNavigation";
 import { WritingProjectContext } from "../lib/writing/context";
 import type { WordPreviewHandle } from "../lib/word-preview";
 import {
@@ -53,38 +55,37 @@ import {
     type PageGeometry,
 } from "../lib/api";
 
-import AuthView from "../components/AuthView";
-import RoleSelection from "../components/RoleSelection";
-import SettingsPanel from "../components/SettingsPanel";
-import ProfilePanel from "../components/ProfilePanel";
-import HistoryPanel from "../components/HistoryPanel";
-import ActivityHeatmap from "../components/ActivityHeatmap";
-import EditorToolbar from "../components/EditorToolbar";
-import DocumentOutline from "../components/DocumentOutline";
-import AddFilesPanel from "../components/AddFilesPanel";
-import NetworkPanel from "../components/NetworkPanel";
-import SharePanel from "../components/SharePanel";
-import ProjectMenu from "../components/ProjectMenu";
-import ProjectCard from "../components/ProjectCard";
-import NewProjectExtras from "../components/NewProjectExtras";
-import FileActionsPanel from "../components/FileActionsPanel";
-import LogsView, { parseAllLogs } from "../components/LogsView";
-import IeltsGradingPanel from "../components/IeltsGradingPanel";
+import AuthView from "../components/auth/AuthView";
+import RoleSelection from "../components/auth/RoleSelection";
+import SettingsPanel from "../components/workspace/SettingsPanel";
+import ProfilePanel from "../components/auth/ProfilePanel";
+import HistoryPanel from "../components/editor/HistoryPanel";
+import EditorToolbar from "../components/editor/EditorToolbar";
+import DocumentOutline from "../components/editor/DocumentOutline";
+import AddFilesPanel from "../components/editor/AddFilesPanel";
+import NetworkPanel from "../components/editor/NetworkPanel";
+import SharePanel from "../components/editor/SharePanel";
+import TemplateLibrary from "../components/projects/TemplateLibrary";
+import ProjectLibrary from "../components/projects/ProjectLibrary";
+import CompileOptions, { PreviewFormatMenu } from "../components/editor/CompileOptions";
+import NewProjectExtras from "../components/projects/NewProjectExtras";
+import FileActionsPanel from "../components/editor/FileActionsPanel";
+import LogsView, { parseAllLogs } from "../components/editor/LogsView";
+import IeltsGradingPanel from "../components/editor/IeltsGradingPanel";
 import useParity from "../lib/useParity";
 import { action, native, translator, type Activity } from "../lib/parity";
 import { localize } from "../lib/i18n";
 import { orderedTree } from "../lib/fileTree";
-import ReviewPanel, { type ReviewAnchor } from "../components/ReviewPanel";
+import ReviewPanel, { type ReviewAnchor } from "../components/editor/ReviewPanel";
 import { reviewHighlights } from "../lib/reviewHighlights";
 import usePresence, { presenceHighlights } from "../lib/usePresence";
-import PresenceAvatars from "../components/PresenceAvatars";
+import PresenceAvatars from "../components/editor/PresenceAvatars";
 import { LiveSync } from "../lib/liveSync";
 const latex = StreamLanguage.define(stex);
 const localSelectionVisibility = EditorView.editorAttributes.compute(['selection'], state => ({
     'data-local-selection': state.selection.ranges.some(range => !range.empty) ? 'true' : 'false',
 }));
 type Dialog = "project" | "file" | "folder" | null;
-type ResultTab = { main: string; format: "pdf" | "word" };
 type DocumentResult = {
     pdf: Uint8Array;
     snapshot: string;
@@ -101,6 +102,9 @@ const fold = (text: string) =>
 
 export default function Workspace() {
     const [appMode,setAppMode]=useState<'editor'|'writing'>('editor');
+    const [writingStart,setWritingStart]=useState<WritingSection>('assignments');
+    const [writingEntry,setWritingEntry]=useState(0);
+    const [homeTab,setHomeTab]=useState<'dashboard'|'documents'|'templates'>('dashboard');
     const [writingLocation, setWritingLocation] = useState('Task Writing');
     const writingLeave = useRef<(() => Promise<boolean>) | null>(null);
     const [ready, setReady] = useState(false),
@@ -114,9 +118,7 @@ export default function Workspace() {
     const [file, setFile] = useState(""),
         [content, setContent] = useState(""),
         [dirty, setDirty] = useState(false);
-    const [search, setSearch] = useState(""),
-        [category, setCategory] = useState(""),
-        [templateSearch, setTemplateSearch] = useState("");
+    const [search, setSearch] = useState("");
     const [projectView, setProjectView] = useState<"list" | "grid">("list");
     const [projectFilter, setProjectFilter] = useState<"all" | "shared">("all");
     const [dialog, setDialog] = useState<Dialog>(null),
@@ -136,10 +138,7 @@ export default function Workspace() {
         [error, setError] = useState(""),
         [layout, setLayout] = useState("split"),
         [folder, setFolder] = useState("");
-    const [parent, setParent] = useState(""),
-        [icon, setIcon] = useState("file"),
-        [color, setColor] = useState("green"),
-        [tag, setTag] = useState("");
+    const [parent, setParent] = useState("");
     const [fileAction, setFileAction] = useState<Entry | null>(null),
         [layoutMenu, setLayoutMenu] = useState(false);
     const [preflight, setPreflight] = useState<{
@@ -160,7 +159,6 @@ export default function Workspace() {
     const [sourceTabs, setSourceTabs] = useState<string[]>([]);
     const [fileLoading, setFileLoading] = useState(false);
     const [compileTarget, setCompileTarget] = useState("");
-    const [resultTabs, setResultTabs] = useState<ResultTab[]>([]);
     const results = useRef<Record<string, DocumentResult>>({});
     const positions = useRef<
         Record<
@@ -225,7 +223,9 @@ export default function Workspace() {
             .then(([projects, catalog, health]) => {
                 document.title = "Latex";
                 setProjects(projects);
-                setCatalog(catalog);
+                setCatalog({...catalog,
+                    categories:catalog.categories.filter(category=>category.id!=='ielts'),
+                    templates:catalog.templates.filter(template=>template.category!=='ielts')});
                 setReady(true);
                 setNotice(isServerStorage() ? "Web workspace · Sẵn sàng" : "Local workspace · Sẵn sàng");
             })
@@ -308,7 +308,6 @@ export default function Workspace() {
             setSourceTabs([project.main]);
             setFileLoading(false);
             openingFile.current = false;
-            setResultTabs([]);
             setCompileTarget(project.main);
             setEngine(project.engine);
             setEntries(entries);
@@ -381,8 +380,7 @@ export default function Workspace() {
             savedText.current = source.content;
             setDirty(false);
             if (
-                /\.tex$/i.test(entry.path) &&
-                /^\s*\\documentclass(?:\s|\[|\{)/m.test(source.content)
+                /\.tex$/i.test(entry.path)
             )
                 activateTarget(entry.path);
             setFolder(
@@ -429,8 +427,8 @@ export default function Workspace() {
                         template: selectedTemplate?.id || "blank",
                         language,
                         parent,
-                        icon,
-                        color,
+                        icon: "file",
+                        color: "blue",
                     }),
                 });
                 setProjects(await json<Project[]>("/projects"));
@@ -516,21 +514,6 @@ export default function Workspace() {
                                 new Uint8Array(await response.arrayBuffer()),
                             );
                             setSnapshot(event.snapshot || "");
-                            setResultTabs((tabs) =>
-                                tabs.some(
-                                    (tab) =>
-                                        tab.main === compileTarget &&
-                                        tab.format === "pdf",
-                                )
-                                    ? tabs
-                                    : [
-                                          ...tabs,
-                                          {
-                                              main: compileTarget,
-                                              format: "pdf",
-                                          },
-                                      ],
-                            );
                             ext.setGeometry(event.geometry || []);
                             void refreshActivity();
                             const current =
@@ -739,17 +722,6 @@ export default function Workspace() {
                 geometry: ext.geometry,
             };
     }, [compileTarget, pdf, snapshot, stale, logs, ext.geometry]);
-    useEffect(() => {
-        if (compileTarget && snapshot && previewTab === "word")
-            setResultTabs((tabs) =>
-                tabs.some(
-                    (tab) =>
-                        tab.main === compileTarget && tab.format === "word",
-                )
-                    ? tabs
-                    : [...tabs, { main: compileTarget, format: "word" }],
-            );
-    }, [compileTarget, snapshot, previewTab]);
     function activateTarget(main: string) {
         if (main === compileTarget) return;
         const cached = results.current[main];
@@ -762,27 +734,6 @@ export default function Workspace() {
         ext.setIssues([]);
         setError("");
     }
-    async function selectTarget(main: string) {
-        if (
-            busy ||
-            openingFile.current ||
-            wordExporting ||
-            main === compileTarget
-        )
-            return;
-        if (wordPreview.current && !(await wordPreview.current.flush())) return;
-        if (dirty && !(await save())) return;
-        activateTarget(main);
-    }
-    async function selectResult(tab: ResultTab) {
-        if (busy || openingFile.current || wordExporting) return;
-        if (wordPreview.current && !(await wordPreview.current.flush())) return;
-        if (dirty && !(await save())) return;
-        const entry = entries.find((item) => item.path === tab.main);
-        if (entry && file !== tab.main && !(await openFile(entry))) return;
-        activateTarget(tab.main);
-        setPreviewTab(tab.format);
-    }
     async function closeSource(path: string) {
         if (busy || openingFile.current || sourceTabs.length <= 1) return;
         if (path === file) {
@@ -794,25 +745,6 @@ export default function Workspace() {
             if (!(await openFile(entry))) return;
         }
         setSourceTabs((tabs) => tabs.filter((item) => item !== path));
-    }
-    async function closeResult(tab: ResultTab) {
-        if (busy || openingFile.current || wordExporting) return;
-        if (wordPreview.current && !(await wordPreview.current.flush())) return;
-        const remaining = resultTabs.filter(
-            (item) => item.main !== tab.main || item.format !== tab.format,
-        );
-        if (tab.main === compileTarget && tab.format === previewTab) {
-            if (remaining.length)
-                await selectResult(remaining[remaining.length - 1]);
-            else {
-                setPreviewTab("pdf");
-                setPdf(null);
-                setSnapshot("");
-                setStale(true);
-                ext.setGeometry([]);
-            }
-        }
-        setResultTabs(remaining);
     }
     const uiLanguage = "en",
         t = translator(uiLanguage);
@@ -943,18 +875,10 @@ export default function Workspace() {
         window.addEventListener("pointermove", move);
         window.addEventListener("pointerup", end);
     }
-    const templates = catalog.templates.filter(
-        (item) =>
-            (!category || item.category === category) &&
-            (!tag || item.tags.includes(tag)) &&
-            fold(
-                `${item.title.vi} ${item.title.en} ${item.description.vi} ${item.tags.join(" ")}`,
-            ).includes(fold(templateSearch)),
-    );
     // The server resolves ACLs before including shared projects in this list.
     const visibleProjects = projectFilter === "shared" ? projects.filter(item => item.shared) : projects;
     const filtered = visibleProjects.filter((item) =>
-        fold(item.title).includes(fold(search)),
+        fold(item.title+' '+(item.tags||[]).join(' ')).includes(fold(search)),
     );
 
     if (!ready || !ext.loaded)
@@ -992,11 +916,13 @@ export default function Workspace() {
         );
     if (ext.session.needsRole)
         return <main data-desktop-ready="true"><RoleSelection session={ext.session} language={uiLanguage} onDone={ext.authenticated} onLogout={ext.logout} /></main>;
-    async function enterWriting(){
-        if(busy)return;
+    async function enterWriting(screen:WritingSection='assignments'){
+        if(busy||working)return;
+        if(appMode==='writing'&&writingLeave.current&&!(await writingLeave.current()))return;
         if(wordPreview.current&&!(await wordPreview.current.flush()))return;
         if(project&&(dirty||live.pending)&&!(await save()))return;
         view.current=null;
+        setWritingStart(screen);setWritingEntry(n=>n+1);
         setAppMode('writing');
     }
 
@@ -1013,8 +939,7 @@ export default function Workspace() {
                         tabs.includes(path) ? tabs : [...tabs, path],
                     );
                     if (
-                        /\.tex$/i.test(path) &&
-                        /^\s*\\documentclass(?:\s|\[|\{)/m.test(value)
+                        /\.tex$/i.test(path)
                     )
                         activateTarget(path);
                     setContent(value);
@@ -1029,84 +954,51 @@ export default function Workspace() {
     async function leaveWriting() {
         return appMode !== 'writing' || !writingLeave.current || await writingLeave.current();
     }
+    async function goHome(destination:'dashboard'|'documents'|'templates'=project?'documents':'dashboard') {
+        if(working)return false;
+        if(wordPreview.current&&!(await wordPreview.current.flush()))return false;
+        if(project&&dirty&&!(await save()))return false;
+        if(!(await leaveWriting()))return false;
+        if(project){
+            await ext.leaveBeforeOpen("");
+            setProject(null);
+            await refreshProjects();
+        }
+        setHomeTab(destination);
+        setAppMode('editor');
+        return true;
+    }
+    async function openProjectLibrary(filter:'all'|'shared') {
+        if(!(await goHome('documents')))return;
+        setProjectFilter(filter);setSearch('');setHomeTab('documents');
+    }
+    async function showTemplateLibrary() {
+        if(!(await goHome('templates')))return;
+        setDialog(null);setHomeTab('templates');
+    }
+    async function createFromTemplate(template:Template,documentLanguage:string) {
+        if(working)return;
+        setWorking(true);
+        try {
+            const created=await json<Project>('/projects',{method:'POST',body:JSON.stringify({title:template.title.en,template:template.id,language:documentLanguage,icon:'file',color:'blue'})});
+            await refreshProjects();
+            await open(created);
+        } finally {setWorking(false);}
+    }
     async function selectWorkspacePanel(panel: 'files' | 'review' | 'chat') {
         if (!(await leaveWriting())) return;
         setSidePanel(appMode === 'writing' ? panel : sidePanel === panel ? null : panel);
         setAppMode('editor');
     }
-    const workspaceTools = <nav className="workspace-activity-bar" aria-label={t("Thanh công cụ workspace", "Workspace tools")}>
-        {([
-            ['files', t('Tệp và outline', 'Files and outline'), FileText],
-            ['review', t('Nhận xét', 'Review'), MessageSquareText],
-            ['chat', t('Chat cộng tác', 'Collaborator chat'), MessagesSquare],
-        ] as const).map(([panel, label, Icon]) => <button key={panel} title={label} aria-label={label}
-            aria-pressed={appMode === 'editor' && sidePanel === panel}
-            onClick={() => void selectWorkspacePanel(panel)}><Icon size={21}/></button>)}
-        <button title="Task Writing"
-            aria-label="Task Writing"
-            aria-pressed={appMode === 'writing'} onClick={() => {if (appMode !== 'writing') void enterWriting();}}>
-            <GraduationCap size={21}/>
-        </button>
-    </nav>;
-    return (
-        <main
-            data-desktop-ready={ready && ext.loaded}
-            className={`desktop-shell ${ext.focus ? "focus-mode" : ""} ${ext.detached ? "detached-pdf" : ""}`}
-        >
-            <header className={`app-header ${project ? "in-editor" : ""}`}>
-                <div className="brand">
-                    <span className="brand-mark">
-                        <Leaf size={23} />
-                    </span>
-                    <strong>Latex</strong>
-                </div>
-                {!project && <nav className="product-navigation" aria-label="Main tools">
-                    <button aria-pressed={appMode==='editor'} onClick={async()=>{if(await leaveWriting())setAppMode('editor');}}>LaTeX Studio</button>
-                    <button aria-pressed={appMode==='writing'} onClick={()=>void enterWriting()}>Task Writing</button>
-                </nav>}
-                {project ? (
-                    <>
-                        <span className="header-divider" />
-                        <button
-                            className="project-breadcrumb"
-                            title={t(
-                                "Quay lại danh sách dự án (Thoát)",
-                                "Back to projects (Exit)",
-                            )}
-                            aria-label={t(
-                                "Quay lại danh sách dự án (Thoát)",
-                                "Back to projects (Exit)",
-                            )}
-                            disabled={busy}
-                            onClick={async () => {
-                                if (
-                                    wordPreview.current &&
-                                    !(await wordPreview.current.flush())
-                                )
-                                    return;
-                                if (dirty && !(await save())) return;
-                                if (!(await leaveWriting())) return;
-                                setAppMode("editor");
-                                await ext.leaveBeforeOpen("");
-                                setProject(null);
-                                setProjects(await json<Project[]>("/projects"));
-                            }}
-                        >
-                            <span
-                                className="project-breadcrumb-back"
-                                title={t("Thoát ra ngoài", "Exit to projects")}
-                            >
-                                <ArrowLeft size={15} />
-                            </span>
-                            <span className="project-breadcrumb-title">
-                                {project.title}
-                            </span>
-                        </button>
-                        <div className="header-spacer" />
-                        <span className="local-pill">
-                            <span />
-                            {t(isServerStorage() ? "Lưu trên server" : "Trên máy của bạn", isServerStorage() ? "Saved on server" : "On your computer")}
-                        </span>
+    const shellNavigation={
+        onHome:()=>{void goHome('dashboard');},
+        onProjects:(filter:'all'|'shared')=>{void openProjectLibrary(filter);},
+        onTemplates:()=>{void showTemplateLibrary();},
+        projectCount:projects.length,sharedCount:projects.filter(item=>item.shared).length,
+        templateOpen:homeTab==='templates'&&appMode==='editor'&&!project,
+    };
+    const projectHeaderTools = project ? <div className="editor-project-tools">
+                        <span className="editor-project-title" title={project.title}>{project.title}</span>
                         {isServerStorage() && !ext.readonly && <PresenceAvatars project={project.id}
                             peers={presence.peers} connected={presence.connected} language={uiLanguage}
                             selfId={ext.session?.id} file={file} digest={presence.digest} />}
@@ -1225,15 +1117,36 @@ export default function Workspace() {
                                 {t("Thoát tập trung", "Exit focus")} · Esc
                             </button>
                         )}
-                    </>
-                ) : (
-                    <>
-                        <div className="header-spacer" />
-                        <span className="local-pill">
-                            <span /> {isServerStorage() ? "Web workspace" : "Local workspace"}
-                        </span>
-                    </>
-                )}
+</div> : null;
+    const workspaceTools = <nav className="workspace-activity-bar" aria-label={t("Thanh công cụ workspace", "Workspace tools")}>
+        {([
+            ['files', t('Tệp và outline', 'Files and outline'), FileText],
+            ['review', t('Nhận xét', 'Review'), MessageSquareText],
+            ['chat', t('Chat cộng tác', 'Collaborator chat'), MessagesSquare],
+        ] as const).map(([panel, label, Icon]) => <button key={panel} title={label} aria-label={label}
+            aria-pressed={appMode === 'editor' && sidePanel === panel}
+            onClick={() => void selectWorkspacePanel(panel)}><Icon size={21}/></button>)}
+        <div className="workspace-account-tools"><button title="Settings" aria-label="Settings" onClick={()=>ext.setPanel('settings')}><Settings2 size={20}/></button><button className="avatar" title="Profile" aria-label="Profile" onClick={()=>ext.setPanel('profile')}>{ext.session.name.slice(0,1).toUpperCase()}</button></div>
+    </nav>;
+    return (
+        <main
+            data-desktop-ready={ready && ext.loaded}
+            data-workspace={appMode==='writing'?'writing':project?'editor':'dashboard'}
+            data-account-role={ext.session.role||'pending'}
+            data-home-section={homeTab}
+            className={`desktop-shell ${ext.focus ? "focus-mode" : ""} ${ext.detached ? "detached-pdf" : ""}`}
+        >
+            <header className={`app-header ${project ? "in-editor" : ""}`}>
+                <button className="brand" type="button" aria-label="Home" title="Back to home" disabled={busy} onClick={()=>void goHome()}>
+                    <span className="brand-mark">
+                        <Leaf size={23} className="brand-leaf-icon"/><House size={23} className="brand-home-icon"/>
+                    </span>
+                    <strong>Latex</strong>
+                </button>
+                {projectHeaderTools}
+                {!(project && appMode==='editor')&&<>
+                <div className="header-spacer" />
+                <span className="local-pill"><span />{isServerStorage()?'Web workspace':'Local workspace'}</span>
                 <button
                     title={t("Cài đặt", "Settings")}
                     onClick={() => ext.setPanel("settings")}
@@ -1248,7 +1161,9 @@ export default function Workspace() {
                 >
                     {ext.session?.name.slice(0, 1).toUpperCase() || "?"}
                 </button>
+                </>}
             </header>
+
             {error && (
                 <div className="error-banner" role="alert">
                     <span>{error}</span>
@@ -1262,43 +1177,23 @@ export default function Workspace() {
             )}
             {appMode === 'writing' ? (
                 <div className="workspace-grid writing-workspace-grid">
-                    {workspaceTools}
                     <WritingProjectContext.Provider value={project?.id || null}>
-                        <WritingWorkspace key={project?.id} session={ext.session} language={uiLanguage} beforeLeaveRef={writingLeave}
+                        <WritingWorkspace key={`${project?.id||'account'}:${writingEntry}`} initialScreen={writingStart} shellNavigation={shellNavigation} session={ext.session} language={uiLanguage} beforeLeaveRef={writingLeave}
                             onLocationChange={setWritingLocation}
                             onOpenProject={async value=>{setAppMode('editor');await refreshProjects();await open(value);}}/>
                     </WritingProjectContext.Provider>
                 </div>
             ) : !project ? (
-                <div className="dashboard dashboard-home">
+                <div className="dashboard dashboard-home unified-workspace-home">
+                    <WorkspaceNavigation tutor={ext.session.role==='tutor'} active={homeTab==='dashboard'?'dashboard':homeTab==='templates'?'templates':projectFilter==='shared'?'shared':'projects'} shell={shellNavigation} onWriting={id=>void enterWriting(id)}/>
                     <section className="projects-main">
-                        <section className="platform-overview" aria-label="Platform overview">
-                            <div><span className="eyebrow">WRITE · REVIEW · PUBLISH</span><h1>From a single paragraph to a finished paper.</h1><p>Choose your workspace. Practise and assess writing independently, then use LaTeX when you are ready to publish.</p></div>
-                            <div className="platform-pathways">
-                                <button onClick={()=>void enterWriting()}><GraduationCap size={25}/><strong>01 · Task Writing</strong><span>Practise an introduction, body, conclusion or whole paper. Teach with courses, reusable questions and custom criteria.</span><b>Open Task Writing →</b></button>
-                                <button onClick={()=>void enterWriting()}><BookOpen size={25}/><strong>02 · Develop a paper</strong><span>Organize longer reports and research papers into sections and review each against its own checklist.</span><b>Explore writing →</b></button>
-                                <button onClick={()=>{setSelectedTemplate(null);setName('');setDialog('project');}}><Braces size={25}/><strong>03 · LaTeX Studio</strong><span>Compose documents, collaborate on source and export publication-ready PDF or Word files.</span><b>Create a document →</b></button>
-                            </div>
-                        </section>
-                        <div className="page-heading">
-                            <div>
-                                <p className="eyebrow">
-                                    {localize(
-                                        "MỘT Ý TƯỞNG MỚI BẮT ĐẦU Ở ĐÂY",
-                                        uiLanguage,
-                                    )}
-                                </p>
-                                <h1>
-                                    {ext.session.role === "tutor" ? t("Không gian Tutor", "Tutor workspace") : ext.session.role === "student" ? t("Không gian học viên", "Student workspace") : localize("Dự án của bạn", uiLanguage)}
-                                    <span>.</span>
-                                </h1>
-                                <p>
-                                    {localize(
-                                        "Viết, biên dịch và hoàn thiện tài liệu theo cách của bạn.",
-                                        uiLanguage,
-                                    )}
-                                </p>
-                            </div>
+                        {homeTab==='dashboard'&&<DashboardOverview session={ext.session} projects={projects}
+                            onWriting={()=>void enterWriting()} onCourses={()=>void enterWriting('courses')}
+                            onDocuments={()=>void openProjectLibrary('all')} onProject={value=>void open(value)}/>}
+                        {homeTab==='templates'&&<TemplateLibrary catalog={catalog} onOpen={createFromTemplate} onNewProject={()=>{setSelectedTemplate(null);setName('');setPreflight(null);setDialog('project');}}/>}
+                        {homeTab==='documents'&&<>
+                        <div className="page-heading document-library-heading" id="document-library">
+                            <div><p className="eyebrow">LATEX STUDIO</p><h2>Document library</h2><p>All your projects, shared documents and templates in one place.</p></div>
                             <button
                                 className="primary"
                                 disabled={!ready}
@@ -1312,27 +1207,8 @@ export default function Workspace() {
                                 {localize("Dự án mới", uiLanguage)}
                             </button>
                         </div>
-                        <ActivityHeatmap
-                            activity={ext.activity}
-                            language={uiLanguage}
-                        />
                         <div className="project-tools home-project-tools">
-                            <nav className="project-navigation" aria-label={t("Điều hướng dự án", "Project navigation")}>
-                                <button className={projectFilter === "all" ? "project-navigation-active" : ""} aria-current={projectFilter === "all" ? "page" : undefined} onClick={() => { setProjectFilter("all"); setSearch(""); }}>
-                                    <Folder size={17} />
-                                    {localize("Tất cả dự án", uiLanguage)}
-                                    <span className="project-count">{projects.length}</span>
-                                </button>
-                                <button className={projectFilter === "shared" ? "project-navigation-active" : ""} aria-current={projectFilter === "shared" ? "page" : undefined} onClick={() => { setProjectFilter("shared"); setSearch(""); }}>
-                                    <UsersRound size={17} />
-                                    {t("Được chia sẻ với bạn", "Shared with you")}
-                                    <span className="project-count">{projects.filter(item => item.shared).length}</span>
-                                </button>
-                                <button onClick={() => { setSelectedTemplate(null); setName(""); setDialog("project"); }}>
-                                    <BookOpen size={17} />
-                                    {t("Thư viện mẫu", "Template library")}
-                                </button>
-                            </nav>
+                            <strong className="library-scope">{projectFilter==='shared'?'Shared with you':'All projects'} <span className="project-count">{visibleProjects.length}</span></strong>
                             <div className="project-list-controls">
                             <div className="search-input">
                                 <Search size={16} />
@@ -1358,18 +1234,8 @@ export default function Workspace() {
                             </div>
                         </div>
                         {filtered.length ? (
-                            <div className={`project-grid ${projectView === "list" ? "project-list" : ""}`}>
-                                {filtered.map((item) => (
-                                    <ProjectCard
-                                        key={item.id}
-                                        project={item}
-                                        language={uiLanguage}
-                                        onOpen={() => void open(item)}
-                                        onManage={() => ext.setManage(item)}
-                                        canManage={!item.shared}
-                                    />
-                                ))}
-                            </div>
+                            <ProjectLibrary projects={filtered} view={projectView} language={uiLanguage} onOpen={item=>void open(item)} onRefresh={refreshProjects}/>
+
                         ) : (
                             <div className="empty-projects">
                                 <div>
@@ -1399,19 +1265,8 @@ export default function Workspace() {
                                 </p>
                             </div>
                         )}
-                        <div className="home-bottom">
-                            <span>
-                                <Check size={13} /> {isServerStorage() ? "LaTeX server" : "LaTeX local"}
-                            </span>
-                            <span>
-                                <BookOpen size={13} />
-                                {t(`${catalog.templates.length} mẫu tài liệu`, `${catalog.templates.length} document templates`)}
-                            </span>
-                            <span>
-                                <Code2 size={13} />
-                                {localize("Tệp nguồn thuộc về bạn", uiLanguage)}
-                            </span>
-                        </div>
+
+                        </>}
                     </section>
                 </div>
             ) : (
@@ -1590,10 +1445,6 @@ export default function Workspace() {
                             />
                             <DocumentOutline key={`${project.id}:${file}`} source={content}
                                 editor={view} cursor={outlineCursor} language={uiLanguage} />
-                        </div>
-                        <div className="folder-target">
-                            {localize("Thư mục:", uiLanguage)}
-                            {folder || "/"}
                         </div>
                     </aside>
                     <div
@@ -1872,156 +1723,15 @@ export default function Workspace() {
                         )}
                         {layout !== "editor" && (
                             <section className="preview-column">
-                                {resultTabs.length > 0 && (
-                                    <div
-                                        className="document-tabs output-tabs"
-                                        role="tablist"
-                                        aria-label={t(
-                                            "Các bản xem trước",
-                                            "Compiled documents",
-                                        )}
-                                    >
-                                        {resultTabs.map((tab) => (
-                                            <div
-                                                key={tab.main + tab.format}
-                                                className={`document-tab ${compileTarget === tab.main && previewTab === tab.format ? "active" : ""}`}
-                                            >
-                                                <button
-                                                    role="tab"
-                                                    aria-selected={
-                                                        compileTarget ===
-                                                            tab.main &&
-                                                        previewTab ===
-                                                            tab.format
-                                                    }
-                                                    title={`${tab.main} → ${tab.format === "pdf" ? "PDF" : "Word"}`}
-                                                    disabled={
-                                                        busy || wordExporting
-                                                    }
-                                                    onClick={() =>
-                                                        void selectResult(tab)
-                                                    }
-                                                >
-                                                    <FileText size={14} />
-                                                    <span>
-                                                        {tab.main.replace(
-                                                            /\.tex$/i,
-                                                            tab.format === "pdf"
-                                                                ? ".pdf"
-                                                                : ".docx",
-                                                        )}
-                                                    </span>
-                                                </button>
-                                                <button
-                                                    className="close-document-tab"
-                                                    aria-label={t(
-                                                        `Đóng bản xem ${tab.main} ${tab.format}`,
-                                                        `Close preview ${tab.main} ${tab.format}`,
-                                                    )}
-                                                    disabled={
-                                                        busy || wordExporting
-                                                    }
-                                                    onClick={() =>
-                                                        void closeResult(tab)
-                                                    }
-                                                >
-                                                    <X size={13} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                                 <div className="compile-toolbar">
                                     <div className="inline-controls">
-                                        <select
-                                            className="compile-target-select"
-                                            aria-label={t(
-                                                "Tệp biên dịch",
-                                                "Compile file",
-                                            )}
-                                            title={compileTarget}
-                                            value={compileTarget}
-                                            disabled={
-                                                busy ||
-                                                fileLoading ||
-                                                wordExporting ||
-                                                ext.network.joined
-                                            }
-                                            onChange={(event) =>
-                                                void selectTarget(
-                                                    event.target.value,
-                                                )
-                                            }
-                                        >
-                                            {entries
-                                                .filter(
-                                                    (entry) =>
-                                                        !entry.directory &&
-                                                        /\.tex$/i.test(
-                                                            entry.path,
-                                                        ),
-                                                )
-                                                .map((entry) => (
-                                                    <option
-                                                        key={entry.path}
-                                                        value={entry.path}
-                                                    >
-                                                        {entry.path}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                        <select
-                                            aria-label={localize(
-                                                "Engine biên dịch",
-                                                uiLanguage,
-                                            )}
-                                            value={engine}
-                                            disabled={busy}
-                                            onChange={(event) => {
-                                                setEngine(event.target.value);
-                                                setStale(true);
-                                            }}
-                                        >
-                                            {[
-                                                "pdflatex",
-                                                "xelatex",
-                                                "lualatex",
-                                            ].map((engine) => (
-                                                <option key={engine}>
-                                                    {engine}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <button
-                                            className="primary compile-button"
-                                            disabled={
-                                                busy ||
-                                                fileLoading ||
-                                                (ext.readonly && project.permission !== "viewer")
-                                            }
-                                            onClick={() => void build()}
-                                        >
-                                            {busy ? (
-                                                <LoaderCircle
-                                                    size={16}
-                                                    className="spin"
-                                                />
-                                            ) : (
-                                                <Play
-                                                    size={15}
-                                                    fill="currentColor"
-                                                />
-                                            )}
-                                            {busy
-                                                ? localize(
-                                                      "Đang biên dịch",
-                                                      uiLanguage,
-                                                  )
-                                                : localize(
-                                                      "Biên dịch",
-                                                      uiLanguage,
-                                                  )}
-                                        </button>
+                                        <CompileOptions busy={busy} disabled={busy || fileLoading || (ext.readonly && project.permission !== "viewer")}
+                                            engine={engine} autoCompile={Boolean(ext.settings.autoCompile)} onCompile={()=>void build()}
+                                            onEngine={value=>{setEngine(value);setStale(true);}}
+                                            onAutoCompile={autoCompile=>{
+                                                ext.setSettings(value=>({...value,autoCompile}));
+                                                void action("settings",{autoCompile});
+                                            }}/>
                                         {busy && (
                                             <button
                                                 title={localize(
@@ -2082,88 +1792,12 @@ export default function Workspace() {
                                                 </span>
                                             </div>
                                         </button>
-                                        {previewTab === "logs" && (
-                                            <button
-                                                className="back-to-pdf-btn"
-                                                title={t(
-                                                    "Quay lại chế độ xem PDF",
-                                                    "Back to PDF preview",
-                                                )}
-                                                onClick={() =>
-                                                    setPreviewTab("pdf")
-                                                }
-                                            >
-                                                {t(
-                                                    "Quay lại PDF",
-                                                    "Back to PDF",
-                                                )}
-                                            </button>
-                                        )}
-                                        <div className="preview-toolbar-divider" />
-                                        <div
-                                            className="preview-mode-switch"
-                                            role="tablist"
-                                            aria-label={t(
-                                                "Định dạng xem trước",
-                                                "Preview format",
-                                            )}
-                                        >
-                                            <button
-                                                role="tab"
-                                                aria-selected={
-                                                    previewTab === "pdf"
-                                                }
-                                                className={`preview-mode-tab ${previewTab === "pdf" ? "active" : ""}`}
-                                                onClick={async () => {
-                                                    if (
-                                                        !wordPreview.current ||
-                                                        (await wordPreview.current.flush())
-                                                    ) {
-                                                        setPreviewTab("pdf");
-                                                    }
-                                                }}
-                                            >
-                                                PDF preview
-                                            </button>
-                                            <button
-                                                role="tab"
-                                                aria-selected={
-                                                    previewTab === "word"
-                                                }
-                                                disabled={project.permission === "viewer"}
-                                                title={project.permission === "viewer" ? t("Quyền chỉ xem: sử dụng PDF preview.", "View-only access: use PDF preview.") : undefined}
-                                                className={`preview-mode-tab ${previewTab === "word" ? "active" : ""}`}
-                                                onClick={() =>
-                                                    setPreviewTab("word")
-                                                }
-                                            >
-                                                Word preview
-                                            </button>
-                                        </div>
+                                        <PreviewFormatMenu value={previewTab} viewer={project.permission === "viewer"}
+                                            onChange={async value=>{
+                                                if (!wordPreview.current || await wordPreview.current.flush()) setPreviewTab(value);
+                                            }}/>
                                     </div>
                                     <div className="compile-toolbar-right">
-                                        <label className="check-row auto-compile">
-                                            <input
-                                                type="checkbox"
-                                                checked={Boolean(
-                                                    ext.settings.autoCompile,
-                                                )}
-                                                onChange={(event) => {
-                                                    const autoCompile =
-                                                        event.target.checked;
-                                                    ext.setSettings(
-                                                        (value) => ({
-                                                            ...value,
-                                                            autoCompile,
-                                                        }),
-                                                    );
-                                                    void action("settings", {
-                                                        autoCompile,
-                                                    });
-                                                }}
-                                            />
-                                            {t("Tự biên dịch", "Auto compile")}
-                                        </label>
                                         <button
                                             className="compile-action-btn"
                                             title="SyncTeX: source → PDF"
@@ -2413,20 +2047,8 @@ export default function Workspace() {
                     </section>
                 </div>
             )}
-            {appMode !== "writing" && <div className="statusbar">
-                <span>
-                    <span className={`status-dot ${busy ? "busy" : ""}`} />
-                    {localize(notice, uiLanguage)}
-                </span>
-                <span>
-                    {project
-                        ? `${file} · ${dirty ? localize("Chưa lưu", uiLanguage) : localize("Đã lưu", uiLanguage)}`
-                        : localize(
-                              isServerStorage() ? "Tài liệu của bạn · Lưu trên server" : "Tài liệu của bạn · Lưu trên máy",
-                              uiLanguage,
-                          )}
-                </span>
-            </div>}
+            <div className="sr-only" role="status" aria-live="polite">{notice}</div>
+
             {ext.panel === "settings" && (
                 <SettingsPanel
                     settings={ext.settings}
@@ -2445,6 +2067,7 @@ export default function Workspace() {
                     session={ext.session}
                     language={uiLanguage}
                     onDone={ext.authenticated}
+                    beforeRoleChange={leaveWriting}
                     onClose={() => ext.setPanel(null)}
                     onLogout={() => void ext.logout()}
                 />
@@ -2470,17 +2093,6 @@ export default function Workspace() {
                 />
             )}
             {ext.panel === "share" && project && <SharePanel project={project} language={uiLanguage} onClose={() => ext.setPanel(null)} />}
-            {ext.manage && (
-                <ProjectMenu
-                    project={ext.manage}
-                    language={uiLanguage}
-                    onClose={() => ext.setManage(null)}
-                    onDone={() => {
-                        ext.setManage(null);
-                        void refreshProjects();
-                    }}
-                />
-            )}
             {fileAction && project && !ext.readonly && (
                 <FileActionsPanel
                     project={project.id}
@@ -2572,10 +2184,6 @@ export default function Workspace() {
                                         title={name}
                                         parent={parent}
                                         setParent={setParent}
-                                        icon={icon}
-                                        setIcon={setIcon}
-                                        color={color}
-                                        setColor={setColor}
                                         language={uiLanguage}
                                         sourceLanguage={language}
                                         onTitleChange={setName}
@@ -2608,165 +2216,11 @@ export default function Workspace() {
                                             );
                                         }}
                                     />
-                                    <div className="template-ielts-intro">
-                                        <button type="button" onClick={() => {setCategory("ielts");setTemplateSearch("");setTag("");}}>
-                                            <GraduationCap size={18}/>{t("Đề mẫu IELTS Writing", "IELTS Writing practice templates")}
-                                        </button>
-                                        <span>{t("Task 1 Academic / General Training, Task 2 và đề luyện 60 phút. Có sẵn đề LaTeX, biểu đồ và khung bài làm.",
-                                            "Task 1 Academic / General Training, Task 2 and 60-minute mocks. Includes LaTeX questions, visuals and answer sheets.")}</span>
-                                    </div>
-                                    <div className="template-filters">
-                                        <div className="search-input">
-                                            <Search size={15} />
-                                            <input
-                                                aria-label={localize(
-                                                    "Tìm mẫu",
-                                                    uiLanguage,
-                                                )}
-                                                placeholder={localize(
-                                                    "Tìm mẫu tài liệu…",
-                                                    uiLanguage,
-                                                )}
-                                                value={templateSearch}
-                                                onChange={(event) =>
-                                                    setTemplateSearch(
-                                                        event.target.value,
-                                                    )
-                                                }
-                                            />
-                                        </div>
-                                        <select
-                                            aria-label={localize(
-                                                "Nhóm mẫu",
-                                                uiLanguage,
-                                            )}
-                                            value={category}
-                                            onChange={(event) =>
-                                                setCategory(event.target.value)
-                                            }
-                                        >
-                                            <option value="">
-                                                {localize(
-                                                    "Tất cả nhóm",
-                                                    uiLanguage,
-                                                )}
-                                            </option>
-                                            {catalog.categories.map((group) => (
-                                                <option
-                                                    key={group.id}
-                                                    value={group.id}
-                                                >
-                                                    {uiLanguage === "en"
-                                                        ? group.en
-                                                        : group.vi}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            aria-label={t(
-                                                "Nhãn mẫu",
-                                                "Template tag",
-                                            )}
-                                            value={tag}
-                                            onChange={(event) =>
-                                                setTag(event.target.value)
-                                            }
-                                        >
-                                            <option value="">
-                                                {t("Tất cả nhãn", "All tags")}
-                                            </option>
-                                            {[
-                                                ...new Set(
-                                                    catalog.templates.flatMap(
-                                                        (item) => item.tags,
-                                                    ),
-                                                ),
-                                            ]
-                                                .sort()
-                                                .map((value) => (
-                                                    <option key={value}>
-                                                        {value}
-                                                    </option>
-                                                ))}
-                                        </select>
-                                        <select
-                                            aria-label={localize(
-                                                "Ngôn ngữ tài liệu",
-                                                uiLanguage,
-                                            )}
-                                            value={language}
-                                            onChange={(event) =>
-                                                setLanguage(event.target.value)
-                                            }
-                                        >
-                                            <option value="vi">
-                                                {localize(
-                                                    "Tiếng Việt",
-                                                    uiLanguage,
-                                                )}
-                                            </option>
-                                            <option value="en">English</option>
-                                        </select>
-                                    </div>
-                                    <div className="template-grid">
-                                        <button
-                                            type="button"
-                                            className={
-                                                !selectedTemplate
-                                                    ? "chosen"
-                                                    : ""
-                                            }
-                                            onClick={() =>
-                                                setSelectedTemplate(null)
-                                            }
-                                        >
-                                            <FileText size={22} />
-                                            <strong>
-                                                {localize(
-                                                    "Dự án trống",
-                                                    uiLanguage,
-                                                )}
-                                            </strong>
-                                            <span>
-                                                {localize(
-                                                    "Bắt đầu từ trang giấy đầu tiên.",
-                                                    uiLanguage,
-                                                )}
-                                            </span>
-                                        </button>
-                                        {templates.map((item) => (
-                                            <button
-                                                type="button"
-                                                key={item.id}
-                                                className={
-                                                    selectedTemplate?.id ===
-                                                    item.id
-                                                        ? "chosen"
-                                                        : ""
-                                                }
-                                                onClick={() =>
-                                                    setSelectedTemplate(item)
-                                                }
-                                            >
-                                                <BookOpen size={22} />
-                                                <strong>
-                                                    {language === "vi"
-                                                        ? item.title.vi
-                                                        : item.title.en}
-                                                </strong>
-                                                <span>
-                                                    {language === "vi"
-                                                        ? item.description.vi
-                                                        : item.description.en}
-                                                </span>
-                                                <small>{item.engine}</small>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    {selectedTemplate?.category === "ielts" && <p className="template-ielts-help">
-                                        {t("Sau khi tạo: compile main.tex để xem bộ đề. Tutor mở IELTS Writing → Giao bài IELTS, chọn question-task1-*.tex / question-task2-*.tex từ dự án. GUIDE.md có hướng dẫn; answers.tex là khung bài làm tùy chọn. Đề luyện tự biên soạn, không phải đề thi chính thức.",
-                                            "After creating: compile main.tex to view the paper. In IELTS Writing → Assign IELTS, Tutors select question-task1-*.tex / question-task2-*.tex from the project. See GUIDE.md for instructions; answers.tex is an optional answer sheet. Original practice material, not an official exam paper.")}
-                                    </p>}
+                                    <section className="new-project-template-choice">
+                                        <div><strong>{selectedTemplate?.title.en||'Blank project'}</strong><p>Start with a blank document, import files above, or browse the template library.</p></div>
+                                        <button type="button" onClick={()=>void showTemplateLibrary()}>Browse templates <ArrowRight size={15}/></button>
+                                    </section>
+                                    <label>Document language<select aria-label="New project document language" value={language} onChange={event=>setLanguage(event.target.value)}><option value="en">English</option><option value="vi">Vietnamese</option></select></label>
                                     {preflight &&
                                         preflight.missing.length > 0 && (
                                             <div

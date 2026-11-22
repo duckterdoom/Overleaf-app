@@ -40,10 +40,12 @@ class Accounts:
             raise Problem('Mật khẩu cần từ 8 đến 1.024 ký tự.')
         return State.password(value)
 
-    def signup(self, name, email, password):
+    def signup(self, name, email, password, role=None):
+        if role is not None and role not in {'student', 'tutor'}:
+            raise Problem('Choose Teacher or Student.')
         identifier = uuid.uuid4().hex
         user = {'_id': identifier, 'id': identifier, 'name': self.name(name), 'email': State.email(email),
-                'password': self.password(password), 'role': None, 'google_sub': None, 'auth_version': 0}
+                'password': self.password(password), 'role': role, 'google_sub': None, 'auth_version': 0}
         try:
             self.db.users.insert_one(user)
         except DuplicateKeyError:
@@ -103,6 +105,26 @@ class Accounts:
         self.db.sessions.insert_one({'_id': hashlib.sha256(token.encode()).hexdigest(), 'user_id': identifier,
             'version': user.get('auth_version', 0), 'expires_at': datetime.now(timezone.utc) + timedelta(seconds=lifetime)})
         return token, lifetime
+
+    def change_role(self, identifier, previous, role):
+        # Account preference only; project ACL/workspace roles are independent.
+        if previous not in {'student', 'tutor'} or role not in {'student', 'tutor'}:
+            raise Problem('Choose Teacher or Student.')
+        current = self.user(identifier)
+        if not current or current.get('role') != previous:
+            raise Problem('Your account role changed. Reload your profile before saving.', 409)
+        # Older grants fall back to the account role. Preserve their effective
+        # role before changing that fallback; never overwrite an explicit grant.
+        self.db.shared_projects.update_many({'owner': identifier, 'ownerRole': {'$in': [None, '']}},
+            {'$set': {'ownerRole': previous}})
+        for grants in [self.db.invitations, self.db.link_visitors]:
+            grants.update_many({'user_id': identifier, 'workspaceRole': {'$in': [None, '']}},
+                {'$set': {'workspaceRole': previous}})
+        user = self.db.users.find_one_and_update({'_id': identifier, 'role': previous},
+            {'$set': {'role': role}}, return_document=ReturnDocument.AFTER)
+        if not user:
+            raise Problem('Your account role changed. Reload your profile before saving.', 409)
+        return user
 
     def resolve(self, token):
         if not token:

@@ -191,12 +191,14 @@ class Writing:
         courses = list(self.db.writing_classes.find(query))
         memberships = list(self.db.writing_memberships.find({'classId': {'$in': [row['id'] for row in courses]}})) if courses else []
         students = {row['id']: row for row in self.db.users.find({'_id': {'$in': list({m['studentId'] for m in memberships})}},
-            {'id': 1, 'name': 1})} if memberships else {}
+            {'id': 1, 'name': 1, 'email': 1})} if memberships else {}
         rosters = {row['id']: [] for row in courses}
         for member in memberships:
             student = students.get(member['studentId'])
             if student:
-                rosters[member['classId']].append({'id': student['id'], 'name': student['name']})
+                rosters[member['classId']].append({'id': student['id'], 'name': student['name'],
+                    'email': student.get('email', ''), 'displayName': member.get('displayName') or student['name'],
+                    'studentCode': member.get('studentCode', ''), 'note': member.get('note', ''), 'revision': member.get('revision', 0)})
         result = []
         for row in courses:
             members = rosters[row['id']]
@@ -279,8 +281,12 @@ class Writing:
         custom_catalog=data.pop('rubricCatalog',None)
         question_id=data.pop('questionId',None)
         if question_id:
-            from latex_backend.writing.questions import copy_question_assets
-            data['promptFiles']=copy_question_assets(self,user,question_id)
+            from latex_backend.writing.questions import question_for, copy_prompt_assets
+            source = question_for(self, user, question_id)['content'].get('promptFiles', {})
+            selected = data.get('promptFiles', {task: asset['id'] for task, asset in source.items()})
+            reused = {task: asset for task, asset in source.items() if selected.get(task) == asset['id']}
+            copied = copy_prompt_assets(self, user, reused)
+            data['promptFiles'] = {task: copied[task]['id'] if task in copied else key for task, key in selected.items()}
         data.setdefault('writingScope','whole')
         data.setdefault('purpose','homework')
         if data.get('purpose')=='exam':data['kind']='exam'
@@ -319,7 +325,7 @@ class Writing:
             asset = self.db.writing_prompt_files.find_one({'_id': asset_id, 'projectId': user.get('writingProject')})
             if not asset:
                 raise Problem('The question attachment does not belong to this workspace.', 404)
-            if user['role'] != 'tutor' and (not practice or asset['ownerId'] != user['id']):
+            if (not user.get('writingProject') or user['role'] != 'tutor') and asset['ownerId'] != user['id']:
                 raise Problem('Select your own question attachment for personal practice.', 403)
             attachments[number] = metadata(asset)
         data['promptFiles'] = attachments
@@ -336,6 +342,8 @@ class Writing:
             if (data['published'] or practice) and not data['prompts'].get(str(task), '').strip() and str(task) not in attachments:
                 raise Problem('Enter a question for every assigned task.')
         data['rubricCatalog'] = {data['profiles'][str(task)]: data['rubricCatalog'][data['profiles'][str(task)]] for task in tasks}
+        from latex_backend.writing.points import prepare_points
+        prepare_points(data)
         if data.get('imageId'):
             image = self.db.writing_assets.find_one({'_id': data['imageId'], 'ownerId': user['id']})
             if data['imageId'] != 'sample-commuting' and not image:
@@ -353,6 +361,8 @@ class Writing:
                     self.db.writing_submissions.count_documents({'assignmentId': key}))):
                 raise Problem('An exercise already started by learners is immutable. Create another exercise instead.', 409)
         version = data.pop('revision', 0)
+        if current and data.get('libraryVisibility') is None:
+            data['libraryVisibility'] = current.get('libraryVisibility')
         key = key or identifier()
         row = {**data, '_id': key, 'id': key, 'tasks': tasks, 'tutorId': None if practice else user['id'],
                'questionId': question_id,
@@ -365,6 +375,9 @@ class Writing:
                 raise Problem('The exercise draft changed in another window. Reload before saving.', 409)
         else:
             self.db.writing_assignments.insert_one(row)
+        if not practice and row.get('libraryVisibility') is not None:
+            from latex_backend.writing.questions import save_assignment_question
+            save_assignment_question(self, user, row)
         return public(row)
 
     def draft(self, user, assignment):
@@ -470,9 +483,15 @@ class Writing:
         row = self.submission(user, submission)
         if not self.tutor(user, row):
             raise Problem('You are not a tutor of this exercise.', 403)
+        prior_review = self.db.writing_reviews.find_one({'_id':submission}) or {}
+        from latex_backend.writing.points import validate_awarded_total
+        validate_awarded_total(row['assignment'], data)
         for task, grade in data['tasks'].items():
             if task not in {str(t) for t in row['assignment']['tasks']}:
                 raise Problem('The assessment task does not belong to this submission.')
+            if row['assignment'].get('scoring'):
+                from latex_backend.writing.points import validate_point_grade
+                validate_point_grade(row['assignment'], task, grade)
             category=row['assignment'].get('category','ielts')
             from latex_backend.writing.rubrics import uses_bands
             expected = {'TA' if task == '1' else 'TR', 'CC', 'LR', 'GRA'} if uses_bands(row['assignment']) else set()
@@ -483,6 +502,9 @@ class Writing:
             profile = row['assignment'].get('rubricCatalog', CATALOG).get(grade['profile'])
             if not profile or profile.get('category','ielts')!=category or profile['task'] != int(task) or (category=='ielts' and task == '1' and profile['family'] != row['assignment']['variant']):
                 raise Problem('The assessment profile does not match this exercise.')
+            from latex_backend.writing.annotations import validate_annotations
+            validate_annotations(row['answers'][task], grade.get('annotations', []), profile['checks'],
+                prior_review.get('tasks', {}).get(task, {}).get('annotations', []), user, now())
             paragraphs = re.split(r'\n\s*\n', row['answers'][task].strip())
             seen = set()
             for section in grade['sections']:
@@ -537,7 +559,10 @@ class Writing:
         result = {**copy.deepcopy(review), 'publishedVersion': revision, 'publishedAt': now(), 'reason': reason,
                   'taskRaw': raw, 'taskBands': {task: rounded(score) for task, score in raw.items()},
                   'writingBand': rounded(estimate) if estimate is not None else None, 'writingRaw': estimate}
-        if original['assignment'].get('writingScope','whole')!='whole':
+        if original['assignment'].get('scoring'):
+            from latex_backend.writing.points import point_result
+            result.update(point_result(original['assignment'], review))
+        elif original['assignment'].get('writingScope','whole')!='whole':
             from latex_backend.writing.rubrics import checklist_result
             for number in original['assignment']['tasks']:
                 grade = review['tasks'].get(str(number), {})
@@ -558,7 +583,7 @@ class Writing:
                 raise Problem('Results were just published in another window.', 409) from None
         return public(result)
 
-    def latex(self, user, assignment=None, submission=None, report=False, task_number=None):
+    def latex(self, user, assignment=None, submission=None, report=False, task_number=None, part="all"):
         result = None
         if submission:
             view = self.review(user, submission)
@@ -581,28 +606,49 @@ class Writing:
             if task_number is not None and number != task_number:
                 continue
             key = str(number)
-            lines += [r'\section*{' + ('Task '+key if category=='ielts' else category.title()) + '}', r'\subsection*{Question}', tex_escape(task['prompts'].get(key, ''))]
-            attachment = task.get('promptFiles', {}).get(key)
-            if attachment and attachment['kind'] in {'pdf', 'image'}:
-                extension = 'pdf' if attachment['kind'] == 'pdf' else 'png'
-                for page in range(1, (attachment.get('pages') or 1) + 1):
-                    option = f',page={page}' if extension == 'pdf' else ''
-                    lines += [r'\begin{center}\includegraphics[width=.9\linewidth,height=.8\textheight,keepaspectratio' + option + ']{question-task-' + key + '.' + extension + r'}\end{center}']
-            if number == 1 and task.get('imageId'):
-                lines += [r'\begin{center}\includegraphics[width=.85\linewidth]{prompt-image}\end{center}']
-            lines += [r'\subsection*{Answer}']
-            if blocks.get(key):
-                for block in blocks[key]:
-                    if block['text'].strip():
-                        lines += [r'\subsubsection*{' + tex_escape(block['heading']) + '}', tex_escape(block['text'])]
-            else:
-                lines += [tex_escape(answers.get(key, ''))]
-            if result:
+            if part in {'answer', 'feedback'}:
+                lines += [r'\section*{' + ('Task '+key if category=='ielts' else category.title()) + '}']
+            if part in {'all', 'question'}:
+                lines += [r'\section*{' + ('Task '+key if category=='ielts' else category.title()) + '}', r'\subsection*{Question}', tex_escape(task['prompts'].get(key, ''))]
+                attachment = task.get('promptFiles', {}).get(key)
+                if attachment and attachment['kind'] in {'pdf', 'image'}:
+                    extension = 'pdf' if attachment['kind'] == 'pdf' else 'png'
+                    for page in range(1, (attachment.get('pages') or 1) + 1):
+                        option = f',page={page}' if extension == 'pdf' else ''
+                        lines += [r'\begin{center}\includegraphics[width=.9\linewidth,height=.8\textheight,keepaspectratio' + option + ']{question-task-' + key + '.' + extension + r'}\end{center}']
+                if number == 1 and task.get('imageId'):
+                    lines += [r'\begin{center}\includegraphics[width=.85\linewidth]{prompt-image}\end{center}']
+            if part in {'all', 'answer'}:
+                lines += [r'\subsection*{Answer}']
+                if blocks.get(key):
+                    for block in blocks[key]:
+                        if block['text'].strip():
+                            lines += [r'\subsubsection*{' + tex_escape(block['heading']) + '}', tex_escape(block['text'])]
+                else:
+                    lines += [tex_escape(answers.get(key, ''))]
+            if result and part in {'all', 'feedback'}:
                 grade = result['tasks'][key]
                 lines += [r'\subsection*{Tutor feedback}']
+                if task.get('scoring'):
+                    from latex_backend.writing.points import point_allocations
+                    limits = point_allocations(task)[key]
+                    profile = task['rubricCatalog'][task['profiles'][key]]
+                    for kind, checks in profile['checks'].items():
+                        lines += [r'\subsubsection*{' + tex_escape(profile.get('sectionTitles', {}).get(kind, kind)) + '}']
+                        for check in checks:
+                            criterion = kind + ':' + check['id']
+                            lines += [tex_escape(check['text']) + ': ' + str(grade.get('criterionScores', {}).get(criterion, 0)) + ' / ' + str(limits[criterion]) + r'\par']
                 if key in result['taskBands']:lines += ['Estimated task band: ' + str(result['taskBands'][key])]
                 if grade.get('overall'):
                     lines += [tex_escape(grade['overall'])]
+                if grade.get('annotations'):
+                    lines += [r'\subsection*{Sentence feedback}']
+                    for note in grade['annotations']:
+                        lines += [r'\paragraph{' + tex_escape(note['kind'].title()) + '}', tex_escape(note['quote'])]
+                        if note['replacement']:
+                            lines += ['Suggested correction: ' + tex_escape(note['replacement'])]
+                        if note['comment']:
+                            lines += [tex_escape(note['comment'])]
                 for code, score in grade['scores'].items():
                     lines += [r'\paragraph{' + code + ': ' + str(score) + '}', tex_escape(grade['notes'].get(code, ''))]
                 for section in grade['sections']:
@@ -616,10 +662,12 @@ class Writing:
                             lines += [r'\begin{itemize}']
                             lines += [r'\item[--] ' + tex_escape(labels[state] + ': ' + check['text']) for check, state in reviewed]
                             lines += [r'\end{itemize}']
-        if result:
+        if result and part in {'all', 'feedback'}:
             lines += [r'\section*{Summary}', tex_escape(result['summary']), tex_escape(result['recommendations'])]
             if 'scorePercent' in result:
                 lines += ['Checklist score: ' + str(result['scorePercent']) + r'\%']
+            if 'totalScore' in result:
+                lines += ['Total score: ' + str(result['totalScore']) + ' / ' + str(result['maxScore'])]
             if result['writingBand'] is not None:
                 lines += ['Estimated Writing band: ' + str(result['writingBand'])]
         lines += [r'\end{document}']

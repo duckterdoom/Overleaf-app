@@ -151,7 +151,7 @@ def main():
                                  os.getenv('LATEX_PUBLIC_URL', ''), 'environment')
                 target = save_private(value, project=args.project, replace=args.replace)
             print('Private Google OAuth config saved: ' + str(target))
-            print('Run scripts/run-python-web.bat normally. No OAuth environment commands are needed.')
+            print('Run apps/backend/tools/run-python-web.bat normally. No OAuth environment commands are needed.')
         else:
             value = settings()
             print('Google OAuth: ' + ('configured (' + value.source + ')' if value.enabled else 'not configured'))

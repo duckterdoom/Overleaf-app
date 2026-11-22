@@ -19,8 +19,8 @@ Các dependency cần thiết đã khai báo trong `apps/desktop/pyproject.toml`
 
 ```powershell
 uv sync --project apps/desktop --extra desktop --extra dev --extra mongo --frozen
-scripts\run-python-desktop.bat --build
-scripts\run-python-desktop.bat
+apps\backend\tools\run-python-desktop.bat --build
+apps\backend\tools\run-python-desktop.bat
 ```
 
 Launcher desktop cũng kiểm các import mới và tự cài dependency nếu thiếu. Mã chuyển đổi ở trong package của dự án, không cần ổ D:\ilovepdf-python khi chạy hoặc đóng gói wheel. Xem `docs/PDF_TO_WORD_EXPORT.md` cho luồng xuất và kiểm chứng. Các thư viện AI trong venv_ai không được script runtime này sử dụng nên không cài theo.

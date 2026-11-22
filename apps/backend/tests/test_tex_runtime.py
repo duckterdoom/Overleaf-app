@@ -91,6 +91,16 @@ def test_journal_article_import_dependencies_are_installed_and_probed():
     assert {'titling.sty', 'abstract.sty'} <= set(profile['probes'])
 
 
+def test_jaes_import_dependencies_are_installed_and_probed():
+    profile = runtime.manifest()
+    # jaes.cls requires these beyond the built-in article catalog. Checking
+    # probes ensures an existing managed installation is repaired on startup.
+    dependencies = {'xurl', 'doi', 'draftwatermark', 'lineno', 'unicode-math',
+                    'siunitx', 'cleveref'}
+    assert dependencies <= set(profile['packages'])
+    assert {name + '.sty' for name in dependencies} <= set(profile['probes'])
+
+
 def test_explicit_broken_distribution_is_not_modified(monkeypatch, capsys):
     monkeypatch.setattr(runtime, 'check', lambda *a, **kw: {'ready': False, 'missing': ['example']})
     monkeypatch.setattr(runtime, 'install_distribution', lambda *a: pytest.fail('Must not change configured system TeX'))

@@ -1,6 +1,6 @@
 # Networking server Python
 
-Với môi trường TeX cho **web API/compile**, xem [TEX_RUNTIME_SETUP.md](../../docs/TEX_RUNTIME_SETUP.md) và `Dockerfile.tex-runtime`. Dockerfile/compose trong tài liệu bên dưới vẫn là TCP/TLS cũ, không phải web server và không dùng để chuẩn bị package LaTeX cho browser.
+Với môi trường TeX cho **web API/compile**, xem [TEX_RUNTIME_SETUP.md](../../docs/AI_Handoff.md) và `Dockerfile.tex-runtime`. Dockerfile/compose trong tài liệu bên dưới vẫn là TCP/TLS cũ, không phải web server và không dùng để chuẩn bị package LaTeX cho browser.
 
 Đây là server TCP/TLS cộng tác tương ứng M3/M4, **không phải API file/compile local** của cửa sổ desktop. Không cần Java, frontend, bộ TeX hay pywebview trên server.
 
@@ -12,12 +12,12 @@ export OVERLEAF_PORT=8080
 export OVERLEAF_TOKEN='replace-with-a-random-secret-at-least-24-characters'
 export OVERLEAF_TLS_CERT=/etc/overleaf/server-cert.pem
 export OVERLEAF_TLS_KEY=/etc/overleaf/server-key.pem
-sh scripts/run-python-server.sh
+sh apps/backend/tools/run-python-server.sh
 ```
 
-Windows dùng `scripts\run-python-server.bat`. Local demo có thể dùng loopback mặc định, không TLS/token. Kết nối bên ngoài localhost yêu cầu TLS và token ≥24 ký tự ở cả client/server. Chứng chỉ PEM phải có SAN khớp hostname; client xác minh hostname và CA, không có chế độ bỏ qua xác minh. Đường dẫn key cần quyền đọc cho tài khoản chạy server, không commit key hoặc token vào Git.
+Windows dùng `apps\backend\tools\run-python-server.bat`. Local demo có thể dùng loopback mặc định, không TLS/token. Kết nối bên ngoài localhost yêu cầu TLS và token ≥24 ký tự ở cả client/server. Chứng chỉ PEM phải có SAN khớp hostname; client xác minh hostname và CA, không có chế độ bỏ qua xác minh. Đường dẫn key cần quyền đọc cho tài khoản chạy server, không commit key hoặc token vào Git.
 
-Client: mở nút **Cộng tác**, nhập host/port/phòng/tên/token, bật TLS và chọn đường dẫn CA PEM nếu dùng CA riêng. Hai cửa sổ/máy dùng cùng room để đồng bộ `main.tex`. Console demo: `sh scripts/run-python-console.sh --host ... --port ... --tls --ca-file ...`; dùng `/offline`, `/reconnect`, `/show`, `/status` để kiểm queue/RESYNC.
+Client: mở nút **Cộng tác**, nhập host/port/phòng/tên/token, bật TLS và chọn đường dẫn CA PEM nếu dùng CA riêng. Hai cửa sổ/máy dùng cùng room để đồng bộ `main.tex`. Console demo: `sh apps/backend/tools/run-python-console.sh --host ... --port ... --tls --ca-file ...`; dùng `/offline`, `/reconnect`, `/show`, `/status` để kiểm queue/RESYNC.
 
 Compose mẫu: chuẩn bị `deploy/python/certs/server-cert.pem`, `server-key.pem` và biến môi trường `OVERLEAF_TOKEN`, rồi chạy `docker compose -f deploy/python/compose.yaml up --build -d`. Đây là cấu hình mẫu chưa chạy Docker trên máy kiểm thử hiện tại; TCP/TLS bằng Python thật và tương thích với Java server đã được kiểm thử riêng.
 

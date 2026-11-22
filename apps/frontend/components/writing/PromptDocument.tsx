@@ -1,9 +1,10 @@
 "use client";
 import {useEffect, useState} from 'react';
-import PdfViewer from '../PdfViewer';
+import PdfViewer from '../editor/PdfViewer';
 import {useWritingApi} from '../../lib/writing/context';
 import type {PromptFile} from '../../lib/writing/types';
 import {errorText} from '../../lib/parity';
+import QuestionVisual from './QuestionVisual';
 
 export default function PromptDocument({file, language='vi', focused=false}: {file: PromptFile; language?: string; focused?: boolean}) {
     const {request, promptUrl} = useWritingApi();
@@ -16,11 +17,11 @@ export default function PromptDocument({file, language='vi', focused=false}: {fi
         return()=>{active=false;};
     },[file.id]);
     return <div className={`writing-prompt-document${focused?' writing-focused-prompt':''}`} data-prompt-file={file.id}>
-        <p className="writing-notice">Source from LaTeX Studio: <strong>{file.sourcePath}</strong>{file.pages ? ` · ${file.pages} pages` : ''}.
+        <p className="writing-notice">{file.origin==='upload'?'Question image: ':'Source from LaTeX Studio: '}<strong>{file.sourcePath}</strong>{file.pages ? ` · ${file.pages} pages` : ''}.
             <span> The question snapshot is preserved when assigned.</span></p>
         {error && <p className="writing-error" role="alert">{error}</p>}
         {file.kind==='pdf' && <div className="writing-prompt-pdf">{pdf ? <PdfViewer reading={focused} data={pdf} stale={false} language={language}/> : !error && <p role="status">Loading imported question…</p>}</div>}
-        {file.kind==='image' && <img src={promptUrl(file.id)} alt={'Question from '+file.sourcePath}/>}
+        {file.kind==='image' && (focused?<QuestionVisual src={promptUrl(file.id)} alt={'Question from '+file.sourcePath}/>:<img src={promptUrl(file.id)} alt={'Question from '+file.sourcePath}/>)}
         {file.kind==='text' && <small>Text imported from source.</small>}
     </div>;
 }

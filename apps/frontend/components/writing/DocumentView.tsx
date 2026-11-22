@@ -4,7 +4,7 @@ import { Code2, FileText, FileUp, RefreshCw } from "lucide-react";
 import { compile, type Project } from "../../lib/api";
 import { useWritingApi } from "../../lib/writing/context";
 import { errorText } from "../../lib/parity";
-import PdfViewer from "../PdfViewer";
+import PdfViewer from "../editor/PdfViewer";
 
 export default function DocumentView({
     assignmentId,

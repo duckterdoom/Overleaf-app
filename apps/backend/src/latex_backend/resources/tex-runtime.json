@@ -14,11 +14,13 @@
     "footmisc", "colortbl", "tools", "multirow", "microtype", "fancyhdr", "lastpage", "caption",
     "booktabs", "enumitem", "setspace", "titlesec", "titling", "abstract", "tocloft", "tcolorbox", "environ", "trimspaces",
     "pgfplots", "float", "wrapfig", "adjustbox", "listings", "algorithm2e", "algorithms", "algorithmicx",
-    "newtx", "silence", "cite", "xpatch", "xstring", "soul", "psnfss", "courier", "helvetic"
+    "newtx", "silence", "cite", "xpatch", "xstring", "soul", "psnfss", "courier", "helvetic",
+    "xurl", "doi", "draftwatermark", "lineno", "unicode-math", "siunitx", "cleveref"
   ],
   "probes": ["footmisc.sty", "colortbl.sty", "booktabs.sty", "multirow.sty", "microtype.sty", "fancyhdr.sty",
     "lastpage.sty", "caption.sty", "subcaption.sty", "enumitem.sty", "setspace.sty", "titlesec.sty", "titling.sty", "abstract.sty", "tocloft.sty",
     "tcolorbox.sty", "environ.sty", "trimspaces.sty", "pgfplots.sty", "float.sty", "wrapfig.sty", "adjustbox.sty",
     "listings.sty", "algorithm2e.sty", "algorithm.sty", "algpseudocode.sty", "newtxtext.sty", "newtxmath.sty",
-    "silence.sty", "cite.sty", "xpatch.sty", "xstring.sty", "soul.sty", "tcrm1200.tfm", "texgyretermes-regular.otf"]
+    "silence.sty", "cite.sty", "xpatch.sty", "xstring.sty", "soul.sty", "tcrm1200.tfm", "texgyretermes-regular.otf",
+    "xurl.sty", "doi.sty", "draftwatermark.sty", "lineno.sty", "unicode-math.sty", "siunitx.sty", "cleveref.sty"]
 }

@@ -1,0 +1,4 @@
+{
+  "uri": "mongodb+srv://USERNAME:PASSWORD@YOUR_CLUSTER/",
+  "database": "latex"
+}

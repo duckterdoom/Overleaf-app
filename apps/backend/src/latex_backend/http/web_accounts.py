@@ -10,6 +10,7 @@ import secrets
 import time
 from contextlib import AsyncExitStack, asynccontextmanager
 from urllib.parse import urlencode, urlsplit
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -31,6 +32,7 @@ FLOW_COOKIE = 'latex_google_flow'
 
 
 class Credentials(BaseModel):
+    role: Literal['student', 'tutor'] | None = None
     name: str = Field(default='', max_length=40)
     email: str = Field(default='', max_length=254)
     password: str = Field(default='', max_length=1024)
@@ -40,6 +42,11 @@ class Credentials(BaseModel):
 class RoleChoice(BaseModel):
     name: str = Field(min_length=1, max_length=40)
     role: str
+
+
+class RoleUpdate(BaseModel):
+    role: Literal['student', 'tutor']
+    previousRole: Literal['student', 'tutor']
 
 
 class WebAccounts:
@@ -211,7 +218,7 @@ class WebAccounts:
         @auth.post('/api/actions/register')
         def register(data: Credentials, request: Request):
             self.accounts.throttle(('register', request.client.host if request.client else 'local'))
-            user = self.accounts.signup(data.name, data.email, data.password)
+            user = self.accounts.signup(data.name, data.email, data.password, data.role)
             return self.signed_in(request, user, data.remember)
 
         @auth.post('/api/actions/login')
@@ -235,6 +242,11 @@ class WebAccounts:
         def onboarding(data: RoleChoice, request: Request):
             user = self.principal(request)
             return self.accounts.public(self.accounts.choose_role(user['id'], data.role, data.name))
+
+        @auth.post('/api/auth/role')
+        def change_role(data: RoleUpdate, request: Request):
+            current = self.principal(request)
+            return self.accounts.public(self.accounts.change_role(current['id'], data.previousRole, data.role))
 
         @auth.post('/api/actions/profile')
         def profile(data: dict, request: Request):
@@ -325,7 +337,7 @@ class WebAccounts:
         if invalid:
             return await JSONResponse({'message': 'Invalid request origin or host'}, 403)(scope, receive, send)
         # Bound auth payloads before JSON parsing. File upload routes retain their own limits.
-        public_auth = path == '/api/session' or path.startswith(('/api/auth/', '/api/shares/', '/api/writing/')) or '/sharing' in path or (path == '/api/projects' and request.method == 'GET') or path in {
+        public_auth = path == '/api/session' or path.startswith(('/api/auth/', '/api/shares/', '/api/writing/')) or '/sharing' in path or (path == '/api/projects' and request.method == 'GET') or path == '/api/projects/archive' or path in {
             '/api/actions/register', '/api/actions/login', '/api/actions/logout',
             '/api/actions/offline', '/api/actions/profile'}
         if public_auth:
@@ -333,7 +345,8 @@ class WebAccounts:
                 body = bytearray()
                 async for chunk in request.stream():
                     body.extend(chunk)
-                    if len(body) > (4 * 1024 * 1024 if path.startswith('/api/writing/') else 16384):
+                    limit = 12 * 1024 * 1024 if path == '/api/writing/prompt-images' else 4 * 1024 * 1024 if path.startswith('/api/writing/') else 16384
+                    if len(body) > limit:
                         return await JSONResponse({'message': 'Request too large'}, 413)(scope, receive, send)
                 async def replay():
                     return {'type': 'http.request', 'body': bytes(body), 'more_body': False}
@@ -378,7 +391,10 @@ class WebAccounts:
                     return {'type': 'http.request', 'body': bytes(body), 'more_body': False}
                 receive = replay_action
                 project = data.get('project') or None
-            if project:
+            if path.startswith('/api/templates/'):
+                # Shared read-only catalog previews, authenticated above; never a user's project store.
+                app, store, permission = self.shell, self.state.store, 'owner'
+            elif project:
                 app, store, permission = await self.project_workspace(project, user)
                 if permission != 'owner' and action_name:
                     readable = {'symbols', 'synctex', 'editing'}

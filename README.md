@@ -1,272 +1,182 @@
-# Latex — Task Writing & LaTeX Studio
+# Latex
 
-**Task Writing** is the learning and assessment workspace; **LaTeX Studio** is the document editor. Open either from the main navigation. The home page explains three paths: practise writing, develop a paper, and publish with LaTeX. Task Writing does **not** require creating a document project. The interface is English; questions, answers and source documents keep their original language.
+A browser-based workspace combining **Task Writing** for teaching and assessment with **LaTeX Studio** for collaborative documents.
 
-### Task Writing workflow
+The backend uses **Python / FastAPI / PyMongo**. The frontend uses **Next.js / React / TypeScript**, CodeMirror, PDF.js and SuperDoc. MongoDB is the primary database; TeX compilation and PDF-to-Word conversion run on the backend.
 
-1. Tutor opens **Task Writing → Courses & groups**, creates a course/group and adds registered students by email or shares its join code.
-2. In **Question library**, create a question directly or optionally select a source project/file from LaTeX Studio. Save it **Private** (author only) or **Public** (reusable by authenticated tutors in this application).
-3. Choose **Introduction only / Body only / Conclusion only / Whole paper**. Customize criteria by adding, changing or removing sections and checklist items. Each question and exercise keeps its own rubric snapshot; editing a template does not change existing exercises.
-4. Use a question for an exercise and choose **Practice / Assigned exercise / Examination**, then its course/group. Enrolled students can start practice themselves; examinations retain password, mandatory duration and opening/closing times.
-5. Students write a whole answer or organize it **By paragraph / paper section**. Tutors read the immutable submission beside paragraph checklists and publish feedback. Partial-writing exercises receive a checklist percentage; whole IELTS tasks retain practice-band assessment. Report/Research have feedback without IELTS bands.
-6. Section headings and text are retained when generating LaTeX/PDF. Routine previews and feedback downloads do not create projects; **Open in LaTeX Studio** is an explicit document-creation action for independent Writing. Project-linked writing still saves result files in its original project.
+## Requirements
 
-Public questions currently span the application's tutor community; faculty/department scoping is not implemented. Course enrollment is separate from editor sharing. Existing project-shared assignments retain their original access; new Course/Group assignments enforce explicit enrollment. No existing database records are automatically moved or translated.
+- Python **3.12+** with virtual-environment support.
+- Node.js **22.13+** and npm to build the frontend.
+- A reachable MongoDB server or Atlas cluster.
+- Internet access for initial dependency and TeX downloads.
+- Optional **Pandoc** for Word/Markdown imports and legacy text-based Word conversion. Install it on the backend's PATH or set `OVERLEAF_PANDOC`. PDF-to-DOCX export uses the Python converter separately.
 
-Review, API and verification details: [Task Writing review](docs/TASK_WRITING_REVIEW.md).
+A website user only needs a browser. Python, TeX and conversion tools belong on the machine serving the application.
 
-**Bài kiểm tra có mật khẩu:** trong Giao bài chọn Bài kiểm tra, đặt thời lượng bắt buộc và giờ mở/đóng. Học viên có mục Bài kiểm tra riêng; đề, bài nộp và kết quả có tab Bài tập/Bài kiểm tra. Bộ tiêu chí chấm giữ nguyên. Xem [hướng dẫn](docs/UNIFIED_ASSESSMENT.md).
+## Local setup
 
-**Chấm bài chung IELTS / Report / Research:** thuộc Task Writing, có câu hỏi trực tiếp hoặc nhập từ editor, Course/Group và tiêu chí tùy biến theo từng bài. Rubric templates là mẫu để bắt đầu, không ép mọi bài dùng chung cấu hình. Luồng chấm trong dự án cũ vẫn được hỗ trợ. Xem [luồng hiện hành](docs/TASK_WRITING_REVIEW.md); [hướng dẫn trước đây](docs/UNIFIED_ASSESSMENT.md) mô tả thêm cơ chế snapshot, band và bài kiểm tra.
+Run commands from the repository root.
 
-**Bộ đề IELTS có sẵn:** chọn **Dự án mới → Đề mẫu IELTS Writing**. Chỉ một template chứa đủ 21 dạng Task 1/2, hình LaTeX sửa được, từng tệp câu hỏi riêng để compile và giao bài, cùng khung bài làm. Xem [hướng dẫn template IELTS](docs/IELTS_PROJECT_TEMPLATES.md).
+### Configure MongoDB
 
-Compile/PDF → Word đã có cache hợp lệ, gộp request chuyển Word trùng và giới hạn job CPU chung giữa các workspace. Xem [hiệu năng và cấu hình cho server](docs/COMPILE_WORD_PERFORMANCE.md); tối ưu cache không thay thuật toán converter gốc.
-
-**Backend web dùng MongoDB làm nguồn dữ liệu chính.** Điền kết nối Atlas/server trong `config/mongodb.local.json` (file riêng, gitignore). Nhiều máy dev có thể cùng dùng database; source/ảnh/history/Word draft được lưu theo phiên bản trong MongoDB rồi tải về working copy của mỗi backend để compile. Không đổi `storage_home` qua lại giữa các máy. Xem [dùng chung dữ liệu nhiều máy](docs/SHARED_MONGODB_FILES.md) và [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md). Dữ liệu SQLite/JSON cũ vẫn cần migrate có kiểm chứng; không chạy lại migration trên database đã chuyển xong.
-
-Web có **chia sẻ riêng tư theo lời mời** và **chia sẻ bằng liên kết**, quyền Viewer/Editor, quản lý/thu hồi quyền và danh sách Shared with you thật. Editor đồng bộ nội dung trực tiếp qua WebSocket bằng CodeMirror OT, kèm con trỏ có tên và avatar; thay đổi được lưu server trước khi xác nhận. Người nhận cần đăng nhập; lời mời hiện được owner tự copy/gửi, chưa có gửi email tự động. Xem [WEB_PROJECT_SHARING.md](docs/WEB_PROJECT_SHARING.md).
-
-**Chia sẻ dùng chung cho LaTeX và IELTS:** trong hộp thoại Chia sẻ, chủ sở hữu chọn/đổi vai trò **Tutor hoặc Học viên** riêng cho mỗi thành viên, độc lập với quyền xem/chỉnh sửa. Vai trò chỉ áp dụng trong dự án, không đổi tài khoản toàn hệ thống. Tutor được cấp quyền chỉnh sửa có thể chấm bài trong dự án; Học viên chỉ xem bài nộp/kết quả của mình. Dữ liệu IELTS cũ có nút đưa vào dự án sau xác nhận. Xem [phạm vi quyền IELTS](docs/IELTS_WRITING_WEB.md).
-
-IELTS giữ cùng kết nối hiện diện của dự án với editor: avatar có tên/vai trò vẫn hiện khi chuyển giữa hai phần. Tutor giao đề **từ tệp có sẵn trong dự án** (.tex, PDF, ảnh, TXT/Markdown), có thể chọn trang riêng cho Task 1/2. Học viên xem bản PDF/ảnh của đề ngay trong màn làm bài; thời lượng và hạn nộp vẫn dùng cấu hình Tutor đã đặt. Bản đề được chốt khi giao, không đổi theo lần sửa file sau đó.
-
-Đăng ký/đăng nhập web đã có bước chọn **Tutor hoặc Student**, phiên riêng và vùng dự án riêng theo tài khoản. Google sign-in được tích hợp nhưng cần cấu hình OAuth client của bạn trước khi sử dụng. Xem [luồng tài khoản và cấu hình Google](docs/WEB_AUTH_ONBOARDING.md). Dự án chung cũ được giữ nguyên, không tự gán cho tài khoản mới.
-
-**Task Writing trong workspace dự án:** icon mũ tốt nghiệp vẫn mở luồng có liên kết dự án, giữ header/rail, presence và quyền cộng tác. Đây là lựa chọn tích hợp LaTeX, không còn là điều kiện bắt buộc để dùng Task Writing. Phiếu LaTeX được công bố vẫn lưu trong `result/` của chính dự án.
-
-Bản web lưu dự án, source, lịch sử và Word draft **trên server chạy Python**. Trình duyệt upload dữ liệu và tải bản sao về; người dùng không chọn đường dẫn lưu vật lý của server. Cấu trúc backend và cấu hình dữ liệu: [WEB_BACKEND_ARCHITECTURE.md](docs/WEB_BACKEND_ARCHITECTURE.md).
-
-Ứng dụng soạn thảo LaTeX chạy trong trình duyệt, backend **Python/FastAPI** chạy trên máy local và phục vụ cả giao diện **Next.js** lẫn API tại cùng địa chỉ. Có thể dùng editor, tab nhiều tài liệu, PDF/Word preview, compile và upload mà không cài pywebview/WebView2. Web tách tài khoản/dự án cá nhân, dùng MongoDB cho identity/session/ACL/metadata và nghiệp vụ IELTS; chưa phải dịch vụ public Internet. Đường chạy desktop cũ được giữ để tương thích.
-
-## Chạy local web
-
-Cần Python **3.12+** và Node.js **22.13+** để build. Launcher tự kiểm tra bộ TeX; máy thiếu công cụ/package sẽ tải TinyTeX riêng cho dự án, chuẩn bị gói và kiểm tra compile trước khi chạy web. Lần đầu cần mạng và dung lượng cho bộ TeX; không cần R hay cài LaTeX thủ công. Đóng app desktop cũ trước khi dùng cùng thư mục dữ liệu. Xem [chuẩn bị TeX cho dev/test và server](docs/TEX_RUNTIME_SETUP.md).
-
-Windows, tại root repository:
+If no local configuration exists, copy the example:
 
 ```powershell
-.\scripts\run-python-web.bat --build
-.\scripts\run-python-web.bat
+Copy-Item config/mongodb.local.example.json config/mongodb.local.json
 ```
 
-Mở **http://127.0.0.1:8000/**; launcher tự mở trình duyệt. Dừng bằng **Ctrl+C** ở terminal. Nếu cổng đang bận, dùng `scripts\run-python-web.bat --port 8001`. Để chỉ chạy server: thêm `--no-browser`.
+On macOS/Linux use `cp` instead of `Copy-Item`. Edit the local file with your own connection information:
 
-**Máy Windows vừa clone:** không cần lệnh `py` nếu `python` đã chạy được phiên bản 3.12+. Script tự thử `python` → `python3` → `py -3`, dùng Python đang cài để tạo môi trường và cài thư viện. Không copy `.venv`, `target` hay `node_modules` từ máy khác. Chỉ khi không tìm thấy Python tương thích mới thử tải runtime qua `uv` nếu có. Có thể chỉ rõ Python đã cài bằng `$env:LATEX_PYTHON = 'C:\duong-dan\python.exe'` trước khi chạy hai lệnh trên. Xem [xử lý lỗi Python khi clone](docs/WINDOWS_PYTHON_STARTUP.md).
-
-MongoDB vẫn cần kết nối riêng của nhóm trên máy mới theo [MONGODB_PRIMARY.md](docs/MONGODB_PRIMARY.md); không commit URI/mật khẩu. Bộ TeX được launcher tự chuẩn bị, không copy `target/TinyTeX` từ máy khác. `--build` chuẩn bị Python/TeX/UI rồi thoát; lệnh không có `--build` mới chạy backend và kết nối database. `run-python-server.bat` là server TCP cũ, không phải lệnh chạy web.
-
-**Google cho nhóm dev:** nhận JSON Google Web OAuth của nhóm qua kênh riêng, chạy `scripts\setup-google-auth.bat "D:\private\google-team.json"` **một lần trên mỗi tài khoản máy**. Các lần chạy và clone sau tự đọc cấu hình đã lưu, không cần nhập `$env:...`. Hoặc đặt file ngay tại `config/google.local.json` (gitignore). Người quản lý đã có biến Google trong terminal có thể tạo file chia sẻ riêng bằng `scripts\setup-google-auth.bat --from-env --project`. Kiểm tra bằng `scripts\setup-google-auth.bat --check`; hướng dẫn/callback/độ ưu tiên ở [WEB_AUTH_ONBOARDING.md](docs/WEB_AUTH_ONBOARDING.md). Không đặt secret thật trong Git.
-
-macOS/Linux:
-
-```sh
-sh scripts/run-python-web.sh --build
-sh scripts/run-python-web.sh
+```json
+{
+  "uri": "mongodb+srv://USERNAME:PASSWORD@YOUR_CLUSTER/",
+  "database": "latex"
+}
 ```
 
-Không cần cài thư viện GUI cho bản web. Lần đầu cần mạng để cài dependency; các lần sau có thể dùng lại thư viện, UI build và gói TeX đã chuẩn bị. Launcher ưu tiên `uv.lock` khi có uv, fallback pip nếu không có. Dữ liệu mặc định tiếp tục ở `~/OverleafDesktopPython` để giữ dự án cũ; đổi bằng `--home` hoặc `OVERLEAF_WEB_HOME`.
+Configure the database user and Atlas IP access list for the backend machine. Alternatively, use `LATEX_MONGO_URI` and `LATEX_MONGO_DB`. Do not commit credentials or overwrite an existing local configuration. MongoDB failures do not silently switch to SQLite.
 
-Đã kiểm thử local web trên Windows trong môi trường Python sạch **không có pywebview**. Xem [LOCAL_WEB.md](docs/LOCAL_WEB.md) cho cấu hình, phiên truy cập, phạm vi MongoDB và kết quả kiểm thử. Sau khi sửa UI cần build lại; không cần chạy một Next.js server riêng cho chế độ này.
+### Build and start
 
-## Công nghệ và luồng hoạt động
+Windows:
 
-| Thành phần | Công nghệ / vai trò |
-| --- | --- |
-| Local web | Trình duyệt + FastAPI/Uvicorn cùng origin; cookie HttpOnly/SameSite cho phiên local |
-| Desktop cũ (tùy chọn) | Python 3.12+, pywebview, hộp thoại file/thư mục native |
-| Giao diện | Next.js static export, React, TypeScript, Tailwind CSS, Lucide icons |
-| Editor | CodeMirror: highlight, folding, tìm/thay thế, chèn LaTeX |
-| Backend local | FastAPI/Uvicorn; cookie ở web, bearer token ở desktop; bind loopback |
-| Compile | latexmk với pdfLaTeX, XeLaTeX hoặc LuaLaTeX; TeX cài trên máy hoặc TinyTeX đi kèm môi trường local |
-| PDF | PDF.js, pypdf và SyncTeX; PDF thật, export cùng bytes với preview |
-| Cộng tác | Server Python riêng: TCP/TLS, wire v1/v2, OT/Lamport, ACK và RESYNC |
-| Dữ liệu web | MongoDB/PyMongo cho tài khoản/quyền/metadata và source/binary chia chunk; working copy/artifact/cache ở từng backend |
-
-Luồng local web: **trình duyệt → UI Next.js đã build → API/WebSocket Python cùng origin → MongoDB + working copy/TeX/PDF**. Desktop cũ giữ TCP/TLS để tương thích. Mỗi backend có OT riêng; source giữa các backend đồng bộ bằng shared manifests/CAS và polling, presence/chat vẫn trong từng backend. Mỗi process dùng home riêng. Node.js dùng để build, Python phục vụ UI/API/WebSocket.
-
-## Chạy desktop cũ từ source (tùy chọn)
-
-Chuẩn bị Python **3.12+**, Node.js **22.13+** để build, native WebView và bộ TeX có `latexmk`. Windows dùng WebView2; macOS dùng WebKit; Linux cần GTK/WebKit hoặc Qt phù hợp với pywebview. Mac/Linux chưa được kiểm thử native trong lần nghiệm thu Windows hiện tại.
-
-Windows, chạy tại root repository:
-
-```bat
-scripts\run-python-desktop.bat --build
-scripts\run-python-desktop.bat
+```powershell
+.\apps\backend\tools\run-python-web.bat --build
+.\apps\backend\tools\run-python-web.bat
 ```
 
 macOS/Linux:
 
 ```sh
-sh scripts/run-python-desktop.sh --build
-sh scripts/run-python-desktop.sh
+sh apps/backend/tools/run-python-web.sh --build
+sh apps/backend/tools/run-python-web.sh
 ```
 
-`--build` chuẩn bị dependency và build UI rồi thoát; lệnh tiếp theo mở ứng dụng. Launcher tự tạo `apps/backend/.venv` nếu thiếu. Sau khi sửa frontend, chạy lại `--build`. macOS cũng có launcher `Overleaf Python Desktop.command`.
+`--build` prepares dependencies and TeX, builds the frontend, then exits. The second command starts **http://127.0.0.1:8000**. Keep the terminal open; Ctrl+C stops the server. Rebuild after frontend changes.
 
-Windows kiểm tra cả khả năng chạy Python, không chỉ sự tồn tại của `.venv`. Nếu môi trường hỏng, `scripts/ensure-python.ps1` ưu tiên Python đã cài trên máy; nếu không có mới dùng uv để chuẩn bị Python tại `target/python-runtimes`. Môi trường cần tạo lại được đổi tên thành `.venv.backup-...` để giữ bản dự phòng. Không xóa thư mục runtime khi `.venv` còn tham chiếu đến nó.
+If port 8000 is occupied, add `--port 8001`. Add `--no-browser` to disable automatic browser opening. Set `LATEX_DATA_DIR` or pass `--home` to configure the server working directory. The existing default `~/OverleafDesktopPython` remains for compatibility.
 
-Compile cần TeX Live/MacTeX/MiKTeX hoặc TinyTeX phù hợp hệ điều hành. Windows hiện có thể dùng `target/TinyTeX/bin/windows/latexmk.exe`; thư mục này là công cụ local, **không được Git đóng gói sẵn cho máy khác**. Chọn `latexmk` trong **Cài đặt → Biên dịch** nếu app chưa tìm thấy. Không chép TinyTeX Windows hay `.venv` Windows sang macOS.
+The launcher prepares a managed TeX runtime. Repair/check it with `apps\backend\tools\setup-tex.bat` or `sh apps/backend/tools/setup-tex.sh`. The former root `scripts/` folder has been replaced by `apps/backend/tools/`.
 
-Mẫu ZIP **Universal manuscript template for Optica Publishing Group journals** cần thêm các gói và font ngoài TinyTeX tối thiểu. Trên Windows với TinyTeX local của dự án, chạy `powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\install-optica-tex.ps1`, rồi bấm **Recompile**. Script cài `colortbl`, `newtx`, `silence`, `lastpage`, `cite`, font Courier và các dependency của mẫu; kiểm tra cả `.sty` lẫn font metrics sau khi cài. Cần mạng khi tải gói. Nếu dùng TeX hệ thống khác, cài các gói tương ứng bằng trình quản lý TeX đó.
+### Optional Google login
 
-Git cần cho import GitHub public; Pandoc cần cho Word/Markdown. Lần tải dependency/package/import online cần mạng; soạn thảo và compile local hoạt động offline khi đã chuẩn bị đủ công cụ và gói TeX. Đây là bản chạy từ source, chưa có bộ cài độc lập `.exe`/`.app`/`.dmg` đã ký.
+Email/password authentication works without Google configuration. For Google sign-in, create a Google Web OAuth client and configure its credentials privately using `config/google.local.example.json` as the starting point for `config/google.local.json`.
 
-## Chức năng hiện có
-
-- Tài khoản local, đăng nhập/remember/offline, hồ sơ/avatar, cài đặt Anh/Việt, theme và hoạt động sử dụng.
-- Quản lý dự án: tìm kiếm, icon/màu, đổi tên/thùng rác, thư mục lưu tùy chọn và chuyển vị trí có backup; 29 template gallery cùng blank/example, nguồn Anh/Việt.
-- Import ZIP/thư mục/Word/Markdown/GitHub public HTTPS; tạo file/thư mục lồng nhau, upload nhiều file/thư mục, kéo thả/dán ảnh, copy từ dự án khác hoặc build output, tải từ HTTPS và nhập `.bib`.
-- Editor có outline kéo đổi chiều cao, toolbar Math/Link/Comment/Reference/Citation/Figure/Table/List/Indent, autosave, lịch sử phiên bản/nhãn/so sánh/khôi phục và bố cục split/editor/PDF/focus.
-- Compile thủ công hoặc Auto Compile, Stop, timeout tùy chỉnh, log và Error Explainer Anh/Việt; kiểm tra toolchain/package. Cài package trong app chỉ áp dụng cho TinyTeX đi kèm và cần người dùng xác nhận.
-- **Nhiều tài liệu trong một dự án:** chọn `.tex` ở ô **Tệp biên dịch** (ví dụ `ielts_report.tex`) rồi Recompile/F5/Ctrl+Enter. Mở file có `\documentclass` sẽ tự chọn file đó; mở file nội dung được include giữ nguyên file gốc đang chọn. Không đổi `main` mặc định của dự án. Hai dãy tab cho nguồn và các bản `tên-file.pdf`/`tên-file.docx`, có nút đóng; đổi tab lưu trước và giữ bản preview riêng. Word phân trang chỉnh sửa/lưu theo từng file; đồng bộ chữ LaTeX cũ vẫn chỉ áp dụng cho tệp chính. Tab/PDF cache nằm trong phiên làm việc, DOCX đã lưu được giữ trên đĩa. Báo cáo IELTS cần các gói `tcolorbox`, `environ`, `trimspaces` cùng bộ TeX thông dụng.
-- Preview PDF cuộn nhiều trang, mục lục/link, zoom, cửa sổ PDF riêng và SyncTeX hai chiều. Export dùng đúng snapshot bytes đang preview; nguồn thay đổi hoặc compile lỗi sẽ chặn export cho đến khi compile thành công.
-- Cộng tác `main.tex`: TCP/TLS, presence/cursor, offline queue, reconnect và RESYNC. Chưa đồng bộ toàn bộ cây file; room/queue nằm trong RAM, chưa có CRDT đầy đủ hoặc phân quyền theo tài khoản.
-
-Nút Comment mở Review: nhận xét gắn đoạn chọn/dòng, trả lời, giải quyết/mở lại và lọc theo file/tổng quan. Nhận xét lưu local trong `.overleaf-review.json` của dự án, không chèn `%` vào source và chưa đồng bộ qua phòng TCP. Zotero/Mendeley/ReadCube dùng nhập `.bib`, chưa có OAuth. GitHub import chưa phải Git branch/merge.
-
-Thanh icon ngoài cùng bên trái workspace chuyển giữa **Tệp/Outline**, **Review** và **Chat cộng tác**; chỉ một panel hiện mỗi lần, bấm lại icon đang chọn hoặc nút đóng để ẩn. Panel kéo đổi chiều rộng được. Chat hiện là giao diện chờ tích hợp nhiều người dùng, chưa gửi/nhận tin nhắn.
-
-**Chế độ tập trung:** vào từ Bố cục hoặc `Ctrl/Cmd+Shift+M`. Nhấn **Esc** để thoát; thanh trên cùng vẫn có **Bố cục → Thoát chế độ tập trung** và nút **Thoát tập trung · Esc**. Thoát sẽ giữ bố cục editor/PDF đã chọn.
-
-### Chỉnh sửa Word trong workspace và export DOCX
-
-Cạnh **PDF preview** có tab **Word preview**. Mặc định **Word phân trang** mở trực tiếp DOCX từ bộ chuyển đổi gốc của bạn bằng SuperDoc, có trang, cột, hình, caption và header/footer. Có thể sửa trực tiếp, dùng toolbar định dạng, tự lưu sau khi ngừng gõ hoặc **Lưu Word** / `Ctrl/Cmd+S`. Nếu chưa có PDF, mở tab sẽ yêu cầu compile và hiển thị trạng thái chuyển đổi/phân trang.
-
-Nút tải xuống mở menu **Export PDF (.pdf)** / **Export Word (.docx)**. DOCX ban đầu dùng nguyên bộ chuyển đổi từ `D:\ilovepdf-python` đã đóng gói trong app: builder bài mẫu, Universal mặc định và patched pdf2docx fallback. Khi đã sửa Word, download lấy đúng bytes DOCX đã lưu từ trình soạn thảo. Export vẫn yêu cầu PDF/source hiện hành; nếu nguồn thay đổi trong lúc Word có sửa, app giữ draft và chặn export thay vì âm thầm ghi đè. **Tạo lại từ PDF** thay draft sau xác nhận, giữ revision trước đó.
-
-Mã nghiên cứu nằm trong [integrations/pdf2docx-research](integrations/pdf2docx-research/README.md); runtime trong `apps/backend/src/latex_backend/pdf_export`. Không cần thư mục nguồn cũ để chạy app. Chi tiết ở [PDF_TO_WORD_EXPORT.md](docs/PDF_TO_WORD_EXPORT.md).
-
-`.overleaf-docx/` giữ DOCX hiện tại, revision trước và metadata/checksum, không tham gia compile. Đổi tab, xem lịch sử, đổi bố cục hoặc quay về danh sách dự án sẽ lưu trước. Sửa Word phân trang được giữ trong DOCX, không tự sửa mã LaTeX.
-
-Nút **Đồng bộ chữ LaTeX** giữ chế độ cũ khi cần sửa chữ qua ánh xạ Word ↔ LaTeX; cần **Pandoc** (`PATH`, `OVERLEAF_PANDOC` hoặc `target/pandoc/pandoc.exe`). Chỉ chữ trong vùng ánh xạ duy nhất được ghi về nguồn; công thức, citation, macro và cấu trúc được bảo vệ. Chế độ này dùng bản HTML riêng `.overleaf-word.json`, không phải bản DOCX phân trang và không cung cấp bytes download. Chưa đồng bộ chỉnh sửa DOCX đầy đủ hai chiều với LaTeX.
-
-Đã kiểm bài journal mẫu: Word phân trang **6 trang, 8 ảnh**, sửa chữ → tự lưu → đổi tab → mở lại vẫn giữ nội dung; download trùng bytes DOCX đã sửa. Đây là render DOCX thực, không phải engine TeX; ngắt dòng/trang có thể khác PDF hoặc Microsoft Word tùy font và cấu trúc tài liệu.
-
-SuperDoc và worker được bundle local, tắt telemetry, không cần dịch vụ chỉnh Word trên cloud. Build tự chép worker qua `scripts/copy-worker.mjs`. SuperDoc dùng AGPL-3.0; dependency `@superdoc/docx-engine` có giấy phép riêng trong package. Giữ các thông báo giấy phép khi đóng gói/phân phối.
-
-Chất lượng chuyển PDF → DOCX phụ thuộc chính bộ converter gốc; không cam kết mọi tài liệu giống PDF tuyệt đối. Preview không tự thay bằng ảnh nguyên trang để giả lập khả năng chỉnh sửa.
-
-
-## Cấu trúc source
+For the default local URL, authorize this exact redirect URI:
 
 ```text
-Overleaf-app/
-├── apps/
-│   ├── backend/
-│   │   ├── pyproject.toml / uv.lock     # dependency Python và lock
-│   │   ├── src/latex_backend/           # package backend Python
-│   │   │   ├── entrypoints/            # CLI web, desktop tùy chọn và console
-│   │   │   ├── core/                   # cấu hình và application factory
-│   │   │   ├── http/                   # API/middleware và adapter HTTP
-│   │   │   ├── storage/                # project/file/state/history/repository
-│   │   │   ├── compilation/            # TeX, toolchain, SyncTeX, explainer
-│   │   │   ├── documents/              # Word/DOCX và báo cáo
-│   │   │   ├── collaboration/          # networking cũ và comment/review
-│   │   │   ├── pdf_export/             # converter gốc PDF → DOCX
-│   │   │   └── resources/              # template và rule lỗi độc lập Java
-│   │   └── tests/                      # unit/integration test và native smoke helpers
-│   └── frontend/
-│       ├── app/                        # trang dashboard/workspace, layout, CSS
-│       ├── components/                 # editor, PDF, history, settings, upload...
-│       ├── lib/                        # API client, state, i18n, snippet, PDF geometry
-│       ├── public/                     # tài nguyên tĩnh, PDF worker khi build
-│       ├── scripts/                    # bundle worker và test trình duyệt
-│       ├── package.json / package-lock.json
-│       └── next.config.ts              # static export → out/
-├── scripts/run-python-*                # launcher desktop/server/console .bat và .sh
-├── deploy/python/                      # Docker/Compose mẫu và hướng dẫn TLS
-├── docs/                               # bàn giao, đối chiếu, kế hoạch dọn Java
-├── examples/                           # nguồn LaTeX mẫu dùng chung
-├── LICENSE-TEMPLATES.md                 # giấy phép template cần giữ
-└── modules/, pom.xml, launcher Java     # mã cũ chờ dọn theo kế hoạch riêng
+http://127.0.0.1:8000/api/auth/google/callback
 ```
 
-Các file backend chính:
-
-Không còn file alias `api.py`, `store.py`, `compiler.py`... ở root package. Triển khai nằm trực tiếp trong các nhóm dưới đây; launcher đã trỏ sang `apps/backend`. Backend web không cần thư viện GUI.
-
-| File trong `apps/backend/src/latex_backend/` | Chức năng |
-| --- | --- |
-| `entrypoints/desktop.py` | Cửa sổ pywebview tùy chọn, native dialogs, export, lưu buffer khi đóng |
-| `core/config.py`, `core/application.py`, `entrypoints/web.py` | Đường dẫn dữ liệu, khởi tạo ứng dụng và CLI web |
-| `http/api.py`, `http/parity_api.py` | Phiên, route thao tác, upload, theo dõi thay đổi |
-| `storage/store.py` | Project/catalog, đường dẫn, server-managed storage, fingerprint |
-| `storage/state.py` | Account/profile/avatar/settings/activity, đọc dữ liệu Java cũ |
-| `storage/files.py` | Import/upload/copy/HTTPS, staging/rollback |
-| `storage/history.py` | Revision, nhãn, checksum, quota và restore có backup |
-| `compilation/compiler.py` | Tiến trình TeX, timeout/Stop, cache, snapshot PDF và chặn stale |
-| `compilation/toolchain.py` | Công cụ, preflight package/Biber; cài gói do quản trị server thực hiện |
-| `compilation/explainer.py`, `compilation/synctex.py` | Giải thích lỗi và điều hướng source ↔ PDF |
-| `documents/` | Word text-sync cũ, native DOCX workspace, báo cáo IELTS |
-| `writing/` | Task Writing: câu hỏi Private/Public, Course/Group, bài tập theo phần/cả bài, tiêu chí riêng, nháp, snapshot, chấm và xuất LaTeX |
-| `collaboration/network.py`, `collaboration/review.py`, `entrypoints/console.py` | TCP/TLS/OT cũ, comment/reply/resolve, console demo |
-| `storage/mongo.py`, `storage/mongo_store.py` | Kết nối/indexes và Store/State/History MongoDB chính cho web |
-| `storage/migration.py` | Chuyển SQLite/JSON, backup/đối chiếu/resume/rebind volume |
-| `storage/persistence.py` | Prototype M5 cũ, không phải đường persistence web chính |
-
-`apps/frontend/.next`, `out`, `node_modules`, `.venv` và `target` là output/công cụ local, không phải source. Riêng `target` hiện chứa cả TinyTeX, runtime và bằng chứng kiểm thử: không xóa toàn bộ để dọn Java.
-
-## Dữ liệu và chuyển từ Java
-
-**Web:** người vận hành cấu hình `LATEX_DATA_DIR` hoặc `--home`; working copy nằm ở `<data-dir>/users/<user-id>/projects/<id>`. MongoDB giữ ownership/metadata và source/binary đã publish; local copy dùng compile/cache. Không chọn/chuyển thư mục server trong giao diện. Dự án desktop ngoài vùng này cần nén ZIP rồi upload; bản gốc không bị sửa. Xem [shared storage nhiều máy](docs/SHARED_MONGODB_FILES.md) trước khi chuyển backend.
+Hostname/port changes require a matching Google callback. Google apps in Testing must include developers as test users. Check local configuration with:
 
 ```powershell
-$env:LATEX_DATA_DIR = 'D:\Latex-data'
-.\scripts\run-python-web.bat --no-browser
+.\apps\backend\tools\setup-google-auth.bat --check
 ```
 
-Khi publish cần backup database cùng dữ liệu local cần giữ. Bản hiện tại vẫn bind loopback; cần hoàn thiện trusted proxy/HTTPS, presence phân tán và worker TeX cách ly trước khi public. Không chạy nhiều process ghi cùng data-dir. Xem [cấu trúc backend](docs/WEB_BACKEND_ARCHITECTURE.md).
+Never place the client secret in frontend code or Git. Registration supports Tutor/Student role selection; access is checked by the backend.
 
-Home mặc định mới: `~/OverleafDesktopPython` (`C:\Users\<user>\OverleafDesktopPython` trên Windows). Có thể đổi bằng `OVERLEAF_PYTHON_HOME` hoặc tùy chọn `--home` khi chạy module. Dự án cũng có thể nằm ở thư mục ngoài do người dùng chọn.
+## Main features
 
-Trong **Cài đặt → Dự án → Nhập dữ liệu từ bản Java**, chọn home cũ `~/OverleafDesktop`. App sao chép dự án, history và dữ liệu tài khoản/cài đặt hỗ trợ; giữ bản gốc và ghi ledger tránh nhập trùng. Không cần Java runtime để đọc dữ liệu này. Kiểm tra đường dẫn lưu mặc định sau nhập.
+| Task Writing | LaTeX Studio |
+| --- | --- |
+| Courses and student enrollment | Personal and shared document projects |
+| Private/public question library | Blank projects, templates and imports |
+| IELTS Task and Research assessment types; Report under Research | Multi-file editor, file tree and outline |
+| Direct question text and image uploads | pdfLaTeX, XeLaTeX and LuaLaTeX compilation |
+| Practice, assignments and timed/password-protected exams | Scrollable PDF preview and internal links |
+| Custom assessment categories, weights and total score scales | PDF-to-DOCX export and editable Word preview |
+| Draft autosave, sentence feedback and movable Checklist score | Named presence, collaborative editing and sharing |
+| Finish score review, publishing and student results | History comparisons, tags, archive and downloads |
+| Writing guides and sample answers | Validated PDF export; stale/failed builds are blocked |
 
-Không commit tài khoản, mật khẩu, `.env`, token, chứng chỉ/private key hoặc dữ liệu dự án cá nhân. Xem [kế hoạch dọn Java](docs/JAVA_CLEANUP_PLAN.md) trước khi xóa mã cũ.
+Export LaTeX document creates a document project containing `question.tex`, `answer.tex`, `feedback.tex` and an aggregate `main.tex`. Word-to-LaTeX synchronization supports mapped text edits; arbitrary Word layout changes are not a lossless LaTeX round trip.
 
-## Server cộng tác
+## Project structure
 
-Sau khi chuẩn bị venv/dependency bằng launcher desktop, chạy server local:
-
-```bat
-scripts\run-python-server.bat --host 127.0.0.1 --port 8080
-scripts\run-python-console.bat --host 127.0.0.1 --port 8080 --room DEMO
+```text
+apps/
+  backend/
+    src/latex_backend/
+      entrypoints/       Executable web/compatibility adapters
+      core/              Configuration and application composition
+      auth/              Accounts, sessions and Google OAuth
+      http/              HTTP routes and middleware
+      storage/           MongoDB and shared project files
+      collaboration/     Presence and synchronization
+      compilation/       TeX setup and build jobs
+      documents/         Imports, templates, history and Word sync
+      pdf_export/        PDF-to-DOCX conversion engine
+      writing/           Courses, questions, guides and assessments
+      resources/         Packaged templates, guides and manifests
+    tools/               Startup, setup and maintenance commands
+    tests/               Automated tests, support fixtures and manual checks
+    pyproject.toml       Python package/dependency definitions
+    uv.lock              Locked Python dependencies
+  frontend/
+    app/                 Page composition and styles
+    components/          auth, workspace, projects, editor and writing UI
+    lib/                 API contracts, hooks and pure helpers
+    public/              Static assets
+    scripts/             Required build-time worker preparation
+    tests/               Unit and browser regression suites
+config/                  Examples and ignored local credentials
+deploy/                  Deployment-related configuration
+docs/AI_Handoff.md       Implementation history and verification notes
+design-system/           UI design references
+integrations/            Integration provenance
+examples/                Sample inputs
+target/                  Ignored local runtimes and generated artifacts
 ```
 
-macOS/Linux dùng các file `.sh` cùng tên qua `sh`. Client mở **Cộng tác**, nhập host/port/room; các thành viên dùng cùng room. Server độc lập không cần frontend, pywebview hoặc TeX; có thể cài riêng package Python backend.
+Python owns business rules, permissions, persistence, compilation and conversion. React owns browser interaction. User documents and credentials must not be committed as source.
 
-Kết nối ngoài localhost yêu cầu TLS và token ít nhất 24 ký tự; client xác minh CA/hostname. Hướng dẫn biến môi trường, PEM và Compose tại [deploy/python/README.md](deploy/python/README.md). Compose là mẫu chưa được chạy Docker trong lần nghiệm thu này.
+## Tests
 
-## Kiểm thử và phát triển
-
-Cài môi trường có test (từ root, nếu đã cài uv):
+Using your active backend Python environment:
 
 ```sh
-uv sync --project apps/backend --extra desktop --extra dev --extra mongo --frozen
-uv run --project apps/backend --no-sync python -m pytest apps/backend/tests -q
+python -m pip install -e "apps/backend[web-local,dev]"
+python -m pytest apps/backend/tests -q
 ```
 
-Hoặc dùng Python trong venv để cài `pip install -e "apps/backend[web-local,dev]"` rồi chạy pytest bằng chính Python đó. Web production yêu cầu MongoDB; unit tests inject mongomock riêng và không tự kết nối database sản xuất.
-
-Kiểm frontend:
+From `apps/frontend`:
 
 ```sh
-cd apps/frontend
 npm ci
-npm run build
 npm run typecheck
-node scripts/test-snippets.mjs
-node scripts/test-pdf-geometry.mjs
+npm test
+npm run build
+npm run test:browser -- --list
 ```
 
-Test trình duyệt/native cần thêm công cụ tương ứng và home test riêng; xem [hướng dẫn migration](docs/PYTHON_NEXTJS_MIGRATION.md). Kết quả đã ghi nhận: **124 pytest**, 186 build template PDF thật, kiểm SyncTeX/preview/export và benchmark fixture 248 trang trên Windows. Đây là kết quả các lần kiểm trước, không phải kiểm thử được chạy lại chỉ vì cập nhật README; không suy rộng thành nhanh hơn Overleaf web trên mọi tài liệu.
+Browser scenarios use fresh scratch directories and isolated test fixtures. Some native conversion checks require Pandoc/TeX. Mocked MongoDB/OAuth tests do not prove live Atlas connectivity or real Google consent on a different machine.
 
-## Tài liệu và trách nhiệm
+## Generated files and cleanup
 
-- [AI_Handoff.md](docs/AI_Handoff.md): lịch sử bàn giao; §33 là triển khai Python/Next.js, §34 là sửa ZIP thiếu package/font và cache lỗi.
-- [PYTHON_NEXTJS_MIGRATION.md](docs/PYTHON_NEXTJS_MIGRATION.md): chạy, migration, kiểm chứng và giới hạn.
-- [JAVA_PYTHON_PARITY.md](docs/JAVA_PYTHON_PARITY.md): đối chiếu tính năng hai nền tảng.
-- [JAVA_CLEANUP_PLAN.md](docs/JAVA_CLEANUP_PLAN.md): danh sách chuẩn bị xóa Java, điều kiện và tài nguyên phải giữ.
+`target/`, `.venv/`, `node_modules/`, `.next/`, `out/` and Python/test caches are ignored generated content. **Do not delete all of `target/`: this installation uses it for Python, TeX and Pandoc.** Recovery backups and repaired document fixtures may also be stored there.
 
-Phân chia trách nhiệm để nhóm tiếp tục phát triển: **M1** UI/editor/window; **M2** compile/TeX/PDF/SyncTeX; **M3** TCP/TLS/protocol/deploy; **M4** OT/ACK/RESYNC/offline; **M5** account/local data/history/migration/Mongo và kiểm thử. Đây là phạm vi phụ trách, không khẳng định tác giả từng thay đổi.
+The cleanup tool selects known old UI test folders and caches, preserving runtime installations and backups. Preview its list first:
+
+```powershell
+.\apps\backend\tools\maintenance\clean-generated.ps1
+```
+
+To delete exactly the eligible entries printed by the tool:
+
+```powershell
+.\apps\backend\tools\maintenance\clean-generated.ps1 -Apply
+```
+
+Keep runtime directories such as `official-python-web-env`, `python-runtimes`, `TinyTeX`, `tex-runtime`, `pandoc` and `uv-python-migration`, along with recovery backups. They do not belong in Git, but removing them can break the current local installation.
+
+## Sharing, deployment and publishing changes
+
+MongoDB stores application data, metadata and shared file manifests/chunks. Each backend uses a local working directory for compilation/conversion. Back up persistent data before migrations; migration/publication tools are explicit operations, not routine startup steps.
+
+The local web launcher intentionally binds to loopback. Public hosting needs HTTPS, an appropriate ASGI/reverse-proxy setup, persistent storage, OAuth configuration and a provisioned TeX runtime. `deploy/python/compose.yaml` describes the compatibility TCP/TLS server, not the main browser application.
+
+Before another developer clones, commit and push all intended files, moves and dependency locks. Untracked files do not arrive in a clone. Never commit environments, generated output or local credentials. Windows Application Control restrictions require administrator approval of the runtime; startup tools do not bypass them.
+
+See [the implementation handoff](docs/AI_Handoff.md), [backend tools](apps/backend/tools/README.md), [frontend tests](apps/frontend/tests/README.md) and [template licensing](LICENSE-TEMPLATES.md) for supporting information.

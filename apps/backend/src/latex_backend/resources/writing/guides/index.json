@@ -1,0 +1,180 @@
+[
+  {
+    "key": "line",
+    "title": "Line graphs",
+    "task": 1,
+    "profiles": [
+      "line"
+    ],
+    "summary": "Identify timelines, units, turning points and grouped trends. Build an introduction, overview and comparative body paragraphs.",
+    "sourceUrl": null,
+    "sourceSha256": "0bb138b958173029504268692ada04e4c9d4f303aab28b1e0b64a54a2596ff92",
+    "file": "line.md",
+    "sampleFile": "line-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "bar",
+    "title": "Bar charts",
+    "task": 1,
+    "profiles": [
+      "bar"
+    ],
+    "summary": "Distinguish static and changing categories, select key comparisons and structure a clear overview with grouped details.",
+    "sourceUrl": null,
+    "sourceSha256": "90ab8142e882c7e9e10bc939a74f0e5cbb7dfaea94c6c9d06a7525a9a84f1a88",
+    "file": "bar.md",
+    "sampleFile": "bar-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "pie",
+    "title": "Pie charts",
+    "task": 1,
+    "profiles": [
+      "pie"
+    ],
+    "summary": "Compare proportions and changes, identify dominant sectors and use percentage, fraction and comparison language accurately.",
+    "sourceUrl": null,
+    "sourceSha256": "d382a942da71290ca4c77daf26ca4109742ba14216a9c3357867a2b4f68a55d9",
+    "file": "pie.md",
+    "sampleFile": "pie-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "table",
+    "title": "Tables",
+    "task": 1,
+    "profiles": [
+      "table"
+    ],
+    "summary": "Select important rows, columns and contrasts rather than listing every value. Plan the overview and group numerical evidence.",
+    "sourceUrl": null,
+    "sourceSha256": "7404ce0b2944f922a068727fc018df27866c083e449f73147565846a9fba0a8a",
+    "file": "table.md",
+    "sampleFile": "table-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "mixed",
+    "title": "Mixed charts",
+    "task": 1,
+    "profiles": [
+      "mixed"
+    ],
+    "summary": "Connect the main features across different charts, compare related measures and organize a coherent four-paragraph response.",
+    "sourceUrl": "https://docs.google.com/document/d/1Q_h9K-IvfBY4X70zYcoxbVrh3ZI8f-BRHL8Up7wS9Go/edit",
+    "sourceSha256": "d8b91078b65355a52a4bc756e7f7943d98e128276fbc296daa326bc3e7734d8c",
+    "file": "mixed.md"
+  },
+  {
+    "key": "process",
+    "title": "Process diagrams",
+    "task": 1,
+    "profiles": [
+      "process"
+    ],
+    "summary": "Map stages and sequence, distinguish natural and manufactured processes, and choose appropriate voice and linking language.",
+    "sourceUrl": null,
+    "sourceSha256": "85906629759e3e393521d1f045dda6ef00a00296940abbcf94a291a422509adc",
+    "file": "process.md",
+    "sampleFile": "process-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "opinion",
+    "title": "Opinion / agree-disagree essays",
+    "task": 2,
+    "profiles": [
+      "opinion"
+    ],
+    "summary": "Choose a clear stance, sustain it through the essay and develop relevant reasons, examples and a consistent conclusion.",
+    "sourceUrl": null,
+    "sourceSha256": "cc541114c596c49c1394549f3be6db293a0ed46e700fc13a46f8f6b5d728fa6d",
+    "file": "opinion.md",
+    "sampleFile": "opinion-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "map",
+    "title": "Maps and plans",
+    "task": 1,
+    "profiles": [
+      "map"
+    ],
+    "summary": "Describe spatial changes and unchanged features, group locations logically and use accurate direction, tense and passive structures.",
+    "sourceUrl": null,
+    "sourceSha256": "1e2f660cc08b180c5508912affe8d122af7e426a01c5c3f7f3284ac33fac0f11",
+    "file": "map.md",
+    "sampleFile": "map-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "discussion",
+    "title": "Discussion + opinion essays",
+    "task": 2,
+    "profiles": [
+      "discussion"
+    ],
+    "summary": "Represent both views fairly, develop supporting arguments and state your own opinion consistently throughout the response.",
+    "sourceUrl": null,
+    "sourceSha256": "d447fc76d7863413078fdf8bfebaf0d5dac5fc470a88f3cbcc21358175df227b",
+    "file": "discussion.md",
+    "sampleFile": "discussion-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "problem_solution",
+    "title": "Problem / cause and solution essays",
+    "task": 2,
+    "profiles": [
+      "problem_solution",
+      "cause_solution"
+    ],
+    "summary": "Analyze the exact cause/problem and solution instructions. Develop linked explanations, feasible remedies and PEEL body paragraphs.",
+    "sourceUrl": null,
+    "sourceSha256": "fa6c0d539ea68fa37e6055d4fa620ba3e0dce74da91ec7979c73f6503e51ffac",
+    "file": "problem_solution.md",
+    "sampleFile": "problem_solution-sample.md",
+    "contentVersion": 2
+  },
+  {
+    "key": "two_part",
+    "title": "Two-part questions",
+    "task": 2,
+    "profiles": [
+      "two_part"
+    ],
+    "summary": "Answer both questions directly, give each a focused body paragraph and bring both responses together in the conclusion.",
+    "sourceUrl": "https://docs.google.com/document/d/157PDFL-Sd6Pn6zRWPJfFKBGw8U7wKSID1n2qDji_q5M/edit",
+    "sourceSha256": "a95d05bbab0fed8f2a3dbe77d577603a93eb7075219388b2e3d5775bdc3a559c",
+    "file": "two_part.md"
+  },
+  {
+    "key": "positive_negative",
+    "title": "Positive / negative development essays",
+    "task": 2,
+    "profiles": [
+      "positive_negative"
+    ],
+    "summary": "Evaluate the development, choose a defensible position and support a clear overall judgement with explained arguments and examples.",
+    "sourceUrl": "https://docs.google.com/document/d/1_VGelo2wJHcOkqQi4ecGUV20-JjshjupLbWvusneIpA/edit",
+    "sourceSha256": "87d6519f0a3d1fb4160e756e496197d29612bd4ff20b991ce2b2919906e535d4",
+    "file": "positive_negative.md"
+  },
+  {
+    "key": "advantages",
+    "title": "Advantages and disadvantages",
+    "task": 2,
+    "profiles": [
+      "advantages",
+      "outweigh"
+    ],
+    "summary": "Build a balanced evaluation, support both sides and write a clear judgement.",
+    "file": "advantages.md",
+    "sourceUrl": null,
+    "sourceSha256": "771129cc1440e6475682e5d6e4ca9c8e0eb2e61e78de29074708b9f6265da07e",
+    "sampleFile": "advantages-sample.md",
+    "contentVersion": 2
+  }
+]

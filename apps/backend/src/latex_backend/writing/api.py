@@ -24,7 +24,8 @@ class Title(Model):
 class RubricCheck(Model):
     id: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,80}$')
     text: str = Field(min_length=1, max_length=1000)
-    codes: list[Annotated[str, StringConstraints(pattern=r'^[A-Z0-9_-]{1,30}$')]] = Field(min_length=1, max_length=10)
+    codes: list[Annotated[str, StringConstraints(pattern=r'^[A-Z0-9_-]{1,30}$')]] = Field(default_factory=list, max_length=10)
+    weight: float = Field(default=2, gt=0, le=10000, allow_inf_nan=False)
 
 
 class RubricProfile(Model):
@@ -47,7 +48,16 @@ class Join(Model):
     code: str = Field(min_length=1, max_length=30)
 
 
+class PointScale(Model):
+    mode: Literal['points'] = 'points'
+    total: float = Field(default=10, ge=.01, le=10000, multiple_of=.01, allow_inf_nan=False)
+
+
 class Assignment(Title):
+    scoring: PointScale | None = None
+    assessmentCategories: dict[Literal['1','2'], list[Annotated[str, StringConstraints(pattern=r'^[a-zA-Z0-9_-]{1,40}$')]]] = Field(default_factory=dict, max_length=2)
+    description: str = Field(default='', max_length=20000)
+    libraryVisibility: Literal['private', 'public'] | None = None
     questionId: str | None = Field(default=None, max_length=80)
     writingScope: Literal['whole','intro','body','conclusion'] = 'whole'
     purpose: Literal['practice','homework','exam'] = 'homework'
@@ -74,13 +84,13 @@ class Assignment(Title):
 
 class WritingBlock(Model):
     heading: str = Field(min_length=1, max_length=160)
-    text: str = Field(max_length=100000)
+    text: str
 
 
 class Draft(Model):
     blocks: dict[Literal['1', '2'], list[WritingBlock]] = Field(default_factory=dict, max_length=2)
     revision: int = Field(ge=0)
-    answers: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=100000)]]
+    answers: dict[Literal['1', '2'], str]
     latexSources: dict[Literal['1', '2'], Annotated[str, StringConstraints(max_length=200000)]] = Field(default_factory=dict)
 
 
@@ -106,7 +116,23 @@ class Section(Model):
     quote: str = Field(default='', max_length=3000)
 
 
+class SentenceAnnotation(Model):
+    id: str = Field(pattern=r'^[a-zA-Z0-9_-]{1,80}$')
+    start: int = Field(ge=0, le=10000000)
+    end: int = Field(gt=0, le=10000000)
+    quote: str = Field(min_length=1, max_length=10000)
+    comment: str = Field(default='', max_length=10000)
+    replacement: str = Field(default='', max_length=10000)
+    kind: Literal['comment','underline','strike','replace'] = 'comment'
+    category: str = Field(default='', max_length=40)
+    resolved: bool = False
+    authorName: str = Field(default='', max_length=160)
+    createdAt: str = Field(default='', max_length=100)
+
+
 class Grade(Model):
+    annotations: list[SentenceAnnotation] = Field(default_factory=list, max_length=500)
+    criterionScores: dict[str, float | None] = Field(default_factory=dict, max_length=800)
     scoreSource: Literal['manual','checklist'] = 'manual'
     profile: str = Field(max_length=40)
     scores: dict[str, float | None] = Field(default_factory=dict,max_length=4)
@@ -116,6 +142,7 @@ class Grade(Model):
 
 
 class Review(Model):
+    awardedTotal: float | None = None
     revision: int = Field(ge=0)
     tasks: dict[Literal['1', '2'], Grade]
     summary: str = Field(default='', max_length=20000)
@@ -202,6 +229,20 @@ def register_writing(gateway):
         app, store, _ = await gateway.project_workspace(current['writingProject'], current)
         return await asyncio.to_thread(capture, gateway, current, store, app.state.compiler, data)
 
+    @api.post('/api/writing/prompt-images')
+    async def upload_prompt_image(request: Request):
+        import asyncio
+        from latex_backend.writing.prompts import MAX_BYTES, upload_image
+        current = user(request)
+        service.role(current, 'tutor')
+        gateway.accounts.throttle(('writing-image-upload', current['id']))
+        payload = bytearray()
+        async for chunk in request.stream():
+            payload.extend(chunk)
+            if len(payload) > MAX_BYTES:
+                raise Problem('Question images must not exceed 12 MiB.', 413)
+        return await asyncio.to_thread(upload_image, gateway, current, bytes(payload), request.query_params.get('filename', 'question.png'))
+
     @api.get('/api/writing/prompt-files/{key}')
     def prompt_file(key: str, request: Request):
         current = user(request)
@@ -238,16 +279,24 @@ def register_writing(gateway):
 
     from latex_backend.writing.questions import register_questions
     register_questions(api, service, user)
+    from latex_backend.writing.guides import register_guides
+    register_guides(api, service, user)
     from latex_backend.writing.courses import register_courses
     register_courses(api, service, user)
 
     @api.post('/api/writing/assignments')
     def create_assignment(data: Assignment, request: Request):
-        return service.save_assignment(user(request), data.model_dump(mode='json'))
+        body = data.model_dump(mode='json')
+        if data.questionId and 'promptFiles' not in data.model_fields_set:
+            body.pop('promptFiles')
+        return service.save_assignment(user(request), body)
 
     @api.put('/api/writing/assignments/{key}')
     def update_assignment(key: str, data: Assignment, request: Request):
-        return service.save_assignment(user(request), data.model_dump(mode='json'), key)
+        body = data.model_dump(mode='json')
+        if data.questionId and 'promptFiles' not in data.model_fields_set:
+            body.pop('promptFiles')
+        return service.save_assignment(user(request), body, key)
 
     @api.get('/api/writing/assignments/{key}')
     def get_assignment(key: str, request: Request):
@@ -353,6 +402,9 @@ def register_writing(gateway):
             source = own_draft['latexSources'].get(str(assignment['tasks'][0])) or source
         if not data.createProject:
             return {'source': source, 'notice': 'LaTeX là nhánh trình bày; sửa source không tự đổi văn bản dùng để chấm.'}
+        if data.report and data.submissionId and data.createDocument:
+            from latex_backend.writing.document_export import export_document
+            return await export_document(gateway, service, current, data.submissionId)
         if current.get('writingProject') or not data.createDocument:
             from latex_backend.writing.artifacts import render
             return await render(gateway, current, assignment, source, data.report, data.submissionId)

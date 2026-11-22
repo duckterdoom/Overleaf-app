@@ -166,3 +166,23 @@ def test_shared_editor_word_api_updates_owner_and_both_sockets(tmp_path, monkeyp
                 assert apply_changes(source, update['updates'][0]['changes']) == source.replace('original', 'revised')
         use(client, owner)
         assert 'revised' in client.get(f'/api/projects/{project}/file?path=main.tex').json()['content']
+
+
+def test_long_repeated_article_local_edit_keeps_formatting(tmp_path):
+    body = ' '.join([r'\textbf{Repeated} sentence with familiar words.' for _ in range(220)])
+    source = r'\begin{document}Start ' + body + r'\end{document}'
+    store, project = setup(tmp_path, source)
+    old = 'Start ' + ' '.join(['Repeated sentence with familiar words.' for _ in range(220)])
+    new = old.replace('Repeated', 'Revised', 1)
+    updates = plan(store, project, 'main.tex', docx(old), docx(new))
+    assert updates['main.tex'] == source.replace('Repeated', 'Revised', 1)
+
+
+def test_docx_visible_text_keeps_breaks_and_does_not_duplicate_textboxes(tmp_path):
+    from latex_backend.documents.docx_sync import document_text
+    stream = io.BytesIO()
+    with zipfile.ZipFile(stream, 'w') as archive:
+        archive.writestr('word/document.xml', '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Hello</w:t><w:br/><w:t>original world.</w:t></w:r></w:p><w:p><w:r><w:drawing><w:txbxContent><w:p><w:r><w:t>Unique textbox.</w:t></w:r></w:p></w:txbxContent></w:drawing></w:r></w:p></w:body></w:document>')
+    assert document_text(stream.getvalue()) == 'Hello original world. Unique textbox.'
+    store, project = setup(tmp_path, 'Hello original world. Unique textbox.')
+    assert plan(store, project, 'main.tex', stream.getvalue(), docx('Hello revised world. Unique textbox.')) == {'main.tex': 'Hello revised world. Unique textbox.'}

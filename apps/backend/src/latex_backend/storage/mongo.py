@@ -23,7 +23,7 @@ def settings():
     uri = os.getenv('LATEX_MONGO_URI') or local.get('uri') or os.getenv('OVERLEAF_MONGO_URI')
     name = os.getenv('LATEX_MONGO_DB') or local.get('database') or 'latex'
     if not uri:
-        raise MongoSetupError('Web yêu cầu MongoDB. Điền config/mongodb.local.json hoặc LATEX_MONGO_URI; xem docs/MONGODB_PRIMARY.md. Không tự chuyển về SQLite.')
+        raise MongoSetupError('Web yêu cầu MongoDB. Điền config/mongodb.local.json hoặc LATEX_MONGO_URI; xem docs/AI_Handoff.md. Không tự chuyển về SQLite.')
     if not isinstance(uri, str) or not uri.strip().startswith(('mongodb://', 'mongodb+srv://')) or '<' in uri or '>' in uri:
         raise MongoSetupError('MongoDB URI không hợp lệ hoặc vẫn chứa placeholder. Không in URI/mật khẩu ra log.')
     if not isinstance(name, str) or not name or any(char in name for char in '/\\.$ "'):
@@ -71,6 +71,8 @@ def indexes(db):
     ensure(db.link_visitors, [('project', 1), ('user_id', 1)], unique=True)
     ensure(db.history, [('owner_id', 1), ('project', 1), ('time', -1)])
     ensure(db.writing_questions, [('ownerId', 1), ('updatedAt', -1)])
+    ensure(db.writing_guides, [('scope', 1), ('updatedAt', -1)])
+    ensure(db.writing_guides, [('projectId', 1), ('classIds', 1)])
     ensure(db.writing_questions, [('visibility', 1), ('updatedAt', -1)])
     ensure(db.writing_classes, [('projectId', 1), ('tutorId', 1)])
     ensure(db.writing_memberships, [('studentId', 1), ('classId', 1)])
@@ -87,7 +89,7 @@ def prepare(home: Path, db):
             legacy = True
     initialized = (bound and bound.get('backend') == 'mongodb') or (migration and migration.get('state') == 'complete')
     if (migration and migration.get('state') != 'complete') or (legacy and not migration and not initialized):
-        raise MongoSetupError('Có dữ liệu SQLite/JSON cũ chưa chuyển. Dừng web rồi chạy script migrate-mongodb với --dry-run, sau đó --apply. Xem docs/MONGODB_PRIMARY.md.')
+        raise MongoSetupError('Có dữ liệu SQLite/JSON cũ chưa chuyển. Dừng web rồi chạy script migrate-mongodb với --dry-run, sau đó --apply. Xem docs/AI_Handoff.md.')
     indexes(db)
     # Keep the original primary volume descriptor for migration/backups. Each
     # backend registers its own working copy without stealing another binding.

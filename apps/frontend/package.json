@@ -9,7 +9,11 @@
     "dev": "next dev --hostname 127.0.0.1",
     "prebuild": "node scripts/copy-worker.mjs",
     "build": "next build --webpack",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "npm run test:unit",
+    "test:unit": "node tests/unit/test-checklist-scores.mjs && node tests/unit/test-outline-parser.mjs && node tests/unit/test-snippets.mjs && node tests/unit/test-guide-markdown.mjs && node tests/unit/test-history-diff.mjs && node tests/unit/test-navigation-loading.mjs && node tests/unit/test-list-filters.mjs",
+    "test:browser": "node tests/run.mjs",
+    "test:pdf-geometry": "node tests/unit/test-pdf-geometry.mjs"
   },
   "dependencies": {
     "@codemirror/collab": "^6.1.1",

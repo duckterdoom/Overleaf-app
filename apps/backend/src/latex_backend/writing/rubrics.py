@@ -21,7 +21,7 @@ def validate_catalog(catalog):
             if len(checks) > 40 or len({check['id'] for check in checks}) != len(checks):
                 raise Problem('Use at most 40 criteria per section with unique identifiers.')
             for check in checks:
-                if not check['codes'] or len(set(check['codes'])) != len(check['codes']):
+                if len(set(check['codes'])) != len(check['codes']):
                     raise Problem('Each criterion needs unique assessment codes.')
                 if category == 'ielts' and set(check['codes']) - {'TA', 'TR', 'CC', 'LR', 'GRA'}:
                     raise Problem('Invalid IELTS assessment code.')
@@ -37,7 +37,7 @@ def assignment_catalog(catalog, scope):
 
 
 def uses_bands(assignment):
-    return assignment.get('category', 'ielts') == 'ielts' and assignment.get('writingScope', 'whole') == 'whole'
+    return not assignment.get('scoring') and assignment.get('category', 'ielts') == 'ielts' and assignment.get('writingScope', 'whole') == 'whole'
 
 
 def checklist_result(assignment, review):

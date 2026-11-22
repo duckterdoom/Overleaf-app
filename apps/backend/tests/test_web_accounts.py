@@ -54,6 +54,53 @@ def test_onboarding_resume_roles_and_persistent_login(tmp_path):
         assert len(client.get('/api/projects').json()) == 1
 
 
+@pytest.mark.parametrize('role', ['student', 'tutor'])
+def test_register_with_explicit_role_never_defaults_to_teacher(tmp_path, role):
+    with TestClient(create_web_app(tmp_path), base_url=URL) as client:
+        response = client.post('/api/actions/register', json={'name': 'Role choice', 'email': role+'@example.com',
+            'password': 'test-password', 'role': role})
+        assert response.status_code == 200
+        assert response.json()['role'] == role and response.json()['needsRole'] is False
+        assert client.get('/api/session').json()['session']['role'] == role
+        client.post('/api/actions/logout')
+        login = client.post('/api/actions/login', json={'email': role+'@example.com', 'password': 'test-password'})
+        assert login.json()['role'] == role
+
+
+def test_account_role_change_is_self_only_validated_and_preserves_project_acl(tmp_path):
+    with TestClient(create_web_app(tmp_path), base_url=URL) as client:
+        assert client.post('/api/auth/role', json={'previousRole': 'tutor', 'role': 'student'}).status_code == 401
+        register(client, 'teacher@example.com', 'Teacher');choose(client, 'tutor', 'Teacher')
+        project = client.post('/api/projects', json={'title': 'Role-safe document'}).json()['id']
+        client.get('/api/projects')
+        client.patch(f'/api/projects/{project}/sharing', json={'mode': 'private', 'ownerRole': 'tutor'}).raise_for_status()
+        before = client.get(f'/api/projects/{project}/sharing').json()
+        assert client.post('/api/auth/role', json={'previousRole': 'tutor', 'role': 'admin'}).status_code == 422
+        updated = client.post('/api/auth/role', json={'previousRole': 'tutor', 'role': 'student'})
+        assert updated.json()['role'] == 'student'
+        assert client.get('/api/writing/overview').json()['role'] == 'student'
+        assert client.get('/api/writing/overview?projectId='+project).json()['role'] == 'tutor'
+        after = client.get(f'/api/projects/{project}/sharing').json()
+        assert after == before
+        assert client.post('/api/auth/role', json={'previousRole': 'tutor', 'role': 'student'}).status_code == 409
+        assert client.post('/api/auth/onboarding', json={'role': 'tutor', 'name': 'Teacher'}).status_code == 409
+        client.post('/api/actions/logout')
+        register(client, 'pending@example.com', 'Pending')
+        assert client.post('/api/auth/role', json={'previousRole': 'student', 'role': 'tutor'}).status_code == 409
+
+
+def test_role_change_preserves_legacy_project_role_fallback(tmp_path):
+    with TestClient(create_web_app(tmp_path), base_url=URL) as client:
+        register(client, 'legacy-role@example.com', 'Teacher');choose(client, 'tutor', 'Teacher')
+        project = client.post('/api/projects', json={'title': 'Legacy owner role'}).json()['id']
+        client.get('/api/projects')
+        before = client.get(f'/api/projects/{project}/sharing').json()
+        assert before['owner']['workspaceRole'] == 'tutor'
+        client.post('/api/auth/role', json={'previousRole': 'tutor', 'role': 'student'}).raise_for_status()
+        assert client.get(f'/api/projects/{project}/sharing').json() == before
+        assert client.get('/api/writing/overview').json()['role'] == 'student'
+
+
 def test_two_users_have_isolated_files_sessions_and_settings(tmp_path):
     with TestClient(create_web_app(tmp_path), base_url=URL) as client:
         register(client)

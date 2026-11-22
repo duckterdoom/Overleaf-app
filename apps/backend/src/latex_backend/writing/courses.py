@@ -1,4 +1,4 @@
-"""Explicit Course/Group enrollment, independent from document collaboration."""
+"""Explicit course enrollment, independent from document collaboration."""
 from fastapi import Request
 from pydantic import Field
 from pymongo import ReturnDocument
@@ -18,6 +18,12 @@ def register_courses(api, service, user):
     class Member(Model):
         email: str = Field(min_length=3, max_length=254)
 
+    class MemberDetails(Model):
+        displayName: str = Field(default='', max_length=160)
+        studentCode: str = Field(default='', max_length=80)
+        note: str = Field(default='', max_length=2000)
+        revision: int = Field(default=0, ge=0)
+
     def owned(current, key):
         row = service.classroom(current, key)
         service.role(current, 'tutor')
@@ -34,17 +40,23 @@ def register_courses(api, service, user):
     def create(data: Course, request: Request):
         current = user(request)
         row = service.create_class(current, data.title)
-        service.db.writing_classes.update_one({'_id': row['id']}, {'$set': {'kind': data.kind, 'revision': 1, 'enrollment': 'explicit'}})
-        return {**row, 'kind': data.kind, 'revision': 1}
+        service.db.writing_classes.update_one({'_id': row['id']}, {'$set': {'kind': 'course', 'revision': 1, 'enrollment': 'explicit'}})
+        return {**row, 'kind': 'course', 'revision': 1}
+
+    @api.get('/api/writing/courses/{key}')
+    def details(key: str, request: Request):
+        current = user(request)
+        service.classroom(current, key)
+        return next(row for row in service.classes(current) if row['id'] == key)
 
     @api.put('/api/writing/courses/{key}')
     def update(key: str, data: Course, request: Request):
         current = user(request)
         owned(current, key)
         if not data.title.strip():
-            raise Problem('Enter a course or group name.')
+            raise Problem('Enter a course name.')
         row = service.db.writing_classes.find_one_and_update(version(key, data.revision),
-            {'$set': {'title': data.title.strip(), 'kind': data.kind}, '$inc': {'revision': 1}}, return_document=ReturnDocument.AFTER)
+            {'$set': {'title': data.title.strip(), 'kind': 'course'}, '$inc': {'revision': 1}}, return_document=ReturnDocument.AFTER)
         if not row:
             raise Problem('Course changed. Reload before saving.', 409)
         return public(row)
@@ -74,6 +86,20 @@ def register_courses(api, service, user):
         service.db.writing_memberships.update_one({'_id': key + ':' + account['_id']}, {'$setOnInsert': {
             'classId': key, 'studentId': account['_id']}}, upsert=True)
         return {'added': True}
+
+    @api.patch('/api/writing/courses/{key}/members/{student}')
+    def edit_member(key: str, student: str, data: MemberDetails, request: Request):
+        owned(user(request), key)
+        member_id = key + ':' + student
+        if not service.db.writing_memberships.find_one({'_id': member_id, 'classId': key, 'studentId': student}):
+            raise Problem('Student membership not found.', 404)
+        updated = service.db.writing_memberships.find_one_and_update(version(member_id, data.revision),
+            {'$set': {'displayName': data.displayName.strip(), 'studentCode': data.studentCode.strip(), 'note': data.note.strip()},
+             '$inc': {'revision': 1}}, return_document=ReturnDocument.AFTER)
+        if not updated:
+            raise Problem('Student details changed. Reload before saving.', 409)
+        return {'id': student, 'displayName': updated['displayName'], 'studentCode': updated['studentCode'],
+                'note': updated['note'], 'revision': updated['revision']}
 
     @api.delete('/api/writing/courses/{key}/members/{student}')
     def remove_member(key: str, student: str, request: Request):

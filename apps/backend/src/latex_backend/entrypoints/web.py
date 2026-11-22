@@ -26,13 +26,13 @@ def main():
     if not 0 <= args.port <= 65535:
         parser.error('Port must be between 0 and 65535.')
     if not (args.frontend / 'index.html').is_file():
-        parser.error('Build the UI first: scripts/run-python-web.bat --build (Windows) or sh scripts/run-python-web.sh --build')
+        parser.error('Build the UI first: apps/backend/tools/run-python-web.bat --build (Windows) or sh apps/backend/tools/run-python-web.sh --build')
     if not args.skip_tex_check:
         from latex_backend.compilation.compiler import find_latexmk
         from latex_backend.compilation.tex_runtime import check
         readiness = check(find_latexmk(args.latexmk))
         if not readiness['ready']:
-            parser.error('Server TeX is not ready. Run scripts/setup-tex.bat or sh scripts/setup-tex.sh before serving users. Use --skip-tex-check only for UI-only development.')
+            parser.error('Server TeX is not ready. Run apps/backend/tools/setup-tex.bat or sh apps/backend/tools/setup-tex.sh before serving users. Use --skip-tex-check only for UI-only development.')
     try:
         app = create_web_app(args.home, args.frontend, args.latexmk)
     except MongoSetupError as error:

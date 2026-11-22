@@ -35,10 +35,23 @@ def document_text(data):
         root = ET.fromstring(xml)
     except ET.ParseError as error:
         raise Problem('XML DOCX không hợp lệ.') from error
-    paragraphs = []
-    for paragraph in root.iter(W + 'p'):
-        paragraphs.append(''.join(node.text or '' for node in paragraph.iter(W + 't')))
-    return re.sub(r'\s+', ' ', unicodedata.normalize('NFKC', ' '.join(paragraphs))).strip()
+    # Visit text once: a textbox paragraph can be nested inside another paragraph.
+    # Joining every paragraph's descendants duplicates that text and makes a
+    # harmless SuperDoc serialization look like a large, unmappable source edit.
+    parts = []
+    pending = [(root, False)]
+    while pending:
+        node, closing = pending.pop()
+        if not closing:
+            pending.append((node, True))
+            pending.extend((child, False) for child in reversed(node))
+        if node.tag == W + 'p':
+            parts.append(' ')
+        elif closing and node.tag == W + 't':
+            parts.append(node.text or '')
+        elif closing and node.tag in {W + 'br', W + 'cr', W + 'tab'}:
+            parts.append(' ')
+    return re.sub(r'\s+', ' ', unicodedata.normalize('NFKC', ''.join(parts))).strip()
 
 
 def projection(source):
@@ -159,6 +172,15 @@ def plan(store, project, main, before, after):
     for tag, ai, aj, bi, bj in matcher.get_opcodes():
         if tag == 'equal':
             continue
+        # Popular words can make SequenceMatcher group a local edit with a
+        # long unchanged suffix. Trim that suffix/prefix before source mapping;
+        # never treat unchanged formatting commands as part of the edit.
+        while ai < aj and bi < bj and a[ai][0] == b[bi][0]:
+            ai += 1
+            bi += 1
+        while ai < aj and bi < bj and a[aj - 1][0] == b[bj - 1][0]:
+            aj -= 1
+            bj -= 1
         start = a[ai].start() if ai < len(a) else len(old)
         end = a[aj - 1].end() if aj > ai else start
         replacement = ''.join(m[0] for m in b[bi:bj])

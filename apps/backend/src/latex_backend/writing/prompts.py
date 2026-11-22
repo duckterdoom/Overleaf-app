@@ -79,3 +79,31 @@ def capture(gateway, user, store, compiler, data):
 
 def metadata(row):
     return {key: value for key, value in row.items() if key not in {'_id', 'ownerId', 'data'}}
+
+
+def upload_image(gateway, user, payload, filename):
+    """Store a decoded, normalized image using the existing question-file ACL."""
+    import warnings
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('error', Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(payload)) as image:
+                if image.format not in {'PNG', 'JPEG', 'WEBP'} or image.width * image.height > 12000000:
+                    raise Problem('Use PNG, JPEG or WebP with at most 12 million pixels.')
+                image.load()
+                normalized = ImageOps.exif_transpose(image)
+                output = io.BytesIO()
+                normalized.convert('RGBA' if 'A' in normalized.getbands() else 'RGB').save(output, format='PNG')
+                payload = output.getvalue()
+    except (OSError, ValueError, Image.DecompressionBombError, Image.DecompressionBombWarning):
+        raise Problem('Could not read this image. Choose a valid PNG, JPEG or WebP file.') from None
+    if len(payload) > MAX_BYTES:
+        raise Problem('The normalized image exceeds 12 MiB. Resize it and try again.', 413)
+    name = Path(filename.replace('\\', '/')).name[:160] or 'question.png'
+    key = uuid.uuid4().hex
+    row = {'_id': key, 'id': key, 'ownerId': user['id'], 'projectId': user.get('writingProject'),
+           'sourcePath': name, 'origin': 'upload', 'kind': 'image', 'mime': 'image/png',
+           'digest': hashlib.sha256(payload).hexdigest(), 'pages': None, 'firstPage': 1,
+           'lastPage': None, 'data': Binary(payload)}
+    gateway.database.writing_prompt_files.insert_one(row)
+    return metadata(row)

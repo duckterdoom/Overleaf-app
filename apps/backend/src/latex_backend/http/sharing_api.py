@@ -1,8 +1,14 @@
 from pydantic import BaseModel, Field
 from fastapi import Request
+from fastapi.responses import Response
+import asyncio
 from typing import Literal
 
 from latex_backend.storage.store import Problem
+
+
+class ArchiveProjects(BaseModel):
+    projects: list[str] = Field(min_length=1, max_length=100)
 
 
 class ShareSettings(BaseModel):
@@ -30,6 +36,7 @@ class Member(BaseModel):
 
 def register_sharing(gateway):
     app, sharing = gateway.auth, gateway.sharing
+    archive_slots = asyncio.Semaphore(2)
 
     def changed(project, result):
         gateway.presence.access_changed(project)
@@ -59,6 +66,20 @@ def register_sharing(gateway):
             except Problem:
                 pass  # Deleted projects never appear as stale shared entries.
         return result
+
+    @app.post('/api/projects/archive')
+    async def archive_projects(data: ArchiveProjects, request: Request):
+        principal = user(request)
+        selected = []
+        for identifier in dict.fromkeys(data.projects):
+            _, store, _ = await gateway.project_workspace(identifier, principal)
+            selected.append((store, identifier))
+        from latex_backend.documents.project_archive import build_archive
+        async with archive_slots:
+            content = await asyncio.to_thread(build_archive, selected)
+        return Response(content, media_type='application/zip', headers={
+            'Content-Disposition': 'attachment; filename="latex-projects.zip"',
+            'Cache-Control': 'no-store'})
 
     @app.get('/api/projects/{project}/sharing')
     async def get_sharing(project: str, request: Request):

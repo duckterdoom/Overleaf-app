@@ -1,4 +1,6 @@
 export type Project = {
+    archived?: boolean;
+    tags?: string[];
     workspaceRole?: "tutor" | "student";
     permission?: "owner" | "editor" | "viewer";
     shared?: boolean;

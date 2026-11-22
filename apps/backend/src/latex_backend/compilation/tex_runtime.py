@@ -296,7 +296,7 @@ def main(argv=None):
                 prepared = True
         print(json.dumps(report, ensure_ascii=True), flush=True)
         if not report['ready']:
-            print('TeX is not ready. Dev/operator: run scripts/setup-tex.bat (Windows) or sh scripts/setup-tex.sh. Web visitors do not install TeX.', flush=True)
+            print('TeX is not ready. Dev/operator: run apps/backend/tools/setup-tex.bat (Windows) or sh apps/backend/tools/setup-tex.sh. Web visitors do not install TeX.', flush=True)
             return 1
         if args.smoke and not prepared:
             smoke(executable)

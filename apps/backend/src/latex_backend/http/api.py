@@ -50,6 +50,9 @@ def create_api(
         try:
             yield
         finally:
+            previews = getattr(app.state, "template_previews", None)
+            if previews:
+                await previews.close()
             if hasattr(compiler, "pdf_word_exporter"):
                 compiler.pdf_word_exporter.cancel()
             install = getattr(app.state, "install_task", None)
@@ -249,6 +252,8 @@ def create_api(
     from latex_backend.http.parity_api import register
 
     register(app, store, compiler)
+    from latex_backend.http.template_api import register as register_templates
+    register_templates(app, store, compiler)
     if frontend and frontend.is_dir():
         app.mount("/", StaticFiles(directory=frontend, html=True), name="frontend")
     return app

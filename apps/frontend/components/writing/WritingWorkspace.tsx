@@ -17,6 +17,7 @@ import { type Project } from "../../lib/api";
 import { useWritingApi } from "../../lib/writing/context";
 import { errorText, type Session } from "../../lib/parity";
 import {
+    assessmentCategoryTitle,
     blankGrade,
     catalog,
     countWords,
@@ -32,15 +33,24 @@ import AssignmentForm, { CommutingChart } from "./AssignmentForm";
 import ReviewPaper from "./ReviewPaper";
 import DocumentView from "./DocumentView";
 import PromptDocument from './PromptDocument';
+import WritingListFilters from "./WritingListFilters";
+import {emptyWritingFilters,matchesAssignment,matchesSubmission} from "../../lib/writing/list-filters";
+import SubmissionTable from "./SubmissionTable";
+import ExerciseDetails from './ExerciseDetails';
+import WorkspaceNavigation, {type WritingSection,type WorkspaceNavigationActions} from '../workspace/WorkspaceNavigation';
 import ProjectRubrics from './ProjectRubrics';
 import Courses from './Courses';
 import WritingAnswer from './WritingAnswer';
+import QuestionVisual from './QuestionVisual';
 import QuestionLibrary from './QuestionLibrary';
+import WritingGuides from './WritingGuides';
+import {GuideDrawer} from './GuideReader';
 
 type Screen =
     | "practice-bank"
     | "courses"
     | "library"
+    | "guides"
     | "overview"
     | "assignments"
     | "exams"
@@ -53,8 +63,9 @@ type Screen =
     | "rubric";
 const screenTitles: Record<Screen, string> = {
     "practice-bank": "Practice exercises",
-    courses: "Courses & groups",
+    courses: "Courses",
     library: "Question library",
+    guides: "Writing guides",
     overview: "Task Writing",
     assignments: "Assigned exercises",
     exams: "Examinations",
@@ -64,27 +75,32 @@ const screenTitles: Record<Screen, string> = {
     submissions: "Submissions",
     results: "Results & feedback",
     grading: "Read & assess",
-    rubric: "Assessment criteria",
+    rubric: "Assessment categories",
 };
 const date = (value?: string | null) =>
     value ? new Date(value).toLocaleString("en-GB") : "No deadline";
 
 export default function WritingWorkspace({
     session,
+    initialScreen="assignments",
     language,
     beforeLeaveRef,
     onLocationChange,
     onOpenProject,
+    shellNavigation,
 }: {
     session: Session;
+    initialScreen?: WritingSection;
+    shellNavigation: WorkspaceNavigationActions;
     language: string;
     beforeLeaveRef: React.MutableRefObject<(() => Promise<boolean>) | null>;
     onLocationChange?: (location: string) => void;
     onOpenProject: (p: Project) => Promise<void>;
 }) {
     const { json, assetUrl, project: writingProject } = useWritingApi();
+    const [libraryCreate,setLibraryCreate]=useState(initialScreen==='create'&&session.role==='tutor');
     const [template,setTemplate]=useState<Question|undefined>();
-    const [screen, setScreen] = useState<Screen>("overview"),
+    const [screen, setScreen] = useState<Screen>(initialScreen==='overview'?'assignments':initialScreen),
         [overview, setOverview] = useState<Overview>({
             classes: [],
             assignments: [],
@@ -92,13 +108,31 @@ export default function WritingWorkspace({
             role: "",
             permission: "viewer",
         });
-    const tutor = overview.role === "tutor";
+    const tutor = (overview.role || session.role) === "tutor";
     const readonly = !overview.role || overview.permission === "viewer";
     const roleRef = useRef<Session['role']>(null);
     const [recovery, setRecovery] = useState("");
     const [navigatingTo,setNavigatingTo]=useState<Screen|null>(null);
+    const [headerActions,setHeaderActions]=useState<HTMLDivElement|null>(null);
+    const guideLeaveRef=useRef<(()=>boolean)|null>(null);
+    const [showGuide,setShowGuide]=useState(false);
     const navigationSequence=useRef(0);
     const [inspect, setInspect] = useState<Assignment | null>(null);
+    const mainArea=useRef<HTMLElement>(null);
+    const inspectTrigger=useRef<HTMLButtonElement|null>(null);
+    const inspectScroll=useRef(0);
+    useEffect(()=>{
+        if(!inspect)return;
+        mainArea.current?.scrollTo({top:0});
+        mainArea.current?.querySelector<HTMLElement>('.exercise-inspection-body')?.focus({preventScroll:true});
+    },[inspect?.id]);
+    function closeInspect(){
+        setInspect(null);
+        requestAnimationFrame(()=>{
+            if(mainArea.current)mainArea.current.scrollTop=inspectScroll.current;
+            if(inspectTrigger.current?.isConnected)inspectTrigger.current.focus({preventScroll:true});
+        });
+    }
     const [listKind,setListKind]=useState<'assignment'|'exam'>('assignment');
     const [practiceOnly,setPracticeOnly]=useState(false);
     const [examGate,setExamGate]=useState<Assignment|null>(null),[examEntryPassword,setExamEntryPassword]=useState('');
@@ -125,6 +159,7 @@ export default function WritingWorkspace({
     const submitRequest = useRef<{ assignment: string; id: string } | null>(
         null,
     );
+    const pendingFeedbackRef=useRef(false);
     const [view, setView] = useState<SubmissionView | null>(null),
         [review, setReview] = useState<Review | null>(null),
         [reviewDirty, setReviewDirty] = useState(false);
@@ -133,6 +168,12 @@ export default function WritingWorkspace({
         reviewEdits = useRef(0),
         reviewSaved = useRef(0),
         reviewQueue = useRef<Promise<boolean>>(Promise.resolve(true));
+    const [assignmentFilterState,setAssignmentFilterState]=useState<Partial<Record<Screen,ReturnType<typeof emptyWritingFilters>>>>({});
+    const [submissionFilterState,setSubmissionFilterState]=useState<Partial<Record<Screen,ReturnType<typeof emptyWritingFilters>>>>({});
+    const assignmentFilters=assignmentFilterState[screen]||emptyWritingFilters();
+    const submissionFilters=submissionFilterState[screen]||emptyWritingFilters();
+    const setAssignmentFilters=(value:ReturnType<typeof emptyWritingFilters>)=>setAssignmentFilterState(old=>({...old,[screen]:value}));
+    const setSubmissionFilters=(value:ReturnType<typeof emptyWritingFilters>)=>setSubmissionFilterState(old=>({...old,[screen]:value}));
     const [filterAssignment, setFilterAssignment] = useState("");
     const reloadSequence = useRef(0);
     const reloading = useRef(false);
@@ -154,7 +195,13 @@ export default function WritingWorkspace({
                 setDirty(false); setReviewDirty(false);
             }
             if (roleRef.current !== data.role) {
-                setScreen("overview"); setView(null); setReview(null); setDraft(null); setActive(null);
+                // Initial permission loading must not undo a newer sidebar choice.
+                if (roleRef.current !== null) setScreen("assignments");
+                else setScreen(current =>
+                    (data.role !== 'tutor' && ['library', 'rubric'].includes(current)) ||
+                    (data.permission === 'viewer' && current === 'create')
+                        ? 'assignments' : current);
+                setView(null); setReview(null); setDraft(null); setActive(null);
                 setDirty(false); setReviewDirty(false);
                 edit.current = saved.current; reviewEdits.current = reviewSaved.current;
                 roleRef.current = data.role as Session['role'];
@@ -170,7 +217,7 @@ export default function WritingWorkspace({
                 edit.current = saved.current; reviewEdits.current = reviewSaved.current;
                 setDirty(false); setReviewDirty(false);
                 setOverview({classes: [], assignments: [], submissions: [], role: "student", permission: "viewer"});
-                setView(null); setReview(null); setActive(null); setDraft(null); setScreen("overview");
+                setView(null); setReview(null); setActive(null); setDraft(null); setScreen("assignments");
                 setError(errorText(error));
             }
             throw error;
@@ -188,11 +235,13 @@ export default function WritingWorkspace({
     useEffect(() => {
         const update = () => void reload(true).catch((e) => setError(errorText(e)));
         window.addEventListener("latex-sharing-updated", update);
-        return () => window.removeEventListener("latex-sharing-updated", update);
+        window.addEventListener("latex-account-role-updated", update);
+        return () => {window.removeEventListener("latex-sharing-updated", update);window.removeEventListener("latex-account-role-updated", update);};
     }, []);
     useEffect(() => {
         onLocationChange?.(`Task Writing · ${screenTitles[screen]}${screen === 'practice' || screen === 'grading' ? ` · Task ${task}` : ''}`);
     }, [screen, task, onLocationChange]);
+    useEffect(()=>{setShowGuide(false);},[screen,task,active?.id]);
     useEffect(() => {
         const timer = setInterval(() => setTime(Date.now()), 1000);
         return () => clearInterval(timer);
@@ -216,7 +265,7 @@ export default function WritingWorkspace({
     }, [view?.submission.id, tutor]);
     useEffect(() => {
         const unload = (event: BeforeUnloadEvent) => {
-            if (dirty || reviewDirty) {
+            if (dirty || reviewDirty || pendingFeedbackRef.current) {
                 event.preventDefault();
                 event.returnValue = "";
             }
@@ -303,7 +352,7 @@ export default function WritingWorkspace({
             setBusy(false);
         }
     }
-    async function saveReview(): Promise<boolean> {
+    async function saveReview(automatic = false): Promise<boolean> {
         const operation = reviewQueue.current
             .catch(() => false)
             .then(async () => {
@@ -324,16 +373,17 @@ export default function WritingWorkspace({
                             tasks: body.tasks,
                             summary: body.summary,
                             recommendations: body.recommendations,
+                            awardedTotal: body.awardedTotal ?? null,
                         }),
                     },
                 );
                 reviewRevision.current = data.revision;
                 reviewSaved.current = ticket;
                 setReview((current) =>
-                    current ? { ...current, revision: data.revision } : current,
+                    current ? reviewEdits.current===ticket?data:{ ...current, revision: data.revision } : current,
                 );
                 setReviewDirty(reviewEdits.current !== ticket);
-                setNotice("Assessment draft saved; students cannot see it yet.");
+                if(!automatic)setNotice("Assessment draft saved; students cannot see it yet.");
                 return true;
             });
         reviewQueue.current = operation;
@@ -342,7 +392,14 @@ export default function WritingWorkspace({
             return false;
         });
     }
+    useEffect(() => {
+        if(!reviewDirty || readonly || screen !== 'grading')return;
+        const timer=setTimeout(()=>{void saveReview(true);},900);
+        return()=>clearTimeout(timer);
+    },[review,reviewDirty,readonly,screen]);
     async function beforeLeave() {
+        if(pendingFeedbackRef.current&&!confirm('Discard unfinished sentence feedback before leaving?'))return false;
+        if(guideLeaveRef.current&&!guideLeaveRef.current())return false;
         return (await flush()) && (!reviewDirty || (await saveReview()));
     }
     async function navigate(next: Screen) {
@@ -352,7 +409,10 @@ export default function WritingWorkspace({
         try{
             if (!(await beforeLeave()) || ticket!==navigationSequence.current) return;
             setError("");
-            if (next === "create") {setEditing(undefined);setTemplate(undefined);}
+            if (next === "create") {
+                setEditing(undefined);setTemplate(undefined);
+                if(tutor){setLibraryCreate(true);setScreen('library');return;}
+            }
             setScreen(next);
             // Render cached lists immediately. Reuse an in-flight refresh instead
             // of making every click wait for a complete MongoDB overview.
@@ -506,7 +566,7 @@ export default function WritingWorkspace({
                         submissionId: view.submission.id,
                         report,
                         createProject: true,
-                        createDocument: false,
+                        createDocument: report,
                     }),
                 },
             );
@@ -529,7 +589,7 @@ export default function WritingWorkspace({
               ),
           )
         : null;
-    const filtered = overview.submissions.filter(
+    const scopedSubmissions = overview.submissions.filter(
         (s) =>
             (s.assignment.kind||'assignment')===listKind &&
             (listKind==='exam'||(s.assignment.purpose==='practice')===practiceOnly) &&
@@ -537,29 +597,13 @@ export default function WritingWorkspace({
             (!filterAssignment || s.assignmentId === filterAssignment),
     );
     const assignmentKind=tutor?listKind:screen==='exams'?'exam':'assignment';
-    const listedAssignments=overview.assignments.filter(a=>(a.kind||'assignment')===assignmentKind && (assignmentKind==='exam'||(a.purpose==='practice')===(tutor?practiceOnly:screen==='practice-bank')));
+    const scopedAssignments=overview.assignments.filter(a=>(a.kind||'assignment')===assignmentKind && (assignmentKind==='exam'||(a.purpose==='practice')===(tutor?practiceOnly:screen==='practice-bank')));
+    const courseById = new Map(overview.classes.map(course=>[course.id,course]));
+    const submittedIds = new Set(overview.submissions.map(row=>row.assignmentId));
+    const listedAssignments=scopedAssignments.filter(row=>matchesAssignment(row,assignmentFilters,courseById.get(row.classId||''),submittedIds.has(row.id)));
+    const filtered=scopedSubmissions.filter(row=>matchesSubmission(row,submissionFilters,courseById.get(row.assignment.classId||'')));
     const kindTabs=<div className="writing-kind-tabs" role="tablist" aria-label="Exercise type"><button role="tab" aria-selected={listKind==='assignment'&&!practiceOnly} onClick={()=>{setListKind('assignment');setPracticeOnly(false);setFilterAssignment('');setInspect(null);}}>Assigned exercises</button><button role="tab" aria-selected={listKind==='assignment'&&practiceOnly} onClick={()=>{setListKind('assignment');setPracticeOnly(true);setFilterAssignment('');setInspect(null);}}>Practice</button><button role="tab" aria-selected={listKind==='exam'} onClick={()=>{setListKind('exam');setFilterAssignment('');setInspect(null);}}>Examinations</button></div>;
     const examExpired=active?.kind==='exam' && (draft?.readOnly || remaining!==null && remaining<=0);
-    const navigation = tutor
-        ? ([
-              ["overview", "Overview", GraduationCap],
-              ["courses", "Courses & groups", UsersRound],
-              ["library", "Question library", BookOpen],
-              ["create", "Assign exercise", Plus],
-              ["assignments", "Created exercises", BookOpen],
-              ["submissions", "Student submissions", ClipboardCheck],
-              ["rubric", "Assessment criteria", Check],
-          ] as const)
-        : ([
-              ["overview", "Overview", GraduationCap],
-              ["courses", "Courses & groups", UsersRound],
-              ["practice-bank", "Practice exercises", FileText],
-              ["practice", "My writing", FileText],
-              ["assignments", "Assigned exercises", BookOpen],
-              ["exams", "Examinations", Clock3],
-              ["submissions", "Submission history", Send],
-              ["results", "Results & feedback", ClipboardCheck],
-          ] as const);
     useEffect(() => {
         beforeLeaveRef.current = beforeLeave;
         return () => { beforeLeaveRef.current = null; };
@@ -578,68 +622,19 @@ export default function WritingWorkspace({
                 setPasswordTarget(null);setNewExamPassword('');setNotice('Password changed. Current students keep their existing timers.');await reload(true);
             });}}><h2>Change password</h2><p>{passwordTarget.title}</p><label>New password<input aria-label="New exam password" type="password" autoComplete="new-password" minLength={6} maxLength={128} required value={newExamPassword} onChange={e=>setNewExamPassword(e.target.value)}/></label>{error&&<p role="alert" className="writing-error">{error}</p>}<footer><button type="button" disabled={busy} onClick={()=>{setPasswordTarget(null);setNewExamPassword('');}}>Cancel</button><button className="primary" disabled={busy}>Save password</button></footer></form></div>}
             <div className="writing-layout">
-                <aside className="writing-sidebar">
-                    <span className="writing-eyebrow">
-                        {loading || !overview.role ? "CHECKING ACCESS" : `WORKSPACE ${tutor ? "TUTOR" : "STUDENT"}`}
-                    </span>
-                    {(loading || !overview.role ? [] : navigation).map(([id, label, Icon]) => (
-                        <button
-                            key={id}
-                            disabled={readonly && ['create','library','rubric'].includes(id)}
-                            className={(navigatingTo||screen) === id ? "active" : ""}
-                            aria-busy={navigatingTo===id}
-                            onClick={() => {
-                                if (id === "submissions")
-                                    setFilterAssignment("");
-                                void navigate(id);
-                            }}
-                        >
-                            <Icon size={17} />
-                            {label}
-                        </button>
-                    ))}
-                    <div className="writing-sidebar-note">
-                        <BookOpen size={24} />
-                        <strong>
-                            Write with clarity.
-                            <br />
-                            Give specific feedback.
-                        </strong>
-                        <p>
-                            Task Writing for learning.
-                            <br />
-                            LaTeX for document publishing.
-                        </p>
-                    </div>
-                </aside>
-                <section className="writing-main">
+                <WorkspaceNavigation tutor={tutor} active={screen} loading={loading||!overview.role} readonly={readonly} navigatingTo={navigatingTo} shell={shellNavigation}
+                    onWriting={id=>{if(id==='submissions')setFilterAssignment('');void navigate(id);}}/>
+                <section ref={mainArea} className={`writing-main${screen==='library'?' writing-library-main':''}`}>
                     <div className="writing-page-heading">
                         <div>
                             <span className="writing-eyebrow">
                                 TASK WRITING
                             </span>
-                            <h1>{screenTitles[screen]}</h1>
+                            <h1>{screen === "assignments" && tutor ? "Assessment" : screen === "submissions" ? (tutor ? "Student submissions" : "Submission history") : screenTitles[screen]}</h1>
+                            {screen==='library'&&<small className="library-role-label">Tutor · {readonly?'Read only':'Editing enabled'}</small>}
                         </div>
                         <div>
-                            {screen === "overview" && !readonly && (
-                                <button
-                                    className="primary"
-                                    onClick={() =>
-                                        void navigate(
-                                            tutor
-                                                ? "create"
-                                                : active
-                                                  ? "practice"
-                                                  : "create",
-                                        )
-                                    }
-                                >
-                                    <Plus size={16} />
-                                    {tutor
-                                        ? "Create exercise"
-                                        : "Start a practice exercise"}
-                                </button>
-                            )}
+                            <div className="writing-header-actions" ref={setHeaderActions}/>
                             <button
                                 title="Refresh Task Writing"
                                 disabled={busy}
@@ -654,7 +649,7 @@ export default function WritingWorkspace({
                             {error}
                         </div>
                     )}
-                    {overview.role && <div className="writing-notice">Your role: <strong>{tutor ? "Tutor" : "Student"}</strong> · {readonly ? "Read only — ask the owner for editing access." : "Editing enabled"}. Access is checked on the server.</div>}
+                    {overview.role && screen!=='library' && <div className="writing-access-summary">Your role: <strong>{tutor ? "Tutor" : "Student"}</strong> · {readonly ? "Read only — ask the owner for editing access." : "Editing enabled"}</div>}
                     {recovery && <div className="writing-notice">Your role or access changed. Keep a copy of unsaved work: <button onClick={() => {
                         const url = URL.createObjectURL(new Blob([recovery], {type: 'application/json'}));
                         const link = document.createElement('a'); link.href = url; link.download = 'ielts-unsaved-recovery.json'; link.click();
@@ -674,100 +669,11 @@ export default function WritingWorkspace({
                     ) : (
                         <>
                             {screen === "courses" && <Courses courses={overview.classes} tutor={tutor} editable={!readonly} onRefresh={()=>reload(true)}/>}
-                            {screen === "library" && tutor && <QuestionLibrary userId={session.id||''} onUse={q=>{setTemplate(q);setEditing(undefined);setScreen("create");}}/>}
-                            {screen === "overview" && (
-                                <>
-                                    <section className="writing-welcome">
-                                        <div>
-                                            <span className="writing-eyebrow">
-                                                {tutor
-                                                    ? "SUPPORT EVERY WRITER"
-                                                    : "FROM IDEAS TO WRITING"}
-                                            </span>
-                                            <h2>
-                                                {tutor
-                                                    ? "Every paragraph deserves useful feedback."
-                                                    : "A place to write and improve."}
-                                            </h2>
-                                            <p>
-                                                {tutor
-                                                    ? "Assign exercises, read submitted work, assess each paragraph and publish feedback."
-                                                    : "Practise tasks, reports and research papers with feedback from your tutor."}
-                                            </p>
-                                        </div>
-                                        <div className="writing-welcome-art">
-                                            <FileText size={68} />
-                                            <span>
-                                                Task Writing
-                                                <br />
-                                                <strong>× LaTeX</strong>
-                                            </span>
-                                        </div>
-                                    </section>
-                                    <div className="writing-stats">
-                                        {[
-                                            [
-                                                overview.assignments.length,
-                                                "Workspace questions",
-                                            ],
-                                            [
-                                                overview.assignments.filter(
-                                                    (a) => a.published,
-                                                ).length,
-                                                "Exercises",
-                                            ],
-                                            [
-                                                overview.submissions.filter(
-                                                    (s) => !s.result,
-                                                ).length,
-                                                tutor
-                                                    ? "Awaiting assessment"
-                                                    : "Awaiting results",
-                                            ],
-                                            [
-                                                overview.submissions.filter(
-                                                    (s) => s.result,
-                                                ).length,
-                                                "Published",
-                                            ],
-                                        ].map(([value, label]) => (
-                                            <section
-                                                className="writing-card"
-                                                key={label}
-                                            >
-                                                <strong>{value}</strong>
-                                                <span>{label}</span>
-                                            </section>
-                                        ))}
-                                    </div>
-                                    <section className="writing-card writing-start">
-                                        <div>
-                                            <h2>
-                                                {tutor
-                                                    ? "Assign exercises"
-                                                    : "Workspace exercises"}
-                                            </h2>
-                                            <p>
-                                                {tutor
-                                                    ? "Create a question directly or import an existing LaTeX source."
-                                                    : "Open an assigned exercise or start personal practice."}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={() =>
-                                                void navigate(tutor ? "create" : "assignments")
-                                            }
-                                        >
-                                            {tutor
-                                                ? "Assign exercise"
-                                                : "Assigned exercises"}
-                                            <ArrowRight size={16} />
-                                        </button>
-                                    </section>
-                                </>
-                            )}
+                            {screen === "library" && tutor && <QuestionLibrary headerActions={headerActions} userId={session.id||''} initialCreate={libraryCreate} onCreateOpened={()=>setLibraryCreate(false)} onAssigned={a=>{setListKind(a.kind==='exam'?'exam':'assignment');setPracticeOnly(a.purpose==='practice');setNotice(a.published?'Exercise assigned to students.':'Exercise draft saved.');void reload();setScreen('assignments');}}/>}
+                            {screen === "guides" && <WritingGuides tutor={tutor} readonly={readonly} courses={overview.classes} headerActions={headerActions} leaveRef={guideLeaveRef}/>}
                             {screen === "create" && !readonly && (
                                 <AssignmentForm
+                                    embedded
                                     key={editing?.id || "new"}
                                     practice={!tutor}
                                     initial={editing}
@@ -792,38 +698,23 @@ export default function WritingWorkspace({
                             {(screen === "assignments" || screen==='exams' || screen==='practice-bank') && (
                                 <>
                                     {tutor&&kindTabs}
-                                    {tutor && inspect && <section className="writing-card">
-                                        <h2>{inspect.title}</h2>
-                                        <button onClick={()=>setInspect(null)}>Close exercise details</button>
-                                        {inspect.tasks.map(number=><div key={number}>
-                                            <h3>{!inspect.category||inspect.category==='ielts'?`Task ${number}`:inspect.category==='report'?'Report':'Research'}</h3>
-                                            {inspect.promptFiles?.[String(number)] ? <PromptDocument file={inspect.promptFiles[String(number)]} language={language}/> : <p>{inspect.prompts[String(number)] || 'No imported source is attached.'}</p>}
-                                        </div>)}
-                                        <h3>Student progress</h3>
-                                        <table><thead><tr><th>Student</th><th>Status</th><th>Submissions</th></tr></thead><tbody>
-                                            {(inspect.classId ? overview.classes.find(c=>c.id===inspect.classId)?.students||[] : overview.students || []).map(person=>{
-                                                const submissions=overview.submissions.filter(s=>s.assignmentId===inspect.id && s.studentId===person.id);
-                                                return <tr key={person.id}><td>{person.name}</td><td>{submissions.length?'Submitted':'Not submitted'}</td><td>{submissions.length}</td></tr>;
-                                            })}
-                                        </tbody></table>
-                                    </section>}
+                                    {tutor && inspect && <ExerciseDetails assignment={inspect} overview={overview} language={language} onClose={closeInspect}/>}
                                     <div className="writing-list-toolbar">
                                         <p>
                                             {tutor
-                                                ? "Draft and assigned exercises in this workspace."
+                                                ? "Manage assessments for assigned exercises, practice and examinations."
                                                 : screen==='exams'?"Examinations have a password and opening/closing times.":"Assigned exercises and personal practice."}
                                         </p>
-                                        {(tutor||screen!=='exams')&&<button
+                                        {!tutor && screen!=='exams'&&<button
                                             onClick={() =>
                                                 void navigate("create")
                                             }
                                         >
                                             <Plus size={16} />
-                                            {tutor
-                                                ? "Create exercise"
-                                                : "Personal practice"}
+                                            Personal practice
                                         </button>}
                                     </div>
+                                    <WritingListFilters value={assignmentFilters} onChange={setAssignmentFilters} courses={overview.classes} mode="assignments" tutor={tutor} count={listedAssignments.length} total={scopedAssignments.length}/>
                                     {listedAssignments.length ? (
                                         <div className="writing-assignment-list">
                                             {listedAssignments.map((a) => (
@@ -837,12 +728,10 @@ export default function WritingWorkspace({
                                                                 ? "Assigned"
                                                                 : "Draft question"}
                                                         </span>
-                                                        <h2>{a.title}</h2>
+                                                        <h2>{a.title}</h2>{a.scoring&&<span className="writing-tag">Scale: {a.scoring.total} points</span>}
+                                                        {a.description&&<p className="writing-exercise-description">{a.description}</p>}
                                                         <p>
-                                                            {a.category && a.category!=='ielts'?a.category==='report'?'Report':'Research':a.variant ===
-                                                            "academic"
-                                                                ? "Academic"
-                                                                : "General Training"}{" "}
+                                                            {a.category && a.category!=='ielts'?a.category==='report'?'Report':'Research':"IELTS Task"}{" "}
                                                             ·{" "}
                                                             {a.tasks
                                                                 .map(
@@ -877,7 +766,7 @@ export default function WritingWorkspace({
                                                         <ArrowRight size={15} />
                                                     </button>
                                                     {tutor && <div>
-                                                        <button onClick={()=>{setInspect(a);}}>View question & students</button>
+                                                        <button aria-expanded={inspect?.id===a.id} onClick={event=>{inspectTrigger.current=event.currentTarget;inspectScroll.current=mainArea.current?.scrollTop||0;setInspect(a);}}>View question & students</button>
                                                         {!readonly && <>
                                                             {a.kind==='exam'&&<button onClick={()=>{setPasswordTarget(a);setNewExamPassword('');setError('');}}>Change password</button>}
                                                             <button onClick={()=>{setEditing(a);setScreen('create');}}>Edit exercise</button>
@@ -892,7 +781,7 @@ export default function WritingWorkspace({
                                         </div>
                                     ) : (
                                         <div className="writing-empty">
-                                            No exercises yet.{" "}
+                                            {scopedAssignments.length ? "No exercises match these filters." : "No exercises yet."}{" "}
                                             {tutor
                                                 ? "Create an exercise directly or reuse a question from the library."
                                                 : "Open an assigned exercise or create personal practice."}
@@ -923,7 +812,8 @@ export default function WritingWorkspace({
                                     </div>
                                 ) : (
                                     <div className="writing-practice">
-                                        <div className="writing-practice-strip">
+                                        <div className="writing-practice-strip">{active.scoring&&<span className="writing-tag">Scale: {active.scoring.total} points</span>}
+                                            {active.kind!=='exam'&&<button className="practice-guide-button" onClick={()=>setShowGuide(true)}><BookOpen size={16}/>Writing guide</button>}
                                             <div
                                                 className="writing-task-tabs"
                                                 role="tablist"
@@ -945,9 +835,7 @@ export default function WritingWorkspace({
                                                 ))}
                                             </div>
                                             <span>
-                                                {active.category && active.category!=='ielts'?active.category==='report'?'Report':'Research':active.variant === "academic"
-                                                    ? "Academic"
-                                                    : "General Training"}{" "}
+                                                {active.category && active.category!=='ielts'?active.category==='report'?'Report':'Research':"IELTS Task"}{" "}
                                                 ·{" "}
                                                 {
                                                     (active.rubricCatalog||catalog)[
@@ -1013,7 +901,8 @@ export default function WritingWorkspace({
                                                     <span className="writing-eyebrow">
                                                         QUESTION · TASK {task}
                                                     </span>
-                                                    <h2>{active.title}</h2>
+                                                    <h2>{active.title}</h2>{active.assessmentCategories?.[String(task)]&&<p className="writing-selected-categories">Write: {active.assessmentCategories[String(task)].map(k=>assessmentCategoryTitle(active.rubricCatalog?.[active.profiles[String(task)]],k)).join(" + ")}</p>}
+
                                                     <div className="writing-prompt-text">
                                                         {
                                                             active.prompts[
@@ -1033,21 +922,8 @@ export default function WritingWorkspace({
                                                                 </small>
                                                             </>
                                                         ) : (
-                                                            <img
-                                                                src={assetUrl(active.imageId)}
-                                                                alt="Task 1 visual"
-                                                            />
+                                                            <QuestionVisual src={assetUrl(active.imageId)} alt="Task 1 visual"/>
                                                         ))}
-                                                    {usesBands(active) && <p className="writing-question-note">
-                                                        At least{" "}
-                                                        {task === 1 ? 150 : 250}{" "}
-                                                        words ·{" "}
-                                                        {task === 1
-                                                            ? "Suggested: 20 minutes"
-                                                            : "Suggested: 40 minutes"}
-                                                        <br />
-                                                        Word count is a writing aid, not a band conversion.
-                                                    </p>}
                                                 </aside>
                                                 <section className="writing-answer">
                                                     <header>
@@ -1065,42 +941,16 @@ export default function WritingWorkspace({
                                                     <WritingAnswer key={`${active.id}:${task}`} assignment={active} task={task} value={draft.answers[String(task)]||''}
                                                         blocks={draft.blocks?.[String(task)]} readOnly={readonly||!!examExpired}
                                                         onSave={()=>void flush()} onChange={(text,blocks)=>{
+                                                            const nextBlocks={...draftRef.current!.blocks};
+                                                            if(blocks?.length)nextBlocks[String(task)]=blocks;
+                                                            else delete nextBlocks[String(task)];
                                                             changeDraft({answers:{...draftRef.current!.answers,[task]:text},
-                                                                blocks:{...draftRef.current!.blocks,[task]:blocks||[]},
+                                                                blocks:nextBlocks,
                                                                 latexSources:{...draftRef.current!.latexSources,[task]:''}});
                                                         }}/>
 
                                                     <footer>
-                                                        <span
-                                                            className={
-                                                                countWords(
-                                                                    draft
-                                                                        .answers[
-                                                                        String(
-                                                                            task,
-                                                                        )
-                                                                    ] || "",
-                                                                ) <
-                                                                (!usesBands(active)?0:task === 1
-                                                                    ? 150
-                                                                    : 250)
-                                                                    ? "writing-word-warning"
-                                                                    : ""
-                                                            }
-                                                        >
-                                                            <strong>
-                                                                {countWords(
-                                                                    draft
-                                                                        .answers[
-                                                                        String(
-                                                                            task,
-                                                                        )
-                                                                    ] || "",
-                                                                )}{" "}
-                                                                words
-                                                            </strong>{" "}
-                                                            {usesBands(active) && ` / ${task===1?150:250}`}
-                                                        </span>
+                                                        <span>{countWords(draft.answers[String(task)] || '')} words</span>
                                                         <button
                                                             disabled={
                                                                 readonly || !dirty || saving
@@ -1122,7 +972,8 @@ export default function WritingWorkspace({
                                     <span className="writing-eyebrow">
                                         SUBMISSION SNAPSHOT
                                     </span>
-                                    <h2>{active.title}</h2>
+                                    <h2>{active.title}</h2>{active.assessmentCategories?.[String(task)]&&<p className="writing-selected-categories">Write: {active.assessmentCategories[String(task)].map(k=>assessmentCategoryTitle(active.rubricCatalog?.[active.profiles[String(task)]],k)).join(" + ")}</p>}
+
                                     <p>
                                         Submissions are saved separately. Editing your draft later does not change the work your tutor assesses.
                                     </p>
@@ -1130,25 +981,16 @@ export default function WritingWorkspace({
                                         <article key={n}>
                                             <h3>
                                                 {!active.category||active.category==='ielts'?`Task ${n}`:'Document'} ·{" "}
-                                                {countWords(
-                                                    draft.answers[String(n)] ||
-                                                        "",
-                                                )}{" "}
-                                                words
+                                                {countWords(draft.answers[String(n)] || '')} words
                                             </h3>
-                                            {active.promptFiles?.[String(n)] && <PromptDocument focused file={active.promptFiles[String(n)]} language={language}/>}
-                                            {countWords(
-                                                draft.answers[String(n)] || "",
-                                            ) < (n === 1 ? 150 : 250) && usesBands(active) && (
-                                                <p className="writing-word-warning">
-                                                    Below the recommended word count;
-                                                    this does not determine a band score.
-                                                </p>
-                                            )}
-                                            <p>
-                                                {draft.answers[String(n)] ||
-                                                    "No answer yet."}
-                                            </p>
+                                            <div className="submission-check-panes">
+                                                <section className="submission-check-question"><h4>Question</h4>
+                                                    <div className="writing-prompt-text">{active.prompts[String(n)]}</div>
+                                                    {active.promptFiles?.[String(n)] && <PromptDocument focused file={active.promptFiles[String(n)]} language={language}/>}
+                                                    {n===1&&active.imageId&&(active.imageId==='sample-commuting'?<CommutingChart/>:<QuestionVisual src={assetUrl(active.imageId)} alt="Task 1 visual"/>)}
+                                                </section>
+                                                <section className="submission-check-answer"><h4>Your answer</h4><p>{draft.answers[String(n)] || "No answer yet."}</p></section>
+                                            </div>
                                         </article>
                                     ))}
                                     <footer>
@@ -1200,97 +1042,12 @@ export default function WritingWorkspace({
                                             </button>
                                         )}
                                     </div>
+                                    <WritingListFilters value={submissionFilters} onChange={setSubmissionFilters} courses={overview.classes} mode="submissions" tutor={tutor} count={filtered.length} total={scopedSubmissions.length}/>
                                     {filtered.length ? (
-                                        <div className="writing-table-wrap">
-                                            <table className="writing-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>
-                                                            {tutor
-                                                                ? "Student"
-                                                                : "Exercises"}
-                                                        </th>
-                                                        <th>Task</th>
-                                                        <th>
-                                                            Attempt / submitted at
-                                                        </th>
-                                                        <th>Status</th>
-                                                        <th />
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {filtered.map((s) => (
-                                                        <tr key={s.id}>
-                                                            <td>
-                                                                <strong>
-                                                                    {tutor
-                                                                        ? s.studentName
-                                                                        : s
-                                                                              .assignment
-                                                                              .title}
-                                                                </strong>
-                                                                <small>
-                                                                    {tutor
-                                                                        ? s
-                                                                              .assignment
-                                                                              .title
-                                                                        : s
-                                                                              .assignment
-                                                                              .tutorName ||
-                                                                          "Personal practice"}
-                                                                </small>
-                                                            </td>
-                                                            <td>
-                                                                {s.assignment.tasks
-                                                                    .map(
-                                                                        (n) =>
-                                                                            `Task ${n}: ${s.wordCounts[String(n)]} words`,
-                                                                    )
-                                                                    .join(
-                                                                        " · ",
-                                                                    )}
-                                                            </td>
-                                                            <td>
-                                                                Attempt {s.attempt}
-                                                                <small>
-                                                                    {date(
-                                                                        s.submittedAt,
-                                                                    )}
-                                                                    {s.late
-                                                                        ? " · Late"
-                                                                        : ""}
-                                                                </small>
-                                                            </td>
-                                                            <td>
-                                                                <span className="writing-tag">
-                                                                    {s.result
-                                                                        ? "Published"
-                                                                        : s.tutorId
-                                                                          ? "Awaiting assessment"
-                                                                          : "Personal practice"}
-                                                                </span>
-                                                            </td>
-                                                            <td>
-                                                                <button
-                                                                    onClick={() =>
-                                                                        void openSubmission(
-                                                                            s.id,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    {tutor
-                                                                        ? "Open assessment"
-                                                                        : "View submissions"}
-                                                                </button>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                        <SubmissionTable submissions={filtered} courses={overview.classes} tutor={tutor} onOpen={id=>void openSubmission(id)}/>
                                     ) : (
                                         <div className="writing-empty">
-                                            {screen === "results"
+                                            {scopedSubmissions.length ? "No submissions match these filters." : screen === "results"
                                                 ? "No published results yet."
                                                 : "No submissions yet."}
                                         </div>
@@ -1312,6 +1069,7 @@ export default function WritingWorkspace({
                                     sourceSignal={view.submission.id}
                                 >
                                     <ReviewPaper
+                                        pendingFeedbackRef={pendingFeedbackRef}
                                         submission={view.submission}
                                         review={review}
                                         onChange={changeReview}
@@ -1328,22 +1086,14 @@ export default function WritingWorkspace({
                                 </DocumentView>
                             )}
                             {screen === "rubric" && (
-                                <ProjectRubrics editable={tutor&&!readonly}/>
+                                <ProjectRubrics headerActions={headerActions} editable={tutor&&!readonly}/>
                             )}
                         </>
                     )}
                 </section>
             </div>
-            <footer className="statusbar">
-                <span>{navigatingTo?'Saving and opening…':notice}</span>
-                <span>
-                    {dirty
-                        ? "Unsaved writing"
-                        : reviewDirty
-                          ? "Unsaved assessment"
-                          : "Stored on server · MongoDB"}
-                </span>
-            </footer>
+            {showGuide&&screen==='practice'&&active&&active.kind!=='exam'&&<GuideDrawer onClose={()=>setShowGuide(false)} title="Practice reference"><WritingGuides key={`${active.id}:${task}`} tutor={false} courses={overview.classes} practice={{category:active.category||'ielts',task,profile:active.profiles[String(task)]||'',classId:active.classId}}/></GuideDrawer>}
+            <div className="sr-only" role="status" aria-live="polite">{notice}</div>
         </section>
     );
 }

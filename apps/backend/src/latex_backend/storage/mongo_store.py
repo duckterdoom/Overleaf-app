@@ -205,6 +205,10 @@ class MongoStore(Store):
         return sorted(result, key=lambda item: item['updated'], reverse=True)
 
     @shared_write
+    def update_project(self, project, title=None, icon=None, color=None, tags=None, tag_mode='replace', archived=None):
+        return super().update_project(project, title, icon, color, tags, tag_mode, archived)
+
+    @shared_write
     def save(self, project, name, content):
         return super().save(project, name, content)
 

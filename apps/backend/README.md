@@ -23,7 +23,7 @@ Web gateway `http/web_accounts.py` cấp workspace riêng theo tài khoản. `st
 Chạy từ root repository:
 
 ```powershell
-.\scripts\run-python-web.bat
+.\apps\backend\tools\run-python-web.bat
 ```
 
 Hoặc sau khi cài dependency:

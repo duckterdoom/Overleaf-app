@@ -1,5 +1,149 @@
 # AI Handoff — Latex web / Task Writing + LaTeX Studio
 
+## 122. Whole-text paper, phóng lớn ảnh đề và comment theo câu (17/11/2026)
+
+Kiểm chứng: **293 backend tests đạt**, frontend unit/TypeScript/production build đạt; browser sentence review **6 views đạt** tại `target/sentence-review-browser-20261117-02/` (kéo chuột thật, pending-comment guard, authorName sau save, Tutor publish/Student click readonly, mobile), point assessment **6 views** tại `target/sentence-review-points-20261117-02/`, direct questions **5 views** tại `target/sentence-review-writing-20261117-01/`, UI audit **53 views** tại `target/sentence-review-regression-20261117-01/`. Mutation bỏ quote validation bị test bắt, đã khôi phục. `git diff --check` đạt.
+
+Dùng `code-review-and-quality` và `ui-ux-pro-max`. Student chỉ còn một textarea giấy trắng, chữ lớn, bỏ Whole text/By paragraph toggle và form section; giữ nguyên câu trả lời đã có, khi sửa dùng canonical text và xóa blocks cũ của task qua luồng draft sẵn có. Bỏ description khỏi question pane/check/review, chỉ giữ metadata ở card/details. `QuestionVisual` mở rộng ảnh theo chiều ngang, bỏ max-height 400, có zoom/Fit width/Enlarge và Escape, không ảnh hưởng upload preview.
+
+Review point-based: một trang bài nộp lớn, đề gốc thu gọn View question. Checklist mở từ Assessment categories, tabs đúng nhóm trong snapshot đã giao, chấm cả bài một lần mỗi criterion, vẫn kéo/thu gọn như cũ; không đi theo paragraph. `AnnotatedSubmission` cho Tutor kéo bôi câu, thêm comment/underline/strike/suggested replacement, gắn category tùy chọn, click marked text đọc feedback; hỗ trợ ranges chồng nhau, sửa/xóa/resolve/reopen. Student xem bản đã publish, không có quyền sửa feedback. Không thay bài gốc hoặc tự đổi điểm theo annotation. Legacy band snapshots giữ scheme/view cũ để tránh regrade ngầm.
+
+Backend `Grade.annotations` + `writing/annotations.py`: anchor UTF-16 khớp browser, quote phải trùng frozen submission, chặn range sai/surrogate lỗi/trùng id/category không thuộc rubric; giới hạn số comment/nội dung, authorName/createdAt do server đóng dấu. Draft riêng tư, Tutor ACL/revision/CAS/publication giữ nguyên. Report LaTeX kèm quote/correction/comment. UI chặn save/task switching khi còn comment đang soạn, beforeLeave hỏi trước khi bỏ draft và unload guard nhận pending state. Khi save, nhận metadata server nếu không có edit mới, giữ thay đổi mới khi request đang chạy. Không package/module mới, không ghi Atlas thật/commit/push. Chi tiết [SENTENCE_FEEDBACK.md](docs/SENTENCE_FEEDBACK.md).
+
+## 121. Categories độc lập/nhiều phần, đủ loại bài và guides Report/Research (17/11/2026)
+
+Kết quả cuối: **292 backend tests đạt**, TypeScript/production build/unit suites đạt. Browser Question library đạt tại `target/library-guides-types-20261117-02/`; Writing guides **15 views đạt** tại `target/expanded-guides-20261117-05/`, gồm empty types, tạo/xóa Report guide, đọc bảng Bar charts, Default sau lưu, safe Markdown và student reference; UI audit **53 views đạt** tại `target/library-guides-regression-20261117-01/`. Đã kiểm tra cả 12 MD qua renderer và giữ nguyên nguồn/hash. Không ghi Atlas thật, không commit/push.
+
+Đã dùng `code-review-and-quality` và `ui-ux-pro-max`. Question library bỏ ràng buộc chọn rubric trước: `LibraryCategoryFilter` có Whole paper mặc định, bỏ × để chọn nhiều categories, chỉ lọc không mở sửa tiêu chí. Backend query `sections` lặp áp dụng AND trong cùng task/rubric snapshot, trước phân trang; vẫn nhận query section cũ. Question type/categories lấy đầy đủ catalog Assessment criteria của workspace cộng metadata snapshots được phép xem, không phụ thuộc đã có câu hỏi. Report/Research bỏ dropdown Task IELTS bị disable, có empty-state khi chưa có câu hỏi. Quyền My/Public library không đổi.
+
+Writing guides thêm category IELTS/Report/Research vào schema/filter/editor; 12 nguồn IELTS giữ nguyên. Report/Research hiện empty-state, không tạo nội dung giả; Tutor có thể CRUD/share guide theo rubric tương ứng. Guide drawer luyện tập nhận đúng category, exam vẫn không hiện trợ giúp. Nhãn builtin luôn Default template kể cả Bar charts đã tùy chỉnh, phân biệt customized trong reader; không reset nội dung, version hay quyền lớp của Tutor.
+
+Tách `GuideMarkdown.tsx` xử lý headings/TOC, bold/italic, lists, code/quote, bảng GFM và ASCII grids ngắt dòng từ MarkItDown. Sửa mất nội dung nằm ngay sau heading không có dòng trống. Không sửa 12 MD nguồn/hash; xác nhận UTF-8 không có U+FFFD. Không dùng raw HTML hoặc tự tải ảnh; links giới hạn HTTP(S). Unit test kiểm renderer an toàn và render đủ 12 nguồn; kiểm thử browser đọc bảng Bar charts và giữ Default sau lưu. Các test backend kiểm Report/Research default trống, CRUD/class ACL và categories kết hợp cùng task. Mutation bỏ một phần kiểm AND bị test bắt, đã khôi phục.
+
+## 120. Question library: phân loại theo assessment và header gọn (17/11/2026)
+
+Kiểm chứng cuối: **289 backend tests đạt**, TypeScript/production build đạt; browser Question library đạt (filter task/rubric/category, chiều cao toolbar/card, CRUD/copy/assign, dark mode kiểm token thật, mobile/landscape không tràn ngang). UI regression **53 views đạt**. Evidence `target/library-taxonomy-browser-20261117-04/`, `target/library-taxonomy-regression-20261117-02/`. Không ghi Atlas/commit/push.
+
+Áp dụng `ui-ux-pro-max` theo design-system academic hiện có. Bỏ heading My/Public library lặp; gom tabs, search, type/task/rubric/category vào một panel compact. Role/access chuyển cùng dòng heading Question library; chỉ còn một tiêu đề trang. Danh sách group IELTS/Report/Research; card ghi rõ rubric và category thực tế (Introduction + Overview/custom section title…), giữ scale điểm/visibility/copy ownership, nút thao tác cạnh nội dung trên desktop và wrap ở mobile. CSS chỉ áp dụng library, không đổi header module khác.
+
+Backend thêm `question_taxonomy.py` tạo facets từ snapshot thuộc ACL library; query questions hỗ trợ task/profile/section có regex validation, lọc trước skip/limit. Facets lấy toàn bộ dữ liệu được phép xem, không chỉ trang đang mở, không lộ private của tutor khác. Tests có 52 câu để kiểm phân trang/filter và metadata privacy. Không đổi rubric/điểm/quyền CRUD, không thêm package hay migration. Chi tiết: [QUESTION_LIBRARY_CLASSIFICATION.md](docs/QUESTION_LIBRARY_CLASSIFICATION.md).
+
+## 119. Categories theo rubric và chấm điểm số tùy chỉnh (17/11/2026)
+
+Kết quả cuối: **288 backend tests đạt**, frontend unit/build/TypeScript đạt. Browser point assessment **6 views**, hồi quy UI **53 views**, hồi quy nhập đề/ảnh/bài dài **5 views** đều đạt; mutation kiểm điểm vượt max đã bắt lỗi và khôi phục. `git diff --check` đạt.
+
+Dùng `code-review-and-quality` và `ui-ux-pro-max`. Form giao bài/Question library thay Writing scope cố định bằng `RubricCategories`: Whole paper mặc định; bỏ × để chọn nhiều category thuộc đúng rubric/type/task, click hộp mở native modal giữa màn hình, cuộn body riêng, Escape/Done/Close. Thêm/sửa/xóa criterion, đổi tên category, trọng số mặc định 2; Assessment criteria bỏ checkbox mã IELTS trong UI và thay bằng ô Weight. Form luôn lưu `scoring.mode=points`, tổng mặc định 10, Tutor đổi 5/20/100 hoặc số hợp lệ khác; preview điểm tối đa từng criterion và tổng mỗi task cập nhật tức thì. Tổng của bài gồm cả hai task, không còn trọng số IELTS Task 2.
+
+Backend mới `writing/points.py`: lọc categories vào snapshot, chia điểm theo trọng số với đơn vị 0.01/largest remainder để tổng khớp tuyệt đối; mỗi criterion tối thiểu 0.01, scale quá nhỏ bị chặn. `criterionScores` là điểm trực tiếp theo khóa category:criterionId; backend kiểm đúng rubric snapshot, finite/không âm/không vượt max/hai số thập phân, bắt buộc chấm đủ trước publish. Kết quả có totalScore/maxScore/taskScores/pointAllocations. Point-based exercises không tổng kết band. `ReviewPaper`/`PointAssessment` dùng điểm số trong floating feedback và Score summary; học viên chỉ xem điểm đã publish. Gợi ý section lúc viết/chấm theo category của rubric. LaTeX report kèm điểm từng criterion và tổng trên thang đã giao.
+
+Compatibility: dữ liệu cũ không có scoring giữ nguyên cách đọc điểm/band lịch sử; không migrate/regrade phá dữ liệu. Rubric settings giữ codes cũ trong data để báo cáo cũ đọc được, không hiện checkbox mã trong UI quản lý mới. Bài đã nộp vẫn khóa sửa cấu hình (409), snapshot không đổi theo template về sau. Không module mới, không package mới, không ghi Atlas thật/commit/push.
+
+Kiểm chứng: backend tests mới bao gồm IELTS hai task, Report/Research, thang 5/10/20/100, whole/selected categories, default weights, làm tròn/tổng chính xác, zero/ungraded/out-of-range/ownership, snapshot, thư viện và LaTeX. Mutation bỏ kiểm vượt max làm test thất bại, guard đã khôi phục. Production build/TypeScript/unit suites đạt; browser feature **6 views**, UI audit **53 views** (assert được cập nhật cho UI categories thay scope/radio đã bỏ). Evidence: `target/point-assessment-browser-20261117-02/`, `target/point-assessment-regression-20261117-02/`. Chi tiết [CATEGORY_POINT_ASSESSMENT.md](docs/CATEGORY_POINT_ASSESSMENT.md).
+
+## 118. Nhập đề trực tiếp, ảnh câu hỏi, description và bỏ giới hạn từ (17/11/2026)
+
+Đã dùng `code-review-and-quality` cho logic/phân quyền và `ui-ux-pro-max` cho form/giao diện. `ExerciseForm` dùng chung tạo/sửa bài, Question library, practice/homework/exam: nhập đề trực tiếp theo từng Task/dạng bài, bỏ bộ chọn nguồn LaTeX khỏi form. Bản đề nhập nguồn cũ vẫn đọc/giữ được khi sửa. Thêm description riêng, lưu qua assignment/question/copy/submission snapshot; hiển thị ở danh sách, chi tiết, màn làm bài và màn tutor chấm.
+
+`QuestionImageUpload` hỗ trợ chọn/kéo thả một ảnh PNG/JPEG/WebP mỗi Task, xem trước/thay/gỡ; upload lỗi giữ ảnh trước. Endpoint `/api/writing/prompt-images` yêu cầu Tutor, kiểm byte thực/12 MiB/12 triệu pixel, re-encode PNG + EXIF orientation, giữ alpha, chuẩn hóa tên file, dùng collection/ACL prompt-files hiện có và chặn xem ảnh exam trước khi nhập mật khẩu. Middleware cho riêng endpoint upload 12 MiB, JSON Writing vẫn 4 MiB. Không thêm package. Sửa lỗi dùng lại câu hỏi ghi đè ảnh vừa thay hoặc khôi phục ảnh đã gỡ; request cũ bỏ qua promptFiles vẫn được copy ảnh mặc định. Chặn lấy trộm ảnh private giữa hai tutor ở account workspace.
+
+Bỏ giới hạn schema 100.000 ký tự ở answers và text của paper sections. Khi viết Task 1/2 giữ bộ đếm từ trung tính, bỏ `/150`, `/250`, mốc At least và cảnh báo thiếu từ ở bước kiểm tra bài; không cắt bài theo số từ. Giữ giới hạn kích thước request hạ tầng, không thay nội dung rubric hay tài liệu hướng dẫn gốc.
+
+Kiểm chứng: **282 backend tests đạt**, gồm bài >100k ký tự, 3 purpose, description/library/submission, ảnh decode thật, ảnh hợp lệ >4 MiB/alpha, ownership/exam gate/thay-gỡ ảnh. Mutation bỏ role guard upload làm test thất bại, đã khôi phục guard. TypeScript/production build đạt; browser `direct-questions` **5 views đạt**, UI regression **53 views đạt**. Evidence `target/direct-questions-browser-20261117-03/`, `target/direct-questions-regression-20261117-01/`. Không ghi Atlas thật, không commit/push. Chi tiết: [DIRECT_WRITING_QUESTIONS.md](docs/DIRECT_WRITING_QUESTIONS.md).
+
+## 117. IELTS Writing guides: 12 nguồn Google Docs, CRUD và chia sẻ theo lớp (16/11/2026)
+
+Dùng skill markitdown chuyển đủ 12 Google Docs thành Markdown (327.931 ký tự, 0 ảnh nhúng trong DOCX), đóng gói tại `apps/backend/src/latex_backend/resources/writing/guides/`. index.json giữ nguồn, task/profile và SHA-256 của text trích xuất. 7 Task 1: line/bar/pie/table/mixed/process/map. 5 Task 2: opinion/discussion/problem-solution (có cause-solution alias)/two-part/positive-negative. Không tải Google Docs khi chạy app, không thêm MarkItDown vào dependency backend.
+
+`writing/guides.py`: Tutor nhận defaults + các phiên bản riêng theo tutor hoặc project; PUT default tạo bản riêng, DELETE tạo tombstone scoped, không sửa tài nguyên gốc hay template của Tutor khác. CRUD có revision CAS, validate profile/task/course quyền quản lý, giới hạn input và summary pagination; Student chỉ GET guides đã lưu/chia sẻ cho lớp đang có membership rõ ràng, đúng project. Không tự cấp quyền vì được share project. List và detail đều kiểm membership; unshare/remove member/delete thu hồi truy cập request tiếp theo. Viewer project không mutate. Mongo collection mới writing_guides, additive indexes; không migration hay thay dữ liệu cũ.
+
+UI `WritingGuides.tsx`, `GuideReader.tsx` trong cùng Task Writing/nav/header. Tutor đọc/tạo/sửa Markdown/preview/xóa và chọn lớp được xem, có chặn rời form chưa lưu. Student chỉ đọc/filter lớp-task-type. Reader có nội dung đầy đủ, mục lục, nguồn Google Docs; render bằng React text nodes, không thực thi HTML. Trong practice IELTS, Writing guide tự lọc task/profile/course. Desktop mở trên vùng đề, câu trả lời vẫn chỉnh sửa được; mobile là modal đọc có Escape/Close và focus trap. Không tự mở tài liệu ở bài kiểm tra, không coi đây là cơ chế chống gian lận. Không thay checklist/rubric/điểm/hạn nộp.
+
+Regression tìm thấy Whole text gửi `blocks[task]=[]` nhưng answer không rỗng, backend từ chối canonical mismatch. Sửa frontend xóa entry task đó khi không dùng structured blocks, giữ blocks task khác và giữ nguyên validator backend. E2E đã bắt lỗi trước sửa, kiểm tra lưu được câu trả lời sau sửa rồi mới chuyển sang exam.
+
+Tài liệu: `docs/WRITING_GUIDES.md` có luồng sử dụng, quyết định phân quyền, mapping và 12 nguồn. README cập nhật. Tài liệu gốc là teaching references; các tuyên bố band/format trong nguồn không tự trở thành luật chấm chính thức hay làm đổi rubric hiện có.
+
+Kiểm chứng cuối: **276 backend tests passed** (3 test mới gồm nhiều ca CRUD/ACL/revision/default isolation/project roles/unshare/removal), frontend unit suites đạt, TypeScript/production build đạt. Browser feature **11 views đạt** tại `target/writing-guides-browser-20261116-06/`, có desktop vừa đọc vừa gõ, mobile modal, XSS text, save practice thật và không có trợ giúp ở exam; hồi quy UI **53 trạng thái đạt** tại `target/writing-guides-regression-20261116-02/`. Build wheel backend đạt, kiểm zip có đủ 13 resource entries (index + 12 MD); hash nội dung cả 12 khớp manifest. Fixtures Mongo mock/fresh home, không ghi Atlas thật. Import nguồn qua MarkItDown nằm ở target/writing-guides-import-20261116. Không commit/push.
+
+## 116. Thu gọn codebase Python + Next.js (16/11/2026)
+
+Review theo `code-review-and-quality`: xóa 16 file prototype độc lập trong docs/prototypes/writing (7 JS, HTML/CSS/README demo) và 7 test chỉ chạy prototype, gồm alias cũ. Không có import production sử dụng prototype; ứng dụng Writing tích hợp và test chức năng được giữ. Không xóa theo đuôi file một cách đại trà.
+
+Chuyển 25 test frontend còn lại sang `apps/frontend/tests/unit` (4) và `tests/browser` (21). Frontend scripts chỉ còn copy-worker.mjs phục vụ prebuild. `tests/run.mjs` là runner browser chung, whitelist tên suite và đặt cwd đúng apps/frontend để giữ nguyên đường dẫn fixture/Python/home. Sửa direct import outline, cập nhật đường dẫn trong tài liệu/backend test khi có tham chiếu. npm test/test:unit chạy 3 suite không cần fixture; test:pdf-geometry nhận PDF fixture riêng; test:browser -- --list liệt kê các suite. Không tuyên bố mọi legacy scenario đều đã chạy/đang là release gate.
+
+Giữ Next.js/TypeScript/client dependencies vì giao diện web cần chúng; giữ 5 shell launcher/setup macOS/Linux vì không phải test dư thừa; giữ Windows launcher, Python tests, lockfiles, bộ converter gốc và tài nguyên pháp lý/template. Không xóa target, node_modules, .next/out, venv, credentials hay dữ liệu người dùng. Các JS sinh tự động đã bị Git ignore. Thư mục prototype rỗng có thể còn trong filesystem, không còn file nguồn theo dõi Git bên trong.
+
+Tài liệu: `docs/CODEBASE_STRUCTURE.md`, `apps/frontend/tests/README.md`, README root cập nhật tree/lệnh và bỏ dòng modules/pom.xml Java đã lỗi thời. Các tài liệu thiết kế prototype cũ đánh dấu historical, trỏ về luồng web hiện tại. Không commit/push, không đổi backend/API/DB.
+
+Kiểm chứng: **273 backend tests passed**, npm test (checklist/outline/snippets) đạt, typecheck/production build đạt; 26 file MJS test/runner qua node --check. Chạy qua runner mới: ui-redesign **53 trạng thái đạt** (`target/codebase-cleanup-ui-20261116-01/`), question-library đạt (`target/codebase-cleanup-library-20261116-01/`). Mongo mocks và fresh homes riêng, không Atlas. Các suite khác giữ lại nhưng không chạy lại toàn bộ trong lần dọn cấu trúc này.
+
+## 115. Một header chính cho mỗi màn Writing (16/11/2026)
+
+Bỏ tiêu đề module trùng ở QuestionLibrary, ProjectRubrics và ExerciseForm khi hiển thị trong workspace. Header chính vẫn thuộc WritingWorkspace; Create question và Save rubric templates render vào vùng action của header qua React portal, giữ nguyên handler/state/disabled. Component dùng độc lập vẫn có header riêng. Các heading nội dung như Public library, tên course/bài tập và phần tiêu chí không bị xóa. Form giao bài/câu hỏi dùng embedded để bỏ header phụ; mô tả giữ dạng dòng ngắn. Header cho phép xuống dòng trên màn nhỏ, không đổi API hay nghiệp vụ.
+
+Browser audit thêm assert chỉ một heading Question library / Assessment criteria, action nằm trong header chính, form không có header phụ; tiếp tục chạy các luồng giao bài, thư viện, chấm và cuộn rubric.
+
+Kết quả: production build/TypeScript đạt, browser audit **53 trạng thái đạt** tại `target/writing-single-header-20261116-01/`; có bấm Create question/Cancel và Save rubric templates thật qua header mới. Question-library regression đạt tại `target/writing-single-header-library-20261116-01/`. Chỉ sửa frontend, dữ liệu thử mongomock, không chạm Atlas.
+
+## 114. Thu gọn checklist và kéo đủ hai chiều (16/11/2026)
+
+FloatingChecklist thêm Collapse/Expand, thu về thanh tiêu đề thay vì phải đóng bằng X. Giữ controls trong DOM khi thu gọn để không mất dấu tích/feedback; thanh thu gọn vẫn kéo được. Khi mở rộng clamp lại vị trí để không nằm ngoài màn hình. Giảm chiều cao mở rộng xuống tối đa 600px hoặc 60dvh, có cuộn riêng: nguyên nhân trước đó gần kín chiều cao viewport nên clamp không còn khoảng kéo dọc. Giữ Pointer Events kéo tự do x/y, arrow keys, reset, Esc/Close và toàn bộ save/publish cũ.
+
+Browser audit bổ sung kiểm tra kéo dọc thực tế, chiều cao thu gọn dưới 80px, kéo thanh thu gọn, mở lại giữ dữ liệu và nằm trong viewport, di chuyển lên bằng bàn phím. Không đổi backend/điểm/snapshot.
+
+Kiểm chứng cuối: production build/TypeScript đạt; browser audit **53 trạng thái đạt** tại `target/checklist-collapse-move-20261116-01/`, gồm assert thay đổi cả x/y khi kéo mở rộng và thu gọn, ẩn nội dung, mở lại giữ marks/feedback, viewport mobile, lưu feedback qua API cũ. Bổ sung aria-controls/aria-expanded cho nút thu gọn. Dữ liệu thử mongomock riêng, không chạm Atlas.
+
+## 113. Ngôn ngữ và màu thẻ template tạo dự án (16/11/2026)
+
+Sửa Create new project: tên/mô tả template luôn tiếng Anh theo giao diện hiện hành, không lấy từ lựa chọn ngôn ngữ nội dung tài liệu. Option Tiếng Việt hiển thị Vietnamese, aria-label Document language. Vẫn giữ giá trị vi/en để sinh tài liệu đúng ngôn ngữ đã chọn. Tìm kiếm bổ sung description.en, vẫn tìm được cả tiếng Việt và tiếng Anh.
+
+CSS mới trước đó trỏ vào `.template-card` không tồn tại; đổi sang `.template-grid > button`/`.chosen` thực tế. Tên/mô tả dùng ink/muted; icon, badge engine và trạng thái chọn dùng editor tokens; bỏ màu xanh lá hardcode cũ cho cả sáng/tối, tăng chữ mô tả. Browser audit bổ sung so sánh toàn bộ tên template với catalog English, đổi document language không làm đổi tên UI, kiểm tra màu selected theo token ở light/dark.
+
+Kiểm chứng: build/TypeScript đạt, browser audit **52 trạng thái đạt** tại `target/template-language-theme-20261116-02/`, gồm tên/mô tả tiếng Anh và ảnh modal sáng/tối. Test đầu bắt được CSS dark cũ ghi đè; tăng specificity trong phạm vi project-modal để sửa đúng nguồn. Không thay đổi nội dung template hoặc API tạo dự án.
+
+## 112. Checklist mặc định/tùy chỉnh và cửa sổ chấm kéo thả (16/11/2026)
+
+Theo review `code-review-and-quality`, thêm `ExerciseChecklist.tsx`: Use default checklist / Customize checklist trong form giao bài/câu hỏi, preview mặc định, tái sử dụng AssignmentRubric để thêm/sửa/xóa, Restore default có xác nhận khi dữ liệu khác. Bài/câu hỏi cũ giữ snapshot; template đã xóa thì không tự thay bằng template khác. So sánh mặc định theo writingScope để bài chỉ Introduction không bị coi là custom chỉ vì snapshot đã lọc các phần khác. ExerciseForm lưu sau khi load templates thành công; API/rubricCatalog snapshot không đổi.
+
+`FloatingChecklist.tsx` là cửa sổ web non-modal, một đoạn tại một thời điểm; mở từ nút Checklist khi hover/focus đoạn, kéo bằng title handle qua Pointer Events, hỗ trợ arrow keys, Esc/Close, reset vị trí, resize giữ trong viewport, cuộn nội dung riêng. Tái sử dụng controls và changeSection của ReviewPaper; không gọi API trong lúc kéo, không thay cách tính điểm. Bài viết bỏ cột checklist cố định để rộng hơn; Whole-paper checklist có nút riêng. Chuyển task/mở summary đóng cửa sổ đoạn. Đóng cửa sổ chỉ ẩn, không xóa dấu tích/nhận xét; Save assessment draft và Publish vẫn là các thao tác lưu/công bố hiện có. Read-only giữ nguyên backend policy.
+
+Chi tiết và kiểm thử: `docs/FLOATING_CHECKLIST.md`. Browser audit mới kiểm tra cửa sổ tồn tại (red trên build cũ), drag, keyboard, Esc/đóng/mở lại, dữ liệu giữ nguyên, lưu feedback qua API, snapshot bài giao thật cho default/custom, hủy/chấp nhận restore và mobile bounds. Dữ liệu thử mongomock, không Atlas. Không cài thêm dependency, không migration, không commit/push.
+
+Kết quả cuối: production build/TypeScript đạt; browser audit **50 trạng thái đạt** tại `target/checklist-green-20261116-03/`, có kiểm tra trả focus về đúng nút đoạn sau Esc. Question-library browser regression đạt tại `target/checklist-library-20261116-01/`. Bộ backend 273 test của lượt trước không chạy lại vì thay đổi này không sửa backend. Dấu tích/nhận xét giữ trong bản nháp khi đóng cửa sổ; vẫn cần Save assessment draft để lưu server và Publish để học viên nhận kết quả.
+
+## 111. Writing navigation, compact headings và rubric scrolling (16/11/2026)
+
+Menu Teacher sắp theo Workspace (Overview, Courses), Prepare (Question library, Assessment criteria), Deliver & assess (Assign exercise, Created exercises, Student submissions); Student theo Workspace, Write & practise, Progress. Nút căn trái, icon đồng kích thước, aria-current cho trang đang mở; giữ nguyên handlers và quyền. Thu gọn khối slogan cuối sidebar, tiêu đề trang và dòng quyền truy cập, vẫn giữ cảnh báo/recovery. Trên màn nhỏ menu giữ dạng ngang, ẩn nhãn nhóm.
+
+Lỗi rubric không cuộn: `.rubric-manager` bị flex-shrink trong `.writing-main` và `overflow:hidden` cắt nội dung cao. Chuyển sang flex-shrink:0/overflow:visible để vùng main cuộn hết tiêu chí. Header rubric cũng thu gọn. Browser audit bổ sung wheel thật từ textarea tiêu chí tới nút Add assessment section và kiểm tra scrollTop; không thay đổi rubric data/save/API.
+
+Kiểm chứng: production build/TypeScript đạt; browser audit đạt **48 trạng thái**, bao gồm cuộn thật tới cuối rubric, Teacher/Student, responsive, sáng/tối và các luồng hiện có. Ảnh và report: `target/ui-navigation-scroll-20261116-01/`. Chỉ sửa frontend và tài liệu, không chạy migration hay đổi dữ liệu thật.
+
+## 110. Academic UI: dashboard và hệ giao diện chung (16/11/2026)
+
+Áp dụng `ui-ux-pro-max` và review theo `code-review-and-quality`. Thiết kế thống nhất nền trung tính, navy navigation, tím Task Writing, xanh LaTeX, vàng Courses. Dashboard có số liệu thật theo tài khoản, tài liệu gần đây, lối vào Dashboard / Courses / Task Writing / LaTeX Studio. Teacher và Student giữ luồng/phân quyền riêng. Activity cũ nằm trong vùng mở rộng, danh sách dự án và tính năng hiện có được giữ lại.
+
+`apps/frontend/app/academic-ui.css` quản lý tokens và giao diện sáng/tối, responsive, focus, reduced motion; import sau globals. Phủ auth/onboarding, profile/settings, dự án/templates, Writing/course/library/giao bài/thi/tiêu chí/làm bài/chấm/kết quả, editor/file tree/outline, PDF/Word chrome, logs/history/share/comment/dialog. `DashboardOverview.tsx` fetch overview có abort theo account; page.tsx bổ sung điều hướng, WritingWorkspace nhận initialScreen để mở Courses đúng chỗ. Không đổi API/backend/DB, nội dung tài liệu hay bộ render PDF/Word. Sửa z-index modal bị header che nút đóng, phát hiện khi chạy browser test.
+
+Kiểm chứng: typecheck và production build đạt; backend **273 passed**; browser auth role/email/Google mock và question-library đạt. Audit mới `tests/browser/test-ui-redesign.mjs` đạt **47 trạng thái** trên Edge headless, gồm Teacher/Student, đăng nhập/role, settings/profile, Course/Library/form/rubric, bài làm/chấm/kết quả/exam gate, sáng/tối, PDF compile thật/log/share/review/chat/history, viewport 375/768/1024/1440/812 và large text/reduced motion. Báo cáo/ảnh: `target/ui-redesign-audit-20261116-04/`. Dữ liệu thử mongomock riêng, không chạm Atlas. Không khẳng định mọi tổ hợp dialog/tài liệu đã kiểm thử; native Word pagination, OAuth thật và cộng tác nhiều máy cần acceptance riêng. Không commit/push.
+
+Tài liệu: `docs/UI_REDESIGN.md`, `design-system/latex-academic/MASTER.md`. Xem giao diện mới bằng `scripts\run-python-web.bat --build`, sau đó Ctrl+F5 nếu trình duyệt còn cache.
+
+## 109. Chọn role khi đăng ký và chuyển giao diện tài khoản cũ (16/11/2026)
+
+Review theo `code-review-and-quality`: code hiện tại không mặc định Tutor cho tài khoản mới (email/Google đều từng role=None và đã có RoleSelection). Đăng nhập lại cùng Google trả tài khoản đã có và giữ role cũ; form email trước sửa không hiển thị lựa chọn role ngay khi đăng ký, API onboarding sau đó khóa đổi role. Không đọc/chỉnh tài khoản thật trên Atlas để đoán nguyên nhân của từng user.
+
+AuthView thêm Student/Teacher (Tutor) bắt buộc trên form email, không chọn sẵn, reset khi đổi Login/Register, nút Register chặn khi chưa chọn. Credentials.role optional với Literal student/tutor, Accounts.signup lưu role cùng insert account; client cũ không gửi role vẫn pending onboarding, không gán mặc định. Google mới vẫn role=None và chọn qua onboarding sau callback, có hướng dẫn rõ; Google cũ giữ role đã lưu, không tạo lại/reset tài khoản mỗi lần đăng nhập. Desktop/offline không bị chặn bởi radio dành riêng web.
+
+Profile thêm Account role; POST /api/auth/role nhận previousRole/role, chỉ đổi user của cookie hiện tại, validate enum và CAS role cũ; pending onboarding không dùng endpoint này để bypass bước chọn. Không cấp Admin/đổi permission dự án. Grant cũ có role thiếu/null/empty được chốt fallback role trước khi đổi tài khoản, chỉ cập nhật trường thiếu nên giữ giá trị hiệu lực và không ghi đè role explicit. Đây là thao tác khi chính user bấm đổi, không migration hàng loạt. Profile flush bài Writing trước đổi, await callback; account-role-updated refresh Writing ngay, không cần chờ poll. Onboarding endpoint cũ vẫn từ chối dùng để đổi role đã hoàn tất.
+
+Kiểm chứng: full backend **273 tests passed**, gồm email Student/Tutor, đăng nhập giữ role, Google state/replay/nonce/audience/identity collision, rolechange tự thân/invalid/stale/pending, explicit và legacy project role không đổi. Mutation cố ý ép signup role=tutor bị test Student bắt; restore ngay, log target/auth-role-default-mutation.log. Production Next.js/TypeScript build đạt. Browser test `tests/browser/test-auth-role-selection.mjs` + test-only factory run_auth_roles_web.py dùng Mongo mock, bốn phiên kiểm email/Google Student và Teacher, role không chọn sẵn, Google onboarding reload, returning Google giữ role, Profile Teacher→Student đổi nav ngay và reload giữ role. Nhà cung cấp Google/token exchange giả lập, callback/state/cookie/session của app chạy thật; không thử token exchange Google production và không thay cấu hình OAuth thật. Bài test intercept start redirect bằng route.fetch(maxRedirects=0), không gọi Google thật. Lượt browser đạt: target/auth-role-selection-20261116-06/report.json; ảnh email-student-choice/google-student-choice/existing-teacher-switched-to-student đã xem. Tài liệu README/WEB_AUTH_ONBOARDING cập nhật. Giữ các thay đổi rail ở mục108, không commit/push hoặc tự đổi dữ liệu thật.
+
+## 108. Bỏ rail trong Task Writing và icon Writing trong LaTeX (16/11/2026)
+
+Theo yêu cầu giao diện: `app/page.tsx` không render workspaceTools trong nhánh Task Writing; LaTeX giữ ba nút Files/Outline, Review và Collaborator chat, bỏ nút mũ tốt nghiệp thứ tư. Task Writing vẫn mở qua navigation chính/trang chủ. Container Writing vốn dùng flex nên nội dung tự lấp cột 46px vừa bỏ, không cần chèn khoảng trống hay ẩn bằng CSS. Không sửa nghiệp vụ/câu hỏi/quyền.
+
+Production build/TypeScript đạt. Browser Edge với home/Mongo mock riêng xác nhận Writing không có rail, sidebar bắt đầu tại x=0; editor có đúng ba nút và bấm cả ba đổi panel/aria-pressed đúng, không lỗi runtime. Báo cáo/ảnh: `target/workspace-rail-20261116-01/report.json`, `writing-no-rail.png`, `latex-three-tools.png`. Không chạm dữ liệu thật, không commit/push. Mục này thay hướng dẫn icon mũ tốt nghiệp ở các mục lịch sử bên dưới.
+
 ## 107. Task Writing độc lập, question library và Course/Group (13/11/2026)
 
 Đọc README và các mục bàn giao 90–106, đối chiếu code theo skill `code-review-and-quality` (correctness, readability, architecture, security, performance). Yêu cầu mới thay thế quyết định bỏ lớp ở mục102: Task Writing là luồng học/chấm riêng, LaTeX là công cụ tích hợp tùy chọn. Working tree ban đầu đã có sửa dở ở writing/api.py và service.py (writingScope/purpose/customrubric, khóa enrollment và import questions.py chưa tồn tại); hoàn thiện trên nền đó, không reset thay đổi của user. Spec/review và giới hạn: `docs/TASK_WRITING_REVIEW.md`.
@@ -14,7 +158,7 @@ Home có giới thiệu ba luồng, hai lựa chọn Task Writing/LaTeX Studio; 
 
 ProjectPromptPicker ngoài project có Source project chọn tệp accessible trong editor, compile đúng file và nhập immutable PDF/ảnh/text. PromptImport.sourceProjectId kiểm source ACL, capture rồi copy metadata về scope Writing độc lập; học viên Course không phải được mời vào project nguồn. Binary endpoint kiểm owner/scope, public-question visibility hoặc assignment enrollment; không dùng source projectId do browser khai để cấp quyền. Tách rõ legacy implicit classes và new enrollment=explicit, giữ quyền dự án cũ; không tự migrate/claim dữ liệu thực.
 
-Kiểm chứng: full backend suite **266 tests đạt ở lượt cuối**, sau cả sửa batching roster và import nguồn độc lập; focused Task Writing/workflow/exam/unified **13 tests đạt**. Mutation đảo guard Private/Public bị test bắt, đã restore ngay, log target/task-writing-visibility-mutation.log. Production Next.js/TypeScript build đạt. Browser `scripts/test-task-writing.mjs` trên Edge hai phiên Tutor/Student và Tutor thứ ba đạt: home3luồng, group/addstudent, privatehidden/publicreuse, customcriteriaintro, practice riêng, structuredanswer, nộp/chấm/publish100%, không phát sinh project; PDF feedback compile thật và optional LaTeX import compile main.tex vào library. Báo cáo `target/task-writing-browser-20261113-03/report.json`, PDF section-feedback.pdf, ảnh home-pathways/course-group-members/exercise-custom-rubric/student-introduction/tutor-checklist-result/latex-source-library/mobile-question-library. Đã xem ảnh và sửa duplicate whole-card ở partial task/mobile header. Dùng Mongo mock và home test riêng; không chạm Atlas/config riêng, không dừng web thật, không commit/push. Các mục phía dưới là lịch sử, không thay thế luồng mới này.
+Kiểm chứng: full backend suite **266 tests đạt ở lượt cuối**, sau cả sửa batching roster và import nguồn độc lập; focused Task Writing/workflow/exam/unified **13 tests đạt**. Mutation đảo guard Private/Public bị test bắt, đã restore ngay, log target/task-writing-visibility-mutation.log. Production Next.js/TypeScript build đạt. Browser `tests/browser/test-task-writing.mjs` trên Edge hai phiên Tutor/Student và Tutor thứ ba đạt: home3luồng, group/addstudent, privatehidden/publicreuse, customcriteriaintro, practice riêng, structuredanswer, nộp/chấm/publish100%, không phát sinh project; PDF feedback compile thật và optional LaTeX import compile main.tex vào library. Báo cáo `target/task-writing-browser-20261113-03/report.json`, PDF section-feedback.pdf, ảnh home-pathways/course-group-members/exercise-custom-rubric/student-introduction/tutor-checklist-result/latex-source-library/mobile-question-library. Đã xem ảnh và sửa duplicate whole-card ở partial task/mobile header. Dùng Mongo mock và home test riêng; không chạm Atlas/config riêng, không dừng web thật, không commit/push. Các mục phía dưới là lịch sử, không thay thế luồng mới này.
 
 ## 106. Khôi phục compile ZIP LTJournalArticle thiếu titling (13/11/2026)
 
@@ -176,7 +320,7 @@ Frontend mới `components/writing/{WritingWorkspace,AssignmentForm,ReviewPaper,
 
 Collections mới: `writing_classes`, `writing_memberships`, `writing_assignments`, `writing_drafts`, `writing_submissions`, `writing_reviews`, `writing_results`, `writing_publications`, `writing_assets`. Không cần migration dự án cũ. Mọi dữ liệu nghiệp vụ lưu trên database cấu hình hiện tại; unit/browser tests dùng dữ liệu cách ly. Chưa giao riêng từng học viên, quản trị/xóa thành viên, gửi email, bộ chọn mục đích thư riêng, AI tự chấm/đạo văn/giám thị hay đồng biên tập IELTS CRDT. Legacy IeltsGradingPanel/API dự án cũ giữ tương thích, module mới không lấy điểm mẫu của panel cũ.
 
-Đã kiểm chứng: **224 backend tests đạt**, 5 tests mới kiểm ACL, snapshot, CAS, draft private, band, minh chứng và LaTeX; production frontend build/typecheck đạt. Browser test `apps/frontend/scripts/test-writing-workflow.mjs` chạy hai phiên Tutor/Student trên web chính: lớp, cả hai task, nháp/PDF thật, nộp, chọn minh chứng/checklist, công bố, Student đọc, mobile/dark, reload và phiếu compile trong editor. Artifacts bản local cuối: `target/writing-integration-20261111-final/`. Hướng dẫn và giới hạn ở `docs/IELTS_WRITING_WEB.md`; README/design đã cập nhật. Chưa commit/push; chưa tự dừng web thật của user.
+Đã kiểm chứng: **224 backend tests đạt**, 5 tests mới kiểm ACL, snapshot, CAS, draft private, band, minh chứng và LaTeX; production frontend build/typecheck đạt. Browser test `apps/frontend/tests/browser/test-writing-workflow.mjs` chạy hai phiên Tutor/Student trên web chính: lớp, cả hai task, nháp/PDF thật, nộp, chọn minh chứng/checklist, công bố, Student đọc, mobile/dark, reload và phiếu compile trong editor. Artifacts bản local cuối: `target/writing-integration-20261111-final/`. Hướng dẫn và giới hạn ở `docs/IELTS_WRITING_WEB.md`; README/design đã cập nhật. Chưa commit/push; chưa tự dừng web thật của user.
 
 Kiểm chứng Atlas thật cho module IELTS: `target/presence-atlas-b56bdeda0b02c3c6/atlas-report.json`, `passed: true`, `cleaned: true`. Chạy cùng browser workflow trong namespace riêng, không dùng bài/tài khoản thật; phiếu gồm checklist compile thành PDF sau khi bỏ phụ thuộc bullet font. Test Writing backend chạy lại sau sửa cuối đạt 5/5.
 
@@ -248,7 +392,7 @@ Parser mới `lib/outline.ts` nhận part/chapter/section/subsection/subsubsecti
 
 Click tên nhảy/focus editor tới đúng heading; click chevron chỉ thu/mở. Theo dõi active heading bằng cursor sink ref, cập nhật state trong component riêng khi đổi mục, không bắt parent page rerender mỗi lần rê caret. Component memo hóa source/editor/language; không reconfigure CodeMirror. Hỗ trợ ARIA tree/group/treeitem và bàn phím Up/Down/Left/Right/Home/End/Enter/Space; focus chuyển đồng bộ với node đã có để bấm Enter nhanh vẫn đúng mục. Root cây giới hạn min-width/overflow để tên dài không đẩy tràn sidebar.
 
-Kiểm chứng: TypeScript/production build và diff check đạt. `node --experimental-strip-types scripts/test-outline-parser.mjs` đạt hierarchy, title lồng, duplicate IDs, comments/literal, offset và missing level. Node có warning module type detection cho file TS, không phải lỗi app. Browser Edge `target/outline-tree-20261111-final/report.json` đạt tree 3 cấp, collapse/expand, keyboard, nhảy source sau khi offset đổi, active selection, giữ collapse khi gõ, toggle panel và resize divider; đã xem ảnh `outline-tree.png` và `outline-tree-dark.png`. Regression kéo bôi cục bộ + caret-only + comment shared vẫn đạt `target/outline-selection-regression-20261111`.
+Kiểm chứng: TypeScript/production build và diff check đạt. `node --experimental-strip-types tests/unit/test-outline-parser.mjs` đạt hierarchy, title lồng, duplicate IDs, comments/literal, offset và missing level. Node có warning module type detection cho file TS, không phải lỗi app. Browser Edge `target/outline-tree-20261111-final/report.json` đạt tree 3 cấp, collapse/expand, keyboard, nhảy source sau khi offset đổi, active selection, giữ collapse khi gõ, toggle panel và resize divider; đã xem ảnh `outline-tree.png` và `outline-tree-dark.png`. Regression kéo bôi cục bộ + caret-only + comment shared vẫn đạt `target/outline-selection-regression-20261111`.
 
 Không đổi API/backend, không sửa dự án/tài khoản thật và không commit/push. UI đã build sẵn; Ctrl+F5 trên trang đang mở để nhận bản mới. Không cần migrate dữ liệu hoặc restart backend chỉ cho thay đổi UI này.
 
@@ -321,7 +465,7 @@ Phát hiện vận hành: **cổng 8000 đang có Python PID 71840**, process kh
 | Median | 1.740 ms | 387 ms |
 | P95 thực nghiệm (8 mẫu, tức mẫu lớn nhất) | 2.337 ms | 718 ms |
 
-Median giảm khoảng 78%, tương đương 4,5 lần nhanh hơn trong lượt đo; đây là mẫu nhỏ trên môi trường hiện tại, không phải SLA hoặc benchmark tải nhiều người. Dữ liệu gốc: `target/presence-atlas-0653258d7f5b7585/speed.json` và `target/presence-atlas-c198eb14fa9f0648/speed.json`. Report Atlas cuối passed/cleaned=true; collections test có prefix/guard đã dọn, không đổi account/dự án thật. Benchmark mới `apps/frontend/scripts/test-sync-speed.mjs`.
+Median giảm khoảng 78%, tương đương 4,5 lần nhanh hơn trong lượt đo; đây là mẫu nhỏ trên môi trường hiện tại, không phải SLA hoặc benchmark tải nhiều người. Dữ liệu gốc: `target/presence-atlas-0653258d7f5b7585/speed.json` và `target/presence-atlas-c198eb14fa9f0648/speed.json`. Report Atlas cuối passed/cleaned=true; collections test có prefix/guard đã dọn, không đổi account/dự án thật. Benchmark mới `apps/frontend/tests/browser/test-sync-speed.mjs`.
 
 Kiểm chứng: production build/TypeScript và diff check đạt; **26 backend tests** auth/sharing/Mongo/presence/live đạt; Edge–Chrome regression `target/sync-speed-regression-final` đạt cursor/avatar, xóa chữ, sửa đồng thời, undo/redo riêng người, offline pending + remote edits, viewer, reload và disconnect. Chưa benchmark nhiều người hoặc file lớn, vẫn một worker. UI đã build; user lưu bài, Ctrl+C server cũ, chạy `scripts\run-python-web.bat`, rồi Ctrl+F5 cả hai browser. --build vẫn chỉ build rồi thoát.
 
@@ -359,7 +503,7 @@ Giới hạn giữ nguyên: chưa CRDT/OT/live text merge; cần cùng file và 
 
 - Backend: `collaboration/presence.py`, gateway `http/web_accounts.py`; endpoint WebSocket `/api/projects/{id}/presence`; ảnh qua `/api/projects/{id}/sharing/avatar/{user}` chỉ cấp sau kiểm tra quyền dự án và user đang hiện diện. Identity/color do server tạo từ session đăng nhập, bỏ qua dữ liệu giả tên/id/color từ client. Kiểm tra Origin/Host, role, owner/editor; kiểm tra lại session/ACL mỗi 5 giây, ngắt khi logout/revoke/downgrade. Chặn path traversal/payload sai, giới hạn số kết nối/kích thước/tần suất, queue giữ snapshot mới nhất, heartbeat/reconnect và cleanup.
 - Frontend: `lib/usePresence.ts` dùng WebSocket và CodeMirror decorations, `components/PresenceAvatars.tsx`, tích hợp page/CSS. Throttle 80ms, heartbeat 15 giây, backoff reconnect tối đa 15 giây; SHA-256 nội dung khớp mới vẽ con trỏ, tránh hiển thị vị trí sai khi hai buffer chưa đồng bộ. Không gửi nội dung source hoặc email qua presence.
-- Kiểm chứng: frontend production build + TypeScript đạt; backend presence 4 tests đạt, nhóm auth/sharing/Mongo trước đó 18 tests đạt. Browser Edge 3 phiên độc lập đạt ở `target/presence-browser-04`: tên thật, ảnh profile decode được, caret/selection, đổi file, buffer khác thì ẩn, viewer không quảng bá, reload/reconnect, đóng tab cleanup, không pageerror. Đã xem ảnh `named-cursor-selection.png`. Test mới `tests/test_presence.py`, `scripts/test-presence.mjs`; dùng Mongo double/test home riêng, không đổi dữ liệu Atlas thật.
+- Kiểm chứng: frontend production build + TypeScript đạt; backend presence 4 tests đạt, nhóm auth/sharing/Mongo trước đó 18 tests đạt. Browser Edge 3 phiên độc lập đạt ở `target/presence-browser-04`: tên thật, ảnh profile decode được, caret/selection, đổi file, buffer khác thì ẩn, viewer không quảng bá, reload/reconnect, đóng tab cleanup, không pageerror. Đã xem ảnh `named-cursor-selection.png`. Test mới `tests/test_presence.py`, `tests/browser/test-presence.mjs`; dùng Mongo double/test home riêng, không đổi dữ liệu Atlas thật.
 
 Giới hạn rõ ràng: presence hiện trong RAM của **một web worker**; MongoDB vẫn là nguồn tài khoản/ACL, không lưu trạng thái online vào DB. Nhiều worker/server cần Redis pub/sub hoặc backend chia sẻ presence tương đương. Đây chưa phải CRDT/OT hoặc live text merge: nội dung tiếp tục dùng save/polling + expected/409, giữ bản sửa chưa lưu khi xung đột. Không vẽ cursor lên Word/PDF. Launcher/host guard vẫn loopback như trước. Muốn xem bản mới: lưu bài, dừng server cũ, chạy lại `scripts\run-python-web.bat --build` trong terminal có Google env; thử hai browser profile bằng hai tài khoản có quyền sửa.
 
@@ -429,7 +573,7 @@ Nguyên nhân: `.logs-list-container` là flex-column có chiều cao giới h�
 
 Sửa `globals.css`: card/raw section dùng flex 0 0 auto để cuộn theo chiều dọc; header tối thiểu 62px, nội dung dài xuống dòng, tăng font tiêu đề/message/raw log, filter tabs không co và có cuộn ngang. `LogsView.tsx`: header là button có aria-expanded/aria-controls, thao tác Enter/Space; luôn hiển thị message gốc khi mở, kể cả message trùng title. Thêm thanh số thông báo, Mở tất cả/Thu gọn chi tiết theo filter, Xem nhật ký thô trực tiếp và cuộn tới raw section. Raw header dùng button, giữ sao chép/tải .log và bộ lọc hiện có. Không thay parser, backend compile hoặc xóa log.
 
-Next production build + TypeScript đạt; diff check đạt. Test browser mới `apps/frontend/scripts/test-many-logs.mjs` tạo tài khoản/home riêng, compile tài liệu LaTeX thật có 120 PackageWarningNoLine khác nhau (tổng 123 gồm 3 cảnh báo locale môi trường). Kiểm card min-height/readable, container cuộn, mở cảnh báo đầu/cuối, Enter đóng/mở, mở tất cả/thu gọn, filter, mở raw giữ Warning 120, tải .log đủ nội dung, sáng/tối và không JS page error. Test đạt tại `target/many-logs-regression-02`; đã xem screenshot light. Frontend output đã build lại; người dùng lưu bài rồi reload browser để tải UI mới, không cần restart backend Google. Chưa commit/push.
+Next production build + TypeScript đạt; diff check đạt. Test browser mới `apps/frontend/tests/browser/test-many-logs.mjs` tạo tài khoản/home riêng, compile tài liệu LaTeX thật có 120 PackageWarningNoLine khác nhau (tổng 123 gồm 3 cảnh báo locale môi trường). Kiểm card min-height/readable, container cuộn, mở cảnh báo đầu/cuối, Enter đóng/mở, mở tất cả/thu gọn, filter, mở raw giữ Warning 120, tải .log đủ nội dung, sáng/tối và không JS page error. Test đạt tại `target/many-logs-regression-02`; đã xem screenshot light. Frontend output đã build lại; người dùng lưu bài rồi reload browser để tải UI mới, không cần restart backend Google. Chưa commit/push.
 
 ---
 
@@ -1560,7 +1704,7 @@ Nguyên nhân: CSS `.editor-area > .cm-theme` không khớp wrapper `.cm-theme-l
 
 Thêm class ổn định `source-editor` vào CodeMirror trong `app/page.tsx`, áp dụng height 100%/min-height 0 cho wrapper và editor; scroller giữ overflow auto, giới hạn overscroll trong editor. Không phụ thuộc tên lớp theme. Đã build lại UI static để lần mở app tiếp theo dùng bản sửa.
 
-Kiểm chứng: Next.js production build/TypeScript đạt. Bổ sung browser regression vào `scripts/test-features.mjs` với 240 dòng dài: wheel dọc thực sự đổi scrollTop, wheel ngang đổi scrollLeft, chiều cao scroller không vượt vùng editor. Chạy toàn bộ script trên Edge headless đạt cả kiểm cuộn và các luồng UI sẵn có; bằng chứng trong `target/editor-scroll-01/features.png`. Không thay đổi source dự án của người dùng.
+Kiểm chứng: Next.js production build/TypeScript đạt. Bổ sung browser regression vào `tests/browser/test-features.mjs` với 240 dòng dài: wheel dọc thực sự đổi scrollTop, wheel ngang đổi scrollLeft, chiều cao scroller không vượt vùng editor. Chạy toàn bộ script trên Edge headless đạt cả kiểm cuộn và các luồng UI sẵn có; bằng chứng trong `target/editor-scroll-01/features.png`. Không thay đổi source dự án của người dùng.
 
 ## 37. Cây thư mục theo nhánh và sidebar kéo ngang (04/11/2026)
 
@@ -1944,7 +2088,7 @@ Validation: imported ZIP compiled through the application Compiler using pdfLaTe
 
 **Compile thật:** `target/multidoc-real-01/report.json` ghi main.tex, ielts_report.tex sinh bởi IeltsManager và nested/main.tex đều compile pdfLaTeX, nội dung PDF khác nhau đúng nguồn và vẫn verified sau khi compile root khác. Query SyncTeX forward của report trả tọa độ hợp lệ. Khi tái hiện IELTS phát hiện TinyTeX local thiếu tcolorbox; đã cài tcolorbox/environ/trimspaces rồi compile lại thành công, không sửa source báo cáo để né dependency. Các gói local này không đi theo Git; README nêu yêu cầu cho máy khác.
 
-Browser integration mới: `apps/frontend/scripts/test-document-tabs.mjs`, chạy với Python executable và một home mới. Kiểm main/report compile riêng, PDF/Word tabs, sửa Word → đổi main → quay lại report vẫn giữ chữ; Word main không có chữ của report; tải report.docx trùng bytes draft report; sửa nguồn/đổi tab được lưu và đóng tab chuyển sang output còn lại. Bằng chứng `target/multidoc-ui-05/document-tabs.png`, `document-tabs-word.png`, `edited-report.docx`. Production build/TypeScript và kiểm whitespace các file sửa đạt. Đã cập nhật selector regression cũ để phân biệt file tree với source tabs có cùng tên/tooltip.
+Browser integration mới: `apps/frontend/tests/browser/test-document-tabs.mjs`, chạy với Python executable và một home mới. Kiểm main/report compile riêng, PDF/Word tabs, sửa Word → đổi main → quay lại report vẫn giữ chữ; Word main không có chữ của report; tải report.docx trùng bytes draft report; sửa nguồn/đổi tab được lưu và đóng tab chuyển sang output còn lại. Bằng chứng `target/multidoc-ui-05/document-tabs.png`, `document-tabs-word.png`, `edited-report.docx`. Production build/TypeScript và kiểm whitespace các file sửa đạt. Đã cập nhật selector regression cũ để phân biệt file tree với source tabs có cùng tên/tooltip.
 
 Final browser checks: multidoc-ui-06 passed (including closing source/output tabs and reviewing saved Word after source changes); multidoc-regression-02 passed existing features; multidoc-pdf-regression-01 passed 3-page PDF/link/exact-export/stale/error guards. Logs use the selected compile root when no explicit source filename is present. No commit or push performed.
 
@@ -1967,7 +2111,7 @@ Final browser checks: multidoc-ui-06 passed (including closing source/output tab
 
 Tạo venv `target/local-web-clean-env` bằng uv sync frozen extra web: 33 package, **không có pywebview**; import module web và CLI production/browser test đều chạy được. Full backend **148 pytest đạt**, thêm 4 test cookie/bootstrap/origin/Host/cross-site, desktop cookie isolation, binary paths/SVG và CLI không bind public. Cảnh báo Starlette/httpx TestClient có sẵn vẫn chưa gây fail.
 
-Browser script mới `scripts/test-local-web.mjs` gọi module web production, không dùng server test hoặc bearer URL. `target/local-web-ui-03` đạt: cookie HttpOnly/no token trong URL/sessionStorage; reload; create/save; compile PDF 2 trang và download exact bytes; tab PDF riêng; Word edit/download trùng draft bytes; upload/mở ảnh; avatar; ZIP browser import rồi compile. Screenshot local-web-word.png/local-web-home.png trong home test. Lượt đầu chọn text-run quá cụ thể không khớp DOCX có nhiều run, đã đổi selector line có chữ LOCAL; không sửa converter để né test.
+Browser script mới `tests/browser/test-local-web.mjs` gọi module web production, không dùng server test hoặc bearer URL. `target/local-web-ui-03` đạt: cookie HttpOnly/no token trong URL/sessionStorage; reload; create/save; compile PDF 2 trang và download exact bytes; tab PDF riêng; Word edit/download trùng draft bytes; upload/mở ảnh; avatar; ZIP browser import rồi compile. Screenshot local-web-word.png/local-web-home.png trong home test. Lượt đầu chọn text-run quá cụ thể không khớp DOCX có nhiều run, đã đổi selector line có chữ LOCAL; không sửa converter để né test.
 
 Regression cũ: `local-web-documents-regression-01` đạt nhiều root/source/PDF/Word và cách ly edit/export; `local-web-legacy-regression-02` đạt toàn bộ features cũ, kể cả reload/profile/English sau khi sửa bootstrap 405. README chuyển quickstart chính sang web; chi tiết ở docs/LOCAL_WEB.md. Chưa commit/push trong lượt này.
 
@@ -2096,3 +2240,321 @@ Actual launcher started at http://127.0.0.1:8000/; HTTP 200. Browser test-local-
 ## 67. Windows App Control blocks Python startup (09/11/2026)
 
 Confirmed CodeIntegrity/Operational Event 3077 blocks apps/backend/.venv/Scripts/python.exe; Authenticode reports NotSigned. Failure occurs before the application starts. Updated scripts/ensure-python.ps1 to recognize policy-related launch exceptions, report the exact blocked path and stop without changing security settings or replacing the runtime. Added docs/WINDOWS_PYTHON_STARTUP.md with policy review and approved-runtime guidance. Actual launcher verification returns exit code 1 with the new actionable message. Server startup remains blocked until the device administrator approves the required runtime/dependencies; application runtime tests could not run in this environment.
+
+
+## 123. Question visibility and Finish score (2026-11-17)
+
+Removed question image zoom/enlarge controls; images fit the reading pane without a height cap. Confirmation now includes question text and attachment together. Submitted point reviews show question and image immediately beside the answer in equal desktop columns, stacked on mobile. Checklist score is the single numeric grading editor, widened with wrapping rows. Finish score reviews all tasks, criterion points and sentence corrections/comments before Publish; incomplete grading blocks publishing. Server ACLs, immutable submissions, revision checks and historical band grading remain unchanged.
+
+Implementation details and verification: docs/QUESTION_REVIEW_AND_FINISH_SCORE.md. Browser suites use isolated mock storage, never the live Atlas database.
+
+
+## 124. Compact question and pinned sentence feedback (2026-11-17)
+
+Tutor point assessments start with a compact question strip and Show question / Minimize question controls. The strip stays accessible while scrolling. Full question text and image remain available on expansion. Opening sentence feedback restores compact mode for the Tutor, giving the paper its full reading width with a sticky 340px comment column beside it. Small screens use a bounded floating feedback panel instead of placing the editor beneath a long answer. Student review still opens the complete question by default. No scoring, submission, publication or access-control changes.
+
+Production build/TypeScript passed. Isolated Tutor/Student browser tests cover question expand/collapse, long-paper scrolling, comment-column geometry, saving/publishing and Student read-only feedback; point-assessment regression also passed. See docs/QUESTION_REVIEW_AND_FINISH_SCORE.md.
+
+
+## 125. Stable question disclosure layout (2026-11-17)
+
+Supersedes section 124's layout switching and automatic question minimization: question stays above the answer in both states; Show question / Minimize question share a fixed-width button in the same header position. Only question content height changes, with a bounded scrolling area for the full prompt/image. Answer column width and the desktop comment column do not change when toggling. Opening comments no longer automatically collapses the question. A ResizeObserver measures the question header/content height so sticky feedback clears the question without covering it.
+
+Verification covers toggle x/y/width/height and answer-column width before/after expansion, plus long-answer scrolling, feedback save and publication. No grading or storage changes.
+
+
+## 126. Full question content without oversized heading (2026-11-17)
+
+Removed the large Question heading and redundant immutable-submission label from point-review prompts. A compact toolbar above the review scroller holds the fixed-width Show question / Minimize question button. Expanded question content now has natural height and visible overflow, so prompt text and the entire image are part of one normal page flow, without the previous 28dvh nested scroll window. The toolbar stays available while the page scrolls. Removed question-height ResizeObserver because the expanded question is no longer pinned over the answer/comment area. Compact prompt preview and grading/publication behavior remain unchanged.
+
+Regression asserts no oversized heading, no nested prompt overflow, complete image containment, unchanged toggle geometry and answer width. Details: docs/QUESTION_REVIEW_AND_FINISH_SCORE.md.
+
+
+## 127. Hide all question content when minimized (2026-11-17)
+
+Removed the compact question preview that remained sticky over the Tutor answer. Minimize question now hides the whole question section (text and images); only the fixed Show question control remains. Removed obsolete preview/sticky styling and its extra comment offset. Regression checks the whole question section remains hidden while scrolling a long answer, as well as restoring the full question on expansion.
+
+
+## 128. Unified header and two-module home (2026-11-17)
+
+The identity header is consistent across Dashboard, Courses, Task Writing and LaTeX editor: brand, workspace indicator, settings and round account avatar, 64px high. Main module navigation moved to a separate row below it. Project breadcrumb, presence, History, Share and Layout now use their own context toolbar below the same identity header; focus mode and Escape remain available.
+
+Home now has two equal Task Writing / LaTeX Studio entry cards. Open LaTeX Studio navigates to Document library instead of duplicating project creation. Document library, project filters and New project render only in LaTeX Studio. Removed the contributions/activity block from this page. Dashboard scrolling belongs to the full-width outer viewport; the centered max-width content no longer owns an inset scrollbar. Both account roles and mobile stacking retain their existing functionality.
+
+Production build/TypeScript passed. Full UI browser audit passed 53 views: Tutor/Student, dark/light, courses, writing, rubrics, grading, project creation, editor, actual PDF compilation, sharing/history, focus/Escape, and responsive widths. Geometry assertions verify navigation below the header, equal editor/home header height, separated dashboard/library and correct outer scroll owner. Initial evidence: target/unified-shell-ui-20261117-01.
+
+
+## 129. Home portals replace module navigation tabs (2026-11-17)
+
+User refinement of section 128: removed the entire Dashboard / Courses / Task Writing / LaTeX Studio navigation row. Home's two module portals are the main entry points. Courses remain accessible from Task Writing and the course summary card. The Latex brand is now an accessible Home button, consistent across modules and editor. Home navigation flushes pending Word edits, saves source changes and respects Writing's unfinished-feedback/draft leave guard before exiting a project. Project tools, one creation entry in Document library, outer-page scrolling and the unified identity header from section 128 remain.
+
+Updated browser scenarios to navigate via visible home portals rather than removed tabs; added a pending-sentence-comment Home navigation guard check.
+
+
+Section 129 final validation: production build and TypeScript passed. UI redesign audit passed 53 views (target/home-portals-ui-20261117-01), and sentence-review passed 11 views including unfinished-comment Home navigation cancellation (target/home-portals-comments-20261117-01). Home screenshot inspected: no global navigation row, two module entry cards, no embedded document library or contributions block. Editor/home header heights match; PDF compile, History, Share and focus/Escape passed. All tests use isolated mock storage, not live Atlas.
+
+
+## 130. Tutor exercise inspection preserves navigation (2026-11-17)
+
+Replaced the unbounded inline View question & students card with ExerciseDetails: a bounded reading panel, persistent title/close row, internally scrollable question/images and a spaced Student progress table. Exercise type tabs stay sticky above it. Flex children stop shrinking while details are open, preventing large images from displacing or overlapping Assigned exercises / Practice / Examinations. Opening details resets only the module scroller and focuses its reading area; closing restores the originating card scroll position and button focus. Changing type tabs dismisses details as before.
+
+Added desktop/mobile browser regression for long image questions, tab visibility before/after internal scrolling, switching all three types and close focus restoration. No database, permissions, assignment creation or submission behavior changes. New component: apps/frontend/components/writing/ExerciseDetails.tsx.
+
+
+Section 130 validation: production build and TypeScript passed. direct-questions browser suite passed 7 views (target/tutor-exercise-inspection-20261117-01), including desktop/mobile exercise details, long-image internal scrolling with all type tabs visible, tab switching, close focus restoration, and original student writing/image workflow. Desktop/mobile screenshots inspected. Test storage is isolated from real Atlas.
+
+
+## 131. Shared Dashboard / Task Writing / LaTeX navigation (2026-11-18)
+
+Introduced WorkspaceNavigation, shared by home/document library and WritingWorkspace. One sidebar groups Dashboard, role-specific Task Writing tools and LaTeX Studio (All projects, Shared with you, Template library). Writing retains project-effective Tutor/Student role and read-only restrictions; home uses the account role. Active entries and document counts come from actual state. The old horizontal project navigation is removed; library search/view controls remain.
+
+Dashboard includes combined Writing/document counts, both module entry cards and actual recent LaTeX documents. The document page uses the same 235px sidebar as Writing; mobile becomes a scrollable grouped navigation strip with the active entry revealed. Main content scrolls at the right edge rather than inside a centered max-width column. LaTeX editor retains its file/review/chat toolbar and common identity header.
+
+Sidebar navigation to Dashboard or project filters uses the existing Home leave/save guard; template navigation also checks pending Writing work. Added browser tests for shared-library filters, direct question-library entry from documents, template browsing, Student visibility, recent documents and cancellation of project navigation with unfinished sentence feedback. No database or server authorization changes.
+
+
+Section 131 initial validation: production build/TypeScript passed; UI redesign audit passed 55 views (target/shared-navigation-ui-20261118-01), sentence-review passed 11 views including cancelled Shared with you navigation while composing feedback (target/shared-navigation-comments-20261118-01), and direct-questions passed 7 views (target/shared-navigation-exercise-20261118-01). Inspected shared dashboard and shared-library screenshots. Refined document header spacing and home content padding to match Writing; final build verification follows. Tests use isolated mock storage, never real Atlas.
+
+
+Section 131 final validation: final production build passed. Full UI audit rerun passed 55 views (target/shared-navigation-ui-20261118-02) after matching content padding/header spacing; earlier sentence-review 11 views and direct-questions 7 views also passed. Light/dark Dashboard and shared-library screenshots inspected. Role-aware navigation, shared filters, template modal, actual PDF compilation, editor/history/sharing/focus and responsive/no-horizontal-overflow checks passed. No real database was modified.
+
+
+## 132. Precise History diffs and editor file colours (2026-11-18)
+
+Project files/outline now use readable theme text, neutral panels and a violet selection accent instead of hard-coded olive/green labels and pale-green selection. Dark sidebar surface is aligned with the common panel palette; activity icons and folder path follow the same scheme.
+
+History comparison is enabled by default and replaces the old first-to-last-difference highlight with aligned line/word diffs: additions, removals and modifications, independent line numbers, unchanged gaps preserved, explicit symbols and Previous/Next change controls. A pure bounded diff helper handles large files without an unbounded LCS matrix; very large rewrites can be grouped with an explicit notice. Revision loads use sequence guards; a current-file read failure shows the saved version and a warning instead of falsely marking a whole-file deletion. Existing label/restore API remains; restoring returns to the editor and reopening History reads the restored file.
+
+Core files: lib/history-diff.ts, components/HistoryComparison.tsx, components/HistoryPanel.tsx, app/academic-ui.css. No dependency or backend/database changes. Details and validation: docs/HISTORY_DIFF.md. Added exact-text/Unicode/large-file unit cases plus a browser revision/colour workflow; equality mutation was caught and restored.
+
+
+Section 132 final validation (2026-11-18): production build/TypeScript and all 5 unit suites passed. The equality mutation was caught, original helper restored and tests passed again. Dedicated History browser suite passed 6 views (target/history-diff-ui-20261118-04): exact separate line/word changes, no-change/Source-only views, rapid-selection race, current-read failure, file filter, labels, restore returning to editor and reopening the correct comparison, light/dark colours and mobile wrapping. Broad UI regression passed 55 views (target/history-editor-regression-20261118-01), including editor compile/history/share/focus and Tutor/Student navigation. Inspected rendered History and editor screenshots. Restoring preserves the existing return-to-editor workflow; no work is queued on the unmounted History panel. All browser data is isolated mock storage, not the real Atlas database.
+
+
+## 133. Unified question delivery and assessment groups (2026-11-18)
+
+- Create question supports saving a reusable question or assigning it directly, retaining practice, homework and examination settings. The redundant Assign exercise navigation entry is removed.
+- Assessment criteria is named Assessment categories. Top assessment groups are IELTS Task and Research; Report remains a Research document subtype. Stored report records and published snapshots are preserved.
+- IELTS question setup combines all Task 1 chart and letter profiles. Academic / General Training selectors and classification badges are removed. A hidden legacy variant discriminator is derived from the selected profile for existing backend validation; it is not a user-facing choice.
+- Courses use summary cards with View. Tutor can add/remove registered students and edit course-local display name, student code and notes; account credentials are unchanged. Member edits use revision conflict checks and owner/project authorization. Student responses do not expose the roster.
+- Validation: 295 backend tests passed; frontend typecheck and five unit suites passed. Production build passed. Direct-question browser regression passed (7 views), including absence of Variant and Academic / General Training options. A mutation removing Report from Research caused the new grouping regression test to fail as expected; the source was restored.
+
+
+## 134. One dashboard, compact navigation and course-only UI (2026-11-18)
+
+- Removed the separate Task Writing Overview page and sidebar entry. Dashboard is the single cross-module overview, with Task Writing and LaTeX Studio panels. Opening Task Writing goes directly to exercises; existing leave/save guards remain intact.
+- Sidebar follows compact Workspace / Task Writing / LaTeX Studio grouping. Question library, writing guides, assessment categories, created exercises, sharing and templates use distinct icons. Removed the redundant sidebar footer.
+- Courses is the only visible enrollment model. Create, edit, join and student detail forms render inline, without a modal backdrop. Existing courses and legacy group memberships/exercises remain intact. Legacy group input is accepted for compatibility but course create/update always stores kind=course.
+- Validation: production build and TypeScript passed; 7 focused backend tests passed, including membership ACL, revision conflicts and legacy group normalization. Real Edge browser regression passed (3 views): one Dashboard, no Overview, inline course creation, student add/edit, return to shared Dashboard and mobile navigation. Mutation reverting normalization caused its regression test to fail as expected; original source restored.
+
+
+## 135. Shared appearance, contrast and interface font audit (2026-11-18)
+
+- Added `apps/frontend/app/theme.css` as the canonical palette and interface-font contract. Removed competing legacy palette declarations; migrated old green UI accents, text and surfaces to semantic variables. Stored theme IDs remain compatible, with theme-specific readable dark accents and native color-scheme.
+- Sans/Serif Settings now apply to body, controls, module headings, navigation and SuperDoc UI font tokens. Source code, submitted paper content and exported PDF/Word document fonts retain their own typography.
+- Fixed selected rubric tabs with white text on pale dark-mode accents, section panels using light-only fallback surfaces, template/preview labels using old green text, and legacy grading headings using soft-background tokens as foreground colors. SuperDoc toolbar/dropdown text and surfaces now use application tokens.
+- Activity canvas and legend share the same theme palette; scoped attribute observation redraws canvas when mode/theme/font changes and disconnects on cleanup. Success/error indicators and history additions/deletions keep semantic colors.
+- QA: production build/TypeScript and all five unit suites passed. Edge appearance audit passed 60 rendered view checks with zero measured contrast findings and zero page errors, covering Tutor/Student, four dashboard themes, both modes, forms, scoring, templates, Settings, editor, sharing/history/profile. Applying Sans/System in the real Settings dialog and changing emulated OS mode passed. Direct-question workflow regression passed 7 views.
+- Review experiment: inverted the Serif selector in a copied exported stylesheet; the font assertion failed with Sans received instead of Serif. Exported CSS was restored byte-for-byte, and the appearance audit passed again. No authorization, data model, scoring logic, compilation or conversion behavior changed.
+- Scope and repeatable checks: `docs/APPEARANCE_CONSISTENCY.md`. Visible UI contrast checks exclude document/code contents and disabled/decorative elements; this is not a full accessibility certification for arbitrary imported documents.
+
+
+## 136. DOCX preview paper and Word-to-LaTeX review (2026-11-18)
+
+- Preserved the original PDF-to-Word pipeline. SHA-256 comparison confirmed `convert_pdf2docx.py`, `universal_converter.py` and `build_perfect_docx.py` are still byte-identical to the files in `D:/ilovepdf-python`. No engine, image/caption placement or conversion configuration was replaced.
+- Root cause of dark paper: SuperDoc's layout page background inherited its UI background. The Word host now supplies `--sd-layout-page-bg: #fff` and `--sd-layout-page-color: #111`, independent of app mode; colored document runs/images remain intact. Toolbar fonts follow the interface setting without changing document fonts. Added width/overflow containment so editing or a long Word toolbar cannot horizontally shift the entire workspace.
+- Fixed DOCX visible-text extraction in `documents/docx_sync.py`: explicit line breaks/tabs are word separators, and nested textbox paragraphs are traversed once instead of duplicated. These normalization errors could make ordinary Word edits fail conservative LaTeX anchoring. Formatting commands, math, ambiguous matches, source-revision conflicts and stale PDF protections remain protected; no guessed TeX rewrites.
+- Validation: 298 backend tests, all five frontend unit suites and production build passed. A targeted mutation of the new break condition failed its regression test; source restored and focused tests green.
+- Real-toolchain proof passed with installed latexmk: LaTeX -> real PDF -> original DOCX converter -> edit DOCX text -> source sync -> real PDF recompilation containing the revised text. Reproducible helper: `apps/backend/tests/check_real_docx_roundtrip.py --home <fresh-dir> [--latexmk <path>]`.
+- Actual SuperDoc browser editing passed with the original converter, a two-page PDF fixture and an embedded image: edit text, save, verify LaTeX/CodeMirror, compile, switch PDF/Word and reopen. White paper/black text in dark/light, two pages, no body overflow and the embedded image in both rendered Word and exported edited DOCX were checked. The browser fixture bypasses TeX compilation only; real conversion, persistence, OT and native DOCX editing run normally. Independent real-toolchain proof covers actual compilation.
+- Original `D:/ilovepdf-python/paper_input.pdf` also rendered through the original specialized converter as six white Word pages. This is not a promise of pixel-identical rendering for every DOCX or automatic conversion of Word layout/formatting into TeX; only uniquely anchored text round-trips.
+
+## 137. Document library, editor shell and project templates (2026-11-18)
+
+- Document library: Title / Owner / Last modified table, selection and bulk source ZIP download; owner-only tag add/replace/remove and confirmed deletion. Shared users retain their existing access restrictions. Archives exclude build/internal metadata and are limited to 100 projects, 20,000 entries and 128 MiB of source data.
+- Editor: one compact header for project title, presence, History, Share and Layout; Home remains guarded by save/leave handling. Settings/profile are at the bottom of the activity rail. Removed duplicate compiled-document tabs and visible global status footers; PDF/Word preview follows the selected source target.
+- Word paper has an explicit white background and dark default ink regardless of app theme, preserving explicit document colors.
+- Removed the IELTS Writing practice templates banner and IELTS category/cards from the LaTeX new-project catalog. Existing project files, legacy template resources and Task Writing guides remain intact. Catalog filtering is in apps/frontend/app/page.tsx.
+- Validation: production build, five frontend unit suites, 300 backend tests and the isolated document-workspace browser flow passed. Browser coverage includes shared access, bulk actions, tags, focus exit, source switching and absence of IELTS cards/banner in new-project creation. Archive-size guard mutation was detected by its regression test and restored.
+- Restart the web backend and refresh the browser after updating, so new archive/tag API behavior and rebuilt UI are loaded together.
+
+### Follow-up verification: requested document/editor layout
+
+- Removed the remaining folder-path footer below the editor outline. Selected upload/create destinations remain available in the file toolbar.
+- Rebuilt production frontend successfully. Fresh isolated browser runs passed: document-workspace-review-03 (table, archive download, tags, shared permissions, source tabs, one header, focus exit, Home and no IELTS catalog cards) and document-word-review-03 (white paper in dark/light, native Word editing, source synchronization, recompilation, retained image and pagination).
+- Re-ran the two project-library backend tests successfully. Review preserved server-side ownership checks and existing save/leave/export safety guards.
+
+## 138. Compact compile controls follow source tabs (2026-11-18)
+
+- Removed the compile-file selector and its separate target-switch handler. Opening/restoring a .tex source tab sets the compile target to that file; non-TeX assets keep the most recent TeX target. Existing save, Word flush, busy, stale PDF and export guards remain.
+- New components/CompileOptions.tsx supplies a Recompile split button with Auto compile and three compiler radio choices. It replaces the OS-native engine select and always-visible checkbox. The PDF/Word format switch is now a dropdown; leaving Word still awaits its existing flush and viewers cannot open editable Word.
+- Menus support outside-click dismissal and Escape with trigger focus restoration. Toolbar controls wrap at narrow preview widths instead of clipping; PDF toolbar also wraps. Reduced outside page padding without modifying actual PDF page margins/content or exported bytes. Empty preview no longer has a separate dark rectangular card.
+- Browser coverage records compile request payloads for source-tab and engine selection, toggles Auto compile, checks narrow toolbar containment and Escape. DOCX browser round-trip uses the new format dropdown and verifies native edits still sync to LaTeX and remain after recompilation.
+
+- Final verification for section 138: production build and five frontend unit suites passed. Isolated browser document-workspace flow passed six views, including narrow toolbar/menu bounds; DOCX dropdown round-trip also passed on the final build (native edit, source synchronization, PDF recompilation, retained image and pagination, white paper in dark/light). A deliberate inversion of the .tex-tab activation condition made the browser regression fail with expected report.tex / actual main.tex. The exact source was restored and the final production build plus document-workspace suite passed again. Tests use isolated fixtures, not live Atlas data.
+
+## 139. Stable navigation from LaTeX Studio to Task Writing (2026-11-19)
+
+- Root cause in the reported sidebar: WorkspaceNavigation disabled all writing links during the initial permission request; shared disabled-button styling reduced their opacity. WritingWorkspace also used an empty overview role for the first render and could overwrite a newer navigation choice when that request finished.
+- Keep navigation available while access is loading, use the authenticated account role only to draw the initial navigation, and retain the latest selected module when the first overview resolves. Authoritative project role/viewer restrictions still apply once loaded; restricted initial routes fall back to assignments. No backend access checks were removed, and loading content is not rendered as an editable form before access confirmation.
+- The active link now uses the committed screen consistently with aria-current. Sidebar selection has no background fade, so the previously selected module does not linger as a fading highlight.
+- Regression: six frontend unit suites and production build passed. A new isolated browser flow delays the overview response, switches from All projects to Courses then Writing guides for both Student and Tutor, checks readable/enabled navigation, no old document-library content, and the final route after the delayed reply.
+- Quality review: inverted the loading guard; navigation regression failed as expected. Restored original source and reran green tests. Tests use isolated mock storage, not live MongoDB Atlas.
+
+## 140. Assessment navigation, submission metadata and Research guides (2026-11-19)
+
+- Tutor Created exercises navigation and its page heading are both named Assessment. Removed its duplicate Create question button; question creation remains in Question library. Student personal-practice creation remains available. Tutor/student submission headings now match their sidebar labels.
+- Extracted SubmissionTable: Course, Student, Student code, Exercise, Assessment type, conditional IELTS Task, Attempt, Submitted at, Status and action. Course/roster metadata comes from the authorized overview; optional codes remain empty and internal user IDs are never substituted. Research/legacy Report rows have no IELTS task labels; an all-Research list omits the Task column. Table has a bounded horizontal scroll region rather than squeezing text or overflowing the page.
+- Writing guides now expose only IELTS and Research categories, including the create/edit form. Existing Report guides/profiles appear inside Research and keep their historical subtype. Research guide filtering on the server includes report and research; guide/profile validation compares the canonical assessment group. Existing course enrollment checks, revisions, CRUD authorization and immutable submissions remain unchanged.
+- Regression coverage creates real isolated courses, members (with/without codes), IELTS/Report/Research assignments and submissions, and an existing Report guide. Backend tests also cover an enrolled student's Research guide list and an unenrolled student's denial. An intentional exclusion of Report from the Research query failed the regression; source restored and all seven focused backend tests passed.
+
+- Final validation for section 140: all 301 backend tests, six frontend unit suites and production build passed. The real browser flow passed with isolated persisted fixtures: matching Assessment header/sidebar, no duplicate create button, three assessment types represented in two public groups, correct course/student codes, blank missing codes and non-IELTS task cells, student-only submission visibility, editable Research guide category and existing Report guides included. A 1050px viewport regression also passes: only the table scrolls horizontally. Replaced an offscreen absolute screen-reader label with a column aria-label to prevent page-level overflow.
+
+## 141. Submissions fit the panel without horizontal scrolling (2026-11-19)
+
+- Replaced the submission table's fixed 1380px minimum and per-cell minimum widths with a fixed-layout table that fits its container. Headers, names, dates and status wrap naturally; Assess/View actions are compact and retain their accessible full labels.
+- Below 1100px of available panel width, each row becomes a labeled two-column card; very narrow panels use one column. All course/student/exercise/assessment metadata remains present. No fields or actions are clipped to hide a scrollbar, and no backend behavior changed.
+- Updated the browser regression to require no horizontal overflow inside the submission panel at desktop and narrow widths and verify the narrow card layout and assessment action remain visible. This supersedes section 140's horizontally scrollable table design.
+
+- Final section 141 verification: production build, TypeScript and the assessment browser regression passed. Panel and page have no horizontal overflow at 1500px and 1050px viewports; metadata, optional codes, IELTS-only Task values and accessible assessment actions remain correct. Long card lists scroll in the main content area without compressing the module tabs.
+
+## 142. Search and filters for remaining workspace lists (2026-11-19)
+
+- Added shared compact ListFilters/FilterSelect controls with visible labels, counts, Clear filters and wrapping layout. Existing Question library, Writing guides and LaTeX/template catalog search tools remain in place rather than being duplicated.
+- Assessment / student assignments, practice and exams: search title, description, tutor and course; filter by assessment group (Report belongs to Research), course/no-course, IELTS task and assigned/draft or student's submission status.
+- Submissions / results: search student name, course-specific display name/code, exercise and course; filter by assessment group, course, IELTS task, result status and last 7/30 days. Assignment drill-down, delivery tabs and server access scoping remain applied before the new filters. Filters are kept independently per screen.
+- Courses: added course name/tutor search and with/without students filter. Existing roster search now supports accent-insensitive matching and an optional student-code presence filter.
+- Assessment categories: search rubric names, section titles and criterion text; filter IELTS tasks. Filtering only changes the template chooser, keeping the selected editor and its unsaved changes intact (an out-of-filter selection is explicitly labeled).
+- Filter functions are pure and operate on already-authorized loaded workspace data; no new API, database migration or per-keystroke network request. Empty results and counts reflect the currently scoped list.
+- Added unit coverage for combined fields, Vietnamese accents/case, optional codes, Report/Research grouping, course/task/status semantics and inclusive date boundaries. Deliberately inverted the category guard; regression failed, original source restored.
+
+- Final section 142 validation: production build and all seven frontend unit suites passed. Expanded isolated assessment browser flow passed combined search/type/status/course filters, no-results + Clear, independent student assignment/submission filter states, course enrollment filters, roster code-presence filter, and rubric search/reset preserving an unsaved edited name. Existing student-only submission visibility, Research/Report grouping and no-horizontal-overflow assertions also remained green. No live Atlas data was used.
+
+## 143. Dashboard split by workspace (2026-11-19)
+
+- Dashboard now has two independent bordered columns: Task Writing on the left, LaTeX Studio on the right. Writing course/assessment/submission metrics and recent exercises remain entirely inside the writing column; document count, publishing entry and recent project links remain inside the LaTeX column.
+- Both columns have their own labeled heading and existing theme accent. On viewports below 1100px they stack in the same order, without horizontal overflow. The shared introduction/header/sidebar are unchanged.
+- Preserved existing authenticated overview fetching, abort-on-unmount and failure behavior, source arrays and workspace/project navigation callbacks. No backend or database changes.
+- Production build and isolated dashboard browser test passed for Tutor dark mode and Student light mode: correct left/right geometry, no cross-module records/counts, stacked layout at 900px, Courses/Task Writing/LaTeX Studio entry actions and reopening a recent document.
+
+## 144. Template library gallery and isolated PDF previews (2026-11-19)
+
+- Added a dedicated LaTeX Studio category -> template listing -> detail flow, using existing bundled templates, with search, tags and document language. No Overleaf catalog content was imported.
+- Open as Template creates a separate owned project; View Source shows real generated source files; View PDF compiles real template resources in isolated temporary storage without creating user projects. Failures are explicit and retryable.
+- Added authenticated source/PDF/thumbnail endpoints, shared bounded preview cache, same-template request deduplication, bounded compilation queue and shutdown cleanup. Missing license metadata is shown honestly.
+- Simplified New project to blank/import plus Browse templates; removed duplicate template grid and Icon/Color dropdowns. Existing imports and persisted project metadata remain supported.
+- Production frontend build, TypeScript, all seven frontend unit suites and isolated template-library browser tests passed for Tutor/dark and Student/light, including responsive layout, source/PDF, language and own-copy creation. Existing document-workspace browser regression passed. Focused backend tests cover authentication, failure, caching, task bounds and cancellation; an inverted verification guard was detected by regression and restored.
+- Real Research article compilation succeeded (229849-byte PDF); no claim that all templates were compiled on every TeX installation. No live Atlas data was used. See docs/TEMPLATE_LIBRARY.md. Restart the backend and refresh the browser after this update.
+
+## 145. JAES ZIP compilation repair (2026-11-19)
+
+- Diagnosed the supplied Journal of the Audio Engineering Society ZIP. The managed TeX runtime lacked xurl.sty and doi.sty. Added JAES dependencies (xurl, doi, draftwatermark, lineno, unicode-math, siunitx, cleveref) to both the provisioning manifest and readiness probes, so startup setup detects and repairs incomplete managed installs. Installed the missing packages locally; all three engine smoke checks passed.
+- Added a regression test that failed before the manifest fix. All 20 focused TeX runtime / compile recovery tests passed afterward.
+- The supplied jaes.bst also contains two independent source errors: a duplicate malformed FUNCTION {and}, and undefined bbl.presented. Created target/JAES-template-fixed.zip with only these bibliography style corrections, preserving the original ZIP and its other entries. No automatic rewriting of user projects or arbitrary uploaded styles was introduced.
+- Verified the repaired ZIP using the actual application Compiler with pdfLaTeX, bibliography and EPS figures: current verified PDF, 596994 bytes, 10 pages, 4 image instances. PDF: target/JAES-template-fixed.pdf. A remaining Hfootnote.1 destination warning is from the sample and does not block compilation. User must import the repaired ZIP (or apply the two jaes.bst fixes to their existing copy); package repair alone cannot fix the original bibliography style. No live user database modified.
+
+## 146. Editor exit destination and original JAES ZIP path (2026-11-19)
+
+- goHome now accepts an explicit destination. The editor brand exits to Documents while preserving the current all/shared filter; the sidebar Dashboard explicitly requests Dashboard. Documents/template navigation no longer sets an intermediate Dashboard destination. Existing save/Word flush/presence cleanup guards remain intact.
+- Updated document workspace browser regression to assert the editor Home action returns to the project table and does not display Dashboard. Production build and six-view isolated browser regression passed.
+- User was still importing the original JAES ZIP rather than the repaired copy. Backed it up as D:/download/Journal_of_the_Audio_Engineering_Society__JAES__template.original-before-fix.zip and replaced the requested original path with the corrected jaes.bst version. Added the two EPS-derived PDF assets: without them the first compile creates new project files and the source fingerprint correctly marks that first PDF stale. This avoids changing stale-export protection or enabling unrestricted shell escape. Original EPS files remain included.
+- Verified through actual ProjectIO.import_project and Compiler using the exact requested ZIP path and default main.tex: first compile current=True, verified/exportable PDF, 10 pages, 596994 bytes. Local copy: target/JAES-template-fixed.zip; proof PDF: target/JAES-original-path-import-check.pdf. Existing server-imported projects do not automatically change when the disk ZIP changes; reimport or replace their jaes.bst and add the converted figures. No live database was modified.
+
+## 147. Compact project row actions instead of Manage project dialog (2026-11-19)
+
+- Replaced the blocking Manage project modal with a local dropdown anchored to each project row/card. Clicking a project title still opens its editor. The action menu provides source ZIP download, Rename, Edit tags, Archive/Unarchive and Trash project. Rename, tags and trash confirmation stay inside the compact menu; Escape/outside click dismiss it. Existing bulk actions remain available.
+- Removed Icon/Color editing from project management and removed custom icon/color rendering from grid cards. Legacy metadata remains readable for compatibility; it is not deleted from user projects.
+- Added an optional archived boolean to the existing owner-only project-update action and Mongo/shared-write path, including type validation. Archive preserves all files and sharing; Active/Archived/All filtering makes archived projects accessible and reversible. Shared viewers/editors see download only, not owner actions.
+- Validation: production frontend build and TypeScript passed; all 305 backend tests passed. Expanded isolated browser regression passed seven views including inline rename, archive/reopen/unarchive, grid trash cancellation, Escape dismissal, shared-user restrictions and existing editor/compile/bulk actions. Verified visual output of the row dropdown. Inverting the archived flag failed regression; restored implementation passed again. No live database was modified.
+- Restart backend and refresh browser for the new archive metadata handling and rebuilt frontend.
+
+## 148. Autosaved marking and dedicated Finish score review (2026-11-22)
+
+- Marking drafts now autosave after 900 ms without edits, using the existing serialized revision queue. Saved drafts remain private; autosave does not publish or trigger workspace reload notices. Existing save-before-leave/publish guards and unfinished sentence feedback protection remain in place.
+- Removed the separate Finish score toolbar action and manual draft-save controls. Checklist score exposes Finish score only when all assigned criteria across all tasks have scores. It flushes the draft before opening review.
+- Point-scored assessments now show a dedicated in-page review instead of a modal overlay, containing criterion scores, every saved sentence comment/correction, overall feedback, next steps and Publish. Back to marking preserves changes. Published students have a read-only Review results entry. Legacy band assessments retain their existing summary presentation.
+- Added optional awardedTotal to review API/state, separate from the immutable assignment scale and criterion sum. Tutor can edit the earned total in the checklist or final review, or restore the calculated total. Backend validates finite non-negative hundredth-point values within the assigned maximum; completeness is still mandatory. Published results preserve calculatedScore, awardedTotal, criterion points and maxScore; generated reports use the final total. No score redistribution or assignment-scale mutation occurs.
+- Validation: all 306 backend tests and seven frontend unit suites passed; final production build/TypeScript passed. New isolated browser test verifies automatic draft persistence without Save, complete-only Finish, dedicated non-modal review, saved correction/comment display, Back to marking, override 8.25 vs calculated 7 on unchanged scale 10, and publish visibility to the learner. Ignoring awardedTotal intentionally failed regression, then original implementation was restored. No live Atlas data used.
+- Restart backend and refresh browser after update, since the review payload now includes awardedTotal.
+
+## 149. Export LaTeX document as a new four-file project (2026-11-22)
+
+- Renamed Export LaTeX report to Export LaTeX document, available after publication including from the dedicated review screen. The button explicitly requests createDocument and opens a newly created, privately owned LaTeX project in the editor.
+- New project contains question.tex (questions and visual assets), answer.tex (canonical submitted answers), feedback.tex (published criteria scores, adjusted final total, comments/corrections, feedback and next steps), and main.tex (inputs the three files in order). Each component also compiles independently, without additional subfiles dependencies. Task labels are preserved for multi-task submissions. Shared images/PDF question assets are copied alongside the sources.
+- Added writing/document_export.py; reused the canonical escaped renderer with an internal part selector rather than parsing user-entered content. Exports use published snapshots, never private draft assessments or raw learner LaTeX. Existing source-only/PDF output contracts remain available; explicit published document export now creates a new project even when writing belongs to an existing project. Missing assets/publication changes abort export; failed creation is removed from the visible library.
+- Validation: full backend suite passed (306), followed by focused tests after adding separate task headings. API tests cover IELTS 1/2, Report and Research, separate file contents, image assets, private ownership and combined inputs. Final frontend build passed. Browser regression covers marking/publish/export, exactly one new project, four visible files, saved comments and manual final score. Real TeX compilation passed for main.tex, question.tex, answer.tex and feedback.tex from a generated two-task document with image. Removing feedback from combined inputs intentionally failed regression and was restored. No live user database was used.
+- Restart the web backend and refresh the browser to load the new export route behavior and button.
+
+## 150. Rubric editor visual refinement (2026-11-22)
+
+- Redesigned the rubric editor shown in Assessment categories with compact bordered criterion cards, numbered badges, visible Criterion labels, shorter default textareas, narrow weight controls and lighter Remove actions. Section headers retain collapse/expand and now show criterion count and total relative weight; section rename/removal and full-width Add criterion remain available.
+- Task and rubric category now share a compact metadata row on desktop and stack on narrow screens. Existing theme tokens provide light/dark colors, without changing weight semantics, scoring, category selection, save API or persisted criteria structure. Textareas remain vertically resizable and all existing accessible input names are retained.
+- Validation: final production build/TypeScript and expanded isolated assessment browser regression passed. Verified rubric text/weight edits persist, add/remove criterion, collapse/expand, filter state retention, light/dark screenshots and no page horizontal overflow at 650px. Existing course/submission and Research/Report grouping assertions also passed. No backend changes or live user data used.
+
+## 151. Paired Writing guides, model answers and topic images (2026-11-22)
+
+- Used the locally installed MarkItDown integration to read all 20 supplied v2 Markdown files (10 guide/sample pairs). Extracted their embedded JPEG images to content-addressed bundled resources; guide/sample pairs reference the same matching image. Matched six Task 1 visuals (healthcare line graph, recycling bars, exchange table, book-sale pies, leather process, campus map) and four Task 2 argument diagrams. Original Downloads files were not changed.
+- Replaced the corresponding default guide resources and added 10 sample Markdown resources. Added the missing Advantages/disadvantages default guide linked to advantages/outweigh profiles. Catalog now has 13 guides, including three retained existing types without new sample files.
+- Guide reader now has Writing guide / Sample writing tabs, a model-answer badge on supported cards, full-width topic images, alt text and responsive light/dark styling. The same reader is used during practice. Tutor form supports separate editable sample content and preview; student access remains read-only and explicitly course-scoped. Existing customized tutor guide text is preserved; missing samples on older built-in overrides can inherit the bundled sample until explicitly customized or cleared.
+- Added optional sampleContent/hasSample with backward-compatible save behavior, revision checks and unchanged guide authorization. List responses omit sample bodies. Authenticated guide-assets route serves only whitelisted SHA-256 named PNG/JPEG bundled images; Markdown image rendering rejects remote URLs, arbitrary paths, SVG/data URLs and executable HTML. Added package-data coverage for nested images.
+- Corrected factual disagreements in supplied Task 1 guides/sample answers against the provided visuals: line endpoints/year, bar quantities, student-exchange values, pie labels and campus Biochemistry/parking descriptions. Table source has a printed total 186 vs country sum 187; pie labels sum to 99/90/92 instead of 100. Visible source-data notes preserve these inconsistencies rather than inventing normalized values. Model answers are labelled teaching examples, not claimed officially awarded bands. Task 2 argument diagrams remain teaching frameworks, not raw statistical question charts.
+- Validation: all 307 backend tests and seven frontend unit suites passed; final production build/TypeScript passed. Browser tests cover Tutor dark / Student light, image loading, correct tab state/content, tutor sample edits, course sharing, student restrictions, source notes and 650px overflow. Built a backend wheel and verified it contains all 10 images and 10 samples. Removing sample response content intentionally failed regression; restored source passed the focused six-test guide suite. No live Atlas data used.
+- Restart backend and refresh browser after updating. Source files and images ship with the repo/package; no Downloads paths or MarkItDown runtime dependency are needed by users.
+
+## 152. Saved Bar Chart default masked the v2 guide (2026-11-22)
+
+- Read-only inspection found one saved Bar charts built-in row at revision 4 containing 29120 characters of old guide text and no question image. Its content SHA-256 exactly matched its original sourceSha256, proving the text was an unchanged old default, not tutor edits. Stored rows overrode the updated bundled guide.
+- Backed up the complete row to target/guide-repair-backups/bar-before-refresh-5de828ee5a62484d8d4d6f8019a5548f.json. Updated only this verified row with v2 guide/image reference, missing sample, current baseline hash and contentVersion. Revision incremented to 5 using a content/revision compare-and-swap; course sharing and ownership fields were preserved. Verified the persisted guide and sample after updating.
+- Added read-time refresh for pristine saved built-in text using baseline SHA matching. Customized text and custom guides are returned unchanged; reads do not mutate the database. Future saves record the normalized bundled baseline hash so newline differences on Windows do not break pristine detection. Existing explicit sample clearing remains supported.
+- Seven guide regression tests passed, including unchanged legacy default refresh, preserving tutor text changes, custom-guide exclusion, image resources, sample CRUD and course visibility. Backend-only update; no frontend rebuild required. Reopen Bar charts to reload the repaired database content; restart backend to activate the future-refresh guard.
+
+
+## 153. Source organization and web README (2026-11-22)
+
+- Applied code-review-and-quality to the existing dirty worktree without resetting or staging unrelated feature changes.
+- Grouped 28 flat frontend components into auth/, workspace/, projects/ and editor/; writing/ remains the existing Task Writing feature boundary. Updated static/dynamic imports and source-inspection tests; no duplicate re-export compatibility wrappers.
+- Reviewed the backend's existing auth/core/http/storage/compilation/documents/collaboration/writing boundaries and retained their stable package names. Separated seven browser-server/fixture utilities into apps/backend/tests/support/ and seven opt-in native checks/benchmarks into tests/manual/. Updated browser callers and current documentation.
+- Deleted apps/backend/tests/smoke_java_interop.py because it only printed an obsolete Java message and returned success. Active regression tests remain. No deletion of project data, backups, installed Python/TeX runtimes or credentials.
+- Moved the optional IELTS asset generator and Optica provisioning tool to scripts/maintenance/ and repaired repository-root resolution. Kept supported web/setup launchers at their existing paths, including macOS/Linux shell adapters. No startup command changed.
+- Rewrote README.md in English for the current Python + Next.js web app: setup, private MongoDB/Google config, feature ownership, current scoring/export workflows, folder tree, development checks and deployment limitations. Added backend-check/script documentation and refreshed docs/CODEBASE_STRUCTURE.md and frontend test notes.
+- Verification: 308 backend tests, eight Windows launcher tests, seven frontend unit suites, TypeScript typecheck and production Next.js build passed. Document-workspace browser regression passed seven views. Guide-samples browser regression passed images, tutor edits, course sharing, student read-only and responsive themes. Moved Python utilities parse; current README/structure links resolve; git diff --check passed. Existing dependency deprecation/module-type warnings remain; they were not suppressed.
+- Opt-in native TeX/Pandoc benchmarks, the Atlas factory and legacy desktop/TCP launchers were not executed in this cleanup. No live database writes, commits or pushes.
+
+
+## 154. Fresh-clone setup audit (2026-11-22)
+
+- Reviewed with code-review-and-quality. Created an isolated copy of 946 current non-ignored source files under target/fresh-clone-audit-20261122, without existing node_modules, virtual environments, frontend output or private config. This copy includes uncommitted source and is not a clone of the currently published branch.
+- Release blocker: 52 current Python/TypeScript component/runtime source files were not tracked by Git when checked. Developers cannot receive those local additions by cloning until intended changes, moves, resources and examples are committed and pushed. No staging/commit/push performed. Inventory: target/fresh-clone-audit-20261122-untracked.txt.
+- Added config/mongodb.local.example.json and config/google.local.example.json without credentials. Updated README and docs/FRESH_CLONE_SETUP.md with setup, mandatory MongoDB access, optional Google callbacks/test users, Pandoc requirements and publication limitations.
+- Web launchers now reject missing/unsupported Node/npm before expensive preparation when rebuilding or frontend output is absent. POSIX uv sync explicitly uses the validated interpreter and web-local extras, consistent with Windows; httptools is no longer a mandatory POSIX local-web import.
+- Fixed two hidden test-environment assumptions exposed by a clean directory and Python 3.12 Windows: snippet test creates target before writing its native fixture; shared-file integrity assertion reads UTF-8 explicitly without weakening content checks.
+- Generated-PDF and OAuth browser fixture servers explicitly skip native TeX readiness because they do not test real compilation. Production runtime checks remain enabled. Updated role-selection browser assertions from the removed Assign exercise navigation item to the current tutor-only Question library, retaining role-switch visibility checks.
+- Verification: nine Windows launcher regressions passed. Removing the new Node preflight in an isolated mutation made the missing-Node regression fail as intended. POSIX launcher passed bash syntax validation; native macOS/Linux execution was not performed.
+- Fresh source copy: npm ci and production build passed; all seven frontend unit suites passed. A new Python 3.12.16 venv installed 50 locked packages using uv --frozen with web-local/dev extras (cache plus missing downloads); dependency imports and CLI help passed and resolved to the copied backend source. Full backend suite: 305 passed, three native Pandoc tests skipped because no Pandoc was included in the clean copy. The initial cold Python 3.15 download was stopped due to slow large downloads; it is not claimed as a successful fresh 3.15 install.
+- Browser checks from the clean copy passed: document/editor workspace seven views; email and mocked-Google registration for student/tutor, profile role change and returning Google sign-in. These verify callback/state/session logic with a mocked token exchange, not real Google consent.
+- Windows managed TeX archive availability returned HTTP 200. A full fresh TeX extraction/package install and checksum verification were not repeated. Missing MongoDB config produced an actionable startup error without fallback. No live Atlas writes or real OAuth provider login in this audit. Existing dependency deprecation warnings remain visible.
+
+
+## 155. Remove root scripts directory (2026-11-22)
+
+- Moved required launch/setup/maintenance tools from the root scripts directory to apps/backend/tools so the root source layout is cleaner without dropping supported startup behavior. The root scripts directory no longer exists.
+- Moved Windows launcher regressions to apps/backend/tests/test_windows_python_setup.py. Updated isolated test layouts, all launcher repository-root calculations, maintenance tool roots and live consumers, including the macOS desktop command, backend diagnostic messages and README. Frontend scripts/copy-worker.mjs remains its required build utility.
+- New Windows commands from repository root: .\apps\backend\tools\run-python-web.bat --build, then .\apps\backend\tools\run-python-web.bat. macOS/Linux: sh apps/backend/tools/run-python-web.sh --build, then the same without --build.
+- Verified nine Windows startup tests, shell/PowerShell syntax checks, frontend TypeScript check, no remaining operational references to old scripts paths and valid README links. No project data, credentials or installed runtimes were deleted. Old paths in historical handoff entries describe earlier layouts.
+
+
+## 156. README refresh and limited target cleanup (2026-11-22)
+
+- Rewrote README.md around current Python/Next.js web setup, apps/backend/tools commands, mandatory MongoDB/optional Google configuration, Pandoc requirements, module ownership, tests, deployment limits and safe generated-file cleanup. Removed unresolved Updated upstream/Stashed changes conflict markers and references to deleted docs. README content is resolved; the existing unmerged Git index was not staged or otherwise changed.
+- Removed 16 explicitly named obsolete one-off scratch scripts from target via file edits: check-home-layout.mjs, check-native-word.mjs, check-original-wheel.py, check-word-layout.mjs, check-workspace-rail-20261116.mjs, compare-research-pdf.py, inspect-fixed-word.py, probe-word-images.py, reorganize-source.py, repro-old-python-probe.ps1, restructure_backend.py, test-clean-clone-bootstrap-final.py, test-clean-clone-startup.py, test-google-private-config-smoke.py, verify-launcher.mjs and verify-word-article.py.
+- Recursive removal of a single old target/appearance-audit-01 folder was rejected by automatic approval review with blocked by policy. No test directories were deleted in this task. The existing clean-generated.ps1 dry-run/-Apply commands are documented for the user; the agent did not run deletion through a wrapper after rejection.
+- Preserved running official-python-web-env, Python runtimes, TinyTeX/tex-runtime, Pandoc, uv tools, shared/user data and guide-repair-backups. README relative links, absence of conflict markers and retained runtime/backup paths were verified. No application logic changed; no live database access or commits.
+
+
+## 157. Prepare main publication and resolve stash conflicts (2026-11-22)
+
+- User explicitly requested committing/pushing current project changes to main. Fetched origin/main; local HEAD matched the remote before publication.
+- Resolved eight unmerged paths left by a prior stash application. Retained the current README and modern point/category/direct-question/library interfaces rather than reverting to earlier variants. Conflicted working files were backed up under ignored target/push-conflicts-20261122.
+- Regression checks caught a merge-created duplicate copy_question_assets definition with the missing copy_prompt_assets helper and missing assignment-to-library persistence. Restored the shared metadata-copy helper and visibility-preserving assignment library hook. Affected 13 API tests passed afterward.
+- Updated the library browser regression to current Course/Create and assign/Research labels while retaining public/private ownership, saved assignment question, copied report and responsive assertions. Browser check passed after restoring library persistence.
+- Frontend production build and all seven unit suites passed. Final full backend suite: 314 passed. Question-library browser regression also passed. Credential-free config examples are included; real config/*.local.json, target runtimes and generated output remain ignored. No live database operations, force push or stash deletion.
