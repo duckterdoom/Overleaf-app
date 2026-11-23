@@ -180,3 +180,33 @@ The local web launcher intentionally binds to loopback. Public hosting needs HTT
 Before another developer clones, commit and push all intended files, moves and dependency locks. Untracked files do not arrive in a clone. Never commit environments, generated output or local credentials. Windows Application Control restrictions require administrator approval of the runtime; startup tools do not bypass them.
 
 See [the implementation handoff](docs/AI_Handoff.md), [backend tools](apps/backend/tools/README.md), [frontend tests](apps/frontend/tests/README.md) and [template licensing](LICENSE-TEMPLATES.md) for supporting information.
+
+
+## Disk size versus application memory
+
+The 22 November 2026 audit measured **6.37 MiB of tracked project files** versus **11.24 GiB of logical local files**, primarily test clones, build caches and installed tools. Local directory size is not browser RAM usage. Docker context already excludes these generated/runtime folders.
+
+For the largest known disposable audit clones and the Next.js build cache, preview:
+
+```powershell
+.\apps\backend\tools\maintenance\clean-generated.ps1 -IncludeBuildCache -IncludeCloneAudits
+```
+
+After reviewing the list and stopping frontend builds/dev servers, add `-Apply` to remove it. This keeps frontend `out/`, Python/TeX/Pandoc runtime roots, config and backups. Rebuilding recreates `.next/`. Shared/hard-linked files mean physical disk savings can differ from logical sizes.
+
+For a memory-constrained backend, one compile job and one Word conversion at a time are supported configuration choices:
+
+```powershell
+$env:LATEX_MAX_COMPILE_JOBS = '1'
+$env:LATEX_MAX_WORD_JOBS = '1'
+```
+
+These limits apply per backend process. Lower concurrency can reduce simultaneous resource pressure but may increase queue time; it does not change PDF or DOCX output. Actual peak RAM still needs measurement with representative large documents.
+
+
+The reviewed cleanup completed on 22 November 2026 removed **105 generated entries** (approximately **6.92 GiB of logical files**), leaving about **4.26 GiB** locally. Source/runtime preservation hashes passed. The machine-local per-path inventory and outcomes are in `target/deletion-review-20261122.csv`; these ignored audit reports are not included in Git clones. Uncertain files, runtimes, backups and production frontend output were retained.
+
+
+A second reviewed cleanup removed another **308 historical target entries** (about **1.42 GiB logical data**). The local workspace now measures about **2.84 GiB**, with 11 runtime/recovery/source-material directories retained under `target/`. Detailed local outcomes are in `target/remaining-cleanup-review-20261122.csv`. Source preservation and runtime checks passed; dependency caches will be regenerated when needed.
+
+On 23 November 2026, another reviewed cleanup removed 21 generated cache/build paths (about 1.08 GiB logical data), including a regenerated Next.js cache and an obsolete converter distribution. Production output, source, tests and runtimes were retained; source preservation and the seven-view document workspace browser check passed. Local inventory: `target/apps-cleanup-review-20261123.json`. Build and bytecode caches regenerate normally.
