@@ -6,7 +6,18 @@ From the repository root, with the backend development extras installed:
 python -m pytest apps/backend/tests -q
 ```
 
-`test_*.py` files are automated regression tests. `conftest.py` injects isolated MongoDB doubles and private OAuth configuration. They do not need production Atlas credentials.
+`test_*.py` files are automated regression tests organized into domain subdirectories:
+
+| Directory | Scope |
+| --- | --- |
+| `writing/` | IELTS Task 1 & 2 scoring, exam workflows, question taxonomy, guides, annotations, assignments |
+| `documents/` | DOCX import/export, Word sync, roundtrip converter, multi-document workspace |
+| `collaboration/` | Realtime collaboration, presence, review/comments, shared files, TLS, parity |
+| `storage/` | Persistence, MongoDB doubles, Google OAuth, server storage, accounts, sharing |
+| `compilation/` | LaTeX compile reuse, recovery, TeX runtime, build performance |
+| `system/` | Local web API, workspace isolation, template library, Windows environment bootstrap |
+
+`conftest.py` injects isolated MongoDB doubles and private OAuth configuration, and registers all domain subdirectories in `sys.path`. They do not need production Atlas credentials.
 
 `support/` contains fixture servers used by frontend browser tests and the PDF geometry generator. They are not product entrypoints. The Atlas namespace fixture is explicitly opt-in and requires its guard; do not use it for routine tests.
 

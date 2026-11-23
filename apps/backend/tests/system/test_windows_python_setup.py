@@ -12,7 +12,7 @@ import sys
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / 'tools'
+SCRIPTS = next(p / 'tools' for p in Path(__file__).resolve().parents if (p / 'tools').is_dir())
 POWERSHELL = shutil.which('powershell.exe')
 pytestmark = pytest.mark.skipif(os.name != 'nt' or not POWERSHELL, reason='Windows PowerShell integration')
 
