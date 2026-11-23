@@ -71,7 +71,6 @@ import CompileOptions, { PreviewFormatMenu } from "../components/editor/CompileO
 import NewProjectExtras from "../components/projects/NewProjectExtras";
 import FileActionsPanel from "../components/editor/FileActionsPanel";
 import LogsView, { parseAllLogs } from "../components/editor/LogsView";
-import IeltsGradingPanel from "../components/editor/IeltsGradingPanel";
 import useParity from "../lib/useParity";
 import { action, native, translator, type Activity } from "../lib/parity";
 import { localize } from "../lib/i18n";
@@ -148,7 +147,7 @@ export default function Workspace() {
         [installing, setInstalling] = useState(false);
     const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
     const [sidePanel, setSidePanel] = useState<
-        "files" | "review" | "chat" | "ielts" | null
+        "files" | "review" | "chat" | null
     >("files");
     const [reviewDraft, setReviewDraft] = useState<ReviewAnchor | null>(null);
     const [previewTab, setPreviewTab] = useState<"pdf" | "word" | "logs">(
@@ -1520,35 +1519,6 @@ export default function Workspace() {
                                 )}
                             />
                         </footer>
-                    </aside>
-                    <aside
-                        className="workspace-sidepanel ielts-sidepanel-wrapper"
-                        hidden={sidePanel !== "ielts"}
-                        aria-label={t(
-                            "Bảng chấm điểm IELTS Writing",
-                            "IELTS Writing Evaluation Panel",
-                        )}
-                    >
-                        <IeltsGradingPanel
-                            key={project.id}
-                            project={project}
-                            file={file}
-                            source={content}
-                            language={uiLanguage}
-                            editor={view}
-                            onClose={() => setSidePanel(null)}
-                            onFileCreated={async (newPath) => {
-                                await refreshFiles(newPath);
-                                const entry = entries.find(
-                                    (e) =>
-                                        e.path === newPath ||
-                                        e.path.endsWith("/" + newPath),
-                                );
-                                if (entry) {
-                                    void openFile(entry);
-                                }
-                            }}
-                        />
                     </aside>
                     <div
                         className="sidebar-divider"

@@ -44,6 +44,7 @@ try{
   await page.locator('.workspace-navigation').getByRole('button',{name:'Dashboard',exact:true}).click();
   await page.locator('.dashboard-latex-module .recent-document').first().click();await expect(page.locator('.desktop-shell')).toHaveAttribute('data-workspace','editor');
   await page.getByRole('button',{name:'Home',exact:true}).click();
+  await page.locator('.workspace-navigation').getByRole('button',{name:'Dashboard',exact:true}).click();
   await page.getByRole('button',{name:'Open Task Writing',exact:true}).click();await expect(page.locator('.writing-page-heading h1')).toHaveText(role==='tutor'?'Assessment':'Assigned exercises');
   await page.locator('.workspace-navigation').getByRole('button',{name:'Dashboard',exact:true}).click();
   await page.setViewportSize({width:900,height:1000});

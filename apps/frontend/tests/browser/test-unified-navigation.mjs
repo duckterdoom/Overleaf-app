@@ -26,7 +26,8 @@ try{
  const sidebar=teacher.locator('.workspace-navigation');
  await expect(sidebar.getByRole('button',{name:'Overview',exact:true})).toHaveCount(0);
  await expect(sidebar.getByRole('button',{name:'Dashboard',exact:true})).toHaveCount(1);
- await expect(teacher.locator('.dashboard-workspaces article')).toHaveCount(2);
+ await expect(teacher.getByRole('region',{name:'Task Writing',exact:true})).toBeVisible();
+ await expect(teacher.getByRole('region',{name:'LaTeX Studio',exact:true})).toBeVisible();
  await sidebar.getByRole('button',{name:'Courses',exact:true}).click();
  await teacher.getByRole('button',{name:'Create course',exact:true}).click();
  await expect(teacher.locator('dialog[open]')).toHaveCount(0);
@@ -41,12 +42,13 @@ try{
  await expect(teacher.locator('.course-roster-table')).toContainText('Jamie Student');
  await teacher.getByRole('button',{name:'Edit student Jamie Student',exact:true}).click();
  await expect(teacher.locator('dialog[open]')).toHaveCount(0);
- await teacher.getByLabel('Student code',{exact:true}).fill('ST01');
+ await teacher.getByRole('textbox',{name:'Student code',exact:true}).fill('ST01');
  await teacher.getByRole('button',{name:'Save student details',exact:true}).click();
  await expect(teacher.locator('.course-roster-table')).toContainText('ST01');
  await shot(teacher,'course-inline-roster');
  await sidebar.getByRole('button',{name:'Dashboard',exact:true}).click();
- await expect(teacher.locator('.dashboard-workspaces article')).toHaveCount(2);
+ await expect(teacher.getByRole('region',{name:'Task Writing',exact:true})).toBeVisible();
+ await expect(teacher.getByRole('region',{name:'LaTeX Studio',exact:true})).toBeVisible();
  await shot(teacher,'unified-dashboard');
  await teacher.setViewportSize({width:390,height:844});
  await expect(sidebar.getByRole('button',{name:'Dashboard',exact:true})).toBeVisible();
